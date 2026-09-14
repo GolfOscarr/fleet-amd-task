@@ -206,7 +206,7 @@ documented as blocked. **Decide end of day 1.**
 | **total** | **46 open / 11 resolved** | |
 
 `OPEN-PROBLEMS.md` holds the consolidated, deduplicated view: **6 major /
-21 minor open / 19 resolved**, plus 9 documentation defects found in AMD and
+20 minor open / 20 resolved**, plus 9 documentation defects found in AMD and
 Fleet sources.
 
 ---

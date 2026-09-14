@@ -151,7 +151,7 @@ tolerance.
 | `numpy_ref.py` | anywhere | the four new kernels' math in NumPy with explicit BF16 rounding; tested against the tiny model's own modules |
 | `reassoc_check.py` | anywhere | the reassociation error at the real attention shapes on CPU (item 7 above) |
 | `calibrate.py` | GPU | the two-run floor measurement; writes `calibration.json` |
-| `run_fleet.py --layers N [--head] [--iters K] [--debug-scores]` | GPU | builds the truncated or full graph, sets meta tensors, runs `mpk()`, dumps every boundary tensor to `fleet_boundaries.safetensors` and `tokens` to `fleet_output_ids.json` |
+| `run_fleet.py --layers N [--head] [--iters K] [--stop-after <op>] [--debug] [--debug-scores]` | GPU | builds the truncated or full graph, sets meta tensors, runs `mpk()`, dumps every boundary tensor to `fleet_boundaries.safetensors` and `tokens` to `fleet_output_ids.json` |
 | `compare.py` | anywhere | pairs reference and Fleet tensors by boundary name, prints the three metrics, the floor, the threshold, and PASS/FAIL per boundary; exact-match checks for B9, B16 and the route log; writes `correctness_report.md` |
 | `kernel_tests.py` | GPU | for each new kernel, 100 random inputs against `numpy_ref.py`; also `mla_attend` with 1 split versus 33 splits (isolates the merge) |
 
