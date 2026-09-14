@@ -3,7 +3,7 @@
 Consolidated index of everything unresolved, so a problem can be located without
 re-reading four doc sets. Detail lives in each set's `99-open-questions.md`.
 
-Last updated: 2026-09-14 · 6 major · **21 minor open** · 16 resolved · 9 documentation defects
+Last updated: 2026-09-14 · 6 major · **22 minor open** · 16 resolved · 9 documentation defects
 
 **When** — `local` = resolvable without a GPU · `gpu` = needs the MI300X ·
 `build` = needs a working toolchain
@@ -18,8 +18,8 @@ Last updated: 2026-09-14 · 6 major · **21 minor open** · 16 resolved · 9 doc
 | **MAJ-2** | **No MLA kernel exists.** Repo has GQA paged-attention only, and AITER's gfx942 path is hand-written ASM. Spec drafted in `docs/mla-decode/04-our-kernel-spec.md`. **Possible shortcut (MIN-28):** the repo already instantiates CK's split-KV FMHA pipeline with separate QK/V head dims; if the machine's CK has the 576/512 configuration, phase B is an instantiation plus a wrapper. | Kernel | `docs/mla-decode` · `docs/fleet` §07 G1, Q11 | local then gpu |
 | **MAJ-3** | **Does the agent-scope fence emit `buffer_wbl2 sc1` / `buffer_inv sc1`?** If not, cross-XCD reads go stale intermittently and present as a numerics bug. Narrowed by the code read: the runtime hand-writes no cache-control ops; everything rests on two `__builtin_amdgcn_fence(..., "agent")` calls (`mpk_atoms.cuh:300`, `persistent_kernel.cuh:948`). One disassembly settles it. | Memory model | `docs/mi300x` Q4 · `docs/fleet` Q6 | build |
 | **MAJ-4** | **Register union / prefetch depth.** 1 wave/SIMD is *not* fatal — `VMCNT`=63 lets one wave hold many loads in flight, and only 4-8 are needed. But every inner loop must be unrolled to that depth (~32 VGPRs), additive across all tasks in the megakernel. | Occupancy | `docs/mi300x/07-achievable-bandwidth.md` · `docs/fleet` Q3 | build |
-| **MAJ-5** | **Dispatch overhead at our task sizes.** Our tasks are smaller than anything Fleet measured (158.5 vs 368 MB/layer, hidden 2048 vs 4096). Fleet warns short tasks make scheduling dominate. | Runtime | `docs/fleet` Q5 | gpu |
-| **MAJ-6** | **Does the latent KV cache survive in L2?** 144 KiB/XCD/layer vs 158.5 MiB/layer of expert streaming. If non-temporal weight loads protect it, this is our one batch-1 locality win; if not, the idea is worthless. The experiment is already wired: `USE_NT_WEIGHTS=1` compiles the linears with `sc1 nt` weight loads (`docs/fleet/04-repo-map.md`). | Cache policy | `docs/deepseek-v2-lite` Q3 · `docs/acceleration` Q6 | gpu |
+| **MAJ-5** | **Per-boundary latency on a 326-boundary chain.** The runtime's dependency model is a chain and nothing overlaps across an operator boundary; each boundary exposes a release flush, a cross-XCD atomic, a poll wake and an acquire. At 1 us per boundary that is 28% of the bandwidth band, at 5 us it exceeds it. Unmeasured on MI300X; layer 1 alone calibrates it (`docs/design-doc/09-expected-performance.md`, DQ1). | Runtime | `docs/design-doc` DQ1 · `docs/fleet` Q5 | gpu |
+| **MAJ-6** | **Re-scoped: does the latent cache survive anywhere?** Every task's acquire executes `buffer_inv sc1`, which invalidates the XCD's non-coherently cached L2 lines, so L2 residency across operators is not expected (`docs/design-doc/03-synchronization.md`, DQ4). The remaining candidate is the memory-side Infinity Cache (`secondary` source), with `USE_NT_WEIGHTS=1` (`sc1 nt`, MALL no-allocate) as the experiment (DQ5). Worth at most the 30 MiB per token of cache reads. | Cache policy | `docs/design-doc` DQ4, DQ5 · `docs/deepseek-v2-lite` Q3 | gpu |
 
 ---
 
@@ -48,6 +48,7 @@ Last updated: 2026-09-14 · 6 major · **21 minor open** · 16 resolved · 9 doc
 | MIN-26 | **Stock routing is wrong for this model.** `renormalize=true` is hard-coded (`task_register.cc:3689`) but `norm_topk_prob=false`; router logits are BF16 in the demo while the reference router is FP32; the top-k kernel zeroes the logits after reading (B8 needs a copy). One routing variant fixes the first two; a BF16-vs-FP32 selection check over 32 steps decides whether an FP32 router GEMV is also needed. | Correctness | `docs/fleet` Q13 | local then build |
 | MIN-27 | **gfx950-only code in the gfx942 build.** Unguarded `__builtin_amdgcn_mfma_f32_16x16x32_f16` in `paged_attention_decode_minimal_mi300.cuh:27` (dead code, but compiled); `16x16x32` warp GEMM selection in `linear_ck_mi300.cuh:73,331`; coherence value 18 commented "for gfx950". First known failures under MAJ-1. | Build | `docs/fleet` Q12 | build |
 | MIN-28 | **CK split-KV FMHA at MLA head dims.** `ck_tile` is not vendored; if the machine's CK has the 576/512 configuration, MAJ-2 shrinks to a wrapper. Check first on day 1. | Kernel | `docs/fleet` Q11 | build |
+| MIN-29 | **`mla_prep` is one workgroup streaming 2 MiB of `W_uk`**, serial on the chain: estimated 20-40 us per layer if it shows. Local fix: fold the product into `mla_attend` per XCD or make `mla_prep` a 16-tile gang op. | Kernel | `docs/design-doc` DQ2 | gpu |
 | MIN-11 | Top-6 experts over 8 XCDs leaves **2 chiplets idle** during the 99 MB phase. **Candidate fix:** fold the two shared experts in as always-selected experts 64 and 65 (exact split of the 2816-wide shared MLP), giving 8 active experts on 8 XCDs and removing the separate shared-expert ops. | Scheduling | `docs/fleet` Q4 | gpu |
 | MIN-14 | MFMA vs VALU for the **weight** GEMVs (M=1). Settled for MLA attention: M=`BLOCK_H`=16 fills a 16×16 MFMA tile, and vLLM ships `matrix_instr_nonkdim: 16`. | Kernel | `docs/acceleration` Q2 · `docs/mla-decode` Q2 | build |
 | MIN-15 | Split-KV value estimated at ~114 µs from a crude CU-count ratio. | Attention | `docs/acceleration` Q5 | gpu |
@@ -116,6 +117,8 @@ and MIN-4's method is settled, it just needs a run. Each now carries a worked
 recipe in its `99-open-questions.md` entry.
 
 **Day 1 on the machine, in order:** MAJ-1 (with MIN-27) → MIN-28 → MAJ-3 → MIN-25 → MAJ-4.
+
+**Day 3, from the layer-1 measurement:** MAJ-5 (`t_b`) and MIN-29 (`mla_prep`) are read off one run; they decide whether the graph is restructured before M3 (`docs/design-doc/09-expected-performance.md`).
 MAJ-1 gates the strategy; decide extend-vs-reimplement by end of day 1.
 
 **Cheapest high-value experiment:** MAJ-6 (non-temporal weight loads). Hours of

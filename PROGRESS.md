@@ -5,11 +5,11 @@ Time limit: 5 days. Target: gfx942, BF16, 1024-token prompt, 32 greedy tokens.
 
 Last updated: 2026-09-14 · branch `design/technical-spec` (from `main` at `11293d8`)
 
-**Where we are:** discovery complete (5 doc sets, 41 files, ~5,300 lines, 9
-reproducible scripts). Design document in progress per
-`docs/design-doc/PLAN.md`: pre-work reads P1-P3 done, design files next.
-Nothing built yet; the day-1 blocker is whether Fleet builds for gfx942, and
-the code read found the first known gfx950-only item that will break it.
+**Where we are:** discovery complete (5 doc sets); the technical design is
+written (`docs/design-doc/`, 13 files, one counting script), pending the
+final review pass. Nothing built yet; the day-1 blocker is whether Fleet
+builds for gfx942, and the code read found the first known gfx950-only item
+that will break it.
 
 ---
 
@@ -53,10 +53,10 @@ the code read found the first known gfx950-only item that will break it.
 | Achievable bandwidth | 3.66–4.3 TB/s (69–81% of 5.3) |
 | Layer-1 milestone | 31.6 µs floor / 38.9–45.7 µs realistic |
 | FP8 (stretch) | 509 µs floor / 630–740 µs realistic — **1.83×** |
-| Task graph | 80 tasks/layer, ~2,135/token, **1 kernel launch** |
+| Task graph | 326 ops, 1,880 tasks per token; **3 kernel dispatches per 32-token generation** |
 | Eager baseline | ~800–1,000 launches/token |
 
-**Decisions locked** (to be consolidated into `docs/decisions.md`)
+**Decisions locked** (interim table; the authoritative list is `docs/design-doc/00-decisions.md`, which withdraws the VALU-for-weight-GEMVs row and restates `P_split`)
 
 | Decision | Rationale |
 |---|---|
@@ -71,25 +71,27 @@ the code read found the first known gfx950-only item that will break it.
 
 ---
 
-## Stage 2 — Design doc 🟡 **in progress** — plan in `docs/design-doc/PLAN.md`
+## Stage 2 — Design doc 🟡 **written, review pass pending** — `docs/design-doc/`
 
-Required as the **first deliverable**. All inputs exist; this is assembly.
+Required as the **first deliverable**.
 
 - [x] Plan (`docs/design-doc/PLAN.md`)
 - [x] P1 `persistent_kernel.cuh` scheduler/worker loops → `docs/fleet/03-runtime.md`
 - [x] P2 `persistent_kernel.py` layer API + MoE demo conventions → `docs/fleet/04-repo-map.md`
 - [x] P3 `gang_linear_mi300.cuh` + `ck_tile` idiom → `docs/fleet/04-repo-map.md`
-
-- [ ] Model execution flow
-- [ ] Fleet task graph (draft in `docs/fleet/06-our-task-graph.md`)
-- [ ] Synchronization strategy
-- [ ] Memory plan + KV-cache layout
-- [ ] Prefill → Fleet-decode interface
-- [ ] Correctness methodology (draft in `docs/deepseek-v2-lite/08-correctness.md`)
-- [ ] Implementation milestones
-- [ ] Expected performance
-- [ ] Local-vs-GPU work split
-- [ ] `docs/decisions.md` — consolidate SPX+NPS1, runtime reassociation, extend-not-reimplement, gfx942, weight-only FP8
+- [x] `00-decisions.md` — 26 decisions with evidence and reversal conditions (supersedes the interim table below)
+- [x] `01-execution-flow.md` + `sources/graph_counts.py`
+- [x] `02-task-graph.md` — 326 ops / 1,880 tasks, 4 new kernels, 2 variants
+- [x] `03-synchronization.md`
+- [x] `04-memory-plan.md`
+- [x] `05-prefill-interface.md`
+- [x] `06-optimization-strategy.md`
+- [x] `07-correctness.md`
+- [x] `08-milestones.md`
+- [x] `09-expected-performance.md`
+- [x] `10-local-work.md`
+- [x] `README.md`, `99-open-questions.md`
+- [ ] Independent review pass over the set; fixes; merge to `main`
 
 ---
 
@@ -168,7 +170,8 @@ documented as blocked. **Decide end of day 1.**
 | `docs/fleet/99-open-questions.md` | 10 open / 3 resolved | **Q1 does it build on gfx942**, Q11 CK FMHA at 576/512 |
 | `docs/acceleration/99-open-questions.md` | 4 open / 2 resolved | Q2 MFMA vs VALU at M=1 |
 | `docs/mla-decode/99-open-questions.md` | 5 open | Q1 is `P_split`=32 right |
-| **total** | **38 open / 9 resolved** | |
+| `docs/design-doc/99-open-questions.md` | 10 open (3 restate `docs/fleet` Q3, Q4, Q11) | **DQ1 per-boundary latency** |
+| **total** | **48 open / 9 resolved** | |
 
 `OPEN-PROBLEMS.md` holds the consolidated, deduplicated view: **6 major /
 21 minor open / 16 resolved**, plus 9 documentation defects found in AMD and

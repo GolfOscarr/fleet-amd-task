@@ -56,24 +56,26 @@ graph LR
   RP --> ATT["MLA attend<br/>split-KV ×32"]
   ATT --> MRG[merge] --> OP[o_proj + residual]
   OP --> N2[RMSNorm]
-  N2 --> R[router] --> TK[top-6]
-  TK --> RE["routed experts<br/>99 MiB"]
-  N2 --> SE["shared experts<br/>33 MiB"]
-  RE & SE --> C[combine + residual]
+  N2 --> R["router (FP32)<br/>top-6 + 2 forced"]
+  R --> E["8 experts, one per XCD<br/>132 MiB"]
+  E --> C[combine + residual]
 ```
 
-The shared-expert branch depends only on the norm, so it overlaps the entire
-routing latency. The routed branch cannot start until the router commits.
+In the reference the shared-expert branch depends only on the norm. Fleet's
+dependency model is a strict chain, so the design does not run it beside the
+router; it folds the two shared experts into the routed set as always-selected
+experts 64 and 65, which puts exactly one active expert on each of the eight
+XCDs ([`docs/design-doc/00-decisions.md`](docs/design-doc/00-decisions.md), D6).
 
 ## Status
 
-**Discovery complete. Nothing built yet.** The next deliverable is the technical
-design document; implementation is blocked on MI300X access.
+**Discovery complete; technical design written.** Implementation is blocked on
+MI300X access. The design is in [`docs/design-doc/`](docs/design-doc/README.md).
 
 | | |
 |---|---|
-| Documentation | 5 doc sets, 41 files, ~5,300 lines, 9 reproducible scripts |
-| Open problems | 6 major, 21 minor, 16 resolved ([`OPEN-PROBLEMS.md`](OPEN-PROBLEMS.md)) |
+| Documentation | 5 discovery sets (41 files) + the design set (13 files, 1 script) |
+| Open problems | 6 major, 22 minor, 16 resolved ([`OPEN-PROBLEMS.md`](OPEN-PROBLEMS.md)) |
 | Milestone | M0 — not started ([`PROGRESS.md`](PROGRESS.md)) |
 | Day-1 blocker | does the Fleet runtime build for `gfx942`? |
 
@@ -85,13 +87,17 @@ design document; implementation is blocked on MI300X access.
 | Roofline | **931 µs** floor at 5.3 TB/s theoretical · **1.15–1.35 ms** at 3.66–4.3 TB/s achievable |
 | Rate | 1,074 tok/s floor · **742–871 tok/s** realistic |
 | Layer-1 milestone | 159.6 MiB → 31.6 µs floor / 38.9–45.7 µs realistic |
-| Task graph | 80 tasks per MoE layer, ~2,135 per token, **1 kernel launch** |
+| Task graph | 12 ops / 68 tasks per MoE layer; 326 ops / 1,880 tasks per token; **3 kernel dispatches per 32-token generation** |
 | FP8 (stretch) | 2,571 MiB → 509 µs floor / 627–737 µs realistic — **1.83×** |
 
 ## Layout
 
 ```
 docs/
+  design-doc/        the technical design: decisions, execution flow, task
+                     graph, synchronization, memory, prefill interface,
+                     optimization strategy, correctness, milestones,
+                     expected performance, local work
   mi300x/            hardware: architecture, chiplet dispatch, gfx942 memory
                      model, persistent-kernel mechanics, profiling, bandwidth
   deepseek-v2-lite/  model: config, MLA, MoE, per-op tensor flow, weights,
@@ -115,12 +121,13 @@ and scripts its claims derive from.
 
 | If you want | Read |
 |---|---|
+| The design | [`docs/design-doc/README.md`](docs/design-doc/README.md) |
 | The plan and its state | [`PROGRESS.md`](PROGRESS.md) |
 | What is still unknown | [`OPEN-PROBLEMS.md`](OPEN-PROBLEMS.md) |
 | Why this is hard | [`docs/deepseek-v2-lite/07-roofline.md`](docs/deepseek-v2-lite/07-roofline.md) |
 | The correctness hazard | [`docs/mi300x/03-memory-model.md`](docs/mi300x/03-memory-model.md) |
-| What we actually build | [`docs/mla-decode/04-our-kernel-spec.md`](docs/mla-decode/04-our-kernel-spec.md) |
-| The task graph | [`docs/fleet/06-our-task-graph.md`](docs/fleet/06-our-task-graph.md) |
+| What we actually build | [`docs/design-doc/02-task-graph.md`](docs/design-doc/02-task-graph.md), kernel spec in [`docs/mla-decode/04-our-kernel-spec.md`](docs/mla-decode/04-our-kernel-spec.md) |
+| The task graph | [`docs/design-doc/02-task-graph.md`](docs/design-doc/02-task-graph.md) (supersedes the discovery draft in `docs/fleet/06-our-task-graph.md`) |
 | Whether Fleet even helps here | [`docs/fleet/07-gap-analysis.md`](docs/fleet/07-gap-analysis.md) |
 
 ## What the analysis established
@@ -192,7 +199,7 @@ are not tracked here — download them on the target machine.
 
 | Required by the task | Where |
 |---|---|
-| Technical design | *next* |
+| Technical design | [`docs/design-doc/`](docs/design-doc/README.md) |
 | Source, build and run instructions | *pending GPU access* |
 | Correctness evidence at every boundary | method in [`docs/deepseek-v2-lite/08-correctness.md`](docs/deepseek-v2-lite/08-correctness.md) |
 | Profiling commands and results | plan in [`docs/mi300x/06-profiling.md`](docs/mi300x/06-profiling.md) |
