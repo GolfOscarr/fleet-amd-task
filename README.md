@@ -73,7 +73,7 @@ design document; implementation is blocked on MI300X access.
 | | |
 |---|---|
 | Documentation | 5 doc sets, 41 files, ~5,300 lines, 9 reproducible scripts |
-| Open problems | 6 major, 18 minor, 14 resolved ([`OPEN-PROBLEMS.md`](OPEN-PROBLEMS.md)) |
+| Open problems | 6 major, 18 minor, 16 resolved ([`OPEN-PROBLEMS.md`](OPEN-PROBLEMS.md)) |
 | Milestone | M0 — not started ([`PROGRESS.md`](PROGRESS.md)) |
 | Day-1 blocker | does the Fleet runtime build for `gfx942`? |
 

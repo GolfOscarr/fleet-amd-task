@@ -3,11 +3,12 @@
 Fleet-style batch-1 decode for DeepSeek-Coder-V2-Lite-Base on one AMD MI300X.
 Time limit: 5 days. Target: gfx942, BF16, 1024-token prompt, 32 greedy tokens.
 
-Last updated: 2026-09-14 · branch `research/references-and-planning` · 14 commits
+Last updated: 2026-09-14 · branch `design/technical-spec` (from `main` at `11293d8`)
 
-**Where we are:** discovery complete (5 doc sets, 40 files, ~5,300 lines, 9
-reproducible scripts). Nothing built yet. Next deliverable is the technical
-design document; the day-1 blocker is whether Fleet builds for gfx942.
+**Where we are:** discovery complete (5 doc sets, 41 files, ~5,300 lines, 9
+reproducible scripts). Design document in progress per
+`docs/design-doc/PLAN.md`: pre-work reads P1 done, P2 and P3 next. Nothing
+built yet; the day-1 blocker is whether Fleet builds for gfx942.
 
 ---
 
@@ -69,9 +70,14 @@ design document; the day-1 blocker is whether Fleet builds for gfx942.
 
 ---
 
-## Stage 2 — Design doc ⬜ not started — **next**
+## Stage 2 — Design doc 🟡 **in progress** — plan in `docs/design-doc/PLAN.md`
 
 Required as the **first deliverable**. All inputs exist; this is assembly.
+
+- [x] Plan (`docs/design-doc/PLAN.md`)
+- [x] P1 `persistent_kernel.cuh` scheduler/worker loops → `docs/fleet/03-runtime.md`
+- [ ] P2 `persistent_kernel.py` layer API + MoE demo conventions → `docs/fleet/04-repo-map.md`
+- [ ] P3 `gang_linear_mi300.cuh` + `ck_tile` idiom → `docs/fleet/04-repo-map.md`
 
 - [ ] Model execution flow
 - [ ] Fleet task graph (draft in `docs/fleet/06-our-task-graph.md`)
@@ -86,12 +92,13 @@ Required as the **first deliverable**. All inputs exist; this is assembly.
 
 ---
 
-## Stage 3 — Local work (no GPU) 🟡 **3/12**
+## Stage 3 — Local work (no GPU) 🟡 **4/13**
 
 - [x] Read `gang_attention_merge_mi300.cuh` and `kv_cache_update_mi300.cuh` (both GQA-paged; merge math reusable, append is not)
 - [ ] Read `gang_linear_mi300.cuh` + `ck_tile` idiom ← the template our MLA task is written against
 - [ ] Read `python/mirage/mpk/models/qwen3/` (template for our builder)
-- [ ] Read Mirage MPK paper (arXiv:2512.22219) + `persistent_kernel.cuh` main loop
+- [x] Read `persistent_kernel.cuh` main loop (launch structure, worker/scheduler loops, event counting, placement rules) → `docs/fleet/03-runtime.md`
+- [ ] Read Mirage MPK paper (arXiv:2512.22219)
 - [x] Read vLLM / AITER / FlashMLA MLA decode kernels → `docs/mla-decode/`
 - [x] Split-KV partial-softmax numerics (in `docs/mla-decode/04`)
 - [ ] Pick + tokenize the 1,024-token prompt, commit token IDs (recipe in `docs/deepseek-v2-lite` Q8)
@@ -157,13 +164,13 @@ documented as blocked. **Decide end of day 1.**
 |---|---|---|
 | `docs/mi300x/99-open-questions.md` | 13 open / 1 resolved | Q4 agent-scope fence emits right cache ops |
 | `docs/deepseek-v2-lite/99-open-questions.md` | 6 open / 3 resolved | Q1 reassociation within tolerance (no GPU) |
-| `docs/fleet/99-open-questions.md` | 7 open / 2 resolved | **Q1 does it build on gfx942** |
+| `docs/fleet/99-open-questions.md` | 7 open / 3 resolved | **Q1 does it build on gfx942** |
 | `docs/acceleration/99-open-questions.md` | 4 open / 2 resolved | Q2 MFMA vs VALU at M=1 |
 | `docs/mla-decode/99-open-questions.md` | 5 open | Q1 is `P_split`=32 right |
-| **total** | **35 open / 8 resolved** | |
+| **total** | **35 open / 9 resolved** | |
 
 `OPEN-PROBLEMS.md` holds the consolidated, deduplicated view: **6 major /
-18 minor open / 14 resolved**, plus 9 documentation defects found in AMD and
+18 minor open / 16 resolved**, plus 9 documentation defects found in AMD and
 Fleet sources.
 
 ---
