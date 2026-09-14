@@ -48,29 +48,31 @@ def lin_bytes(n, k):
     return n * k * BF16
 
 
-# (op name, kernel, tasks, tiles per task (gang) or '-', weight bytes, cache bytes, new?)
+# (op name, kernel, tasks, tiles per task (gang) or '-', weight bytes, cache bytes, status)
+# status: "reuse" = Fleet kernel and Python call as shipped; "variant" = one-line
+# change to an existing task; "new" = kernel written for this design.
 def attention_ops(s_eff):
     cache = s_eff * (D_C + D_R) * BF16
     return [
-        ("input_layernorm", "rmsnorm", 1, "-", H * BF16, 0, False),
+        ("input_layernorm", "rmsnorm", 1, "-", H * BF16, 0, "reuse"),
         ("qkv_a_proj (q_proj | kv_a_proj_with_mqa)", "gang_linear_mi300", 8,
-         (Q_OUT + KVA_OUT) // 8 // 24, lin_bytes(Q_OUT + KVA_OUT, H), 0, False),
+         (Q_OUT + KVA_OUT) // 8 // 24, lin_bytes(Q_OUT + KVA_OUT, H), 0, "reuse"),
         ("mla_prep (kv_a_layernorm, RoPE, append, q_nope @ W_UK)", "mla_prep_mi300 (NEW)", 1, "-",
-         lin_bytes(NH * D_N, D_C) + D_C * BF16, 0, True),
-        ("mla_attend (split-KV, 16 heads)", "mla_attend_mi300 (NEW)", 8, SPLITS_PER_XCD, 0, cache, True),
+         lin_bytes(NH * D_N, D_C) + D_C * BF16, 0, "new"),
+        ("mla_attend (split-KV, 16 heads)", "mla_attend_mi300 (NEW)", 8, SPLITS_PER_XCD, 0, cache, "new"),
         ("mla_merge_uv (merge + W_UV per head)", "mla_merge_uv_mi300 (NEW)", 8, NH // 8,
-         lin_bytes(NH * D_V, D_C), 0, True),
-        ("o_proj + residual", "gang_linear_res_mi300", 8, H // 8 // 32, lin_bytes(H, H), 0, False),
+         lin_bytes(NH * D_V, D_C), 0, "new"),
+        ("o_proj + residual", "gang_linear_res_mi300", 8, H // 8 // 32, lin_bytes(H, H), 0, "reuse"),
     ]
 
 
 def dense_mlp_ops():
     return [
-        ("post_attention_layernorm", "rmsnorm", 1, "-", H * BF16, 0, False),
+        ("post_attention_layernorm", "rmsnorm", 1, "-", H * BF16, 0, "reuse"),
         ("gate_up (shuffled) + SiLU*mul, padded to 11264", "gang_linear_silu_mi300", 8,
-         (2 * I_DENSE_PAD) // 8 // 64 // 2, lin_bytes(2 * I_DENSE_PAD, H), 0, False),
+         (2 * I_DENSE_PAD) // 8 // 64 // 2, lin_bytes(2 * I_DENSE_PAD, H), 0, "reuse"),
         ("down_proj + residual, K padded to 11264", "gang_linear_res_mi300", 8, H // 8 // 32,
-         lin_bytes(H, I_DENSE_PAD), 0, False),
+         lin_bytes(H, I_DENSE_PAD), 0, "reuse"),
     ]
 
 
@@ -78,28 +80,28 @@ def moe_mlp_ops():
     w13_active = TOPK_TOTAL * lin_bytes(2 * I_MOE, H)
     w2_active = TOPK_TOTAL * lin_bytes(H, I_MOE)
     return [
-        ("post_attention_layernorm", "rmsnorm", 1, "-", H * BF16, 0, False),
+        ("post_attention_layernorm", "rmsnorm", 1, "-", H * BF16, 0, "reuse"),
         ("router (FP32 GEMV, softmax, top-6, + forced 64,65)", "moe_router_mi300 (NEW)", 1, "-",
-         lin_bytes(E_ROUTED, H), 0, True),
+         lin_bytes(E_ROUTED, H), 0, "new"),
         ("W13 for 8 active of 66 experts", "gang_moe_w13_linear_mi300", 8, (2 * I_MOE) // 64,
-         w13_active, 0, False),
-        ("silu * mul per (token, slot)", "moe_silu_mul", TOPK_TOTAL, "-", 0, 0, False),
-        ("W2 for 8 active experts", "gang_moe_w2_linear_mi300", 8, H // 64, w2_active, 0, False),
-        ("weighted sum of 8 + residual", "moe_mul_sum_add_mi300", H // 256, "-", 0, 0, False),
+         w13_active, 0, "reuse"),
+        ("silu * mul per (token, slot)", "moe_silu_mul", TOPK_TOTAL, "-", 0, 0, "reuse"),
+        ("W2 for 8 active experts", "gang_moe_w2_linear_mi300", 8, H // 64, w2_active, 0, "reuse"),
+        ("weighted sum of 8 + residual", "moe_mul_sum_add_mi300", H // 256, "-", 0, 0, "reuse"),
     ]
 
 
 def head_ops():
     return [
-        ("model.norm", "rmsnorm", 1, "-", H * BF16, 0, False),
-        ("lm_head", "gang_linear_mi300", 8, V // 8 // 64, lin_bytes(V, H), 0, False),
-        ("argmax_partial", "argmax_partial", ARGMAX_SLICES, "-", 0, 0, False),
-        ("argmax_reduce -> output_tokens", "argmax_reduce", 1, "-", 0, 0, False),
+        ("model.norm", "rmsnorm", 1, "-", H * BF16, 0, "reuse"),
+        ("lm_head", "gang_linear_mi300", 8, V // 8 // 64, lin_bytes(V, H), 0, "reuse"),
+        ("argmax_partial", "argmax_partial", ARGMAX_SLICES, "-", 0, 0, "reuse"),
+        ("argmax_reduce -> tokens[step+1]", "argmax_reduce (variant)", 1, "-", 0, 0, "variant"),
     ]
 
 
 def embed_ops():
-    return [("embed_tokens[tokens[step]]", "embedding (input_source=0)", 1, "-", H * BF16, 0, False)]
+    return [("embed_tokens[tokens[step]]", "embedding (variant: agent-scope load)", 1, "-", H * BF16, 0, "variant")]
 
 
 def summarize(ops):
@@ -113,7 +115,7 @@ def table(title, ops):
     print(f"\n### {title}\n")
     print("| # | Op | Kernel | Tasks | Tiles/task | Weight MiB | Cache MiB |")
     print("|---|---|---|---|---|---|---|")
-    for i, (name, kern, tasks, tiles, wb, cb, new) in enumerate(ops, 1):
+    for i, (name, kern, tasks, tiles, wb, cb, st) in enumerate(ops, 1):
         print(f"| {i} | {name} | `{kern}` | {tasks} | {tiles} | {wb / MiB:.3f} | {cb / MiB:.3f} |")
     t, n, wb, cb = summarize(ops)
     print(f"| | **total** | | **{t}** | | **{wb / MiB:.3f}** | **{cb / MiB:.3f}** |")
@@ -148,7 +150,24 @@ def main():
     print(f"\nlayer 1 bytes: {lt / MiB:.2f} MiB")
     for bw in (5.3e12, 4.3e12, 3.66e12):
         print(f"  @ {bw / 1e12:.2f} TB/s: {lt / bw * 1e6:6.1f} us")
-    print("\nnew kernels:", sorted({o[1] for o in l0 + lm if o[6]}))
+    print("\nnew kernels:", sorted({o[1] for o in l0 + lm if o[6] == "new"}))
+    # Fleet-native vs new, per iteration (the "Fleet-native operations / fallbacks" metric)
+    allops = emb + l0 + 26 * lm + hd
+    print("\n### By status (per iteration)\n")
+    print("| Status | Ops | Tasks | Weight+cache MiB | Share of bytes |")
+    print("|---|---|---|---|---|")
+    for st in ("reuse", "variant", "new"):
+        sel = [o for o in allops if o[6] == st]
+        b = sum(o[4] + o[5] for o in sel)
+        print(f"| {st} | {len(sel)} | {sum(o[2] for o in sel)} | {b / MiB:.1f} | {100 * b / total:.1f}% |")
+    # synchronization counts: one release flush per XCD that ran producer tasks
+    # (tasks land on XCDs round-robin by graph position), one acquire per task
+    # with a dependency (every task but the first op's)
+    flushes = sum(min(o[2], XCDS) for o in allops)
+    acquires = tasks - emb[0][2]
+    print(f"\nrelease flushes (buffer_wbl2 sc1) per iteration: {flushes}")
+    print(f"acquires (buffer_inv sc1) per iteration: {acquires}")
+    print(f"events per iteration: {ops} op boundaries (+1 where the partition gcd exceeds 1: lm_head -> argmax_partial gives gcd(8, {ARGMAX_SLICES}) = {__import__('math').gcd(8, ARGMAX_SLICES)})")
     print(f"splits: {N_SPLITS} of {SPLIT} positions over S_max={S_MAX}; {SPLITS_PER_XCD} tiles per XCD")
     print(f"partial buffer per layer: {N_SPLITS * NH * (D_C + 1) * 4 / 1024:.0f} KiB (FP32 [splits][16][513])")
     print(f"dense padding cost per token: {(lin_bytes(2*I_DENSE_PAD,H)+lin_bytes(H,I_DENSE_PAD)-lin_bytes(2*I_DENSE,H)-lin_bytes(H,I_DENSE))/MiB:.2f} MiB")
