@@ -119,28 +119,32 @@ step "4. Fleet dependencies under deps/ (not submodules at 51dce4f)"
 # 51dce4f carries a gitlink for none of them (git ls-tree HEAD deps/ shows
 # only the vendored deps/rocblas), so `git submodule update` fetches nothing.
 # What the ROCm build actually reads: deps/composable_kernel/include (the
-# JIT compile line, persistent_kernel.py:293) and deps/json
-# (add_subdirectory in CMakeLists.txt:172). cutlass is CUDA-only there;
+# JIT compile line, persistent_kernel.py:293), deps/json (add_subdirectory
+# in CMakeLists.txt:172) and deps/cutlass/include (setup.py copy_include(),
+# which copytree's it unconditionally, ROCm included, right before the
+# Python install; the CMake include dirs are CUDA-only, the copy is not).
 # z3 comes from the z3-solver wheel in Fleet's install_requires.
-# The CK commit is the one Fleet's other branches pin (git ls-tree 58a33d8
-# deps/): d8ee107a. The patched headers and our kernels were compiled
-# offline for gfx942 against it (env/offline_gfx942/README.md).
+# The commits are the ones Fleet's other branches pin (git ls-tree 58a33d8
+# deps/). The patched headers and our kernels were compiled offline for
+# gfx942 against this CK (env/offline_gfx942/README.md).
 CK_COMMIT=d8ee107a47d8485dbcffc79eb08e4f7c39ea6335
-JSON_TAG=v3.11.3
+JSON_COMMIT=8c391e04fe4195d8be862c97f38cfe10e2a3472e
+CUTLASS_COMMIT=f3fde58372d33e9a5650ba7b80fc48b3b49d40c8
+fetch_dep() {
+  # $1 deps/<name>, $2 url, $3 commit, $4 a file that proves the checkout
+  if [ ! -f "$1/$4" ]; then
+    rm -rf "$1"
+    git init -q "$1"
+    git -C "$1" remote add origin "$2"
+    git -C "$1" fetch -q --depth 1 origin "$3"
+    git -C "$1" checkout -q FETCH_HEAD
+  fi
+  echo "$1: $(git -C "$1" log -1 --format='%H %cd')"
+}
 cd "$FLEET"
-if [ ! -f deps/composable_kernel/include/ck_tile/core.hpp ]; then
-  rm -rf deps/composable_kernel
-  git init -q deps/composable_kernel
-  git -C deps/composable_kernel remote add origin https://github.com/ROCm/composable_kernel.git
-  git -C deps/composable_kernel fetch -q --depth 1 origin "$CK_COMMIT"
-  git -C deps/composable_kernel checkout -q FETCH_HEAD
-fi
-echo "composable_kernel: $(git -C deps/composable_kernel log -1 --format='%H %cd')"
-if [ ! -f deps/json/include/nlohmann/json.hpp ]; then
-  rm -rf deps/json
-  git clone -q --depth 1 --branch "$JSON_TAG" https://github.com/nlohmann/json.git deps/json
-fi
-echo "json: $(git -C deps/json describe --tags --always)"
+fetch_dep deps/composable_kernel https://github.com/ROCm/composable_kernel.git "$CK_COMMIT" include/ck_tile/core.hpp
+fetch_dep deps/json https://github.com/nlohmann/json.git "$JSON_COMMIT" include/nlohmann/json.hpp
+fetch_dep deps/cutlass https://github.com/NVIDIA/cutlass.git "$CUTLASS_COMMIT" include/cutlass/cutlass.h
 ls deps
 
 # ---------------------------------------------------------------------------

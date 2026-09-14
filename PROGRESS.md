@@ -15,8 +15,8 @@ gfx942 patch, the four kernels and their glue patch: 54 tests pass; the
 review's 1 blocker, 3 major and 5 minor findings are all fixed).
 GPU-dependent problems are parked, each with its check. On `local/gpu-ready`
 (2026-09-14) the GPU code was compiled for gfx942 offline with ROCm 7.0's
-hipcc in Docker (`env/offline_gfx942/`): every patched header and our
-kernels compile and link, no VGPR spills, the cross-XCD fences lower as
+hipcc in Docker (`env/offline_gfx942/`): every patched header parses and
+our kernels compile and link, no VGPR spills, the cross-XCD fences lower as
 designed; CK's source says its split-KV FMHA cannot take the MLA head
 dim, so `mla_attend` is our spec kernel; the transformers conflict
 between the checkpoint (4.46) and Fleet (4.57.1) is resolved by two

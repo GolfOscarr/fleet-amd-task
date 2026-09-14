@@ -79,7 +79,7 @@ compiled for `gfx942` offline with the ROCm 7.0 compiler.
 |---|---|
 | Documentation | 5 discovery sets (41 files) + the design set (15 files, 1 script) |
 | Local harness | reference run and capture, comparison, weight packing, graph builder, four new kernels and their runtime glue, environment and measurement scripts (`harness/`, `fleet/`, `env/`) |
-| Offline gfx942 compile | the patched megakernel and our kernels compile and link, no spills; the cross-XCD fences lower as designed ([`env/offline_gfx942/`](env/offline_gfx942/README.md)) |
+| Offline gfx942 compile | the patched megakernel headers parse and our kernels compile and link, no spills; the cross-XCD fences lower as designed ([`env/offline_gfx942/`](env/offline_gfx942/README.md)) |
 | Open problems | 6 major (three narrowed offline), 18 minor, 22 resolved ([`OPEN-PROBLEMS.md`](OPEN-PROBLEMS.md)) |
 | Milestone | M0 not started; day 1 is the run-book in [`docs/design-doc/11-day1-runbook.md`](docs/design-doc/11-day1-runbook.md) ([`PROGRESS.md`](PROGRESS.md)) |
 | Day-1 question | does Fleet's host library build and run a graph on this machine? (`bash env/setup.sh`, then `bash env/check_day1.sh`) |

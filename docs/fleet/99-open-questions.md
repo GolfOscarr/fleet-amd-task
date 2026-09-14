@@ -2,7 +2,7 @@
 
 ## Q1 — Does the repo build and run on MI300X / gfx942? `open, narrowed` — **day 1, blocking**
 
-**Offline, 2026-09-14.** The device-code half compiles and links for gfx942 (`env/offline_gfx942/README.md`); what is left for the machine is the cmake and cargo build of the host library and a graph run.
+**Offline, 2026-09-14.** Every header parses for gfx942 and our five kernels compile and link, with the CK linear templates parsed but not instantiated (`env/offline_gfx942/README.md`); what is left for the machine is the cmake and cargo build of the host library and a graph run.
 
 **Why.** Gates the entire strategy in `07-gap-analysis.md`. If it builds, we
 extend and spend our days on MLA. If it does not, we write a minimal runtime and

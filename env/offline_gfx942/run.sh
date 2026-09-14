@@ -16,8 +16,8 @@ HERE="$ROOT/env/offline_gfx942"
 FLEET="$ROOT/repos/fleet-chiplet-megakernel"
 WORK="$HERE/work"
 IMAGE="${IMAGE:-rocm/dev-ubuntu-22.04:7.0}"
-CK_COMMIT=d8ee107a47d8485dbcffc79eb08e4f7c39ea6335   # env/setup.sh step 4
-JSON_TAG=v3.11.3
+CK_COMMIT=d8ee107a47d8485dbcffc79eb08e4f7c39ea6335     # env/setup.sh step 4
+JSON_COMMIT=8c391e04fe4195d8be862c97f38cfe10e2a3472e   # same source
 mkdir -p "$WORK/out"
 
 echo "== patched copy of the submodule"
@@ -28,17 +28,18 @@ patch -p1 -s -d "$WORK/fleet" < "$ROOT/fleet/patches/gfx942.patch"
 patch -p1 -s -d "$WORK/fleet" < "$ROOT/fleet/patches/new_tasks.patch"
 cp "$ROOT"/fleet/tasks/mi300/*.cuh "$WORK/fleet/include/mirage/persistent_kernel/tasks/mi300/"
 
-echo "== composable_kernel at $CK_COMMIT and json $JSON_TAG"
-if [ ! -f "$WORK/ck/include/ck_tile/core.hpp" ]; then
-  rm -rf "$WORK/ck"; git init -q "$WORK/ck"
-  git -C "$WORK/ck" remote add origin https://github.com/ROCm/composable_kernel.git
-  git -C "$WORK/ck" fetch -q --depth 1 origin "$CK_COMMIT"
-  git -C "$WORK/ck" checkout -q FETCH_HEAD
-fi
-if [ ! -f "$WORK/json/include/nlohmann/json.hpp" ]; then
-  git clone -q --depth 1 --branch "$JSON_TAG" https://github.com/nlohmann/json.git "$WORK/json"
-fi
-mkdir -p "$WORK/fleet/deps" && rm -rf "$WORK/fleet/deps/json" && ln -s "$WORK/json" "$WORK/fleet/deps/json"
+echo "== composable_kernel at $CK_COMMIT and json at $JSON_COMMIT"
+fetch_dep() {
+  # $1 dir, $2 url, $3 commit, $4 a file that proves the checkout
+  if [ ! -f "$1/$4" ] || [ "$(git -C "$1" rev-parse HEAD 2>/dev/null)" != "$3" ]; then
+    rm -rf "$1"; git init -q "$1"
+    git -C "$1" remote add origin "$2"
+    git -C "$1" fetch -q --depth 1 origin "$3"
+    git -C "$1" checkout -q FETCH_HEAD
+  fi
+}
+fetch_dep "$WORK/ck" https://github.com/ROCm/composable_kernel.git "$CK_COMMIT" include/ck_tile/core.hpp
+fetch_dep "$WORK/json" https://github.com/nlohmann/json.git "$JSON_COMMIT" include/nlohmann/json.hpp
 
 echo "== $IMAGE (amd64; runs under emulation on Apple silicon)"
 docker pull -q --platform linux/amd64 "$IMAGE" >/dev/null
@@ -131,7 +132,7 @@ cat "$HERE/fences.txt"
 # One table per variant: every kernel's registers, spills, LDS, occupancy.
 {
   echo "# Offline gfx942 compile, $(date -u +%Y-%m-%dT%H:%M:%SZ), $(cat "$WORK/out/hipcc.txt" | tr '\n' ' ')"
-  echo "# fleet 51dce4f + gfx942.patch + new_tasks.patch; composable_kernel $CK_COMMIT; json $JSON_TAG"
+  echo "# fleet 51dce4f + gfx942.patch + new_tasks.patch; composable_kernel $CK_COMMIT; json $JSON_COMMIT"
   for v in mk_ours mk_ckfmha mk_debugscores kernel_tests kernel_tests_debug; do
     echo; echo "## $v (hipcc exit $(cat "$WORK/out/$v.rc"))"
     grep -E "Function Name|    VGPRs:|AGPRs|SGPRs Spill|VGPRs Spill|LDS Size|ScratchSize|Occupancy" "$WORK/out/$v.log" \

@@ -1,6 +1,6 @@
 # The Fleet venv (.venv-fleet): what `pip install -e .` of the submodule does
 # not bring in and our Fleet-side scripts need (harness/run_fleet.py,
-# fleet/kernel_tests.py, harness/compare.py, harness/measure.py).
+# fleet/tasks/kernel_tests.py, harness/compare.py, harness/measure.py).
 #
 # Fleet's own install_requires (repos/fleet-chiplet-megakernel/requirements.txt
 # at 51dce4f) pins transformers==4.57.1, z3-solver==4.15, accelerate==1.8.0,
@@ -16,6 +16,7 @@ numpy
 safetensors
 huggingface_hub[cli]
 cmake>=3.24
+z3-solver==4.15
 ninja
 cython
 pytest

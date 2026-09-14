@@ -33,9 +33,10 @@ Item L13 of `docs/design-doc/10-local-work.md`; the problems are
 - The `WarpGemmMfmaBf16Bf16F32M16N16K16TransposedCDistribution` name exists
   in `ck_tile/ops/gemm/warp/warp_gemm.hpp` at the CK commit Fleet pins
   (`d8ee107a`, line 238) and at `rocm-7.2.4` (line 201), and the patched
-  `linear_ck_mi300.cuh` compiles for gfx942 with it under ROCm 7.0's hipcc
-  (`env/offline_gfx942/README.md`, 2026-09-14). Both patches were compiled,
-  not only applied.
+  `linear_ck_mi300.cuh` parses for gfx942 with it under ROCm 7.0's hipcc
+  (`env/offline_gfx942/README.md`, 2026-09-14); the CK linear pipelines are
+  not instantiated there, so their device code is first generated on the
+  machine. Both patches were parsed by the real compiler, not only applied.
 
 ## `new_tasks.patch` (L6: the task-registration glue)
 

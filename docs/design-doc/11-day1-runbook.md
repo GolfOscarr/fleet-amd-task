@@ -3,8 +3,10 @@
 What to type in the first GPU session, in order, with the line that means
 PASS, the time box, and what to do on FAIL. It is `08-milestones.md` Day 1
 after the offline checks of 2026-09-14 (`env/offline_gfx942/README.md`),
-which moved three of the day's questions off the machine: the patched
-megakernel compiles and links for gfx942 with the ROCm 7.0 hipcc; CK's
+which moved three of the day's questions off the machine: every patched
+megakernel header parses and our kernels compile and link for gfx942 with
+the ROCm 7.0 hipcc (the CK linear pipelines are first instantiated on the
+machine); CK's
 split-KV FMHA cannot take a 576-wide QK head, so `mla_attend` is the spec
 kernel already in `fleet/tasks/mi300/` (DQ3 closed); and the agent-scope
 fence lowers to the expected cache-control instructions in the gfx942
@@ -27,7 +29,7 @@ Before the session, on the laptop: `bash env/preflight.sh` (all PASS) and
 | 6 | decision | gate 1 recorded in `PROGRESS.md`: build PASS, graph ran, reference and calibration done | 5 min | if the build or the graph run failed and an hour of fixing did not clear it: the fallback runtime of `08-milestones.md`, M2 only |
 
 Commit `env/check_day1.log`, `harness/ref/ref_run_meta.json`,
-`calibration.json`, `harness/results/route_analysis.json` and the setup log
+`harness/ref/calibration.json`, `harness/results/route_analysis.json` and the setup log
 summary before leaving the machine.
 
 ## Session 2 (M0 closed, M1: about 6 hours)

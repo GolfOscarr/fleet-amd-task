@@ -13,7 +13,7 @@ about 30 s per variant).
 
 `mk_tu.cu` is the translation unit the runtime's code generator would
 emit for our graph, written by hand: the standard-header preamble
-(`runtime.cc:693-713`), `persistent_kernel.cuh`, and the two dispatchers
+(`runtime.cc:696-713`), `persistent_kernel.cuh`, and the two dispatchers
 `_execute_task` / `_execute_gang_task` with the exact call code that the
 patched `task_register.cc` emits for the five new tasks at the model's
 dimensions. The compile flags are those of `persistent_kernel.py` for
@@ -24,8 +24,8 @@ what the day-1 Qwen3 smoke graph needs; exercises the patched CK block of
 
 Sources: the submodule at `51dce4f` plus `fleet/patches/gfx942.patch` and
 `new_tasks.patch`, our kernels copied in, `composable_kernel` at
-`d8ee107a` (the commit Fleet's other branches pin; `51dce4f` itself has no
-gitlink for it), nlohmann/json `v3.11.3`.
+`d8ee107a` and nlohmann/json at `8c391e04` (the commits Fleet's other
+branches pin; `51dce4f` itself has no gitlink for either).
 
 ## Result (2026-09-14, hipcc 7.0.51831, clang roc-7.0.0)
 
@@ -34,13 +34,13 @@ resource usage is in `resources.txt`, the fence census in `fences.txt`.
 
 | Kernel | VGPRs | VGPR spill | SGPR spill | LDS (static) | Occupancy |
 |---|---|---|---|---|---|
-| `worker_kernel` (runtime + our five tasks) | 182 | 0 | 74 | 2,256 B | 2 waves/SIMD |
+| `worker_kernel` (runtime + our five tasks) | 182 | 0 | 66 | 2,256 B | 2 waves/SIMD |
 | `scheduler_kernel` | 59 | 0 | 25 | 0 | 7 |
-| `mla_prep` alone | 61 | 0 | 0 | dynamic | 8 |
-| `mla_attend` alone | 63 | 0 | 0 | dynamic | 8 |
-| `mla_merge_uv` alone | 32 | 0 | 0 | dynamic | 8 |
-| `moe_router` alone | 78 | 0 | 0 | dynamic | 8 |
-| `kernel_tests` launcher, `k_mla_attend` (its largest) | 90 | 0 | 0 | dynamic | - |
+| `kernel_tests` launcher: `k_mla_prep` | 63 | 0 | 0 | dynamic | 8 |
+| `k_mla_attend` | 90 | 0 | 0 | dynamic | 5 |
+| `k_mla_merge_uv` | 32 | 0 | 0 | dynamic | 8 |
+| `k_moe_router` | 75 | 0 | 0 | dynamic | 6 |
+| `k_copy` | 6 | 0 | 0 | dynamic | 8 |
 
 The standalone launcher `fleet/tasks/kernel_tests_mi300.cu` also compiles
 and links to an executable in both variants with the build line of
@@ -49,19 +49,20 @@ build.
 
 What this settles and what it does not:
 
-- **MAJ-1, compile half.** The gfx942 build of every header the megakernel
-  includes, with the CK linears on the `16x16x16` warp GEMM substituted by
-  `gfx942.patch`, compiles. The `WarpGemmMfmaBf16Bf16F32M16N16K16TransposedCDistribution`
+- **MAJ-1, compile half.** Every header the megakernel includes parses for
+  gfx942, with the CK linears on the `16x16x16` warp GEMM substituted by
+  `gfx942.patch`; the CK linear templates are parsed, not instantiated (no
+  dispatcher calls them), so their device code is first generated on day 1. The `WarpGemmMfmaBf16Bf16F32M16N16K16TransposedCDistribution`
   name exists in CK at `d8ee107a` (`warp_gemm.hpp:238`) and at `rocm-7.2.4`.
   The cmake and cargo parts of `pip install -e .`, and running anything,
   stay for the machine.
 - **MIN-27.** The three gfx950-only items are the only ones: with the patch,
   no error remains in either variant.
 - **MAJ-4, static part.** The worker kernel's register union with our five
-  tasks is 182 VGPRs with no VGPR spills; the CK linears are compiled but
-  not linked into this dispatcher, so the real union is measured on day 2
+  tasks is 182 VGPRs with no VGPR spills; the CK linears are not instantiated
+  by this dispatcher, so the real union is measured on day 2
   from the generated `kernel_0.cu` with the same `-Rpass-analysis` flag.
-  The 74 SGPR spills are the runtime's, present without our tasks too.
+  The 66 SGPR spills are the runtime's, present without our tasks too.
 - **MAJ-3.** In the gfx942 assembly (`fences.txt`) the worker kernel carries
   `buffer_wbl2 sc1` (4 sites) and `buffer_inv sc1` (2 sites): the agent-scope
   release and acquire the design relies on, as the LLVM memory model says
@@ -70,7 +71,8 @@ What this settles and what it does not:
   sites), which come from the printf and assert hostcall paths and from
   `__threadfence()`; whether any sit on the per-task path is a day-2 look
   at the generated kernel, since a system-scope fence also writes back L2.
-  `s_getreg_b32 hwreg(HW_REG_XCC_ID, 0, 16)` is present once per kernel.
+  `s_getreg_b32 hwreg(HW_REG_XCC_ID, 0, 16)` appears once in the worker and
+  scheduler kernels and four times in `persistent_kernel`.
 - **DQ3 / MIN-28, by source.** Both CK split-KV pipelines
   (`block_fmha_fwd_splitkv_pipeline_qr_ks_vs.hpp:48` and the `nwarp_sshuffle`
   variant) `static_assert(kSubQKHeaddim <= 256)`, at `d8ee107a` and at

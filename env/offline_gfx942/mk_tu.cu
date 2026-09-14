@@ -36,7 +36,7 @@ void _execute_gang_task(TaskDesc const *task_desc, RuntimeConfig const &runtime_
     kernel::mla_attend_mi300_task_impl<bfloat16, 16, 512, 64, 1056>(
         task_desc->input_ptrs[0], task_desc->input_ptrs[1], task_desc->input_ptrs[2],
         task_desc->input_ptrs[3], task_desc->output_ptrs[0], runtime_config.step[0],
-        0.1147213867929261f, 32, 33, 5, 0, tile_idx,
+        0.1147213867929261f, 32, 33, 5, 4, tile_idx,   // offset rows = 33 / 8 (partials imap (0,-1,-1))
 #ifdef MLA_ATTEND_DEBUG_SCORES
         task_desc->output_ptrs[1]);
 #else
@@ -45,6 +45,6 @@ void _execute_gang_task(TaskDesc const *task_desc, RuntimeConfig const &runtime_
   } else if (task_desc->task_type == TASK_MLA_MERGE_UV_MI300 && task_desc->variant_id == 0) {
     kernel::mla_merge_uv_mi300_task_impl<bfloat16, 16, 128, 512>(
         task_desc->input_ptrs[0], task_desc->input_ptrs[1], task_desc->output_ptrs[0],
-        runtime_config.step[0], 32, 33, 5, 2, 0, 1, 1, tile_idx);
+        runtime_config.step[0], 32, 33, 2, 2, 0, 1, 1, tile_idx);   // tiles_per_xcd == heads_per_xcd == 2
   }
 }
