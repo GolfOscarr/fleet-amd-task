@@ -79,6 +79,12 @@ def load_model(args):
             config, trust_remote_code=True, torch_dtype=torch.bfloat16,
             attn_implementation="eager",
         )
+        # RMSNorm weights initialise to ones, which would hide any per-layer
+        # mix-up of norm weights; give every norm its own random weight
+        with torch.no_grad():
+            for name, mod in model.named_modules():
+                if type(mod).__name__ == "DeepseekV2RMSNorm":
+                    mod.weight.copy_(1.0 + 0.5 * torch.randn_like(mod.weight.float()).to(mod.weight.dtype))
     else:
         model = AutoModelForCausalLM.from_pretrained(
             args.model, trust_remote_code=True, torch_dtype=torch.bfloat16,
@@ -170,11 +176,13 @@ def rope_tables(model, seq_len):
     return cos[:seq_len].contiguous(), sin[:seq_len].contiguous()
 
 
-def latent_rows(model, kva, positions, cos, sin):
+def latent_rows(model, kva, positions, cos, sin, layers=None):
     """kv_a_proj output [1, s, 576] at `positions` -> (c_kv [s, 512], k_pe [s, 64]).
 
     Applies the model's own kv_a_layernorm and apply_rotary_pos_emb, in the
     model's dtype, exactly as the attention forward does (05-prefill-interface.md).
+    kva[i] belongs to layer layers[i] (default: layer i); each layer has its
+    own kv_a_layernorm weight.
     """
     from importlib import import_module
 
@@ -183,7 +191,9 @@ def latent_rows(model, kva, positions, cos, sin):
     layer0 = model.model.layers[0].self_attn
     d_c, d_r = layer0.kv_lora_rank, layer0.qk_rope_head_dim
     outs = []
-    for l, x in enumerate(kva):
+    layers = list(range(len(kva))) if layers is None else layers
+    assert len(layers) == len(kva)
+    for l, x in zip(layers, kva):
         at = model.model.layers[l].self_attn
         c, kpe = x.split([d_c, d_r], dim=-1)
         c = at.kv_a_layernorm(c)                         # [1, s, d_c]
@@ -222,7 +232,7 @@ def step0_boundaries(model, cap, pkv, l, pos, cos, sin, row=0):
     out["_selfcheck_b5_to_b6_max_abs_err"] = err
     # B3: the kv_a_proj row this step produced, after the model's norm and RoPE
     kva = cap.store[f"kva.L{l}"].reshape(1, 1, -1)                    # [1, 1, d_c + d_r]
-    c, kpe = latent_rows(model, [kva], pos_ids, cos, sin)[0]      # [1, d_c], [1, d_r]
+    c, kpe = latent_rows(model, [kva], pos_ids, cos, sin, layers=[l])[0]   # [1, d_c], [1, d_r]
     out["B3.c_kv"] = c[0]
     out["B3.k_pe"] = kpe[0]
     return out
