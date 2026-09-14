@@ -155,12 +155,12 @@ documented as blocked. **Decide end of day 1.**
 
 | Where | Count | Most urgent |
 |---|---|---|
-| `docs/mi300x/99-open-questions.md` | 12 open / 1 resolved | Q4 agent-scope fence emits right cache ops |
+| `docs/mi300x/99-open-questions.md` | 13 open / 1 resolved | Q4 agent-scope fence emits right cache ops |
 | `docs/deepseek-v2-lite/99-open-questions.md` | 6 open / 3 resolved | Q1 reassociation within tolerance (no GPU) |
 | `docs/fleet/99-open-questions.md` | 7 open / 2 resolved | **Q1 does it build on gfx942** |
 | `docs/acceleration/99-open-questions.md` | 4 open / 2 resolved | Q2 MFMA vs VALU at M=1 |
 | `docs/mla-decode/99-open-questions.md` | 5 open | Q1 is `P_split`=32 right |
-| **total** | **34 open / 8 resolved** | |
+| **total** | **35 open / 8 resolved** | |
 
 `OPEN-PROBLEMS.md` holds the consolidated, deduplicated view: **6 major /
 18 minor open / 14 resolved**, plus 9 documentation defects found in AMD and
