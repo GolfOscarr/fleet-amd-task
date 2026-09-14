@@ -3,7 +3,7 @@
 Fleet-style batch-1 decode for DeepSeek-Coder-V2-Lite-Base on one AMD MI300X.
 Time limit: 5 days. Target: gfx942, BF16, 1024-token prompt, 32 greedy tokens.
 
-Last updated: 2026-09-14 · branch `design/technical-spec` (from `main` at `11293d8`)
+Last updated: 2026-09-14 · branch `main` at the merge of PR #2
 
 **Where we are:** discovery complete (5 doc sets); the technical design is
 written and independently reviewed (`docs/design-doc/`, 14 files, one
@@ -92,7 +92,7 @@ Required as the **first deliverable**.
 - [x] `10-local-work.md`
 - [x] `README.md`, `99-open-questions.md`
 - [x] Independent review pass (17 findings, all confirmed against the source and fixed in `4d36f7a`)
-- [ ] Merge to `main`
+- [x] Merged to `main` (PR #2, merge commit `8e19aa6`)
 
 ---
 
