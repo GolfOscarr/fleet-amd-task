@@ -1,0 +1,21 @@
+# The Fleet venv (.venv-fleet): what `pip install -e .` of the submodule does
+# not bring in and our Fleet-side scripts need (harness/run_fleet.py,
+# fleet/kernel_tests.py, harness/compare.py, harness/measure.py).
+#
+# Fleet's own install_requires (repos/fleet-chiplet-megakernel/requirements.txt
+# at 51dce4f) pins transformers==4.57.1, z3-solver==4.15, accelerate==1.8.0,
+# torch>=2.4, cmake>=3.24, cython>=0.28 and tg4perfetto from git. transformers
+# 4.57.1 cannot run the DeepSeek checkpoint's remote modeling code
+# (DynamicCache.get_usable_length was removed after 4.46; verified locally,
+# 17 harness tests fail under 4.57.1), and the day-1 Qwen3 smoke graph needs
+# transformers >= 4.51. So the reference side lives in .venv with
+# env/requirements.txt (4.46.3) and the Fleet side here; the two never share
+# an interpreter. torch is installed from the ROCm wheel index by setup.sh
+# before this file.
+numpy
+safetensors
+huggingface_hub[cli]
+cmake>=3.24
+ninja
+cython
+pytest

@@ -58,27 +58,43 @@ ROCM_MM=$(echo "${ROCM_VER:-}" | cut -d. -f1,2)
 echo "ROCm version: ${ROCM_VER:-unknown} (major.minor ${ROCM_MM:-unknown})"
 
 # ---------------------------------------------------------------------------
-step "2. venv and Python packages"
+step "2. two venvs: .venv (reference, transformers 4.46.3) and .venv-fleet (Fleet, its own pins)"
+# Why two: the checkpoint's remote modeling code needs transformers 4.x up to
+# 4.46 (env/requirements.txt), while Fleet's install_requires pins 4.57.1 and
+# the day-1 Qwen3 smoke graph needs >= 4.51 (env/requirements-fleet.txt).
+# A single interpreter cannot hold both; nothing needs both at once.
 cd "$ROOT"
-if [ ! -x .venv/bin/python ]; then
-  python3 -m venv .venv
+# Fleet's README requires ROCm 7.0+ (repos/fleet-chiplet-megakernel/README.md).
+ROCM_MAJOR=$(echo "${ROCM_MM:-0}" | cut -d. -f1)
+if [ "${ROCM_MAJOR:-0}" -lt 7 ] 2>/dev/null; then
+  echo "WARNING: ROCm ${ROCM_VER:-unknown} is below the 7.0 Fleet requires; the build may still work, record the outcome"
 fi
-# shellcheck disable=SC1091
-source .venv/bin/activate
-python -m pip install -q --upgrade pip
-# PyTorch for ROCm: the wheel index is per ROCm major.minor; fall back to the
-# newest index we know if the exact one does not exist.
-TORCH_INDEX="https://download.pytorch.org/whl/rocm${ROCM_MM:-6.2}"
+# PyTorch for ROCm: the wheel index is per ROCm major.minor (rocm6.3, 6.4,
+# 7.0, 7.1, 7.2 all exist as of 2026-09); fall back to rocm7.0, the oldest
+# Fleet supports, if the exact one does not exist.
+TORCH_INDEX="https://download.pytorch.org/whl/rocm${ROCM_MM:-7.0}"
 if ! curl -sSf -o /dev/null "$TORCH_INDEX/torch/" 2>/dev/null; then
-  echo "WARNING: no PyTorch wheel index at $TORCH_INDEX for ROCm $ROCM_MM; falling back to rocm6.2"
+  echo "WARNING: no PyTorch wheel index at $TORCH_INDEX for ROCm $ROCM_MM; falling back to rocm7.0"
   echo "         (check https://pytorch.org/get-started/locally/ for the index matching ROCm $ROCM_MM)"
-  TORCH_INDEX="https://download.pytorch.org/whl/rocm6.2"
+  TORCH_INDEX="https://download.pytorch.org/whl/rocm7.0"
 fi
 echo "torch index: $TORCH_INDEX"
-python -m pip install --index-url "$TORCH_INDEX" torch
-python -m pip install -r env/requirements.txt "huggingface_hub[cli]" cmake ninja cython
-python -c "import torch; print('torch', torch.__version__, 'hip', torch.version.hip, 'cuda avail', torch.cuda.is_available(), torch.cuda.get_device_name(0) if torch.cuda.is_available() else '-')"
-python -c "import transformers; print('transformers', transformers.__version__)"
+
+make_venv() {
+  # $1 venv dir, $2 requirements file
+  if [ ! -x "$1/bin/python" ]; then
+    python3 -m venv "$1"
+  fi
+  "$1/bin/python" -m pip install -q --upgrade pip
+  "$1/bin/python" -m pip install --index-url "$TORCH_INDEX" torch
+  "$1/bin/python" -m pip install -r "$2"
+  "$1/bin/python" -c "import torch; print('$1: torch', torch.__version__, 'hip', torch.version.hip, 'cuda avail', torch.cuda.is_available(), torch.cuda.get_device_name(0) if torch.cuda.is_available() else '-')"
+}
+make_venv "$ROOT/.venv" "$ROOT/env/requirements.txt"
+"$ROOT/.venv/bin/python" -c "import transformers; print('.venv: transformers', transformers.__version__)"
+make_venv "$ROOT/.venv-fleet" "$ROOT/env/requirements-fleet.txt"
+# shellcheck disable=SC1091
+source "$ROOT/.venv/bin/activate"
 
 # ---------------------------------------------------------------------------
 step "3. model download (31 GB, background)"
@@ -98,9 +114,33 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-step "4. Fleet submodules (CK, cutlass, json, z3 are nested submodules of the Fleet repo)"
+step "4. Fleet dependencies under deps/ (not submodules at 51dce4f)"
+# .gitmodules lists composable_kernel, cutlass, json and z3, but the tree at
+# 51dce4f carries a gitlink for none of them (git ls-tree HEAD deps/ shows
+# only the vendored deps/rocblas), so `git submodule update` fetches nothing.
+# What the ROCm build actually reads: deps/composable_kernel/include (the
+# JIT compile line, persistent_kernel.py:293) and deps/json
+# (add_subdirectory in CMakeLists.txt:172). cutlass is CUDA-only there;
+# z3 comes from the z3-solver wheel in Fleet's install_requires.
+# The CK commit is the one Fleet's other branches pin (git ls-tree 58a33d8
+# deps/): d8ee107a. The patched headers and our kernels were compiled
+# offline for gfx942 against it (env/offline_gfx942/README.md).
+CK_COMMIT=d8ee107a47d8485dbcffc79eb08e4f7c39ea6335
+JSON_TAG=v3.11.3
 cd "$FLEET"
-git submodule update --init --recursive
+if [ ! -f deps/composable_kernel/include/ck_tile/core.hpp ]; then
+  rm -rf deps/composable_kernel
+  git init -q deps/composable_kernel
+  git -C deps/composable_kernel remote add origin https://github.com/ROCm/composable_kernel.git
+  git -C deps/composable_kernel fetch -q --depth 1 origin "$CK_COMMIT"
+  git -C deps/composable_kernel checkout -q FETCH_HEAD
+fi
+echo "composable_kernel: $(git -C deps/composable_kernel log -1 --format='%H %cd')"
+if [ ! -f deps/json/include/nlohmann/json.hpp ]; then
+  rm -rf deps/json
+  git clone -q --depth 1 --branch "$JSON_TAG" https://github.com/nlohmann/json.git deps/json
+fi
+echo "json: $(git -C deps/json describe --tags --always)"
 ls deps
 
 # ---------------------------------------------------------------------------
@@ -136,6 +176,11 @@ step "6. build Fleet for gfx942 (gate 1)"
 export AMDGPU_TARGETS=gfx942
 export MIRAGE_HOME="$FLEET"
 BUILD_LOG="$LOGDIR/build.$(date +%Y%m%d-%H%M%S).log"
+# Into the Fleet venv: its install_requires (transformers 4.57.1, z3-solver,
+# accelerate, tg4perfetto from git) must not touch the reference venv.
+deactivate 2>/dev/null || true
+# shellcheck disable=SC1091
+source "$ROOT/.venv-fleet/bin/activate"
 if AMDGPU_TARGETS=gfx942 python -m pip install -e . -v 2>&1 | tee "$BUILD_LOG"; then
   BUILD_OK=1
 else
@@ -149,9 +194,11 @@ echo "log:            $LOG"
 echo "build log:      $BUILD_LOG"
 echo "AMDGPU_TARGETS: gfx942"
 echo "MIRAGE_HOME:    $FLEET"
+echo "venvs:          .venv (run_reference.py, calibrate.py, reassoc_check.py, make_prompt.py)"
+echo "                .venv-fleet (run_fleet.py, kernel_tests.py, compare.py, measure.py, the Qwen3 smoke graph)"
 echo "export MIRAGE_HOME=$FLEET AMDGPU_TARGETS=gfx942 before running any graph: the compile"
 echo "step in persistent_kernel.py defaults --offload-arch to gfx950 (run_fleet.py sets it itself)"
-if [ "$BUILD_OK" = "1" ] && python -c "import mirage" 2>/dev/null; then
+if [ "$BUILD_OK" = "1" ] && "$ROOT/.venv-fleet/bin/python" -c "import mirage" 2>/dev/null; then
   echo "GATE 1: PASS - Fleet built for gfx942 and imports"
   echo "next: bash env/check_day1.sh"
 else
