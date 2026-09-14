@@ -140,6 +140,23 @@ def test_exact_checks(dirs):
     assert rows["head.B16.token"]["result"] == "FAIL"
 
 
+def test_b10_aligned_by_expert_id_and_nonlayer_keys(dirs):
+    ref_dir, fleet_dir, ref, ids, route, hidden = dirs
+    b = dict(ref)
+    b["L1.B9.topk_idx"] = torch.tensor([2, 5])             # the reference has [5, 2] / [0.4, 0.3]
+    b["L1.B10.topk_w"] = torch.tensor([0.3, 0.4])
+    b["prologue.embed"] = torch.randn(H).bfloat16()        # a run stopped after the embed
+    write_fleet(fleet_dir, b)
+    r = go(ref_dir, fleet_dir)
+    rows = by_key(r)
+    assert rows["L1.B9.topk_idx"]["result"] == "PASS"
+    assert rows["L1.B10.topk_w"]["result"] == "PASS" and rows["L1.B10.topk_w"]["rel_err"] == 0.0
+    b["L1.B9.topk_idx"] = torch.tensor([2, 6])
+    write_fleet(fleet_dir, b)
+    rows = by_key(go(ref_dir, fleet_dir))
+    assert rows["L1.B10.topk_w"]["result"] == "FAIL" and "expert sets differ" in rows["L1.B10.topk_w"]["detail"]
+
+
 def test_output_ids_and_route_log(dirs):
     ref_dir, fleet_dir, ref, ids, route, hidden = dirs
     bad_ids = list(ids)

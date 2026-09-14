@@ -19,6 +19,7 @@ Fleet-side files (written by run_fleet.py), all optional except the first:
 import argparse
 import json
 import math
+import re
 import sys
 from pathlib import Path
 
@@ -84,6 +85,14 @@ def compare_boundaries(ref: dict, fleet: dict, th: dict, floor: dict | None) -> 
             rows.append(row)
             continue
         a, b = fleet[key], ref[key]
+        if row["boundary"] == "B10":
+            # the weights are matched by expert id through the B9 tensors (the
+            # reference's top-k order is unspecified, the kernel's is by weight)
+            a, b, detail = align_by_ids(key, fleet, ref)
+            if detail:
+                row.update(result="FAIL", detail=detail)
+                rows.append(row)
+                continue
         if cls == "exact":
             ok, detail = exact_set(a, b) if row["boundary"] == "B9" else exact_scalar(a, b)
             row.update(result="PASS" if ok else "FAIL", detail=detail)
@@ -102,10 +111,24 @@ def compare_boundaries(ref: dict, fleet: dict, th: dict, floor: dict | None) -> 
     return rows
 
 
+def align_by_ids(key, fleet, ref):
+    """B10 weights of both sides reordered by expert id via their B9 tensors."""
+    k9 = key.replace(".B10.topk_w", ".B9.topk_idx")
+    if k9 not in fleet or k9 not in ref:
+        return fleet[key], ref[key], None
+    fa = dict(zip(fleet[k9].reshape(-1).tolist(), fleet[key].reshape(-1).float().tolist()))
+    rb = dict(zip(ref[k9].reshape(-1).tolist(), ref[key].reshape(-1).float().tolist()))
+    if set(fa) != set(rb):
+        return None, None, f"expert sets differ: fleet {sorted(fa)} ref {sorted(rb)}"
+    ids = sorted(rb)
+    return torch.tensor([fa[i] for i in ids]), torch.tensor([rb[i] for i in ids]), None
+
+
 def sort_key(key: str):
-    if key.startswith("head."):
-        return (10_000, key)
-    l = int(key.split(".")[0][1:])
+    m = re.match(r"^L(\d+)\.", key)
+    if not m:
+        return (10_000, key)              # head.* and any other non-layer key
+    l = int(m.group(1))
     b = common.boundary_id(key)
     return (l, int(b[1:]) if b.startswith("B") and b[1:].isdigit() else 99, key)
 

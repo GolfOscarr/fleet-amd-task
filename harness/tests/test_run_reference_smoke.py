@@ -123,6 +123,14 @@ def test_router_logits_match_topk(smoke):
         assert abs(float(p[e]) - float(b["L1.B10.topk_w"][k])) < 1e-6
 
 
+def test_topk_ordered_by_weight(smoke):
+    b = smoke["b"]
+    w = b["L1.B10.topk_w"].tolist()
+    assert w == sorted(w, reverse=True)
+    r0 = smoke["route"][0][0]
+    assert r0["w"] == sorted(r0["w"], reverse=True) and r0["idx"] == b["L1.B9.topk_idx"].tolist()
+
+
 def test_route_log_matches_boundaries(smoke):
     r0 = smoke["route"][0]           # step 0, all MoE layers
     b = smoke["b"]

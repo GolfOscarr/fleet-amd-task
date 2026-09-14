@@ -245,12 +245,20 @@ def first_row(v, n_rows):
     return v
 
 
+def ordered_topk(idx, w):
+    """torch.topk(sorted=False) leaves the order unspecified; order by descending
+    weight, lower expert id on ties, which is the order the Fleet router emits."""
+    pairs = sorted(zip(idx.tolist(), w.float().tolist()), key=lambda p: (-p[1], p[0]))
+    return [p[0] for p in pairs], [p[1] for p in pairs]
+
+
 def route_entry(model, cap, n_rows=1):
-    return [
-        {"idx": first_row(cap.store[f"route.L{l}"][0], n_rows)[0].tolist(),
-         "w": first_row(cap.store[f"route.L{l}"][1], n_rows)[0].float().tolist()}
-        for l in moe_layers(model)
-    ]
+    out = []
+    for l in moe_layers(model):
+        idx, w = ordered_topk(first_row(cap.store[f"route.L{l}"][0], n_rows)[0],
+                              first_row(cap.store[f"route.L{l}"][1], n_rows)[0])
+        out.append({"idx": idx, "w": w})
+    return out
 
 
 def capture_step0(model, cap, ids, P, layers, cos, sin, pkv, n_rows=1):
@@ -288,8 +296,9 @@ def capture_step0(model, cap, ids, P, layers, cos, sin, pkv, n_rows=1):
                 w_gate = model.model.layers[l].mlp.gate.weight
                 boundaries[f"L{l}.B8.router_logits"] = F.linear(h_in.float(), w_gate.float()).clone()
                 idx, w, _ = cap.store[f"route.L{l}"]
-                boundaries[f"L{l}.B9.topk_idx"] = idx[0].clone()
-                boundaries[f"L{l}.B10.topk_w"] = w[0].float().clone()
+                ids, ws = ordered_topk(idx[0], w[0])
+                boundaries[f"L{l}.B9.topk_idx"] = torch.tensor(ids, dtype=torch.int64)
+                boundaries[f"L{l}.B10.topk_w"] = torch.tensor(ws, dtype=torch.float32)
                 for e in range(cfg.n_routed_experts):
                     if e not in idx[0].tolist():
                         boundaries.pop(f"L{l}.B11.expert_{e}", None)
