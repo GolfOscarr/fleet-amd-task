@@ -39,13 +39,14 @@ safe provided the rescaling is done in FP32.
 | 8-way (one per XCD) | 128 | 128 | 144 KiB |
 | 16-way | 256 | 64 | 72 KiB |
 
-The **8-way split maps exactly onto the chiplet structure**: 128 units against
-296 workers, each XCD owning a contiguous 128-position slice of the cache. Each
-slice is 144 KiB against 4 MiB of XCD-local L2 — comfortably resident, which is
-the KV-residency opportunity noted in `../fleet/06-our-task-graph.md`.
+**Superseded.** The table above assumes parallelism = heads × splits. It does
+not, because all 16 heads share one KV read (the MQA property) and belong in a
+single block — `BLOCK_H = 16`. Parallelism therefore comes from **splits alone**,
+and the sizing has to weigh partial-buffer traffic against block count.
 
-A 16-way split gives 256 units, closer to full occupancy, at the cost of a
-deeper merge tree.
+`../mla-decode/04-our-kernel-spec.md` works this through and lands on
+**`P_split` = 32** (4 per XCD, 32 positions each), not 8. For contrast, vLLM's
+own heuristic would give **2** at S=1024.
 
 ## What it is worth
 

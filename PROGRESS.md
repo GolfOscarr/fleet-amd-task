@@ -27,6 +27,7 @@ Last updated: 2026-09-14 · branch `research/references-and-planning`
 - [x] `docs/fleet/` — paper review, task model, runtime, repo map, sync cross-check, task graph, gaps
 - [x] `docs/acceleration/` — precision, decode parallelism, kernel craft, ledger
 - [x] Achievable bandwidth band + memory-level-parallelism analysis (`docs/mi300x/07`)
+- [x] `docs/mla-decode/` — prior art survey + our MLA kernel spec (closes discovery)
 - [x] Correctness pass on every doc set
 
 **Key numbers:** 4,705.9 MiB/token · theoretical floor 931 µs · **realistic
@@ -36,7 +37,7 @@ floor, 630-740 µs realistic
 
 ---
 
-## Stage 2 — Design doc ⬜ not started
+## Stage 2 — Design doc ⬜ not started — **next**
 
 Required as the **first deliverable**. All inputs exist; this is assembly.
 
@@ -59,8 +60,8 @@ Required as the **first deliverable**. All inputs exist; this is assembly.
 - [ ] Read `gang_linear_mi300.cuh` + `ck_tile` idiom
 - [ ] Read `python/mirage/mpk/models/qwen3/` (template for our builder)
 - [ ] Read Mirage MPK paper (arXiv:2512.22219) + `persistent_kernel.cuh` main loop
-- [ ] Read vLLM / SGLang / AITER MLA decode kernels ← de-risks the core work
-- [ ] Split-KV partial-softmax numerics
+- [x] Read vLLM / AITER / FlashMLA MLA decode kernels → `docs/mla-decode/`
+- [x] Split-KV partial-softmax numerics (in `docs/mla-decode/04`)
 - [ ] Pick + tokenize the 1,024-token prompt, commit token IDs (recipe in `docs/deepseek-v2-lite` Q8)
 - [ ] HF reference: greedy decode (`do_sample=False`), dump per-boundary tensors
 - [ ] Calibrate BF16 noise floor → set correctness thresholds
@@ -126,6 +127,7 @@ documented as blocked. **Decide end of day 1.**
 | `docs/deepseek-v2-lite/99-open-questions.md` | 6 open / 3 resolved | Q1 reassociation within tolerance (no GPU) |
 | `docs/fleet/99-open-questions.md` | 7 open / 2 resolved | **Q1 does it build on gfx942** |
 | `docs/acceleration/99-open-questions.md` | 4 open / 2 resolved | Q2 MFMA vs VALU at M=1 |
+| `docs/mla-decode/99-open-questions.md` | 5 open | Q1 is `P_split`=32 right |
 
 See `OPEN-PROBLEMS.md` for the consolidated, deduplicated view.
 

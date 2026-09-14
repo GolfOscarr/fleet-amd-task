@@ -59,7 +59,7 @@ data-dependent stall in the layer**, and it is the thing most worth optimizing.
 | Task | Placement | Rationale |
 |---|---|---|
 | Dense projections (2, 3, 9, 13, 14) | **N-split across 8 XCDs** | Paper: N-split dominates at bs=1–16; no cross-XCD reduction |
-| MLA attention (7) | **split-KV: 128 of 1024 positions per XCD** | Only 16 heads × 1 query = 16 natural units vs 304 CUs; splitting the sequence is how we fill the machine |
+| MLA attention (7) | **split-KV, `P_split`=32: 4 splits per XCD, 32 positions each** | 16 heads share one KV read (MQA), so `BLOCK_H`=16 and parallelism comes from splits alone. Sizing in `../mla-decode/04-our-kernel-spec.md` |
 | Routed experts (15, 16) | round-robin expert→XCD per `gang_moe_linear_mi300` | Inherited; **but top-6 over 8 XCDs leaves 2 idle** — see below |
 | `lm_head` + argmax | N-split over 102,400 rows, 8 partial argmaxes, reduce | `argmax_mi300` exists |
 
@@ -74,10 +74,10 @@ smaller per-XCD tiles), or give 2 chiplets a second slice of the largest experts
 Worth measuring; this is a genuine adaptation question Fleet's dense evaluation
 never had to face.
 
-**2. The latent KV cache is small enough to pin.** Per layer it is 1.125 MB
-(`../deepseek-v2-lite/07-roofline.md`) against 4 MB per XCD. Under split-KV,
-each XCD holds 128 positions × 576 elements × 2 B = **144 KB** — trivially
-resident. Combined with Fleet's cache policy (weights streaming `sc1=1 nt=1`,
+**2. The latent KV cache is small enough to pin.** Per layer it is 1.125 MiB
+(`../deepseek-v2-lite/07-roofline.md`) against 4 MiB per XCD. Under split-KV at
+`P_split`=32, each XCD holds 4 splits × 32 positions × 576 × 2 B = **144 KiB** —
+trivially resident. Combined with Fleet's cache policy (weights streaming `sc1=1 nt=1`,
 activations `NT=1`), the KV slice should survive the weight stream. This is the
 one place our model has a locality opportunity Qwen3-8B did not, and it is worth
 an explicit experiment.

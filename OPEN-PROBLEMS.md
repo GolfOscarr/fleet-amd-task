@@ -3,7 +3,7 @@
 Consolidated index of everything unresolved, so a problem can be located without
 re-reading four doc sets. Detail lives in each set's `99-open-questions.md`.
 
-Last updated: 2026-09-14 · 6 major · **16 minor open** · 12 resolved · 9 documentation defects
+Last updated: 2026-09-14 · 6 major · **18 minor open** · 14 resolved · 9 documentation defects
 
 **When** — `local` = resolvable without a GPU · `gpu` = needs the MI300X ·
 `build` = needs a working toolchain
@@ -15,7 +15,7 @@ Last updated: 2026-09-14 · 6 major · **16 minor open** · 12 resolved · 9 doc
 | ID | Problem | Area | Where | When |
 |---|---|---|---|---|
 | **MAJ-1** | **Does the Fleet repo build and run on gfx942?** Defaults to gfx950; `AMDGPU_TARGETS=gfx942` untested. Gates extend-vs-reimplement. | Build / runtime | `docs/fleet` Q1 | build |
-| **MAJ-2** | **No MLA kernel exists.** Repo has GQA paged-attention only; the MLA decode Chiplet-task must be written from scratch. This is the core work. | Kernel | `docs/fleet` §07 G1 | local then gpu |
+| **MAJ-2** | **No MLA kernel exists.** Repo has GQA paged-attention only, and AITER's gfx942 path is hand-written ASM. The MLA decode Chiplet-task must be written from scratch — **spec now drafted** in `docs/mla-decode/04-our-kernel-spec.md`. | Kernel | `docs/mla-decode` · `docs/fleet` §07 G1 | local then gpu |
 | **MAJ-3** | **Does the agent-scope fence emit `buffer_wbl2 sc1` / `buffer_inv sc1`?** If not, cross-XCD reads go stale intermittently and present as a numerics bug. | Memory model | `docs/mi300x` Q4 · `docs/fleet` Q6 | build |
 | **MAJ-4** | **Register union / prefetch depth.** 1 wave/SIMD is *not* fatal — `VMCNT`=63 lets one wave hold many loads in flight, and only 4-8 are needed. But every inner loop must be unrolled to that depth (~32 VGPRs), additive across all tasks in the megakernel. | Occupancy | `docs/mi300x/07-achievable-bandwidth.md` · `docs/fleet` Q3 | build |
 | **MAJ-5** | **Dispatch overhead at our task sizes.** Our tasks are smaller than anything Fleet measured (158.5 vs 368 MB/layer, hidden 2048 vs 4096). Fleet warns short tasks make scheduling dominate. | Runtime | `docs/fleet` Q5 | gpu |
@@ -46,9 +46,11 @@ Last updated: 2026-09-14 · 6 major · **16 minor open** · 12 resolved · 9 doc
 |---|---|---|---|---|
 | MIN-10 | Runtime may hard-code MI350's 32 CUs/XCD; MI300X has 38. | Runtime | `docs/fleet` Q2 | build |
 | MIN-11 | Top-6 experts over 8 XCDs leaves **2 chiplets idle** during the 99 MB phase. | Scheduling | `docs/fleet` Q4 | gpu |
-| MIN-14 | MFMA vs VALU dot-product at M=1. Fleet uses `ck_tile` MFMA even at bs=1. | Kernel | `docs/acceleration` Q2 | build |
+| MIN-14 | MFMA vs VALU for the **weight** GEMVs (M=1). Settled for MLA attention: M=`BLOCK_H`=16 fills a 16×16 MFMA tile, and vLLM ships `matrix_instr_nonkdim: 16`. | Kernel | `docs/acceleration` Q2 · `docs/mla-decode` Q2 | build |
 | MIN-15 | Split-KV value estimated at ~114 µs from a crude CU-count ratio. | Attention | `docs/acceleration` Q5 | gpu |
 | MIN-21 | **HBM load-to-use latency unknown.** No published figure found (ACM 403; Chips and Cheese gives only Infinity Cache ≈218 ns). Does not block the MLP analysis, which holds across 250 ns-2 µs. | Memory | `docs/mi300x/07-achievable-bandwidth.md` | gpu |
+| MIN-23 | **`P_split`=32 is chosen from a traffic model, not measured.** Attention may cost 5-7 µs/layer (13-17% of budget) or much less. One constant to sweep. | Attention | `docs/mla-decode` Q1 | gpu |
+| MIN-24 | **32 KiB FP32 accumulator vs 64 KiB LDS.** `o_acc` at BLOCK_H=16 × 512 × 4 B is half the LDS budget before staging `ql_nope`. | Kernel | `docs/mla-decode` Q3 | build |
 | MIN-22 | **`VMCNT`=63 is necessary, not sufficient.** Per-CU miss-queue (MSHR) and L2 request-queue depths are undocumented and could bind before the wave-level limit. One unroll-depth sweep settles it. | Memory | `docs/mi300x` Q14 | gpu |
 | MIN-16 | Cost of `buffer_inv sc1` / `buffer_wbl2 sc1` — sets task-graph granularity. | Memory model | `docs/mi300x` Q5 | gpu |
 | MIN-17 | Cooperative launch overhead (known ROCm slowdown issue #3410). | Runtime | `docs/mi300x` Q7 | gpu |
@@ -97,6 +99,8 @@ Not our bugs — but each one could mislead us, so they are recorded.
 | ✅ MIN-12 | Split-KV merge kernel | Reuse `merge_splitkv_ck_fmha`; rewrite the GQA-paged wrapper. `docs/fleet` Q8 |
 | ✅ MIN-13 | KV-cache append kernel | Paged GQA, not reusable — write our own (~30 lines). Take its 3-phase decomposition and the ~3.8K-cycle cost anchor. `docs/fleet` Q9 |
 | ✅ | Can 1 wave/SIMD saturate HBM? | **Yes, subject to MIN-22.** `VMCNT` is 6 bits (63 outstanding loads/wave); only 2-4 are needed. Not a ceiling — a loop-structure requirement. `docs/mi300x/07-achievable-bandwidth.md` |
+| ✅ | Is runtime reassociation the right MLA form? | **Yes** — it is what vLLM does (`einsum`/`bmm` against `W_UK`/`W_UV` at runtime, never fused). `docs/mla-decode/02-kernel-anatomy.md` |
+| ✅ | Is our split KV-cache layout right? | **Yes** — `BLOCK_DMODEL=512` and `BLOCK_DPE=64` are separate tiles everywhere; AITER flattens paged caches to `page_size=1`. `docs/mla-decode` Q4 |
 | ✅ | What bandwidth is actually achievable? | **3.66-4.3 TB/s (69-81%)**. AMD's Dot acceptance threshold and BabelStream peak. Realistic BF16 target 1.15-1.35 ms/token. |
 
 ---

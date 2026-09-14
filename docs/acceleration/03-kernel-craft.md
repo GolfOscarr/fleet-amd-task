@@ -2,9 +2,16 @@
 
 Lever-B detail: how to make the bytes arrive as fast as the hardware allows.
 
-## MFMA is the wrong tool at M=1
+## MFMA at M=1 — true for weight GEMVs, false for MLA attention
 
-Our GEMVs are `[1,2048] × [2048,N]`. The smallest BF16 matrix instruction is
+**Scope this claim carefully.** It applies to the *weight* GEMVs — `q_proj`,
+`o_proj`, the dense MLP, and the expert projections — where M = batch = 1. It
+does **not** apply to MLA attention, where M = `BLOCK_H` = 16 query heads
+sharing one KV read, which fills a 16×16 MFMA tile exactly. vLLM ships
+`matrix_instr_nonkdim: 16` for its ROCm MLA decode. See
+`../mla-decode/03-design-choices.md` Q6.
+
+For the weight GEMVs, `[1,2048] × [2048,N]`. The smallest BF16 matrix instruction is
 `V_MFMA_F32_16X16X16_BF16`, which computes a 16×16 output tile. With M=1,
 **15 of 16 output rows are wasted** — we would be issuing matrix instructions at
 1/16 utilization.
