@@ -127,7 +127,7 @@ Resolvable now, without the GPU: MIN-1, MIN-2, MIN-4, MIN-5, MIN-6 (`OPEN-PROBLE
 
 Branch `local/harness`. Every item has a check that runs here; the GPU-only
 ones are written to be run on day 1 (`docs/design-doc/10-local-work.md`).
-Test suite: `.venv/bin/python -m pytest harness/tests fleet/tests -q` (65 tests).
+Test suite: `.venv/bin/python -m pytest harness/tests fleet/tests -q` (66 tests).
 
 - [x] Read `gang_attention_merge_mi300.cuh` and `kv_cache_update_mi300.cuh` (both GQA-paged; merge math reusable, append is not)
 - [x] Read `gang_linear_mi300.cuh` + `ck_tile` idiom → `docs/fleet/04-repo-map.md` (worker contract, inner GEMV tiers, CK FMHA path, gfx950-only code)
@@ -150,7 +150,7 @@ Test suite: `.venv/bin/python -m pytest harness/tests fleet/tests -q` (65 tests)
 - [x] **L8** `harness/calibrate.py` (script; the floor itself needs the GPU) · **L14** `harness/route_analysis.py`
 - [ ] Calibrate BF16 noise floor and log expert routing on the machine: `run_reference.py`, then `calibrate.py` and `route_analysis.py` (MIN-2, MIN-6)
 - [x] Independent review of the branch against the Fleet source, the HF modeling file and the design docs: 1 blocker (`AMDGPU_TARGETS` unset, so the megakernel compiled for gfx950), 3 major (layer-1 B3 normalized with layer 0's weight; the B5 debug-scores path unreachable; B10 compared element-wise against an unordered `topk`), 5 minor; all fixed in separate commits, MIN-30 and MIN-31 closed by source inspection
-- [x] `fleet/tasks/kernel_tests.py` + `kernel_tests_mi300.cu` (07-correctness.md harness table): a standalone HIP launcher that runs each new kernel in isolation on random inputs against `numpy_ref.py`, plus 1 split versus 33 splits; `--dry-run` exercises the plumbing here (11 tests), the launcher compiles and links for gfx942 offline in both variants; the run itself is day 2
+- [x] `fleet/tasks/kernel_tests.py` + `kernel_tests_mi300.cu` (07-correctness.md harness table): a standalone HIP launcher that runs each new kernel in isolation on random inputs against `numpy_ref.py`, plus 1 split versus 33 splits; `--dry-run` exercises the plumbing here (12 tests, including a Python-to-C++ contract test parsed from the launcher), the launcher compiles and links for gfx942 offline in both variants; the run itself is day 2
 
 **GPU-readiness pass (`local/gpu-ready`, 2026-09-14):**
 

@@ -123,7 +123,7 @@ imaps of `build_graph.py` imply (`partials` by `n_splits / 8` rows for
 `persistent_kernel.py` passes on its ROCm path):
 
 ```
-hipcc --offload-arch=gfx942 -O2 -std=c++17 \
+mkdir -p fleet/tasks/build && hipcc --offload-arch=gfx942 -O2 -std=c++17 \
   -D__HIP_PLATFORM_AMD__=1 -DMIRAGE_AMD_MI300 -DMIRAGE_BACKEND_USE_ROCM -DMPK_TARGET_CC=94 -DMODE_ONLINE \
   -I fleet -I $FLEET/include -I $FLEET/include/mirage/persistent_kernel \
   fleet/tasks/kernel_tests_mi300.cu -o fleet/tasks/build/kernel_tests
@@ -150,13 +150,17 @@ through both the attend and the merge kernel). Tolerances, argued in the
 driver's header comment: bit-exact for the RoPE outputs, the router's
 selection (derived from the kernel's own FP32 logits, so a near tie cannot
 fail it), the copy and the untouched entries; `rel_err <= 1e-4` for FP32
-accumulations; one BF16 ulp per element and `rel_err <= 2e-3` for
-BF16-stored accumulations; `5e-3` on the attention partials (the BF16
-probabilities) and `1e-2` for the one-versus-33-splits comparison (the
-probabilities are rounded at different running maxima). Results go to
+accumulations; one BF16 ulp of each element (plus a noise floor of
+`1e-5 max|ref|` for near-zero elements) and `rel_err <= 2e-3` for
+BF16-stored accumulations; `5e-4` on the attention partials (exact BF16
+products, FP32 summation order only) and `1e-2` for the
+one-versus-33-splits comparison (the probabilities are rounded at
+different running maxima). Results go to
 `fleet/tasks/results/kernel_tests.json`; `--dry-run` runs the whole
-pipeline with the references standing in for the binary
-(`fleet/tests/test_kernel_tests.py`).
+pipeline with the references standing in for the binary and writes
+`kernel_tests_dryrun.json` instead, which is gitignored
+(`fleet/tests/test_kernel_tests.py`, which also checks the tensor and
+parameter tables of the two files against each other).
 
 ## Deliberately left for the GPU
 

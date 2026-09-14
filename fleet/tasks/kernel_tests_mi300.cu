@@ -18,7 +18,7 @@
  * Build, from the repository root, FLEET = repos/fleet-chiplet-megakernel
  * (the -I order makes fleet/tasks/mi300 win over a copy under FLEET):
  *
- *   hipcc --offload-arch=gfx942 -O2 -std=c++17 \
+ *   mkdir -p fleet/tasks/build && hipcc --offload-arch=gfx942 -O2 -std=c++17 \
  *     -D__HIP_PLATFORM_AMD__=1 -DMIRAGE_AMD_MI300 -DMIRAGE_BACKEND_USE_ROCM \
  *     -DMPK_TARGET_CC=94 -DMODE_ONLINE \
  *     -I fleet -I $FLEET/include -I $FLEET/include/mirage/persistent_kernel \

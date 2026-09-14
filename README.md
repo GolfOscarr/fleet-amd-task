@@ -72,7 +72,7 @@ XCDs ([`docs/design-doc/00-decisions.md`](docs/design-doc/00-decisions.md), D6).
 **Discovery, design and the local harness are complete and reviewed;
 the GPU days have not started.** The design is in
 [`docs/design-doc/`](docs/design-doc/README.md); everything that runs
-without the MI300X is written, tested (65 tests) and, for the GPU code,
+without the MI300X is written, tested (66 tests) and, for the GPU code,
 compiled for `gfx942` offline with the ROCm 7.0 compiler.
 
 | | |

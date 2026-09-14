@@ -74,26 +74,76 @@ def test_trial_files_and_shapes(tmp_path):
     assert K.QKVA == 3648 and K.N_SPLITS == 33 and K.TILES_PER_XCD == 5 and K.ROUTE_SHAPE == (32, 26, 8)
 
 
-def cu_tables():
-    """name -> [(tensor, output)] parsed from the Spec tables of kernel_tests_mi300.cu."""
-    src = CU.read_text()
-    tables = {}
-    for m in re.finditer(r"static const Spec SPEC_(\w+)\[\] = \{(.*?)\};", src, re.S):
-        entries = re.findall(r'\{"(\w+)",\s*[^,]+,\s*(true|false)\}', m.group(2))
-        tables[m.group(1).lower()] = [(n, o == "true") for n, o in entries]
-    return tables
+class Launcher:
+    """The Python-facing contract parsed out of kernel_tests_mi300.cu: the constexpr
+    dims, the Spec tables (name, byte-count expression, output flag), the dynamic
+    byte counts a run_* function sets, and the params.txt names it reads."""
+
+    def __init__(self, src):
+        self.consts = {}
+        for m in re.finditer(r"^constexpr int ([^;]*);", src, re.M):
+            for decl in m.group(1).split(","):
+                name, expr = (x.strip() for x in decl.split("="))
+                if "::" not in expr:
+                    self.consts[name] = self.evaluate(expr)
+        self.tables = {}
+        for m in re.finditer(r"static const Spec SPEC_(\w+)\[\] = \{(.*?)\};", src, re.S):
+            entries = re.findall(r'\{"(\w+)",\s*([^,]+),\s*(true|false)\}', m.group(2))
+            self.tables[m.group(1).lower()] = [(n, self.evaluate(e), o == "true") for n, e, o in entries]
+        m = re.search(r'SPEC_MLA_ATTEND_SCORES = \{"(\w+)", ([^,]+), (true|false)\};', src)
+        self.scores = (m.group(1), self.evaluate(m.group(2)), m.group(3) == "true")
+        self.runs = {}
+        for m in re.finditer(r"^void run_(\w+)\(std::string const &dir\) \{(.*?)^\}", src, re.M | re.S):
+            body = m.group(2)
+            self.runs[m.group(1)] = {
+                "required": set(re.findall(r'\bparam\(p, "(\w+)"\)', body)),
+                "optional": set(re.findall(r'\bparam_or\(p, "(\w+)"', body)),
+                "dynamic": {int(i): e for i, e in re.findall(r"b\.specs\[(\d+)\]\.bytes = ([^;]+);", body)},
+            }
+
+    def evaluate(self, expr, **names):
+        # integer arithmetic on the launcher's own constants; the expression comes
+        # from the checked-in .cu and is restricted to identifiers and + - * / ( )
+        expr = expr.replace("(size_t)", "")
+        assert re.fullmatch(r"[\w\s()+*/-]+", expr), expr
+        return int(eval(expr, {"__builtins__": {}}, {**self.consts, **names}))
 
 
-def test_tensor_tables_match_the_launcher():
-    tables = cu_tables()
-    assert set(tables) == set(K.KERNELS)
+def python_bytes(spec):
+    return int(np.prod(spec.shape)) * K.FILE_DTYPE[spec.dtype].itemsize
+
+
+def test_launcher_contract():
+    L = Launcher(CU.read_text())
+    assert L.consts["QKVA"] == K.QKVA and L.consts["S_MAX"] == K.S_MAX and L.consts["N_TOTAL"] == K.N_TOTAL
+    assert (L.consts["ROUTE_STEPS"], L.consts["ROUTE_LAYERS"], L.consts["N_SLOTS"]) == K.ROUTE_SHAPE
+    assert set(L.tables) == set(K.KERNELS) == set(L.runs)
     for name, kernel in K.KERNELS.items():
-        _, params = kernel.make(np.random.default_rng(0))
-        assert tables[name] == [(s.name, s.out) for s in kernel.tensors(params)], name
-    # the debug build's extra output
-    assert re.search(r'SPEC_MLA_ATTEND_SCORES = \{"scores",', CU.read_text())
-    _, params = K.make_mla_attend_scores(np.random.default_rng(0))
-    assert K.tensors_mla_attend(params)[-1].name == "scores"
+        for make in ([kernel.make] + ([K.make_mla_attend_scores] if name == "mla_attend" else [])):
+            _, params = make(np.random.default_rng(0))
+            specs = kernel.tensors(params)
+            table = list(L.tables[name])
+            if params.get("debug_scores"):
+                table.append(L.scores)
+            # names, order and output flags
+            assert [(n, o) for n, _, o in table] == [(s.name, s.out) for s in specs], name
+            # byte counts: static from the table, dynamic from the run_* body
+            run = L.runs[name]
+            for i, (spec, (_, size, _)) in enumerate(zip(specs, table)):
+                if i in run["dynamic"]:
+                    size = L.evaluate(run["dynamic"][i], n_splits=params["n_splits"])
+                assert size == python_bytes(spec), (name, spec.name, size, python_bytes(spec))
+            # every param the binary requires is written, and everything written is read
+            assert run["required"] <= set(params), (name, run["required"] - set(params))
+            assert set(params) <= run["required"] | run["optional"], (name, set(params) - run["required"])
+    # the 1-split launch of mla_attend_splits reuses the same contract
+    p1 = K.attend_params(1030, split=K.S_MAX, n_splits=1)
+    assert L.evaluate(L.runs["mla_attend"]["dynamic"][4], n_splits=1) == python_bytes(K.tensors_mla_attend(p1)[4])
+
+
+def test_dry_run_output_is_gitignored():
+    assert K.DEFAULT_OUT_DRY.name == "kernel_tests_dryrun.json" and K.DEFAULT_OUT.name == "kernel_tests.json"
+    assert "fleet/tasks/results/*_dryrun.json" in (ROOT / ".gitignore").read_text().splitlines()
 
 
 # ----------------------------------------------------------------------------
@@ -124,9 +174,14 @@ def test_rows():
     assert K.row_bf16("x", got, exp)["ok"]
     got[7] = bf1(exp[7] + abs(exp[7]) * 2 ** -8)                  # one BF16 ulp up
     assert got[7] != exp[7] and K.row_bf16("x", got, exp)["ok"]
-    j = int(np.argmax(np.abs(exp)))                              # the ulp bound is 2^-7 max|exp|
-    got[j] = bf1(exp[j] * (1 + 4 * 2 ** -8))                      # four ulps on the largest element
+    got[7] = bf1(exp[7] * (1 + 4 * 2 ** -8))                      # four ulps of that element
     assert not K.row_bf16("x", got, exp)["ok"]
+    got = exp.copy()
+    k = int(np.argmin(np.abs(exp)))                              # a small element: its own ulp, not the array's
+    got[k] = bf1(exp[k] + 0.02 * np.abs(exp).max())
+    assert K.metrics(got, exp)["rel_err"] < K.BF16_REL and not K.row_bf16("x", got, exp)["ok"]
+    got[k] = exp[k] + 0.5 * K.BF16_ABS_FLOOR * np.abs(exp).max()  # within the noise floor
+    assert K.row_bf16("x", got, exp)["ok"]
     got = exp.copy()
     got[3] = np.nan                                              # an unwritten sentinel
     assert not K.row_exact("x", got, exp)["ok"] and not K.row_bf16("x", got, exp)["ok"]
@@ -175,6 +230,12 @@ def test_dry_run_all_tests(tmp_path):
         if name != "mla_attend_splits":
             for o, m in t["outputs"].items():
                 assert m["max_abs_err"] == 0.0 and m["rel_err"] == 0.0, (name, o)
+                assert abs(m["cos_sim"] - 1.0) < 1e-12, (name, o)      # FP64 rounding of the norms
+        for f in t["failures"]:
+            assert "cos_sim" in f
+    # every row carries compare.py's three metrics
+    row = K.row_rel("r", np.ones(4), np.ones(4), 1e-4)
+    assert {"max_abs_err", "rel_err", "cos_sim"} <= set(row) and row["cos_sim"] == 1.0
     splits = res["tests"]["mla_attend_splits"]["outputs"]
     assert 0 < splits["attn: 33 splits vs 1 split"]["rel_err"] < K.SPLITS_REL
     # the trial directories are what the binary would read

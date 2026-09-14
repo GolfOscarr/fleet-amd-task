@@ -4,6 +4,7 @@
     python fleet/tasks/kernel_tests.py [--n 100] [--seed 0] [--kernel NAME ...]
         [--bin fleet/tasks/build/kernel_tests] [--bin-debug fleet/tasks/build/kernel_tests_debug]
         [--dry-run] [--work-dir DIR] [--keep] [--out fleet/tasks/results/kernel_tests.json]
+    (--dry-run writes fleet/tasks/results/kernel_tests_dryrun.json, which is gitignored)
 
 The kernel_tests.py row of docs/design-doc/07-correctness.md. The binary is
 fleet/tasks/kernel_tests_mi300.cu (build line in its header); it launches one
@@ -74,6 +75,9 @@ FORCED = tuple(range(D.E, D.E + G.N_FORCED))
 DEFAULT_BIN = ROOT / "fleet/tasks/build/kernel_tests"
 DEFAULT_BIN_DEBUG = ROOT / "fleet/tasks/build/kernel_tests_debug"
 DEFAULT_OUT = ROOT / "fleet/tasks/results/kernel_tests.json"
+DEFAULT_OUT_DRY = ROOT / "fleet/tasks/results/kernel_tests_dryrun.json"     # gitignored
+BUILD_HINT = ("build it from the repository root with the line in its header, starting with "
+              "'mkdir -p fleet/tasks/build && hipcc ...' (fleet/tasks/README.md), or use --dry-run")
 
 # Tolerances, on the metrics of harness/compare.py (rel_err = ||a - b|| / ||b||).
 #
@@ -92,15 +96,26 @@ DEFAULT_OUT = ROOT / "fleet/tasks/results/kernel_tests.json"
 # bf16   BF16-stored outputs of FP32 accumulations (c_kv row, ql_nope, attn).
 #        The FP32 sums differ by ~1e-6 relative, which flips the final BF16
 #        rounding of an element with probability ~1e-6 / 2^-8 = 3e-4; a flip
-#        is exactly one BF16 ulp, at most 2^-7 |v|. A handful of flips among
-#        512..8192 elements keeps rel_err near 1e-4, so the bounds are
-#        max_abs_err <= 2^-7 max|ref| and rel_err <= 2e-3.
-# partials  The probabilities are rounded to BF16 in the kernel and the
-#        reference, so FP32 noise in a score flips a BF16 probability with
-#        probability ~5e-4; a flip moves that head's normalized output by
-#        2^-8 p_max, ~1e-3 relative in the worst case for random inputs
-#        (p_max ~ 0.2), diluted over the array: 5e-3 on o. lse = m + ln(l)
-#        sums the unrounded probabilities: 1e-4 absolute.
+#        is exactly one BF16 ulp of that element, at most 2^-7 |v|, so the
+#        bound is per element: |got - ref| <= 2^-7 |ref| + 1e-5 max|ref|.
+#        The absolute floor is for near-zero elements, where the FP32 noise
+#        (absolute, ~1e-6 of the output scale) exceeds their own ulp; it stays
+#        below the ulp of any element above 1e-2 of the array maximum. A
+#        handful of flips among 512..8192 elements keeps rel_err near 1e-4,
+#        hence rel_err <= 2e-3.
+# partials  Both operands of the score dot are BF16, so every product is
+#        exact in FP32 and the only difference to NumPy is the order of the
+#        576-term sum: ~1e-6 relative on a score, hence on exp(s - m). The
+#        probabilities are rounded to BF16 in the kernel and the reference
+#        alike, and a rounding flips only when the FP32 value lies within that
+#        1e-6 of a boundary, so flips are rare and a flip moves one split-head
+#        by 2^-8 q_i, diluted over the [n_splits, 16, 512] array. An emulation
+#        of the kernel's sequential order measured rel_err 1.1e-6 on o and
+#        3.8e-6 absolute on lse (review of this harness); 5e-4 on o is two
+#        decades above that and three below an indexing error. A FAIL with
+#        max_abs_err ~1e-3 on a single split-head and rel_err just above the
+#        bound is a probability flip on a dominant position, not an indexing
+#        error. lse = m + ln(l) sums the unrounded probabilities: 1e-4 absolute.
 # splits The one-split kernel rounds every probability at its running maximum
 #        of the pass, the 33-split path and NumPy's single pass at the final
 #        one, so every probability may differ by one BF16 ulp: 2^-9 relative
@@ -108,8 +123,9 @@ DEFAULT_OUT = ROOT / "fleet/tasks/results/kernel_tests.json"
 #        same comparison between the two NumPy paths.
 F32_REL = 1e-4
 BF16_REL = 2e-3
-BF16_ULP = 2.0 ** -7
-PARTIALS_O_REL = 5e-3
+BF16_ULP = 2.0 ** -7     # one BF16 ulp of v is at most 2^-7 |v|
+BF16_ABS_FLOOR = 1e-5    # times max|ref|: the FP32 accumulation noise, for near-zero elements
+PARTIALS_O_REL = 5e-4
 LSE_ABS = 1e-4
 SPLITS_REL = 1e-2
 NEAR_TIE = 1e-4          # logit gap below which the reference's own top-k is ambiguous
@@ -201,7 +217,7 @@ def _row(output, kind, threshold, got, exp, ok, note=""):
     if "shape_mismatch" in m:
         row.update(ok=False, note=f"shape mismatch {m['shape_mismatch']}")
         return row
-    row.update(max_abs_err=m["max_abs_err"], rel_err=m["rel_err"])
+    row.update(max_abs_err=m["max_abs_err"], rel_err=m["rel_err"], cos_sim=m["cos_sim"])
     if note:
         row["note"] = note
     return row
@@ -228,10 +244,16 @@ def row_abs(output, got, exp, threshold):
 
 
 def row_bf16(output, got, exp, threshold=BF16_REL):
-    """A BF16-stored FP32 accumulation: rel_err bound and at most one ulp per element."""
+    """A BF16-stored FP32 accumulation: rel_err bound, and per element at most one
+    BF16 ulp of that element plus the absolute noise floor (a global bound on
+    max|ref| would let a small element hide a large relative error)."""
     m = metrics(got, exp)
-    ulp = BF16_ULP * float(np.abs(np.asarray(exp, np.float64)).max()) if np.size(exp) else 0.0
-    ok = "shape_mismatch" not in m and m["rel_err"] <= threshold and m["max_abs_err"] <= ulp
+    g, e = np.asarray(got, np.float64), np.asarray(exp, np.float64)
+    within = False
+    if "shape_mismatch" not in m:
+        floor = BF16_ABS_FLOOR * float(np.abs(e).max()) if e.size else 0.0
+        within = bool(np.all(np.abs(g - e) <= BF16_ULP * np.abs(e) + floor))   # NaN fails
+    ok = within and m["rel_err"] <= threshold
     return _row(output, "bf16", threshold, got, exp, ok)
 
 
@@ -581,10 +603,13 @@ def summarize(name, trial_rows):
     for i, rows in enumerate(trial_rows):
         for r in rows:
             o = outputs.setdefault(r["output"], {"kind": r["kind"], "threshold": r["threshold"],
-                                                 "max_abs_err": 0.0, "rel_err": 0.0, "fails": 0, "notes": []})
+                                                 "max_abs_err": 0.0, "rel_err": 0.0, "cos_sim": 1.0,
+                                                 "fails": 0, "notes": []})
             for k in ("max_abs_err", "rel_err"):
                 if k in r and not (r[k] <= o[k]):          # NaN counts as worse
                     o[k] = r[k]
+            if "cos_sim" in r and not (r["cos_sim"] >= o["cos_sim"]):   # the worst cosine, same rule
+                o["cos_sim"] = r["cos_sim"]
             if not r["ok"]:
                 o["fails"] += 1
                 if len(failures) < 20:
@@ -710,7 +735,9 @@ def main(argv=None):
     ap.add_argument("--dry-run", action="store_true", help="no binary: the references stand in for the kernels")
     ap.add_argument("--work-dir", default=None, help="trial directories (default: a temporary directory)")
     ap.add_argument("--keep", action="store_true", help="keep the trial directories")
-    ap.add_argument("--out", default=str(DEFAULT_OUT))
+    ap.add_argument("--out", default=None,
+                    help=f"results JSON (default: {DEFAULT_OUT.relative_to(ROOT)}, "
+                         f"{DEFAULT_OUT_DRY.relative_to(ROOT)} for --dry-run)")
     args = ap.parse_args(argv)
 
     names = args.kernel or list(TESTS)
@@ -718,8 +745,7 @@ def main(argv=None):
     if not args.dry_run:
         binary, binary_debug = Path(args.bin), Path(args.bin_debug)
         if not binary.exists():
-            sys.exit(f"no binary at {binary}: build fleet/tasks/kernel_tests_mi300.cu (line in its header), "
-                     f"or --dry-run")
+            sys.exit(f"no binary at {binary} (the compiled fleet/tasks/kernel_tests_mi300.cu): {BUILD_HINT}")
         if not binary_debug.exists():
             binary_debug = None
     work = Path(args.work_dir) if args.work_dir else Path(tempfile.mkdtemp(prefix="kernel_tests."))
@@ -730,7 +756,7 @@ def main(argv=None):
               "binary": None if args.dry_run else str(binary),
               "binary_debug": None if args.dry_run or binary_debug is None else str(binary_debug),
               "tolerances": {"f32_rel": F32_REL, "bf16_rel": BF16_REL, "bf16_ulp": BF16_ULP,
-                             "partials_o_rel": PARTIALS_O_REL, "lse_abs": LSE_ABS, "splits_rel": SPLITS_REL},
+                             "bf16_abs_floor": BF16_ABS_FLOOR, "partials_o_rel": PARTIALS_O_REL, "lse_abs": LSE_ABS, "splits_rel": SPLITS_REL},
               "tests": {}}
     try:
         for name in names:
@@ -746,7 +772,7 @@ def main(argv=None):
             shutil.rmtree(work, ignore_errors=True)
     results = [t["result"] for t in result["tests"].values()]
     result["overall"] = "PASS" if results and all(r in ("PASS", "SKIP") for r in results) else "FAIL"
-    out = Path(args.out)
+    out = Path(args.out) if args.out else (DEFAULT_OUT_DRY if args.dry_run else DEFAULT_OUT)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(result, indent=2) + "\n")
     print(f"overall: {result['overall']} -> {out}" + (" (dry run)" if args.dry_run else ""))
