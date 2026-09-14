@@ -313,25 +313,28 @@ def pack_layer(d: Dims, l, lw):
     return out
 
 
-def pack_all(model_dir, device="cpu", dims: Dims = None):
-    """Every tensor of 04-memory-plan.md, keyed by name with the layer suffix `_{l}`."""
+def pack_all(model_dir, device="cpu", dims: Dims = None, layers: int = None, head: bool = True):
+    """Every tensor of 04-memory-plan.md, keyed by name with the layer suffix `_{l}`.
+
+    layers/head restrict the load to a truncated graph's needs; the byte
+    assertion applies to the full load only."""
     model_dir = Path(model_dir)
     if dims is None:
         dims = Dims.from_config(json.loads((model_dir / "config.json").read_text()))
     check_tiling(dims)
     shards = Shards(model_dir, device)
-    packed = {
-        "W_embed": shards.get("model.embed_tokens.weight"),
-        "W_lm": shards.get("lm_head.weight"),
-        "w_final_norm": shards.get("model.norm.weight"),
-    }
-    assert packed["W_embed"].shape == (dims.V, dims.H) and packed["W_lm"].shape == (dims.V, dims.H)
-    for l in range(dims.L):
+    packed = {"W_embed": shards.get("model.embed_tokens.weight")}
+    if head:
+        packed["W_lm"] = shards.get("lm_head.weight")
+        packed["w_final_norm"] = shards.get("model.norm.weight")
+        assert packed["W_lm"].shape == (dims.V, dims.H)
+    assert packed["W_embed"].shape == (dims.V, dims.H)
+    for l in range(layers if layers is not None else dims.L):
         lw = load_checkpoint_layer(model_dir, l, dims, device, shards)
         for k, v in pack_layer(dims, l, lw).items():
             packed[f"{k}_{l}"] = v
     total = sum(v.numel() * v.element_size() for v in packed.values())
-    if dims == REAL_DIMS:
+    if dims == REAL_DIMS and head and (layers is None or layers == dims.L):
         assert total == EXPECTED_PACKED_BYTES, (total, EXPECTED_PACKED_BYTES)
     return packed
 

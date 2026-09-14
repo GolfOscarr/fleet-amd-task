@@ -189,13 +189,25 @@ def make_meta(torch, s_max, prompt_ids, n_prompt):
     return meta
 
 
+def plan_json(plan):
+    """The plan as JSON-able data (written next to every run for measure.py and the dumps)."""
+    return {"layers": plan.layers, "head": plan.head, "debug": plan.debug, "s_max": plan.s_max,
+            "tensors": {n: {"shape": list(t.shape), "dtype": t.dtype, "kind": t.kind, "source": t.source}
+                        for n, t in plan.tensors.items()},
+            "calls": [{"method": c.method, "label": c.label, "status": c.status, "tasks": c.tasks,
+                       "tiles": c.tiles, "args": {k: (list(v) if isinstance(v, tuple) else v)
+                                                  for k, v in c.args.items()}} for c in plan.calls]}
+
+
 def build(packed, capture, meta, dims=REAL_DIMS, s_max=1056, layers=27, head=True, debug=False,
-          num_workers=296, num_schedulers=8, profiler_tensor=None):
-    """On the machine: construct the PersistentKernel, attach, issue, return (mpk, host tensors)."""
+          stop_after=None, num_workers=296, num_schedulers=8, profiler_tensor=None):
+    """On the machine: construct the PersistentKernel, attach, issue, return (mpk, host tensors, plan)."""
     import torch
     import mirage as mi
 
     plan = G.build_plan(dims, s_max, layers, head, debug)
+    if stop_after:
+        plan.truncate(stop_after)
     mpk = mi.PersistentKernel(
         mode="online", world_size=1, mpi_rank=0, num_workers=num_workers,
         num_local_schedulers=num_schedulers, num_remote_schedulers=0,
@@ -354,8 +366,10 @@ class FakeMPK:
         self.register_task(None, "argmax_reduce", [self.argmax_partial_output_size, int(output_to_tokens)])
 
 
-def dry_run(dims=REAL_DIMS, s_max=1056, layers=27, head=True, debug=False):
+def dry_run(dims=REAL_DIMS, s_max=1056, layers=27, head=True, debug=False, stop_after=None):
     plan = G.build_plan(dims, s_max, layers, head, debug)
+    if stop_after:
+        plan.truncate(stop_after)
     mpk = FakeMPK()
     dt = {t.name: FakeDTensor(t.name, t.shape) for t in plan.tensors.values()}
     issue_calls(mpk, plan, dt)
@@ -369,11 +383,12 @@ def main():
     ap.add_argument("--no-head", action="store_true")
     ap.add_argument("--debug", action="store_true")
     ap.add_argument("--s-max", type=int, default=1056)
+    ap.add_argument("--stop-after", default=None, help="operator label, e.g. L1.o_proj")
     ap.add_argument("--out", default=None)
     args = ap.parse_args()
     if not args.dry_run:
         sys.exit("the real build is driven from harness/run_fleet.py on the machine; use --dry-run here")
-    plan, calls = dry_run(REAL_DIMS, args.s_max, args.layers, not args.no_head, args.debug)
+    plan, calls = dry_run(REAL_DIMS, args.s_max, args.layers, not args.no_head, args.debug, args.stop_after)
     s = G.summary(plan)
     print(json.dumps({k: v for k, v in s.items()}, indent=None))
     print(f"{len(calls)} calls recorded; task types: {sorted(set(c['task_type'] for c in calls))}")

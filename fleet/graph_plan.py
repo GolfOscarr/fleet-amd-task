@@ -54,6 +54,7 @@ class Call:
     tiles: int = 0                # tiles per gang task (0 for non-gang)
     status: str = "reuse"         # reuse | variant | new
     note: str = ""
+    label: str = ""               # "L{l}.<op>", "head.<op>", "prologue.embed": for --stop-after and dumps
 
 
 @dataclass
@@ -71,8 +72,19 @@ class Plan:
         self.tensors[name] = Tensor(name, tuple(shape), dtype, kind, source)
         return name
 
-    def op(self, method, tasks, tiles=0, status="reuse", note="", **args):
-        self.calls.append(Call(method, args, tasks, tiles, status, note))
+    def op(self, method, tasks, tiles=0, status="reuse", note="", label="", **args):
+        self.calls.append(Call(method, args, tasks, tiles, status, note, label))
+
+    def index_of(self, label):
+        for i, c in enumerate(self.calls):
+            if c.label == label:
+                return i
+        raise KeyError(label)
+
+    def truncate(self, stop_label):
+        """Keep the calls up to and including the labelled operator (07-correctness.md, M1 protocol)."""
+        self.calls = self.calls[: self.index_of(stop_label) + 1]
+        return self
 
     @property
     def n_ops(self):
@@ -136,7 +148,7 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
             p.t(f"dbg_x_res_{l}", (1, d.H))
 
     # ---- prologue ----------------------------------------------------------------
-    p.op("embed_layer", 1, status="variant", note="sc1 load of tokens[step]",
+    p.op("embed_layer", 1, status="variant", note="sc1 load of tokens[step]", label="prologue.embed",
          input="tok_dummy", weight="W_embed", output="x_res", grid_dim=(1, 1, 1),
          block_dim=(256, 1, 1), input_source=0)
 
@@ -152,57 +164,57 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
         p.t(f"c_kv_{l}", (s_max, d.D_C), kind="input", source=f"capture:c_kv_{l}")
         p.t(f"k_pe_{l}", (s_max, d.D_R), kind="input", source=f"capture:k_pe_{l}")
 
-        p.op("rmsnorm_layer", 1, input="x_res", weight=f"w_norm1_{l}", output="h",
+        p.op("rmsnorm_layer", 1, label=f"L{l}.norm1", input="x_res", weight=f"w_norm1_{l}", output="h",
              grid_dim=(1, 1, 1), block_dim=(256, 1, 1))
-        p.op("gang_linear_layer", XCDS, gang_tiles(d.Q_OUT + d.KVA_OUT, TILE_N_QKVA),
+        p.op("gang_linear_layer", XCDS, gang_tiles(d.Q_OUT + d.KVA_OUT, TILE_N_QKVA), label=f"L{l}.qkva",
              input="h", weight=f"W_qkva_{l}", output="qkva", tile_n=TILE_N_QKVA,
              output_stride=d.Q_OUT + d.KVA_OUT)
-        p.op("mla_prep_layer", 1, status="new",
+        p.op("mla_prep_layer", 1, status="new", label=f"L{l}.mla_prep",
              qkva="qkva", w_kv_norm=f"w_kv_norm_{l}", w_uk=f"W_uk_{l}", cos="cos", sin="sin",
              c_kv=f"c_kv_{l}", k_pe=f"k_pe_{l}", ql_nope="ql_nope", q_pe="q_pe",
              block_dim=(256, 1, 1))
-        p.op("mla_attend_layer", XCDS, splits_per_xcd, status="new",
+        p.op("mla_attend_layer", XCDS, splits_per_xcd, status="new", label=f"L{l}.mla_attend",
              ql_nope="ql_nope", q_pe="q_pe", c_kv=f"c_kv_{l}", k_pe=f"k_pe_{l}",
              partials="partials", softmax_scale=SOFTMAX_SCALE, split=SPLIT, n_splits=n_splits)
-        p.op("mla_merge_uv_layer", XCDS, d.NH // XCDS, status="new",
+        p.op("mla_merge_uv_layer", XCDS, d.NH // XCDS, status="new", label=f"L{l}.mla_merge_uv",
              partials="partials", w_uv=f"W_uv_{l}", output="attn", split=SPLIT, n_splits=n_splits)
-        p.op("gang_linear_with_residual_layer", XCDS, gang_tiles(d.H, TILE_N_O),
+        p.op("gang_linear_with_residual_layer", XCDS, gang_tiles(d.H, TILE_N_O), label=f"L{l}.o_proj",
              input="attn", weight=f"W_o_{l}", residual="x_res", output="x_res",
              tile_n=TILE_N_O, output_stride=d.H)
-        p.op("rmsnorm_layer", 1, input="x_res", weight=f"w_norm2_{l}", output="h",
+        p.op("rmsnorm_layer", 1, label=f"L{l}.norm2", input="x_res", weight=f"w_norm2_{l}", output="h",
              grid_dim=(1, 1, 1), block_dim=(256, 1, 1))
         if l == 0:
             p.t("W_gu_shuffled", (2 * d.I_DENSE_PAD, d.H), kind="input", source="W_gu_shuffled_0")
             p.t("W_down_pad", (d.H, d.I_DENSE_PAD), kind="input", source="W_down_pad_0")
             n_weight_tiles = (2 * d.I_DENSE_PAD) // XCDS // TILE_N_SILU
             assert n_weight_tiles % 2 == 0, "gang_linear_silu: weight tiles per XCD must be even (silent // 2)"
-            p.op("gang_linear_silu_layer", XCDS, n_weight_tiles // 2,
+            p.op("gang_linear_silu_layer", XCDS, n_weight_tiles // 2, label=f"L{l}.gate_up",
                  input="h", weight="W_gu_shuffled", output="act", tile_n=TILE_N_SILU,
                  output_stride=d.I_DENSE_PAD)
-            p.op("gang_linear_with_residual_layer", XCDS, gang_tiles(d.H, TILE_N_O),
+            p.op("gang_linear_with_residual_layer", XCDS, gang_tiles(d.H, TILE_N_O), label=f"L{l}.down",
                  input="act", weight="W_down_pad", residual="x_res", output="x_res",
                  tile_n=TILE_N_O, output_stride=d.H)
         else:
             p.t(f"W_gate_{l}", (d.E, d.H), kind="input", source=f"W_gate_{l}")
             p.t(f"W13_{l}", (d.E_TOTAL, 2 * d.I_MOE, d.H), kind="input", source=f"W13_{l}")
             p.t(f"W2_{l}", (d.E_TOTAL, d.H, d.I_MOE), kind="input", source=f"W2_{l}")
-            p.op("moe_router_layer", 1, status="new",
+            p.op("moe_router_layer", 1, status="new", label=f"L{l}.router",
                  input="h", w_gate=f"W_gate_{l}", topk_w="topk_w", routing="routing", mask="mask",
                  logits="logits_router", route_log="route_log", layer_index=l - 1,
                  topk=d.TOPK, n_experts=d.E, n_forced=N_FORCED, scaling=ROUTED_SCALING,
                  block_dim=(256, 1, 1))
-            p.op("gang_moe_w13_linear_layer", XCDS, (2 * d.I_MOE) // 64,
+            p.op("gang_moe_w13_linear_layer", XCDS, (2 * d.I_MOE) // 64, label=f"L{l}.w13",
                  input="h", weight=f"W13_{l}", moe_routing_indices="routing", moe_mask="mask",
                  output="mid")
-            p.op("moe_silu_mul_layer", TOPK_TOTAL_SLOTS, input="mid", output="act8",
+            p.op("moe_silu_mul_layer", TOPK_TOTAL_SLOTS, label=f"L{l}.silu", input="mid", output="act8",
                  grid_dim=(1, TOPK_TOTAL_SLOTS, 1), block_dim=(256, 1, 1))
-            p.op("gang_moe_w2_linear_layer", XCDS, d.H // 64,
+            p.op("gang_moe_w2_linear_layer", XCDS, d.H // 64, label=f"L{l}.w2",
                  input="act8", weight=f"W2_{l}", moe_routing_indices="routing", moe_mask="mask",
                  output="out8")
-            p.op("moe_mul_sum_add_layer", d.H // 256, input="out8", weight="topk_w",
+            p.op("moe_mul_sum_add_layer", d.H // 256, label=f"L{l}.combine", input="out8", weight="topk_w",
                  residual="x_res", output="x_res", grid_dim=(1, d.H // 256, 1), block_dim=(256, 1, 1))
         if debug:
-            p.op("copy_layer", 1, status="new", note="debug only: per-layer residual snapshot",
+            p.op("copy_layer", 1, status="new", note="debug only: per-layer residual snapshot", label=f"L{l}.snapshot",
                  input="x_res", output=f"dbg_x_res_{l}", grid_dim=(1, 1, 1), block_dim=(256, 1, 1))
 
     # ---- head ----------------------------------------------------------------------
@@ -213,13 +225,13 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
         p.t("amax_v", (1, ARGMAX_SLICES))
         p.t("amax_i", (1, ARGMAX_SLICES), "i64")
         p.t("tok_out", (1, 1), "i64", "input", "meta:output_tokens")
-        p.op("rmsnorm_layer", 1, input="x_res", weight="w_final_norm", output="h",
+        p.op("rmsnorm_layer", 1, label="head.norm", input="x_res", weight="w_final_norm", output="h",
              grid_dim=(1, 1, 1), block_dim=(256, 1, 1))
-        p.op("gang_linear_layer", XCDS, gang_tiles(d.V, TILE_N_LM),
+        p.op("gang_linear_layer", XCDS, gang_tiles(d.V, TILE_N_LM), label="head.lm_head",
              input="h", weight="W_lm", output="logits", tile_n=TILE_N_LM, output_stride=d.V)
-        p.op("argmax_partial_layer", ARGMAX_SLICES, input="logits", output=("amax_v", "amax_i"),
+        p.op("argmax_partial_layer", ARGMAX_SLICES, label="head.argmax_partial", input="logits", output=("amax_v", "amax_i"),
              grid_dim=(ARGMAX_SLICES, 1, 1), block_dim=(256, 1, 1))
-        p.op("argmax_reduce_layer", 1, status="variant", note="writes tokens[step + 1]",
+        p.op("argmax_reduce_layer", 1, status="variant", note="writes tokens[step + 1]", label="head.argmax_reduce",
              input=("amax_v", "amax_i"), output="tok_out", grid_dim=(1, 1, 1),
              block_dim=(256, 1, 1), output_to_tokens=True)
     return p
