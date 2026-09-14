@@ -153,7 +153,7 @@ tolerance.
 | `calibrate.py` | GPU | the two-run floor measurement; writes `calibration.json` |
 | `run_fleet.py --layers N [--head] [--iters K] [--stop-after <op>] [--debug] [--debug-scores]` | GPU | builds the truncated or full graph, sets meta tensors, runs `mpk()`, dumps every boundary tensor to `fleet_boundaries.safetensors` and `tokens` to `fleet_output_ids.json` |
 | `compare.py` | anywhere | pairs reference and Fleet tensors by boundary name, prints the three metrics, the floor, the threshold, and PASS/FAIL per boundary; exact-match checks for B9, B16 and the route log; writes `correctness_report.md` |
-| `kernel_tests.py` | GPU | for each new kernel, 100 random inputs against `numpy_ref.py`; also `mla_attend` with 1 split versus 33 splits (isolates the merge) |
+| `fleet/tasks/kernel_tests.py` (with `fleet/tasks/kernel_tests_mi300.cu`) | GPU; `--dry-run` anywhere | for each new kernel, 100 random inputs against `numpy_ref.py`, each launched in isolation as the runtime would launch it; also `mla_attend` with 1 split versus 33 splits (isolates the merge) and the debug-scores build; writes `fleet/tasks/results/kernel_tests.json` |
 
 How Fleet-side boundaries are read: after `mpk()` returns, every
 `new_tensor` holds the value from the **last** operator that wrote it in the

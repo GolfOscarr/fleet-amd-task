@@ -10,10 +10,10 @@ points are `harness/numpy_ref.py`; pointer orders and parameter vectors are
 `repos/fleet-chiplet-megakernel/include/mirage/persistent_kernel/tasks/mi300/`
 before the build; `task_header.cuh` includes them from there.
 
-`check_syntax.sh` parses every kernel with the host `clang++` against the
-stub headers in `stub/` (a syntax and type check only; no HIP, no device
-code). Correctness is established on the GPU by `harness/kernel_tests.py`
-against `numpy_ref.py`.
+`check_syntax.sh` parses every kernel and the test launcher with the host
+`clang++` against the stub headers in `stub/` (a syntax and type check only;
+no HIP, no device code). Correctness is established on the GPU by
+`kernel_tests.py` against `numpy_ref.py` (below).
 
 ## Worker contract
 
@@ -107,6 +107,57 @@ consumers read only `mask[count]` and `mask[0..count)`); `route_log[step -
   `runtime_config.tokens + runtime_config.step[0] + 1`, and the kernel
   writes the winning id there as well as to `output_tokens`.
 
+## `kernel_tests`: each kernel in isolation against `numpy_ref.py`
+
+`kernel_tests_mi300.cu` wraps each of the five kernels in a `__global__`
+function of 256 threads with the worker's dynamic LDS and calls the
+`*_task_impl` as the registration's emitted call does: the same template
+dims, `step` and `prompt_length` read from device memory like
+`runtime_config.step[0]` and `prompt_length[0]`, float parameters from
+their bit patterns, gang tiles as `tile_idx = bid.x * tiles_per_xcd + t`
+on a grid of `(8, tiles_per_xcd)`, and the per-XCD pointer offsets the
+imaps of `build_graph.py` imply (`partials` by `n_splits / 8` rows for
+`mla_attend`; `W_uv` by 2 heads and `attn` by 256 columns for
+`mla_merge_uv`). Build, from the repository root
+(`FLEET=repos/fleet-chiplet-megakernel`; the defines are the ones
+`persistent_kernel.py` passes on its ROCm path):
+
+```
+hipcc --offload-arch=gfx942 -O2 -std=c++17 \
+  -D__HIP_PLATFORM_AMD__=1 -DMIRAGE_AMD_MI300 -DMIRAGE_BACKEND_USE_ROCM -DMPK_TARGET_CC=94 -DMODE_ONLINE \
+  -I fleet -I $FLEET/include -I $FLEET/include/mirage/persistent_kernel \
+  fleet/tasks/kernel_tests_mi300.cu -o fleet/tasks/build/kernel_tests
+# the debug-scores variant: the same line with -DMLA_ATTEND_DEBUG_SCORES -o fleet/tasks/build/kernel_tests_debug
+```
+
+`kernel_tests.py` is the driver:
+
+```
+python fleet/tasks/kernel_tests.py [--n 100] [--seed 0] [--kernel NAME ...] [--dry-run]
+```
+
+It generates random inputs at the real shapes (unit-scale BF16
+activations, weights at `1 / sqrt(fan_in)`, `step` in 1023..1054), writes
+them as raw files, runs the binary once per test over all trial
+directories, and compares every output with `numpy_ref.py` using
+`compare.py`'s metrics. Outputs are pre-filled with a sentinel so entries
+the kernel must leave alone (the other cache rows of `mla_prep`, the other
+slots of `route_log`, the columns beyond `step` of the debug scores) are
+checked too. Tests: the five kernels, `mla_attend_scores` (the
+`-DMLA_ATTEND_DEBUG_SCORES` build's second output, B5), and
+`mla_attend_splits` (one split of 1056 rows versus 33 splits of 32,
+through both the attend and the merge kernel). Tolerances, argued in the
+driver's header comment: bit-exact for the RoPE outputs, the router's
+selection (derived from the kernel's own FP32 logits, so a near tie cannot
+fail it), the copy and the untouched entries; `rel_err <= 1e-4` for FP32
+accumulations; one BF16 ulp per element and `rel_err <= 2e-3` for
+BF16-stored accumulations; `5e-3` on the attention partials (the BF16
+probabilities) and `1e-2` for the one-versus-33-splits comparison (the
+probabilities are rounded at different running maxima). Results go to
+`fleet/tasks/results/kernel_tests.json`; `--dry-run` runs the whole
+pipeline with the references standing in for the binary
+(`fleet/tests/test_kernel_tests.py`).
+
 ## Deliberately left for the GPU
 
 - The MFMA 16x16x16 version of `mla_attend` (phase B of
@@ -120,5 +171,6 @@ consumers read only `mask[count]` and `mask[0..count)`); `route_log[step -
   "Every operator").
 - Whether `MAX_OUTPUTS_PER_TASK = 5` (raised from 3 for `mla_prep` and the
   router) has any effect beyond the task-descriptor size.
-- `kernel_tests.py`: 100 random inputs per kernel against `numpy_ref.py`,
-  and one split versus 33 for `mla_attend` (`07-correctness.md`).
+- The `kernel_tests` run itself: the launcher and driver above are
+  syntax-checked and dry-run here, but no kernel has executed
+  (`07-correctness.md`).
