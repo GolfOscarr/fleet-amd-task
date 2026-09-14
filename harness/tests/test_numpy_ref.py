@@ -171,6 +171,7 @@ def test_router_matches_gate(step):
     for k, e in enumerate(mask[:K].tolist()):
         assert abs(topk_w[k] - w_ref[idx_ref.index(e)]) < 1e-6
     assert mask[K:K + 2].tolist() == list(forced) and mask[E + 2] == K + 2
+    assert (mask[K + 2:E + 2] == -1).all()                  # unused entries as the kernel writes them
     assert topk_w[K:].tolist() == [1.0, 1.0]
     assert routing.shape == (E + 2,) and (routing > 0).sum() == K + 2
     for k, e in enumerate(mask[:K + 2].tolist()):

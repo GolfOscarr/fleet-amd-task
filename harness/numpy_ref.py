@@ -193,7 +193,8 @@ def moe_router(h, W_gate, *, topk=6, n_experts=64, forced=(64, 65), scaling=1.0)
       logits  [E] FP32
       topk_w  [topk + len(forced)] FP32: softmax probabilities x scaling, then 1.0 per forced
       routing [E + len(forced)] int32: slot + 1 for a selected expert, 0 otherwise
-      mask    [E + len(forced) + 1] int32: the active expert ids in slot order, then the count
+      mask    [E + len(forced) + 1] int32: the active expert ids in slot order, -1 in the
+              unused entries (as the stock and the new kernel write them), then the count
     Ties in the top-k go to the lower expert index (a stated choice, 02-task-graph.md).
     """
     logits = (np.asarray(W_gate, F32) @ np.asarray(h, F32)).astype(F32)
@@ -211,7 +212,7 @@ def moe_router(h, W_gate, *, topk=6, n_experts=64, forced=(64, 65), scaling=1.0)
     routing = np.zeros(n_total, np.int32)
     for k, e in enumerate(ids):
         routing[e] = k + 1
-    mask = np.zeros(n_total + 1, np.int32)
+    mask = np.full(n_total + 1, -1, np.int32)
     mask[:n_slots] = ids
     mask[n_total] = n_slots
     return logits, topk_w, routing, mask
