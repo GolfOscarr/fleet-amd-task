@@ -1,17 +1,37 @@
 # Fleet-style batch-1 decode for DeepSeek-Coder-V2-Lite on MI300X
 
 Implementing a [Fleet](https://arxiv.org/abs/2604.15379)-style megakernel decode
-path for **DeepSeek-Coder-V2-Lite-Base** on a single **AMD Instinct MI300X**:
-keep GPU workers resident and coordinate dependent operations through an
-on-device task graph, instead of launching ~800–1,000 separate kernels per
-decoded token.
+path for **DeepSeek-Coder-V2-Lite-Base** on a single **AMD Instinct MI300X**.
+
+## The idea
+
+Standard LLM inference runs each operator as its own GPU kernel. For this model
+that is roughly **800–1,000 kernel launches per decoded token**, and between
+launches the L2 cache is flushed, so every operator reloads its inputs from HBM.
+
+Fleet replaces that with **one persistent kernel** that occupies the whole
+device for the entire decode step. Work is expressed as a **task graph resolved
+on the GPU**: one workgroup per chiplet acts as a scheduler, the rest are
+workers, and dependencies are events in device memory rather than kernel
+boundaries. Tasks are scoped to the memory hierarchy — the new level being the
+**Chiplet-task**, bound to one XCD's private 4 MB L2.
+
+```
+           standard                        Fleet
+    ┌──────────────────────┐     ┌────────────────────────────┐
+    │ kernel  kernel  ...  │     │  ONE persistent kernel     │
+    │   ↓ HBM   ↓ HBM      │     │  scheduler + workers       │
+    │ ~800-1000 launches   │     │  on-device task graph      │
+    │ L2 flushed each time │     │  ~2,135 tasks, 1 launch    │
+    └──────────────────────┘     └────────────────────────────┘
+```
 
 ## The task
 
 | | |
 |---|---|
-| Model | DeepSeek-Coder-V2-Lite-Base — 27 layers, MLA attention, 64-expert MoE, 15.7 B params |
-| Hardware | 1 × MI300X (CDNA 3, `gfx942`, 8 XCDs × 38 CUs, 192 GB HBM3) |
+| Model | DeepSeek-Coder-V2-Lite-Base — 27 layers, MLA attention, 64-expert MoE, 15.7 B total / 2.45 B active |
+| Hardware | 1 × MI300X (CDNA 3, `gfx942`, 8 XCDs × 38 CUs, 4 MB L2 each, 192 GB HBM3) |
 | Execution | batch-1 autoregressive decode |
 | Precision | BF16 initially |
 | Input / output | 1,024-token prompt → 32 greedily decoded tokens |
@@ -21,14 +41,52 @@ decoded token.
 
 Full brief: [`docs/task-description.pdf`](docs/task-description.pdf).
 
+### What makes this model awkward
+
+**MLA** compresses K and V into a 512-wide latent per token, so decode attention
+becomes multi-query: 16 query heads against one 576-wide KV "head". **MoE**
+routes each token to 6 of 64 experts, chosen by a router that runs *mid-layer* —
+so 99 MiB of expert weights are read from addresses not known until the layer is
+half done. That is the hardest dependency in the graph.
+
+```mermaid
+graph LR
+  N1[RMSNorm] --> QP[q_proj] & KVA[kv_a_proj]
+  QP & KVA --> RP[RoPE + cache append]
+  RP --> ATT["MLA attend<br/>split-KV ×32"]
+  ATT --> MRG[merge] --> OP[o_proj + residual]
+  OP --> N2[RMSNorm]
+  N2 --> R[router] --> TK[top-6]
+  TK --> RE["routed experts<br/>99 MiB"]
+  N2 --> SE["shared experts<br/>33 MiB"]
+  RE & SE --> C[combine + residual]
+```
+
+The shared-expert branch depends only on the norm, so it overlaps the entire
+routing latency. The routed branch cannot start until the router commits.
+
 ## Status
 
 **Discovery complete. Nothing built yet.** The next deliverable is the technical
 design document; implementation is blocked on MI300X access.
 
-See [`PROGRESS.md`](PROGRESS.md) for the milestone tracker and
-[`OPEN-PROBLEMS.md`](OPEN-PROBLEMS.md) for everything still unresolved
-(6 major / 18 minor, plus 9 defects found in AMD's and Fleet's own docs).
+| | |
+|---|---|
+| Documentation | 5 doc sets, 41 files, ~5,300 lines, 9 reproducible scripts |
+| Open problems | 6 major, 18 minor, 14 resolved ([`OPEN-PROBLEMS.md`](OPEN-PROBLEMS.md)) |
+| Milestone | M0 — not started ([`PROGRESS.md`](PROGRESS.md)) |
+| Day-1 blocker | does the Fleet runtime build for `gfx942`? |
+
+## Key numbers
+
+| | |
+|---|---|
+| Traffic per token | **4,705.9 MiB** — routed experts 55%, shared experts 18%, `lm_head` 8.5% |
+| Roofline | **931 µs** floor at 5.3 TB/s theoretical · **1.15–1.35 ms** at 3.66–4.3 TB/s achievable |
+| Rate | 1,074 tok/s floor · **742–871 tok/s** realistic |
+| Layer-1 milestone | 159.6 MiB → 31.6 µs floor / 38.9–45.7 µs realistic |
+| Task graph | 80 tasks per MoE layer, ~2,135 per token, **1 kernel launch** |
+| FP8 (stretch) | 2,571 MiB → 509 µs floor / 627–737 µs realistic — **1.83×** |
 
 ## Layout
 
@@ -63,29 +121,33 @@ and scripts its claims derive from.
 | The correctness hazard | [`docs/mi300x/03-memory-model.md`](docs/mi300x/03-memory-model.md) |
 | What we actually build | [`docs/mla-decode/04-our-kernel-spec.md`](docs/mla-decode/04-our-kernel-spec.md) |
 | The task graph | [`docs/fleet/06-our-task-graph.md`](docs/fleet/06-our-task-graph.md) |
+| Whether Fleet even helps here | [`docs/fleet/07-gap-analysis.md`](docs/fleet/07-gap-analysis.md) |
 
 ## What the analysis established
 
-**Batch-1 decode is memory-bound and nothing else matters much.** 4,705.9 MiB
-must be read per token, 55% of it routed-expert weights. Against MI300X's
-5.3 TB/s theoretical peak that is a **931 µs floor**; against realistically
-achievable bandwidth (3.66–4.3 TB/s) the band is **1.15–1.35 ms/token,
-742–871 tok/s**.
+**Batch-1 decode is memory-bound and little else matters.** Arithmetic intensity
+is ~0.5 FLOP/byte, so the 1,307 BF16 TFLOPS are unreachable and only two levers
+exist: read fewer bytes, or waste less time not reading.
 
 **Fleet's batch-1 benefit is dispatch overhead, not bandwidth.** Their own
 measurements show L2 hit rate moving 16.4% → 16.9% and HBM reads at 0.98× at
-batch 1; the cooperative-tiling win only activates at batch ≥ 32. We inherit the
-task-count collapse (~2,135 tasks in **one** kernel launch), not a traffic
-reduction.
+batch 1; cooperative weight tiling only activates at batch ≥ 32. We inherit the
+task-count collapse, not a traffic reduction — and the design says so rather
+than promising a speedup the source paper does not support.
 
-**The eight XCD L2 caches are not coherent.** In the default SPX mode a single
-agent spans eight private L2s. Cross-XCD visibility requires `buffer_wbl2 sc1`
-on release and `buffer_inv sc1` on acquire — and both are documented no-ops on
-single-L2 parts, so code can appear correct elsewhere and fail here. Confirmed
+**The eight XCD L2 caches are not coherent.** In the default SPX mode one agent
+spans eight private L2s. Cross-XCD visibility needs `buffer_wbl2 sc1` on release
+and `buffer_inv sc1` on acquire — and both are documented no-ops on single-L2
+parts, so code can appear correct elsewhere and fail here. Confirmed
 independently from LLVM's memory model, the CDNA 3 ISA, and Fleet's own source.
 
+**One wave per SIMD is not a ceiling.** A megakernel's register union limits
+occupancy to one wave per SIMD, which sounds fatal for a bandwidth-bound
+workload. But `VMCNT` is 6 bits, so a single wave can hold 63 loads in flight
+and only 2–4 are needed — it becomes a prefetch-depth requirement, not a limit.
+
 **MoE already works in Fleet; MLA does not.** The gap is one kernel, specified
-in `docs/mla-decode/04-our-kernel-spec.md`.
+in [`docs/mla-decode/04-our-kernel-spec.md`](docs/mla-decode/04-our-kernel-spec.md).
 
 **The conventional absorbed-MLA advice is wrong at this context length.**
 Materializing the fused weights costs +44 MiB/layer to save 8.9 — about 2× worse
@@ -93,21 +155,21 @@ than doing nothing at 1,024 tokens. Runtime reassociation gets the cache
 reduction for free, which is also what vLLM does.
 
 **FP8 is worth more than everything else combined** — 1.83×, and a quantized
-checkpoint exists for this exact model. It is a stretch goal, since the task
-requires BF16 first.
+checkpoint exists for this exact model. A stretch goal, since BF16 comes first.
 
 ## Method
 
 Every quantitative claim is derived from a primary source and re-derived by
 script. Facts carry a verification level — `primary`, `checkpoint`, `derived`,
-`secondary`, `machine` — and anything not `primary` or `checkpoint` that the
-design depends on is listed as an open problem with the check that settles it.
+`secondary`, `machine` — and anything weaker than `primary`/`checkpoint` that
+the design depends on is logged as an open problem with the check that settles
+it. Defects found in the sources themselves are recorded too, including three
+internal contradictions in AMD's partitioning documentation and two incorrect
+comments in Fleet's own code.
 
 The parameter count computed from `config.json` alone reproduces the
 checkpoint's published `total_size` of 31,412,968,448 bytes **exactly**, which is
 the strongest available evidence that the architecture is understood correctly.
-
-Analysis scripts live beside the documents they support:
 
 ```bash
 python3 docs/deepseek-v2-lite/sources/roofline.py     # traffic and roofline
@@ -122,19 +184,18 @@ git clone --recursive https://github.com/GolfOscarr/fleet-amd-task.git
 ```
 
 The submodule pins `ROCm/fleet-chiplet-megakernel` at `51dce4f`. It targets
-`gfx950` by default; building for MI300X needs `AMDGPU_TARGETS=gfx942`, which is
-untested and is the day-1 blocking question.
-
-Model weights (31 GB BF16) are not tracked here — download them on the target
-machine.
+`gfx950` (MI350) by default; building for MI300X needs `AMDGPU_TARGETS=gfx942`,
+which is untested and is the day-1 blocking question. Model weights (31 GB BF16)
+are not tracked here — download them on the target machine.
 
 ## Deliverables
 
-| Required | Where |
+| Required by the task | Where |
 |---|---|
 | Technical design | *next* |
 | Source, build and run instructions | *pending GPU access* |
-| Correctness evidence per boundary | method in [`docs/deepseek-v2-lite/08-correctness.md`](docs/deepseek-v2-lite/08-correctness.md) |
+| Correctness evidence at every boundary | method in [`docs/deepseek-v2-lite/08-correctness.md`](docs/deepseek-v2-lite/08-correctness.md) |
 | Profiling commands and results | plan in [`docs/mi300x/06-profiling.md`](docs/mi300x/06-profiling.md) |
-| Milestone reached, fallbacks, known failures | [`PROGRESS.md`](PROGRESS.md), [`OPEN-PROBLEMS.md`](OPEN-PROBLEMS.md) |
+| Milestone reached, remaining fallbacks | [`PROGRESS.md`](PROGRESS.md) |
+| Known failures | [`OPEN-PROBLEMS.md`](OPEN-PROBLEMS.md) |
 | Recommended next steps | [`docs/acceleration/04-technique-ledger.md`](docs/acceleration/04-technique-ledger.md) |
