@@ -9,7 +9,17 @@ before MI300X time is on the clock.
 
 ---
 
-## Q1 — Does runtime reassociation stay within tolerance? `open`
+## Q1 — Does runtime reassociation stay within tolerance? `resolved` (2026-09-14)
+
+**Resolved: yes, and the attention floor is set by score magnitude, not by
+reassociation.** `harness/reassoc_check.py` at the real attention shapes on
+CPU (random weights, 1,024 positions, three seeds): B5 `rel_err` 3.2e-3; B6
+2.0e-2 to 2.7e-2 at score magnitude 37 and 3.8e-2 to 7.3e-2 at 140, while
+the reference's own arithmetic recomputed in another summation order sits at
+2.5e-2 to 3.0e-2 and 4.8e-2 to 8.7e-2 on the same inputs, because the
+reference rounds its scores to BF16 before the softmax. The threshold for B6
+is therefore the calibrated floor (Q6), not a fixed number. Results in
+`harness/results/reassoc_check.json`. The original entry follows.
 
 **Why.** `02-mla.md` chooses runtime reassociation of MLA. It is algebraically
 exact but reorders BF16 accumulation. If the error exceeds our B5/B6 thresholds,
@@ -114,7 +124,15 @@ needs nothing beyond network access.
 
 ---
 
-## Q8 — Which prompt? `open`
+## Q8 — Which prompt? `resolved` (2026-09-14)
+
+**Resolved:** `harness/prompt_ids.json` holds BOS (100000) followed by the
+first 1,023 tokens of `repos/fleet-chiplet-megakernel/python/mirage/mpk/split_linear_tasks.py`
+at submodule commit `51dce4f`, tokenized with the checkpoint's tokenizer
+(sha256 of `tokenizer.json` in `harness/prompt_meta.json`). BOS is prepended
+explicitly because transformers versions differ on whether the fast
+tokenizer honours `add_bos_token`. `harness/make_prompt.py` recomputes and
+compares by default and refuses to overwrite. The original recipe follows.
 
 **Why.** The task fixes 1,024 input tokens but not their content. Routing
 behaviour, and therefore everything in Q4, depends on the prompt. A code prompt

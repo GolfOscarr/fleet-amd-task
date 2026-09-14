@@ -3,7 +3,7 @@
 Consolidated index of everything unresolved, so a problem can be located without
 re-reading four doc sets. Detail lives in each set's `99-open-questions.md`.
 
-Last updated: 2026-09-14 · 6 major · **22 minor open** · 16 resolved · 9 documentation defects
+Last updated: 2026-09-14 · 6 major · **20 minor open** · 18 resolved · 9 documentation defects
 
 **When** — `local` = resolvable without a GPU · `gpu` = needs the MI300X ·
 `build` = needs a working toolchain
@@ -29,7 +29,6 @@ Last updated: 2026-09-14 · 6 major · **22 minor open** · 16 resolved · 9 doc
 
 | ID | Problem | Area | Where | When |
 |---|---|---|---|---|
-| MIN-1 | Runtime MLA reassociation within tolerance? Reorders BF16 accumulation. | Model | `docs/deepseek-v2-lite` Q1 | local |
 | MIN-2 | BF16 noise floor not calibrated — correctness thresholds are reasoned, not measured. | Correctness | `docs/deepseek-v2-lite` Q6 | local |
 | MIN-4 | No FP8 accuracy data published for the **Base** variant (only Instruct). | FP8 | `docs/acceleration` Q3 | local |
 
@@ -37,7 +36,6 @@ Last updated: 2026-09-14 · 6 major · **22 minor open** · 16 resolved · 9 doc
 
 | ID | Problem | Area | Where | When |
 |---|---|---|---|---|
-| MIN-5 | Prompt not chosen. Must fix 1,024 token IDs and never change them. | Harness | `docs/deepseek-v2-lite` Q8 | local |
 | MIN-6 | Expert routing correlation across 32 steps unknown — decides whether expert→XCD affinity pays. | Scheduling | `docs/deepseek-v2-lite` Q4 | local |
 
 ### Runtime & kernels
@@ -107,14 +105,17 @@ Not our bugs — but each one could mislead us, so they are recorded.
 | ✅ | Is runtime reassociation the right MLA form? | **Yes** — it is what vLLM does (`einsum`/`bmm` against `W_UK`/`W_UV` at runtime, never fused). `docs/mla-decode/02-kernel-anatomy.md` |
 | ✅ | Is our split KV-cache layout right? | **Yes** — `BLOCK_DMODEL=512` and `BLOCK_DPE=64` are separate tiles everywhere; AITER flattens paged caches to `page_size=1`. `docs/mla-decode` Q4 |
 | ✅ | What bandwidth is actually achievable? | **3.66-4.3 TB/s (69-81%)**. AMD's Dot acceptance threshold and BabelStream peak. Realistic BF16 target 1.15-1.35 ms/token. |
+| MIN-1 (resolved) | Runtime MLA reassociation within tolerance? | **Yes, within the reference's own ordering noise.** At the real shapes on CPU, B5 differs by 3.2e-3 and B6 by 2.0e-2 to 2.7e-2 at score magnitude 37, the same as the reference's own arithmetic in another summation order (2.5e-2 to 3.0e-2); score magnitude, not reassociation, sets the attention floor. `harness/results/reassoc_check.json`, `docs/design-doc/07-correctness.md` item 7 |
+| MIN-5 (resolved) | Prompt not chosen | `harness/prompt_ids.json`: BOS plus the first 1,023 tokens of `split_linear_tasks.py` from the pinned Fleet submodule; `make_prompt.py` checks it, never regenerates it. `docs/deepseek-v2-lite` Q8 |
 
 ---
 
 ## Triage
 
-**Before GPU access** (local, needs PyTorch): MIN-1, MIN-2, MIN-5, MIN-6 —
-and MIN-4's method is settled, it just needs a run. Each now carries a worked
-recipe in its `99-open-questions.md` entry.
+**Before GPU access** (local, needs PyTorch): MIN-1 and MIN-5 are done;
+MIN-2 (the floor) and MIN-6 (routing correlation) have their scripts'
+inputs produced by `harness/run_reference.py`, which needs the weights, so
+they run on day 1. MIN-4's method is settled, it just needs a run.
 
 **Day 1 on the machine, in order:** MAJ-1 (with MIN-27) → MIN-28 → MAJ-3 → MIN-25 → MAJ-4.
 
