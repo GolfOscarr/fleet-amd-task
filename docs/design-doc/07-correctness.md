@@ -37,7 +37,7 @@ Decode step 0 unless stated; `l` is the layer.
 | B5 | attention scores, pre-softmax | recomputed from hooks: `softmax_scale x (q_nope . k_nope^T + q_pe . k_pe^T)` over the 1,024 positions | `mla_attend` in **debug mode** (one split, scores written to a debug buffer) | `[16, 1024]` | scores |
 | B6 | attention output, pre-`o_proj` | hook on `o_proj` input | `attn` | `[2048]` | attention |
 | B7 | `o_proj` out + residual | hook on `o_proj` plus the residual | `x_res` after A6 | `[2048]` | GEMV |
-| B8 | router logits (FP32) | hook on `mlp.gate` (`MoEGate.forward` logits) | `logits_router` | `[64]` | router |
+| B8 | router logits (FP32) | forward **pre**-hook on `mlp.gate` captures its input; logits recomputed as `F.linear(h.float(), W_gate.float())` (`MoEGate.forward` keeps `logits` local and returns only the top-k, `modeling_deepseek.py:424-426`, `:497`) | `logits_router` | `[64]` | router |
 | B9 | **top-6 expert indices** | `MoEGate.forward` `topk_idx` | `mask[0:6]` | `[6]` as a set | **exact** |
 | B10 | top-6 weights | `topk_weight` | `topk_w[0:6]` matched by index | `[6]` | router |
 | B11 | each expert output | hook on `experts[e]` for the six selected | `out8[k]` for `k` in 0..5 | `[2048]` each | expert |

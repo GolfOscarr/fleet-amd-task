@@ -30,7 +30,7 @@ reference artifacts' recipes.
 | L10 | Fleet run script | `harness/run_fleet.py` | L5 | meta-tensor setup (`step = 1022`, `qo_indptr = [0, 1]`, ...), truncated-graph options, boundary dumps, timing capture |
 | L11 | Measurement script | `harness/measure.py` | none | parses `[FWD_PASS]` and the event-timing buffer, runs `rocprofv3` with the counter sets of `docs/mi300x/06-profiling.md`, writes `metrics.json` and the report tables of `09-expected-performance.md` |
 | L12 | Environment scripts | `env/setup.sh`, `env/check_day1.sh` | none | ROCm and PyTorch-ROCm install, `AMDGPU_TARGETS=gfx942 pip install -e .`, model download, the day-1 checks of `08-milestones.md` (partition mode, `[SCHED_XCD]`, disassembly greps, CK 576/512 probe) |
-| L13 | The gfx942 build patch | a patch removing the `paged_attention_decode_minimal_mi300.cuh` include and guarding the `16x16x32` selection | `docs/fleet/99-open-questions.md` Q12 | applied on day 1 before the first build |
+| L13 | The gfx942 build and instrumentation patch | a patch removing the `paged_attention_decode_minimal_mi300.cuh` include, guarding the `16x16x32` selection, and removing the `[FWD_PASS]` print throttle (`persistent_kernel.cuh:1535-1536`, `:1047`) so every iteration is logged | `docs/fleet/99-open-questions.md` Q12 | applied on day 1 before the first build |
 | L14 | Routing correlation analysis | `harness/route_analysis.py` | L7's `ref_route_log.json` | per-layer overlap of selected experts across consecutive steps; decides whether expert affinity is worth a next-step recommendation (`OPEN-PROBLEMS.md` MIN-6) |
 
 L1-L4, L9 and L12-L13 need no Fleet import. L5 and L6 are written against

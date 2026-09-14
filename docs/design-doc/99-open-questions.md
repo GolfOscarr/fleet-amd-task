@@ -84,7 +84,7 @@ knee we are on.
 
 ## DQ9 - Does online mode need any meta tensor we have not traced `open` - day 2
 
-**Why.** D14 sets `step`, `new_token_nums`, `qo_indptr_buffer`; the paged
+**Why.** D14 sets `step`, `num_new_tokens`, `qo_indptr_buffer`; the paged
 buffers are left at zero because none of our tasks read them. The reused
 kernels' emitted call code was read for `gang_linear`, `embedding`,
 `rmsnorm`, `moe_*`, `argmax_*`; a runtime read of another buffer would show

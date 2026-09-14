@@ -34,7 +34,8 @@ anything else across an operator boundary.
 | one MoE layer (layer 1) | 159.63 MiB | 31.6 us | 38.9 us | 45.7 us |
 | layer 0 | 159.38 MiB | 31.5 us | 38.9 us | 45.7 us |
 | head | 400.0 MiB | 79.1 us | 97.5 us | 114.6 us |
-| **per iteration** | **4,709.9 MiB** | **931.8 us** | **1,148.5 us** | **1,349.4 us** |
+| **per iteration, weights + cache** | **4,709.9 MiB** | **931.8 us** | **1,148.5 us** | **1,349.4 us** |
+| activations and split-KV partials (written and read once; not in the floor) | about 62 MiB: partials 55.8, logits 0.4, MoE intermediates 5, the rest under 1 | 12 us | 15 us | 18 us |
 | 32 iterations | | 29.8 ms | 36.8 ms | 43.2 ms |
 
 931.8 us is a floor: any measurement below it is a measurement error (a
@@ -108,7 +109,7 @@ is the same move. The router at 256 KiB is tolerable as one workgroup.
 | bandwidth only (not reachable) | 0 | hidden | 1,148-1,349 us | 741-871 |
 | design as written, good case | 1 us | 20 us per layer, serial | 1,148 + 326 + 540 = ~2.0 ms to ~2.2 ms | 450-500 |
 | design with reductions 1-3 | 1 us | gang, hidden | 1,148 + 219 = ~1.37 ms to ~1.57 ms | 640-730 |
-| boundary-dominated | 5 us | gang | 1,148 + 1,095 = ~2.2 ms to ~2.4 ms | 410-450 |
+| boundary-dominated, with reductions 1-3 (219 boundaries) | 5 us | gang | 1,148 + 1,095 = ~2.2 ms to ~2.4 ms | 410-450 |
 
 The design as written targets **M2 correctness first** and reports the
 measured `t_b` and `mla_prep` time; the reductions are the documented next
@@ -133,7 +134,7 @@ is, and their paper does not report it.
 | Remaining fallbacks | none on the device path; 107 new ops and 2 variants listed | same |
 | Consecutive layers completed | the largest `--layers N` with B13 within threshold at every layer | milestone table |
 | GPU launches | `rocprofv3 --kernel-trace`: expect 3 dispatches per generation (`prepare_kernel`, `worker_kernel`, `scheduler_kernel`), 0.09 per token | trace CSV |
-| Median and P95 latency per token | `[FWD_PASS] iter=i time_ms` from the worker-0 log and the scheduler log for all 32 iterations, over 5 generations (160 samples); cross-checked by the event-timing buffer (`get_event_timing`) and by host wall clock around `mpk()` divided by 32 | `metrics.json` |
+| Median and P95 latency per token | the event-timing buffer (`MPK_ENABLE_EVENT_TIMING`, read back with `get_event_timing`): the gap between consecutive `EVENT_END_OF_TASK_GRAPH` firings is one iteration; 32 per generation, 5 generations, 160 samples. `[FWD_PASS]` as shipped prints only iterations 1-9 (`persistent_kernel.cuh:1535-1536`, worker variant `:1047`); our patch removes the throttle so it cross-checks the buffer. Host wall clock around `mpk()` divided by 32 is the outer check | `metrics.json` |
 | Memory traffic | `rocprofv3 --pmc TCC_EA0_RDREQ_sum TCC_EA0_WRREQ_sum` over one generation, bytes from request counts (64 B per request, validated against a copy kernel of known size first), divided by 32 | `metrics.json`; compared to 4,709.9 MiB |
 | Achieved bandwidth | traffic per iteration divided by per-iteration time | same; compared to 3.66-5.3 TB/s |
 | L2 hit rate | `TCC_HIT_sum / (TCC_HIT_sum + TCC_MISS_sum)` over a generation; with and without `USE_NT_WEIGHTS=1` | `metrics.json` |
@@ -157,7 +158,7 @@ from the machine.
 
 | Quantity | Predicted | Measured | Ratio |
 |---|---|---|---|
-| bytes per iteration | 4,709.9 MiB | | |
+| bytes per iteration | 4,709.9 MiB weights + cache; about 4,772 MiB with activations and partials | | |
 | time per iteration, median | 1,148-1,349 us + 326 `t_b` + `T_serial` | | |
 | time per iteration, P95 | | | |
 | achieved bandwidth | 3.66-4.3 TB/s over `T_bw` | | |
@@ -178,5 +179,5 @@ from the machine.
 - Achieved bandwidth on the gang linears below 3 TB/s with `t_b` and
   `T_serial` subtracted: the CK pipeline at M = 1 is not streaming; check
   prefetch depth by disassembly (D19), then consider VALU GEMVs (D18).
-- Bytes per iteration above 4,800 MiB: something is read twice; the
+- Bytes per iteration above 4,950 MiB (the 4,709.9 MiB of weights and cache plus about 62 MiB of activations and partials, plus 4% slack): something is read twice; the
   per-op event timing and per-op byte estimates localize it.

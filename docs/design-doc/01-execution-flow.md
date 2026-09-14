@@ -13,7 +13,7 @@ host                                          GPU
 ----                                          ---
 1. reference prefill (HF, BF16, 1,024 tokens)  ->  logits, per-layer module outputs
 2. capture latent cache for positions 0..1022  ->  c_KV[l][0..1023), k_pe[l][0..1023)   (05-prefill-interface.md)
-3. set step=1022, new_token_nums=1,
+3. set step=1022, num_new_tokens=1,
    qo_indptr=[0,1], tokens[0..1024) = prompt
 4. mpk()                                       ->  prepare_kernel
                                                    worker_kernel (296 x 256 threads)   \  run until
@@ -71,7 +71,7 @@ rule. `x` is the residual stream, `[1, 2048]` BF16.
 | 2 | `qkva = h @ [W_q ; W_kva]^T` -> `[1, 3648]` = `q [16 x 192]` then `c [512]`, `k_pe_raw [64]` | `gang_linear_mi300` | 8 | 19 | 14.250 | 0.000 |
 | 3 | `mla_prep`: `c_KV[step] = kv_a_layernorm(c)`; `k_pe[step] = RoPE(k_pe_raw, step)`; `q_pe = RoPE(q[:,128:], step)`; `ql_nope[h] = q[h,:128] @ W_UK[h]` -> `[16, 512]` | `mla_prep_mi300 (NEW)` | 1 | - | 2.001 | 0.000 |
 | 4 | `mla_attend`: per split `j` of 32 positions, `s = (ql_nope . c_KV^T + q_pe . k_pe^T) x scale`, online softmax, `acc += p . c_KV`; emit `o_acc[j] [16, 512]`, `m[j]`, `l[j]` FP32 | `mla_attend_mi300 (NEW)` | 8 | 5 | 0.000 | 1.125 |
-| 5 | `mla_merge_uv`: per head, rescale-merge the 33 partials, `o[h] = (acc[h] / l[h]) @ W_UV[h]` -> `attn [1, 2048]` | `mla_merge_uv_mi300 (NEW)` | 8 | 2 | 2.000 | 0.000 |
+| 5 | `mla_merge_uv`: per head, rescale-merge the 33 partials, `o[h] = (acc[h] / l[h]) @ W_UV[h]^T` -> `attn [1, 2048]` | `mla_merge_uv_mi300 (NEW)` | 8 | 2 | 2.000 | 0.000 |
 | 6 | `x = x + attn @ W_o^T` | `gang_linear_res_mi300` | 8 | 8 | 8.000 | 0.000 |
 | 7 | `h = post_attention_layernorm(x)` | `rmsnorm` | 1 | - | 0.004 | 0.000 |
 | 8 | `a = silu(h @ W_gate^T) * (h @ W_up^T)` over the padded width 11264 | `gang_linear_silu_mi300` | 8 | 22 | 88.000 | 0.000 |

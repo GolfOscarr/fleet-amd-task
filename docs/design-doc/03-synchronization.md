@@ -34,7 +34,7 @@ producer task (any worker, XCD x)
        flat_atomic_add_x2 all_event_counters[e], 1  (sc0 sc1)                     (global counter)
 
 consumer task (worker on XCD y), before its body
-  4. actual = atomic_load(all_event_counters[e])                    sc1 load, not served from a stale line
+  4. actual = __atomic_load_n(all_event_counters[e], RELAXED)      expected to lower to an sc1 load; verified by disassembly (below)
   5. __builtin_amdgcn_fence(ACQUIRE, "agent")
                           ->  s_waitcnt ; buffer_inv sc1                         (invalidate L2 y)
   6. if actual < needed: poll with s_sleep 1, then fence again
@@ -109,8 +109,9 @@ event and has no `dependent_event`, so it runs no acquire. It reads
 XCD. The reduce's release flush wrote the value back to HBM, but the
 embed's XCD could hold a stale copy of that cache line from its own read of
 the neighbouring token in the previous iteration (the reads of 16 consecutive
-tokens share one 128-byte line, and the embed runs on the same worker every
-iteration). In the shipped runtime this is masked by the hundreds of
+tokens share one 128-byte line, and the embed runs on the same XCD every
+iteration: position 2 maps to XCD 0, on whichever of its workers the
+round-robin counter names). In the shipped runtime this is masked by the hundreds of
 acquires other tasks execute on that XCD in between. The design does not
 rely on that: the embed variant loads the token id with an agent-scope
 (`sc1`) load, which is not served from a non-coherent line. One instruction.

@@ -76,11 +76,14 @@ Three properties of this capture:
    (`:745-751`); `mla_prep` and `mla_attend` take both as inputs rather than
    recomputing them.
 
-`apply_rotary_pos_emb` in this model interleaves the 64 RoPE dimensions
-(`x.view(b, h, s, d // 2, 2).transpose(4, 3)` before the rotation,
-`modeling_deepseek.py`, `apply_rotary_pos_emb`); `mla_prep` reproduces the
+In this model the 64 RoPE dimensions of `q_pe` and `k_pe` are produced in
+interleaved (even, odd) pairs; `apply_rotary_pos_emb` de-interleaves them
+into the split-half layout (`x.view(b, h, s, d // 2, 2).transpose(4, 3)`,
+`modeling_deepseek.py:364-367`) so that the stock `rotate_half` applies, and
+leaves the result in that de-interleaved order. `mla_prep` reproduces the
 same permutation on `q_pe` and on the new `k_pe` row so that decode-time
-positions rotate identically to the captured ones. This is the one place
+positions rotate identically to the captured ones and land in the same
+layout. This is the one place
 where "use the model's own function" cannot be followed inside a kernel, and
 it is checked by the row-1023 comparison above.
 
@@ -92,7 +95,7 @@ it is checked by the row-1023 comparison above.
 | `c_kv[l]`, `k_pe[l]` for `l` in 0..26 | `[1056, 512]`, `[1056, 64]` BF16 | capture above, rows 0..1022 | `attach_input(..., name=f"c_kv_{l}")`, `f"k_pe_{l}"` |
 | `cos`, `sin` | `[1056, 64]` BF16 | `rotary_emb` | `attach_input` |
 | weights | `04-memory-plan.md` | loader | `attach_input` |
-| `step = 1022`, `new_token_nums = 1`, `qo_indptr = [0, 1]` | | host | meta tensors, written after `compile()` |
+| `step = 1022`, `num_new_tokens = 1`, `qo_indptr = [0, 1]` | | host | meta tensors, written after `compile()` |
 
 Positions: iteration `i` runs at `step = 1023 + i`, appends cache row
 `step`, rotates with `cos[step]`, `sin[step]`, attends over rows

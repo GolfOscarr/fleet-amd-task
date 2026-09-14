@@ -235,12 +235,14 @@ Task 0 is `TASK_TERMINATE` and event 0 is `EVENT_TERMINATION`
 `EVENT_LAUNCH_DEPENDENT_TASKS` (`:176-181`). After the rewrite:
 
 1. At the start of every iteration, `TASK_BEGIN_TASK_GRAPH` fires event 1
-   and every scheduler dispatches the **entire graph** to its workers by the
-   interleaved rule: task at position `p` (2 <= p < N) goes to worker
-   `(p - 2) mod 296`, in position order (`persistent_kernel.cuh:1705`).
-   A gang task at position `p` is instead broadcast to
-   `min(n_tile_count, 37)` workers of the XCD that owns worker
-   `(p - 2) mod 296` (`:1708-1735`).
+   and every scheduler dispatches the **entire graph** by the interleaved
+   rule: the task at position `p` (2 <= p < N) belongs to the scheduler
+   whose worker list contains `(p - 2) mod 296` (`persistent_kernel.cuh:1705`),
+   which pushes it to its own workers round-robin through `next_worker_idx`
+   (`:1725`, `:1747`), a counter that persists across iterations. A gang task
+   at position `p` is instead broadcast to the first `min(n_tile_count, 37)`
+   workers of that scheduler's XCD (`:1708-1721`). So the position fixes the
+   XCD, not the worker.
 2. Every other event is `EVENT_EMPTY`: when its counter fills, the firing
    worker does nothing (`:1311-1314`). Consumers are already queued; each
    waits in its worker's dependency check (`:914-975`) until the counter it
@@ -251,14 +253,16 @@ Task 0 is `TASK_TERMINATE` and event 0 is `EVENT_TERMINATION`
    nothing beyond what the chain already imposes.
 
 Two consequences for the design. Which XCD a task lands on is decided by
-`(p - 2) mod 296` and by which XCD the hardware placed worker `w` on. With
+the XCD of worker `(p - 2) mod 296`, i.e. by where the hardware placed that
+worker. With
 296 = 37 x 8 and round-robin block placement (`../mi300x/02-chiplet-dispatch.md`),
 worker `w` sits on XCD `w mod 8` and eight consecutive gang tasks land on
 eight distinct XCDs; if placement is not round-robin, two of them can share
 an XCD and one XCD idles for that operator. The `[WORKER_XCD]` lines printed
 at startup for workers 0-7 (`:751-754`) are the check. And a 1-task
-operator (a norm, the merge, the router) runs on whichever worker
-`(p - 2) mod 296` is; there is no way to pin it, and no reason to.
+operator (a norm, the router) runs on XCD `(p - 2) mod 8`, on whichever of
+its workers the round-robin counter names; there is no way to pin it, and
+no reason to.
 
 ### The dependency model is a chain
 

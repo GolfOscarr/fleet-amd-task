@@ -9,7 +9,10 @@ primary source, the checkpoint, or a line of the Fleet code at `51dce4f`.
 
 ## Checklist against the task description
 
-| Required by `docs/task-description.pdf` | File |
+The eight items the "First deliverable" paragraph of `docs/task-description.pdf`
+names, then what this set adds.
+
+| Required by the task description | File |
 |---|---|
 | model execution flow | [`01-execution-flow.md`](01-execution-flow.md) |
 | proposed Fleet task graph | [`02-task-graph.md`](02-task-graph.md) |
@@ -20,6 +23,9 @@ primary source, the checkpoint, or a line of the Fleet code at `51dce4f`.
 | implementation milestones; the required MoE-layer milestone | [`08-milestones.md`](08-milestones.md) (M2 = layer 1) |
 | expected performance | [`09-expected-performance.md`](09-expected-performance.md) |
 | work that can be completed locally before using the GPU | [`10-local-work.md`](10-local-work.md) |
+
+| Added by this set | File |
+|---|---|
 | the optimization strategy (this stage's brief) | [`06-optimization-strategy.md`](06-optimization-strategy.md) |
 | decisions, with evidence and reversal conditions | [`00-decisions.md`](00-decisions.md) |
 | what is still unknown at the design level | [`99-open-questions.md`](99-open-questions.md) |
@@ -87,7 +93,7 @@ all layers and end-to-end; day 5 measurement and the report. FP8 weight-only
 | Layer 1 | 159.63 MiB, 31.6 us floor, 38.9-45.7 us band, 12 boundaries |
 | New kernels | 4 (107 of 326 ops, 3.1% of bytes) |
 | Release / acquire fences per iteration | 1,838 / 1,879 |
-| Latent cache | 2 x 27 arrays, 32.8 MiB, 1,152 B per position |
+| Latent cache | 2 x 27 arrays, 31.3 MiB, 1,152 B per position |
 | Hand-over | position 1023; `step = 1022` before launch; 32 iterations to `step = 1054` |
 
 ## Reading order

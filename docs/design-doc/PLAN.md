@@ -1,5 +1,10 @@
 # Plan for the technical design document
 
+> Working plan, kept as the record of how the set was produced. Section 2
+> predates the full code read: F1's launch count is superseded by
+> `00-decisions.md` D22 (three dispatches per generation) and F4's two
+> layer names by the four kernels and two variants of `02-task-graph.md`.
+
 This file plans the design document set in `docs/design-doc/`. It is the
 working plan, not the deliverable; the numbered files are the deliverable. It
 records what the design must contain, where each input already exists, what
@@ -56,9 +61,10 @@ changes the shape of a section. File and line references are into
 `if not args.use_mirage:` (the PyTorch reference path). The Fleet path is the
 `else:` at line 1252: a single `mpk()` call. Inside the kernel, on
 `EVENT_END_OF_TASK_GRAPH` the scheduler calls `prepare_next_batch`
-(`persistent_kernel.cuh:381-416` for `MODE_ONLINE`, `:540-566` for offline),
-which copies `output_tokens` into `tokens[step+1]`, advances `config.step`,
-stops on EOS or `max_seq_length`, and otherwise re-issues the graph with
+(`persistent_kernel.cuh:381-536` for `MODE_OFFLINE`, which copies
+`output_tokens` into `tokens[step+1]`; `:538-568` for `MODE_ONLINE`, which
+only advances `config.step`), stops on EOS or `max_seq_length`, and
+otherwise re-issues the graph with
 `iteration_num + 1` encoded in the high 32 bits of every task id
 (`compute_task_id`, `:263-265`). Both Qwen3 demos run `mode="offline"`
 (`demo.py:315`, `demo_30B_A3B.py:273`).

@@ -10,7 +10,7 @@ tensor names are the ones the builder in `02-task-graph.md` uses.
 | Region | Size | Lifetime | Written by |
 |---|---|---|---|
 | Weights, packed (below) | 31.42 GB | whole run | loader, once |
-| Latent KV cache, 27 layers | 32.8 MiB | whole run | prefill capture (positions 0..1022), then `mla_prep` (one row per layer per iteration) |
+| Latent KV cache, 27 layers | 31.3 MiB | whole run | prefill capture (positions 0..1022), then `mla_prep` (one row per layer per iteration) |
 | RoPE tables `cos`, `sin` `[1056, 64]` | 264 KiB | whole run | captured from the reference model |
 | Split-KV partial buffer `[33][16][513]` FP32 | 1,058 KiB | reused by every layer | `mla_attend` |
 | Activations (below) | under 1 MiB | reused by every layer | tasks |
@@ -65,7 +65,7 @@ shared-expert re-packing moves bytes but adds none.
 ```
 c_kv[l] : bf16 [1056][512]     1,081,344 B per layer    post kv_a_layernorm
 k_pe[l] : bf16 [1056][ 64]       135,168 B per layer    post RoPE
-                                 1,216,512 B per layer;  32.8 MiB for 27 layers
+                                 1,216,512 B per layer;  32,845,824 B = 31.3 MiB for 27 layers
 ```
 
 - Two separate contiguous arrays per layer, not interleaved and not paged
@@ -127,7 +127,7 @@ all are allocated by our script, and in online mode most are inert.
 | `step` | `[1]` int32 | 1022 before launch (the seeded `prepare_next_batch` makes it 1023) | `embed`, `mla_prep`, `mla_attend`, `mla_merge_uv`, `argmax_reduce` variant, `prepare_next_batch` |
 | `tokens` | `[1, 1056]` int64 | prompt in `[0, 1024)`, zeros after | `embed` (row `step`); `argmax_reduce` writes row `step + 1`; the host reads `[1024, 1056)` after the run |
 | `input_tokens`, `output_tokens` | `[1, 1]` int64 | unused (offline-mode plumbing) | - |
-| `num_new_tokens` | `[1]` int32 | 1 | `prepare_next_batch` (online) |
+| `num_new_tokens` (`new_token_nums` on the C side) | `[1]` int32 | 1 | `prepare_next_batch` (online) |
 | `prompt_lengths` | `[1]` int32 | 1024 | offline mode only |
 | `qo_indptr_buffer` | `[2]` int32 | `[0, 1]` | gang linears read `[1]` as `num_active_tokens`; **must not be left at the zeros `init_kernel` writes** |
 | `paged_kv_indptr_buffer`, `paged_kv_indices_buffer`, `paged_kv_last_page_len_buffer` | `[2]`, `[1]`, `[1]` int32 | zeros | paged attention only; none of our tasks |
@@ -145,7 +145,7 @@ union over all task types, so every kernel we add is measured with
 
 | Task | LDS | Registers (per lane, estimate) | Binding resource |
 |---|---|---|---|
-| CK linears (`gang_linear*`, `gang_moe_*`) at `16 x 64 x 256` | A tile 16 x 256 + B tile 64 x 256 BF16 with padding, about 42 KiB (`GemmPipelineSmallTilePolicy`, `linear_ck_mi300.cuh:134-289`) | CK's pipeline; the union's likely maximum today | LDS |
+| CK linears (`gang_linear*`, `gang_moe_*`) at `16 x 64 x 256` | A tile 16 x 256 + B tile 64 x 256 BF16 with padding, 41,984 B = 41.0 KiB (`GemmPipelineSmallTilePolicy`, `linear_ck_mi300.cuh:134-289`) | CK's pipeline; the union's likely maximum today | LDS |
 | `mla_attend` (spec kernel) | `acc [16, 512]` FP32 32 KiB + one `c_kv` tile `[32, 512]` BF16 32 KiB would be 64 KiB, over budget; so `acc` in LDS (32 KiB) and the `c_kv` tile streamed through registers in 16-row halves (16 KiB), plus `k_pe` tile 4 KiB and scores 2 KiB: about 54 KiB | prefetch 4-8 `dwordx4` = 16-32 VGPRs, MFMA accumulators 16 | LDS, at the limit; this is `OPEN-PROBLEMS.md` MIN-24 |
 | `mla_attend` (CK FMHA, if available) | `DecodePipeline::GetSmemSize()` with a `static_assert` against 57 KiB in the wrapper (`paged_attention_ck_fmha_split_kv_mi300.cuh:118-121`) | CK's | LDS; the assert answers it at compile time |
 | `mla_prep` | `q [16, 192]` + `c [512]` staged, 8 KiB | 16 x `[1,128] x [128,512]` accumulations spread over 256 lanes: 32 FP32 per lane | none |
