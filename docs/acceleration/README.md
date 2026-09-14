@@ -48,7 +48,7 @@ by construction.
 |---|---|---|---|---|
 | BF16 (task baseline) | 4,705.9 MiB | 931 µs | 1,148 µs | 1,348 µs |
 | FP8 weights, BF16 `lm_head` + router | 2,571.4 MiB | 509 µs | 627 µs | 737 µs |
-| FP8 weights incl. `lm_head` | 2,422.1 MiB | 479 µs | 591 µs | 694 µs |
+| FP8 weights incl. `lm_head` | 2,371.4 MiB | 469 µs | 578 µs | 679 µs |
 
 Bandwidth band from `../mi300x/07-achievable-bandwidth.md`. The theoretical
 column is the hard floor; the other two are what to expect.

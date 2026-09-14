@@ -94,17 +94,18 @@ roofline. Worth knowing, not worth worrying about.
 
 All computed from `config.json`; reproduce with `sources/fp8_roofline.py`.
 
-All TPOT figures below are at **theoretical** 5.3 TB/s — the hard floor. At
-the realistic 4.3/3.66 TB/s band, multiply by 1.23 / 1.45
-(`../mi300x/07-achievable-bandwidth.md`).
+The router (`mlp.gate`) and all norms are BF16 in the shipped checkpoint and are
+treated as BF16 in **every** row below — quantizing a `[64, 2048]` router would
+save 3.25 MiB/token and risk expert-selection flips.
 
-| Scenario | Traffic/token | TPOT | tok/s | vs BF16 |
-|---|---|---|---|---|
-| BF16 everywhere (task baseline) | 4,705.9 MiB | 931.0 µs | 1,074 | 1.00× |
-| **RedHatAI FP8 as shipped** (`lm_head` + router BF16) | 2,571.4 MiB | 508.7 µs | 1,966 | **1.83×** |
-| ... + `kv_b_proj` dequantized (vLLM behaviour) | 2,622.1 MiB | 518.8 µs | 1,928 | 1.79× |
-| ... + `lm_head` also FP8 | 2,422.1 MiB | 479.2 µs | 2,087 | 1.94× |
-| FP8 weights + FP8 latent KV cache | 2,406.9 MiB | 476.2 µs | 2,100 | 1.96× |
+| Scenario | Traffic/token | @5.3 theo | @4.3 meas | @3.66 consv | vs BF16 |
+|---|---|---|---|---|---|
+| BF16 everywhere (task baseline) | 4,705.9 MiB | 931.0 µs | 1,147.6 µs | 1,348.2 µs | 1.00× |
+| **RedHatAI FP8 as shipped** (`lm_head` BF16) | 2,571.4 MiB | **508.7 µs** | **627.0 µs** | **736.7 µs** | **1.83×** |
+| ... + `kv_b_proj` dequantized (vLLM behaviour) | 2,625.4 MiB | 519.4 µs | 640.2 µs | 752.2 µs | 1.79× |
+| ... + `lm_head` also FP8 (hypothetical) | 2,371.4 MiB | 469.2 µs | 578.3 µs | 679.4 µs | 1.98× |
+| ... + FP8 latent KV cache | 2,356.2 MiB | 466.2 µs | 574.6 µs | 675.0 µs | 2.00× |
+| FP8 experts only (all else BF16) | 2,989.9 MiB | 591.5 µs | 729.1 µs | 856.6 µs | 1.57× |
 
 Per-component, BF16 → FP8:
 

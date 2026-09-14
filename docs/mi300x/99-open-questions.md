@@ -191,3 +191,21 @@ mention Infinity Cache or MALL at all; 256 MB / 17 TB/s is secondary reporting.
 **Check.** Find a primary AMD source (MI300X architecture whitepaper or the Hot
 Chips 2024 MI300X presentation), and empirically: a pointer-chase / bandwidth
 sweep across working-set sizes should show a plateau between L2 (32 MB) and HBM.
+
+---
+
+## Q14 — Does prefetch depth actually control achieved bandwidth? `open`
+
+**Why.** `07-achievable-bandwidth.md` concludes that 1 wave/SIMD can saturate
+HBM provided each wave keeps 4-8 loads in flight, based on `VMCNT` being 6 bits.
+That is a necessary condition only; per-CU miss queues and L2 request queues are
+undocumented and could bind first.
+
+**Check.** A streaming-read kernel at 1 wave/SIMD occupancy, sweeping unroll
+depth N = 1, 2, 4, 8, 16, 32 with all loads issued before the first `s_waitcnt`.
+Plot achieved bandwidth vs N. Expect a knee around N=4 and a plateau at
+3.7-4.3 TB/s. If bandwidth plateaus well below that, or the knee is much later
+than predicted, a queue limit we have not identified is binding.
+
+This single experiment validates or refutes the whole memory-level-parallelism
+analysis, and it takes minutes.

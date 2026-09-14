@@ -3,7 +3,7 @@
 Consolidated index of everything unresolved, so a problem can be located without
 re-reading four doc sets. Detail lives in each set's `99-open-questions.md`.
 
-Last updated: 2026-09-14 · 6 major · **15 minor open** · 12 resolved · 9 documentation defects
+Last updated: 2026-09-14 · 6 major · **16 minor open** · 12 resolved · 9 documentation defects
 
 **When** — `local` = resolvable without a GPU · `gpu` = needs the MI300X ·
 `build` = needs a working toolchain
@@ -49,6 +49,7 @@ Last updated: 2026-09-14 · 6 major · **15 minor open** · 12 resolved · 9 doc
 | MIN-14 | MFMA vs VALU dot-product at M=1. Fleet uses `ck_tile` MFMA even at bs=1. | Kernel | `docs/acceleration` Q2 | build |
 | MIN-15 | Split-KV value estimated at ~114 µs from a crude CU-count ratio. | Attention | `docs/acceleration` Q5 | gpu |
 | MIN-21 | **HBM load-to-use latency unknown.** No published figure found (ACM 403; Chips and Cheese gives only Infinity Cache ≈218 ns). Does not block the MLP analysis, which holds across 250 ns-2 µs. | Memory | `docs/mi300x/07-achievable-bandwidth.md` | gpu |
+| MIN-22 | **`VMCNT`=63 is necessary, not sufficient.** Per-CU miss-queue (MSHR) and L2 request-queue depths are undocumented and could bind before the wave-level limit. One unroll-depth sweep settles it. | Memory | `docs/mi300x` Q14 | gpu |
 | MIN-16 | Cost of `buffer_inv sc1` / `buffer_wbl2 sc1` — sets task-graph granularity. | Memory model | `docs/mi300x` Q5 | gpu |
 | MIN-17 | Cooperative launch overhead (known ROCm slowdown issue #3410). | Runtime | `docs/mi300x` Q7 | gpu |
 | MIN-18 | Optimal `s_sleep` interval for cross-XCD polling (`S_WAKEUP` can't cross workgroups). | Runtime | `docs/mi300x` Q8 | gpu |
@@ -95,7 +96,7 @@ Not our bugs — but each one could mislead us, so they are recorded.
 | ✅ MIN-9 | `lm_head` argmax | Split for **parallelism**, not traffic — the logit buffer is only 200 KB. Keep a debug path for B15. `docs/deepseek-v2-lite` Q9 |
 | ✅ MIN-12 | Split-KV merge kernel | Reuse `merge_splitkv_ck_fmha`; rewrite the GQA-paged wrapper. `docs/fleet` Q8 |
 | ✅ MIN-13 | KV-cache append kernel | Paged GQA, not reusable — write our own (~30 lines). Take its 3-phase decomposition and the ~3.8K-cycle cost anchor. `docs/fleet` Q9 |
-| ✅ | Can 1 wave/SIMD saturate HBM? | **Yes.** `VMCNT` is 6 bits (63 outstanding loads/wave); only 4-8 are needed. Not a ceiling — a loop-structure requirement. `docs/mi300x/07-achievable-bandwidth.md` |
+| ✅ | Can 1 wave/SIMD saturate HBM? | **Yes, subject to MIN-22.** `VMCNT` is 6 bits (63 outstanding loads/wave); only 2-4 are needed. Not a ceiling — a loop-structure requirement. `docs/mi300x/07-achievable-bandwidth.md` |
 | ✅ | What bandwidth is actually achievable? | **3.66-4.3 TB/s (69-81%)**. AMD's Dot acceptance threshold and BabelStream peak. Realistic BF16 target 1.15-1.35 ms/token. |
 
 ---

@@ -25,11 +25,20 @@ system — a floor, not a ceiling.
 | **Dot** | **≥ 3,660,781 MB/s ≈ 3.66 TB/s** | **69.1%** | **2:0 — read-only** |
 
 Run configuration AMD specifies: HIP BabelStream, `-n 50 -s 268435456`, one MPI
-rank per GPU. No clock pinning, no partition-mode qualifier — AMD does not say
-which SPX/NPS configuration these were measured in, and gives no basis for
-adjusting them if you change it.
+rank per GPU, 8 ranks. No clock pinning, no partition-mode qualifier — AMD does
+not say which SPX/NPS configuration these were measured in, and gives no basis
+for adjusting them if you change it.
 
-The percentages are ours; AMD publishes only MB/s and never mentions 5.3 TB/s.
+**Three things below are ours, not AMD's, and each is load-bearing:**
+
+1. **The percentages.** AMD publishes only MB/s and never mentions 5.3 TB/s.
+2. **That these are per-GPU, not aggregate.** AMD does not say. The run is 8 MPI
+   ranks pinned one per GPU; an aggregate 4.18 TB/s over 8 GPUs would be
+   0.52 TB/s each, which is implausible. So per-GPU — but it is an inference.
+3. **That they are HBM-bound.** `-s 268435456` elements at BabelStream's default
+   double precision is **2 GiB per array**, 6 GiB across three — far beyond the
+   256 MB Infinity Cache, so these genuinely measure HBM and not MALL. This
+   matters, and it is a point in AMD's favour over the secondary figure below.
 
 ### Independent measurement (secondary)
 
@@ -38,18 +47,31 @@ MI300X reaches "approximately 81% of its theoretical peak of 5.3 TB/s",
 "saturating at around 4.3 TB/s", with bandwidth plateauing at 64–128 MiB array
 size. For comparison they report NVIDIA A100/H100/H200 reaching "up to 90%".
 
-The paper does **not** say which BabelStream kernel produced that number, so
-4.3 TB/s cannot be treated as read-only.
+Two caveats on this figure:
+
+- The paper does **not** say which BabelStream kernel produced it, so 4.3 TB/s
+  cannot be treated as read-only.
+- Its bandwidth-vs-size curve "plateaus earlier — around 64–128 MiB", which is
+  **below** the 256 MB Infinity Cache. A plateau that begins inside MALL raises
+  the question of whether the reported peak is partly MALL-assisted. The curve
+  extends to 8 GiB and they describe it as a plateau rather than a peak-then-
+  drop, so it probably is the HBM-bound value — but AMD's thresholds, measured
+  at 2 GiB arrays, are the safer number for our purposes.
 
 ### Which figure applies to us
 
 Our decode traffic is **~98% reads** — weights stream in, the only write is a
 4 KB activation. That argues for the read-only figure.
 
-**Dot is also structurally the closest match**: it streams two input arrays and
-reduces to a scalar, which is exactly what a GEMV does per output element. It is
-also the *lowest* of the five thresholds, because the reduction adds overhead
-that pure streaming does not.
+**Dot is also the closest structural match**: it streams two input arrays and
+reduces, which is what a GEMV does per output element. It is also the *lowest*
+of the five thresholds.
+
+Treat that as a heuristic rather than a proof. BabelStream's Dot performs a
+full-array reduction, whereas our GEMV reduces within a wave over a tile — a
+cheaper pattern. So Dot may be pessimistic for us, and the true read-only
+ceiling probably sits between the Dot and Copy thresholds. The band below covers
+that uncertainty rather than resolving it.
 
 So we adopt a **band**, not a point:
 
@@ -148,6 +170,34 @@ inner loop **issue several independent loads before the first `s_waitcnt`** —
 i.e. unroll by 4–8 and software-pipeline. If we write a naive
 `load → waitcnt → use` loop, we will be latency-bound at roughly `1/N` of peak,
 and that will look like a bandwidth problem when it is a scheduling problem.
+
+### Limits of this analysis
+
+The conclusion rests on `VMCNT`, and **`VMCNT` is a necessary condition, not a
+sufficient one.** A wave may *track* 63 outstanding loads; that does not prove
+the memory subsystem will *accept* 63 from it. Not established here:
+
+- **L1 / TCP miss-queue depth (MSHRs) per CU.** If a CU can only track, say, 32
+  outstanding misses, then at 4 waves/CU that is 8 per wave — still above the
+  N≈2–4 we need, but the margin is much smaller than 63 implies, and the number
+  is not in the ISA.
+- **L2 and EA request-queue depth.** The LLVM memory model notes "Each CU has a
+  separate request queue per channel for its associated L2", but gives no depth.
+- **Coalescing.** The 1 KiB-per-load figure assumes 64 lanes reading contiguous
+  bytes, i.e. 8 × 128 B cache lines. That holds for a weight-row GEMV read. A
+  scattered access pattern would issue up to 64 separate lines for the same
+  instruction, changing the arithmetic in our favour for concurrency but against
+  us for efficiency.
+- **Loaded vs unloaded latency.** Little's Law here uses *unloaded* latency to
+  compute the concurrency needed to *reach* saturation. Once saturated, queuing
+  raises observed latency; that is expected and does not invalidate the estimate.
+
+So the honest statement is: **the wave-level instruction limit is not the
+binding constraint, and no other limit we can identify from documentation is
+either — but we have not proved one does not exist.** The required N≈2–4 is far
+enough below every plausible bound that the verdict is robust, and the
+microbenchmark in `99-open-questions.md` settles it directly by sweeping unroll
+depth and measuring achieved bandwidth.
 
 ### The register price is small
 
