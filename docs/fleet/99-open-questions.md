@@ -77,17 +77,56 @@ numbers in our report we should say which and why.
 
 ---
 
-## Q8 — Can we reuse `gang_attention_merge_mi300` for split-KV MLA? `open`
+## Q8 — Can we reuse `gang_attention_merge_mi300` for split-KV MLA? `resolved` (2026-09-14)
 
-**Why.** Determines whether G2 is an adaptation or a rewrite.
+**Resolved: reuse the inner merge math, rewrite the wrapper.**
 
-**Check.** Read the kernel; see whether the partial-softmax merge is shaped
-generically (max, sumexp, weighted accumulator) or hard-wired to GQA head
-layout.
+The wrapper is GQA-paged throughout:
 
----
+```c
+gang_attention_merge_kernel(lse_ptr, o_acc_ptr, qo_indptr, kv_indptr,
+                            kv_last_page_len, output_ptr, num_kv_heads,
+                            total_work_items, tile_idx)
+// tile_idx -> (request_id, kv_head)
+```
 
-## Q9 — What does `kv_cache_update_mi300` assume about layout? `open`
+Template parameters are `NUM_QO_HEADS_PER_KV`, `NUM_KV_HEADS`, `PAGE_SIZE`,
+`MAX_TOKENS` — all concepts our path does not have. We have one request, no
+paging, and a single shared `k_pe` head.
 
-Same question for G3. If it is a generic strided append it may take our latent
-layout directly; if it assumes `[heads, S, head_dim]` we write our own.
+But the inner `merge_splitkv_ck_fmha` is exactly the right algorithm: reduce
+FP32 partial `lse` and `o_acc` across `NUM_KV_CHUNKS` into a BF16 output. That
+is the standard running-max / sumexp rescale, and it is what our split-KV merge
+needs.
+
+**Plan:** call `merge_splitkv_ck_fmha` (or copy its body) behind our own thin
+wrapper that maps `tile_idx -> kv_chunk` with no request or page indirection.
+
+## Q9 — What does `kv_cache_update_mi300` assume about layout? `resolved` (2026-09-14)
+
+**Resolved: paged GQA K/V. Not reusable — write our own (~30 lines).**
+
+```c
+kv_cache_update_impl(qkv_ptr, paged_k_cache_ptr, paged_v_cache_ptr,
+                     q_workspace_ptr, qo_indptr_buffer_ptr,
+                     paged_kv_indptr_buffer_ptr, paged_kv_indices_buffer_ptr,
+                     paged_kv_last_page_len_buffer_ptr, request_id,
+                     qk_norm, rope, q_norm_weight_ptr, k_norm_weight_ptr, ...)
+```
+
+Separate paged K and V caches, per-`(request_id, kv_head)` grid, page tables,
+and fused QK-norm. Our latent cache is two contiguous arrays — `c_KV[S][512]`
+and `k_pe[S][64]` — with no paging, no per-head K/V split, and one shared `k_pe`
+head. Nothing transfers.
+
+**Two things worth taking from it anyway:**
+
+1. **The three-phase decomposition**, stated in its own header comment, which our
+   MLA task should copy:
+   - Phase A: RoPE on Q and new K, write to cache, stage Q in a workspace
+   - Phase B: split-KV attention (batch-independent)
+   - Phase C: merge partial results
+2. **A cost anchor:** the comment calls Phase A "a lightweight operation (~3.8K
+   cycles at decode) since it only does preprocessing and cache writes, no
+   attention compute." Matches Table 2 in the paper. Our append should be
+   similarly cheap, so if it is not, something is wrong.

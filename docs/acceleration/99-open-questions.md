@@ -1,21 +1,32 @@
 # 99 — Open Questions
 
-## Q1 — Does runtime reassociation avoid the MLA dequantization requirement? `open`
+## Q1 — Does runtime reassociation avoid the MLA dequantization requirement? `resolved` (2026-09-14)
 
-**Why.** vLLM must dequantize `q_proj`, `kv_b_proj`, and `o_proj` for MLA
-because it *materializes* the absorbed weight products at load time. We chose
-runtime reassociation, so we never form a product — each matrix should be able
-to stay quantized and be dequantized per-use in-kernel. This is a structural
-argument, not a tested one.
+**Resolved: yes, and the checkpoint's scale layout makes it trivial.**
 
-**Check.** Implement the reassociated attention against the FP8 checkpoint on
-CPU in PyTorch, compare to the BF16 oracle per
-`../deepseek-v2-lite/08-correctness.md`. **No GPU needed.**
+Read from the FP8 checkpoint's safetensors header:
 
-**Fallback cost if wrong:** keep `kv_b_proj` in BF16 — 54 MiB/token, **10.7 µs**,
-about 2% of an FP8 roofline. Not a blocker either way.
+```
+q_proj.weight          F8_E4M3  [3072, 2048]
+q_proj.weight_scale    F32      []          <- scalar, per-tensor
+kv_b_proj.weight       F8_E4M3  [4096, 512]
+```
 
----
+The scales are **scalars**, not per-channel or per-block. So for the per-head
+product our reassociated path needs:
+
+```
+q_nope[h] @ W_UK_fp8[h] * scale_kv_b
+```
+
+the scale factors straight out of the matmul. vLLM's constraint arises only
+because it *materialises* `W_UQ @ W_UK` at load time, where two independently
+scaled quantized matrices cannot be recombined into one meaningfully quantized
+product. We never form that product.
+
+**Residual:** confirm numerically alongside `../deepseek-v2-lite` Q1. The
+fallback if something unexpected appears — keep `kv_b_proj` in BF16 — costs
+54 MiB/token = **10.7 us**, about 2% of an FP8 roofline.
 
 ## Q2 — MFMA or VALU dot-product for an M=1 GEMV? `open`
 
@@ -41,15 +52,32 @@ preserved — decide in advance how we report a mismatch.
 
 ---
 
-## Q4 — Does the FP8 checkpoint load without vLLM? `open`
+## Q4 — Does the FP8 checkpoint load without vLLM? `resolved` (2026-09-14)
 
-**Why.** It ships `weight_scale` and `input_scale` per tensor in
-compressed-tensors/fp8 format. Our loader must parse that itself.
+**Resolved: yes, and it is simple.** From the safetensors header:
 
-**Check.** Read the scales from safetensors, dequantize one tensor, compare
-against the BF16 checkpoint's corresponding tensor. **No GPU needed.**
+| Tensor class | dtype | Scale |
+|---|---|---|
+| Linear weights (attn, experts, shared, dense MLP) | `F8_E4M3` | `weight_scale` F32, shape `[]` |
+| | | `input_scale` F32, shape `[]` |
+| RMSNorm weights, `kv_a_layernorm` | `BF16` | none |
+| **`mlp.gate.weight` (router)** | **`BF16`** | none |
+| `embed_tokens`, `model.norm`, `lm_head` | `BF16` | none |
 
----
+Per-tensor **scalar** scales — no block or group structure, so dequantisation is
+a single multiply. Our loader reads `weight` as `F8_E4M3` bytes and one FP32
+scalar; nothing from vLLM or compressed-tensors is needed.
+
+Two useful specifics:
+
+- The **router stays BF16**, which preserves the FP32-router requirement in
+  `../deepseek-v2-lite/03-moe.md`. Red Hat made the same judgement we would have.
+- The 110 unquantized tensors decompose exactly: 54 layer norms + 27
+  `kv_a_layernorm` + 26 routers + `embed_tokens` + `model.norm` + `lm_head`.
+
+**Correction to `01-precision.md`:** the roofline there counted the router as
+quantizable. It is not, which adds 3.25 MiB/token — "FP8 as shipped" is
+**508.7 us**, not 508.1. Immaterial, but recorded.
 
 ## Q5 — Is the ~100 µs split-KV estimate right? `open`
 

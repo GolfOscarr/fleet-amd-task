@@ -20,6 +20,15 @@ on CPU, run on the reference's real layer-1 inputs, and compare against the HF
 oracle. Sweep the accumulation precision (BF16 vs FP32) for the per-head
 `q_nope @ W_UK` product. **No GPU needed.**
 
+```python
+# W_UK = kv_b_proj.view(16, 256, 512)[:, :128, :]
+naive = (q @ k.transpose(-1, -2)) * softmax_scale          # decompressed path
+reassoc = (torch.einsum('hd,hdc->hc', q_nope, W_UK) @ c_KV.T
+           + q_pe @ k_pe.T) * softmax_scale                 # latent path
+rel = (naive - reassoc).norm() / naive.norm()
+```
+Accumulate the einsum in FP32; report `rel` against the B5 threshold.
+
 ---
 
 ## Q2 — Confirm the absorption cost analysis `resolved` (2026-09-13)
@@ -57,11 +66,18 @@ normally and (b) with non-temporal cache-policy bits. The delta is the answer.
 **Why.** Static expert→XCD affinity only pays if a re-selected expert is still
 warm. Also tells us whether routing is skewed enough that some experts dominate.
 
-**Check.** Run the HF reference on the real 1,024-token prompt, log the 6 chosen
-expert indices for all 26 MoE layers × 32 decode steps, and compute: per-layer
-expert frequency distribution, and step-to-step overlap (how many of step `t`'s
-6 experts were also chosen at `t-1`). **No GPU needed.** Falls out of the
-`08-correctness.md` B9 logging for free.
+**Check.** Hook every `MoEGate`, log `topk_idx` for all 26 MoE layers x 32
+decode steps, then compute the per-layer expert histogram and the step-to-step
+overlap:
+
+```python
+overlap = [len(set(idx[t]) & set(idx[t-1])) / 6 for t in range(1, 32)]
+```
+
+Uniform routing gives mean overlap ~ 6/64 = **0.094**. If the measured mean is
+materially higher, expert->XCD affinity is worth building; if not, drop the idea
+and say so. **No GPU needed** — falls out of the `08-correctness.md` B9 logging
+for free.
 
 ---
 
@@ -82,21 +98,19 @@ threshold that is too tight wastes days chasing normal BF16 behaviour; too loose
 hides real bugs.
 
 **Check.** Run the HF reference twice with different accumulation orders (CPU vs
-GPU, or different batch groupings) and measure per-boundary error. Set our
-thresholds at a small multiple. **No GPU needed** for the CPU-vs-CPU variant.
+GPU, or a reordered expert summation) and measure per-boundary error. Set our
+thresholds at **3-5x** the observed floor. Commit the calibration output — it is
+what makes the thresholds defensible rather than arbitrary. **No GPU needed**
+for the CPU-vs-CPU variant.
 
 ---
 
-## Q7 — Are the weight shards downloadable without gating? `open`
+## Q7 — Are the weight shards downloadable without gating? `resolved` (2026-09-14)
 
-**Why.** `config.json` and the safetensors index fetched anonymously, but weight
-shards are sometimes gated separately. Blocking discovery on day 1 of GPU access
-would be expensive.
-
-**Check.** `huggingface-cli download deepseek-ai/DeepSeek-Coder-V2-Lite-Base
---include "*.safetensors"` — or just an anonymous HTTP range request on a shard,
-which we already did successfully for shard 1's header. That partial success is
-good evidence but not proof for the full file.
+**Resolved.** An anonymous HTTP range request on
+`model-00001-of-000004.safetensors` returns **HTTP 206** with content. No token,
+no gating, no license acceptance. The full 31 GB download on the MI300X host
+needs nothing beyond network access.
 
 ---
 
@@ -106,18 +120,33 @@ good evidence but not proof for the full file.
 behaviour, and therefore everything in Q4, depends on the prompt. A code prompt
 is the natural choice for a Coder model.
 
-**Check.** Pick one, tokenize to exactly 1,024 tokens, commit the **token IDs**,
-and use it everywhere. Decide once and never change it, or every measurement
-becomes incomparable.
+**Check / recipe.** Pick a real source file (this is a Coder model), tokenize,
+slice to exactly 1,024, and commit the **IDs**, not the text:
+
+```python
+ids = tok(open("fixture.py").read())["input_ids"][:1024]
+assert len(ids) == 1024
+json.dump(ids, open("bench/prompt_1024.json", "w"))
+```
+
+Committing IDs rather than text means a tokenizer version change cannot silently
+alter the experiment. A source file from this repo works and is self-documenting.
+Decide once and never change it, or every measurement becomes incomparable.
 
 ---
 
-## Q9 — Does `lm_head` argmax need full logits? `open`
+## Q9 — Does `lm_head` argmax need full logits? `resolved` (2026-09-14)
 
-**Why.** `lm_head` is 400 MB/token, 8.5% of traffic, and greedy decoding needs
-only the **argmax**, not the 102,400 logits. A chiplet-parallel partial-argmax
-reduction (`04-tensor-flow.md`) avoids materializing the logit vector.
+**Resolved: do the chiplet-parallel argmax, but for parallelism, not traffic.**
 
-**Check.** Arithmetic plus an implementation decision — but note the correctness
-protocol wants B15 logits for comparison. Keep a debug path that materializes
-them and a fast path that does not. **No GPU needed to decide.**
+Skipping the logit buffer saves almost nothing: `[1, 102400]` in BF16 is 200 KB,
+so writing and re-reading it costs ~0.08 µs. The 400 MiB of `lm_head` weights
+must be read either way.
+
+The real reason to split is **device utilisation**: partition the 102,400 rows
+across 8 XCDs, argmax locally, then reduce 8 (value, index) pairs. That spreads
+the single largest per-token read across the whole machine instead of
+concentrating it.
+
+Keep a debug path that materialises full logits, since the B15 boundary check in
+`08-correctness.md` compares them.

@@ -52,12 +52,13 @@ Required as the **first deliverable**. All inputs exist; this is assembly.
 
 ## Stage 3 — Local work (no GPU) ⬜ not started
 
+- [x] Read `gang_attention_merge_mi300.cuh` and `kv_cache_update_mi300.cuh` (both GQA-paged; merge math reusable, append is not)
 - [ ] Read `gang_linear_mi300.cuh` + `ck_tile` idiom
 - [ ] Read `python/mirage/mpk/models/qwen3/` (template for our builder)
 - [ ] Read Mirage MPK paper (arXiv:2512.22219) + `persistent_kernel.cuh` main loop
 - [ ] Read vLLM / SGLang / AITER MLA decode kernels ← de-risks the core work
 - [ ] Split-KV partial-softmax numerics
-- [ ] Pick + tokenize the 1,024-token prompt, commit token IDs
+- [ ] Pick + tokenize the 1,024-token prompt, commit token IDs (recipe in `docs/deepseek-v2-lite` Q8)
 - [ ] HF reference: greedy decode (`do_sample=False`), dump per-boundary tensors
 - [ ] Calibrate BF16 noise floor → set correctness thresholds
 - [ ] Log expert routing across 32 steps (feeds placement decisions)
@@ -118,10 +119,12 @@ documented as blocked. **Decide end of day 1.**
 
 | Where | Count | Most urgent |
 |---|---|---|
-| `docs/mi300x/99-open-questions.md` | 13 | Q4 agent-scope fence emits right cache ops |
-| `docs/deepseek-v2-lite/99-open-questions.md` | 9 | Q1 reassociation within tolerance (no GPU) |
-| `docs/fleet/99-open-questions.md` | 9 | **Q1 does it build on gfx942** |
-| `docs/acceleration/99-open-questions.md` | 6 | Q2 MFMA vs VALU at M=1 |
+| `docs/mi300x/99-open-questions.md` | 12 open / 1 resolved | Q4 agent-scope fence emits right cache ops |
+| `docs/deepseek-v2-lite/99-open-questions.md` | 6 open / 3 resolved | Q1 reassociation within tolerance (no GPU) |
+| `docs/fleet/99-open-questions.md` | 7 open / 2 resolved | **Q1 does it build on gfx942** |
+| `docs/acceleration/99-open-questions.md` | 4 open / 2 resolved | Q2 MFMA vs VALU at M=1 |
+
+See `OPEN-PROBLEMS.md` for the consolidated, deduplicated view.
 
 ---
 

@@ -27,7 +27,7 @@ check stability.
 
 ---
 
-## Q2 — Assembler syntax for reading `XCC_ID` `open`
+## Q2 — Assembler syntax for reading `XCC_ID` `resolved` (2026-09-13)
 
 **Why it matters.** Everything in Q1 and all self-organization depends on it.
 
@@ -36,10 +36,18 @@ field `XCC_ID` bits 3:0. The `S_GETREG_B32` encoding is also primary:
 `SIMM16 = {size[4:0], offset[4:0], hwRegId[5:0]}`. So only the assembler's
 accepted spelling is genuinely open.
 
-**Check.** Compile `asm volatile("s_getreg_b32 %0, hwreg(20, 0, 4)" : "=s"(id))`
-for gfx942 and confirm it assembles; verify values fall in 0..7 and that all 8
-appear across a large grid. Check whether the toolchain accepts a symbolic name
-(e.g. `HW_REG_XCC_ID`).
+**Resolved.** Fleet's own gfx942 source uses the symbolic name, so the ROCm
+assembler accepts it:
+
+```c
+asm volatile ("s_getreg_b32 %0, hwreg(HW_REG_XCC_ID, 0, 16)" : "=s"(xcd_id));
+```
+
+(`persistent_kernel.cuh:186`.) Note they read 16 bits where the ISA defines
+`XCC_ID` as bits 3:0 — harmless if the upper bits read zero.
+
+**Residual check on the machine:** confirm returned values land in 0..7 and that
+all eight appear across a large grid. Folded into Q1.
 
 ---
 

@@ -3,7 +3,7 @@
 Consolidated index of everything unresolved, so a problem can be located without
 re-reading four doc sets. Detail lives in each set's `99-open-questions.md`.
 
-Last updated: 2026-09-14 · 6 major · 20 minor · 9 documentation defects
+Last updated: 2026-09-14 · 6 major · **14 minor open** · 12 resolved · 9 documentation defects
 
 **When** — `local` = resolvable without a GPU · `gpu` = needs the MI300X ·
 `build` = needs a working toolchain
@@ -31,7 +31,6 @@ Last updated: 2026-09-14 · 6 major · 20 minor · 9 documentation defects
 |---|---|---|---|---|
 | MIN-1 | Runtime MLA reassociation within tolerance? Reorders BF16 accumulation. | Model | `docs/deepseek-v2-lite` Q1 | local |
 | MIN-2 | BF16 noise floor not calibrated — correctness thresholds are reasoned, not measured. | Correctness | `docs/deepseek-v2-lite` Q6 | local |
-| MIN-3 | Does runtime reassociation avoid vLLM's MLA-dequantization requirement? Fallback costs 10.7 µs. | Model / FP8 | `docs/acceleration` Q1 | local |
 | MIN-4 | No FP8 accuracy data published for the **Base** variant (only Instruct). | FP8 | `docs/acceleration` Q3 | local |
 
 ### Model & data
@@ -40,9 +39,6 @@ Last updated: 2026-09-14 · 6 major · 20 minor · 9 documentation defects
 |---|---|---|---|---|
 | MIN-5 | Prompt not chosen. Must fix 1,024 token IDs and never change them. | Harness | `docs/deepseek-v2-lite` Q8 | local |
 | MIN-6 | Expert routing correlation across 32 steps unknown — decides whether expert→XCD affinity pays. | Scheduling | `docs/deepseek-v2-lite` Q4 | local |
-| MIN-7 | Weight shards may be gated (config + index fetched anonymously; shards untested). | Setup | `docs/deepseek-v2-lite` Q7 | local |
-| MIN-8 | FP8 checkpoint loader: parse `weight_scale` / `input_scale` without vLLM. | FP8 | `docs/acceleration` Q4 | local |
-| MIN-9 | Does `lm_head` argmax need full logits? 400 MiB/token, greedy needs only argmax. | Kernel | `docs/deepseek-v2-lite` Q9 | local |
 
 ### Runtime & kernels
 
@@ -50,8 +46,6 @@ Last updated: 2026-09-14 · 6 major · 20 minor · 9 documentation defects
 |---|---|---|---|---|
 | MIN-10 | Runtime may hard-code MI350's 32 CUs/XCD; MI300X has 38. | Runtime | `docs/fleet` Q2 | build |
 | MIN-11 | Top-6 experts over 8 XCDs leaves **2 chiplets idle** during the 99 MB phase. | Scheduling | `docs/fleet` Q4 | gpu |
-| MIN-12 | Can `gang_attention_merge_mi300` be reused for split-KV MLA, or rewritten? | Kernel | `docs/fleet` Q8 | local |
-| MIN-13 | What layout does `kv_cache_update_mi300` assume? | Kernel | `docs/fleet` Q9 | local |
 | MIN-14 | MFMA vs VALU dot-product at M=1. Fleet uses `ck_tile` MFMA even at bs=1. | Kernel | `docs/acceleration` Q2 | build |
 | MIN-15 | Split-KV value estimated at ~114 µs from a crude CU-count ratio. | Attention | `docs/acceleration` Q5 | gpu |
 | MIN-16 | Cost of `buffer_inv sc1` / `buffer_wbl2 sc1` — sets task-graph granularity. | Memory model | `docs/mi300x` Q5 | gpu |
@@ -94,13 +88,20 @@ Not our bugs — but each one could mislead us, so they are recorded.
 | ✅ | Does Fleet support MoE? | Yes — four MI300 task kernels, Python plumbing, MoE demo. The gap is MLA, not MoE. |
 | ✅ | Does an FP8 checkpoint exist for our model? | Yes — `RedHatAI/DeepSeek-Coder-V2-Lite-Base-FP8`, W8A8 static, 16.13 GB. |
 | ✅ | Can we run gfx950 code on MI300X? | No. `gfx9-4-generic` spans both but drops FP8/BF8 — so FP8 differs between them. |
+| ✅ MIN-3 | MLA + quantization | FP8 scales are **per-tensor scalars**, so they factor out of the reassociated matmul. vLLM's constraint came from materializing weight products; we don't. `docs/acceleration` Q1 |
+| ✅ MIN-7 | Weight-shard gating | None. Anonymous range request returns HTTP 206. `docs/deepseek-v2-lite` Q7 |
+| ✅ MIN-8 | FP8 loader | `F8_E4M3` + one FP32 scalar per tensor; router, norms and `lm_head` stay BF16. No vLLM needed. `docs/acceleration` Q4 |
+| ✅ MIN-9 | `lm_head` argmax | Split for **parallelism**, not traffic — the logit buffer is only 200 KB. Keep a debug path for B15. `docs/deepseek-v2-lite` Q9 |
+| ✅ MIN-12 | Split-KV merge kernel | Reuse `merge_splitkv_ck_fmha`; rewrite the GQA-paged wrapper. `docs/fleet` Q8 |
+| ✅ MIN-13 | KV-cache append kernel | Paged GQA, not reusable — write our own (~30 lines). Take its 3-phase decomposition and the ~3.8K-cycle cost anchor. `docs/fleet` Q9 |
 
 ---
 
 ## Triage
 
-**Before GPU access** (local, ~1 day): MIN-1, MIN-2, MIN-3, MIN-5, MIN-6,
-MIN-7, MIN-8, MIN-9, MIN-12, MIN-13.
+**Before GPU access** (local, needs PyTorch): MIN-1, MIN-2, MIN-5, MIN-6 —
+and MIN-4's method is settled, it just needs a run. Each now carries a worked
+recipe in its `99-open-questions.md` entry.
 
 **Day 1 on the machine, in order:** MAJ-1 → MAJ-3 → MIN-10 → MAJ-4.
 MAJ-1 gates the strategy; decide extend-vs-reimplement by end of day 1.
