@@ -82,6 +82,7 @@ def mla_merge_uv_layer(mpk, partials, w_uv, output, split, n_splits, block_dim=(
     nh, d_v, d_c = w_uv.dim(0), w_uv.dim(1), w_uv.dim(2)
     assert nh % XCDS == 0 and output.dim(1) == nh * d_v and partials.dim(2) == d_c + 1
     assert d_c % 256 == 0, "K of the W_uv product must be a multiple of 256"
+    assert n_splits <= 64, "mla_merge_uv merges one split per lane of one wavefront"
     _new_task(mpk, (XCDS, 1, 1), block_dim,
               [(partials, (-1, -1, -1), -1), (w_uv, (0, -1, -1), -1), (output, (1, -1, -1), -1)],
               "mla_merge_uv_mi300", [split, n_splits, nh // XCDS, nh, d_v, d_c])

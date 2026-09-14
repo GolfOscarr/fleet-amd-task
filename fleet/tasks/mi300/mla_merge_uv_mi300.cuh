@@ -65,7 +65,11 @@ __device__ __forceinline__ void
   int tid = threadIdx.x;
   int lane = tid % WAVE;
 
-  // merge weights over the live splits (at most 64), wave 0
+  // merge weights over the live splits, one split per lane of wave 0: n_splits
+  // must be at most 64 (asserted at registration and in build_graph.py)
+  if (live > WAVE) {
+    live = WAVE;   // unreachable when the asserts hold; never read past the wave
+  }
   if (tid < WAVE) {
     float lse = (lane < live) ? partials[((size_t)lane * NH + h) * (D_C + 1) + D_C] : -INFINITY;
     float M = wave_max(lse);

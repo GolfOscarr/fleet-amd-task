@@ -268,7 +268,7 @@ index 9dde169..09d544a 100755
        for (size_t variant_id = 0; variant_id < task.second.size();
             variant_id++) {
 diff --git a/src/kernel/task_register.cc b/src/kernel/task_register.cc
-index a4e2602..7ec0341 100755
+index a4e2602..7937763 100755
 --- a/src/kernel/task_register.cc
 +++ b/src/kernel/task_register.cc
 @@ -15,6 +15,8 @@
@@ -308,7 +308,7 @@ index a4e2602..7ec0341 100755
    return register_task_variant(TASK_ARGMAX_REDUCE, code.to_string());
  }
  
-@@ -4583,5 +4593,217 @@ int TaskRegister::register_paged_attention_split_kv_hopper_task(
+@@ -4583,5 +4593,218 @@ int TaskRegister::register_paged_attention_split_kv_hopper_task(
                                 code.to_string());
  }
  
@@ -435,6 +435,7 @@ index a4e2602..7ec0341 100755
 +    threadblock::Graph const &bgraph, std::vector<int> const &params) {
 +  assert(params.size() == 6);
 +  int split = params[0], n_splits = params[1], tiles_per_xcd = params[2];
++  assert(n_splits <= 64 && "mla_merge_uv merges one split per lane of one wavefront");
 +  int nh = params[3], d_v = params[4], d_c = params[5];
 +  std::vector<tb::TBInputOp *> input_ops, output_ops;
 +  int num_inputs = 2, num_outputs = 1;
