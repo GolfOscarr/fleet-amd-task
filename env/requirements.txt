@@ -1,0 +1,12 @@
+# Python packages for the local harness and the reference run.
+# transformers is pinned to 4.x: the checkpoint's trust_remote_code modeling
+# file (written for 4.39.3) does not import under 5.x
+# (`is_torch_fx_available` was removed). 4.46.3 was verified locally with a
+# tiny random model through prefill, one-token step and generate.
+torch
+numpy
+safetensors
+transformers==4.46.3
+tokenizers
+huggingface_hub
+pytest
