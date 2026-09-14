@@ -10,8 +10,8 @@ written and independently reviewed (`docs/design-doc/`, 14 files, one
 counting script); the local harness is being built on `local/harness`
 (prompt, reference run and capture, comparison, weight packing, NumPy
 kernel specs, reassociation check, graph builder, run and measurement
-scripts, environment scripts, the gfx942 patch: 50 tests pass; the four
-kernels are the last local item). GPU-dependent
+scripts, environment scripts, the gfx942 patch, the four kernels and
+their glue patch: 50 tests pass). GPU-dependent
 problems are parked, each with its check. Nothing built for the GPU yet;
 the day-1 blocker is whether Fleet builds for gfx942.
 
@@ -114,7 +114,7 @@ Resolvable now, without the GPU: MIN-1, MIN-2, MIN-4, MIN-5, MIN-6 (`OPEN-PROBLE
 
 ---
 
-## Stage 3 — Local work (no GPU) 🟡 **19/20**
+## Stage 3 — Local work (no GPU) ✅ **20/20 local items** (the GPU run of calibration and routing stays for day 1)
 
 Branch `local/harness`. Every item has a check that runs here; the GPU-only
 ones are written to be run on day 1 (`docs/design-doc/10-local-work.md`).
@@ -134,7 +134,7 @@ Test suite: `.venv/bin/python -m pytest harness/tests fleet/tests -q` (50 tests)
 - [x] **L2** `harness/numpy_ref.py`: the four new kernels with explicit BF16 rounding, tested against the tiny model's own modules (RoPE, `ql_nope` bit-exact; router exact)
 - [x] **L3** `harness/reassoc_check.py` → `harness/results/reassoc_check.json` (MIN-1 resolved: within the reference's own ordering noise)
 - [x] **L5** `fleet/graph_plan.py` + `fleet/build_graph.py`: the 326-op / 1,880-task graph as data, the `mpk.*` calls, the new `*_layer` methods, `--dry-run` against a recording fake with the wrappers' assertions, `--stop-after <label>` truncation
-- [ ] **L6** the four kernels + two variants + glue patch (in progress: `fleet/tasks/mi300/`, `fleet/patches/new_tasks.patch`)
+- [x] **L6** `fleet/tasks/mi300/` (`mla_prep`, `mla_attend`, `mla_merge_uv`, `moe_router`, `copy`; VALU versions of the math of `numpy_ref.py`), the `embedding` and `argmax_reduce` variants and the eight-place glue as `fleet/patches/new_tasks.patch` (applies after `gfx942.patch`); host `clang++ -fsyntax-only` check passes; correctness on the GPU via `kernel_tests.py` (day 2)
 - [x] **L12** `env/setup.sh`, `env/check_day1.sh`, `env/probe_ck_fmha_576_512.cpp`
 - [x] **L13** `fleet/patches/gfx942.patch` (include guard, 16x16x16 warp GEMM on gfx942, `[FWD_PASS]` every iteration); applies cleanly
 - [x] **L10** `harness/run_fleet.py` (build, compile, meta tensors, run, boundary dumps by last writer) · **L11** `harness/measure.py` (`[FWD_PASS]`, event timing, rocprofv3 CSVs, the report table)
@@ -206,7 +206,7 @@ documented as blocked. **Decide end of day 1.**
 | **total** | **46 open / 11 resolved** | |
 
 `OPEN-PROBLEMS.md` holds the consolidated, deduplicated view: **6 major /
-20 minor open / 18 resolved**, plus 9 documentation defects found in AMD and
+22 minor open / 18 resolved**, plus 9 documentation defects found in AMD and
 Fleet sources.
 
 ---

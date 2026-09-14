@@ -1,0 +1,528 @@
+diff --git a/include/mirage/kernel/task_register.h b/include/mirage/kernel/task_register.h
+index 2aab442..b78bf7c 100755
+--- a/include/mirage/kernel/task_register.h
++++ b/include/mirage/kernel/task_register.h
+@@ -172,6 +172,17 @@ public:
+                                      bool w13_linear);
+   int register_moe_mul_sum_add_mi300_task(threadblock::Graph const &bgraph,
+                                           std::vector<int> const &params);
++  // DeepSeek-V2-Lite decode tasks (fleet/tasks/mi300)
++  int register_mla_prep_mi300_task(threadblock::Graph const &bgraph,
++                                   std::vector<int> const &params);
++  int register_mla_attend_mi300_task(threadblock::Graph const &bgraph,
++                                     std::vector<int> const &params);
++  int register_mla_merge_uv_mi300_task(threadblock::Graph const &bgraph,
++                                       std::vector<int> const &params);
++  int register_moe_router_mi300_task(threadblock::Graph const &bgraph,
++                                     std::vector<int> const &params);
++  int register_copy_mi300_task(threadblock::Graph const &bgraph,
++                               std::vector<int> const &params);
+   // SM100 tasks
+   int register_splitk_linear_sm100_task(threadblock::Graph const &bgraph,
+                                         std::vector<int> const &params,
+diff --git a/include/mirage/persistent_kernel/persistent_kernel.cuh b/include/mirage/persistent_kernel/persistent_kernel.cuh
+index 45438dc..ccd220c 100755
+--- a/include/mirage/persistent_kernel/persistent_kernel.cuh
++++ b/include/mirage/persistent_kernel/persistent_kernel.cuh
+@@ -232,7 +232,8 @@ __device__ __host__ __forceinline__ bool is_gang_task_type(TaskType t) {
+          t == TASK_GANG_KSPLIT_GEMM_MI300 || t == TASK_GANG_KSPLIT_FINALIZE_MI300 ||
+          t == TASK_GANG_ATTN_SPLIT_KV_MI300 || t == TASK_GANG_ATTN_MERGE_MI300 ||
+          t == TASK_GANG_MOE_W13_LINEAR_MI300 || t == TASK_GANG_MOE_W2_LINEAR_MI300 ||
+-         t == TASK_GANG_LINEAR_MSPLIT_MI300 || t == TASK_GANG_LINEAR_RES_MSPLIT_MI300;
++         t == TASK_GANG_LINEAR_MSPLIT_MI300 || t == TASK_GANG_LINEAR_RES_MSPLIT_MI300 ||
++         t == TASK_MLA_ATTEND_MI300 || t == TASK_MLA_MERGE_UV_MI300;
+ }
+ 
+ __device__ __forceinline__ bool is_termination_event(size_t event_loc,
+diff --git a/include/mirage/persistent_kernel/runtime_header.h b/include/mirage/persistent_kernel/runtime_header.h
+index f2dfe4e..2256162 100755
+--- a/include/mirage/persistent_kernel/runtime_header.h
++++ b/include/mirage/persistent_kernel/runtime_header.h
+@@ -83,7 +83,7 @@ unsigned long long int const EVENT_INVALID_ID = 0x7ffffffffffffffe;
+ typedef unsigned long long int EventCounter;
+ 
+ int const MAX_INPUTS_PER_TASK = 7;
+-int const MAX_OUTPUTS_PER_TASK = 3;
++int const MAX_OUTPUTS_PER_TASK = 5; // mla_prep writes 4, moe_router 5 (was 3)
+ // Increased to 304 to support full CU utilization on AMD MI300X (304 CUs)
+ // and NVIDIA Blackwell (160+ SMs which uses 144 workers)
+ int const MAX_NUM_WORKERS = 304;
+@@ -144,6 +144,12 @@ enum TaskType {
+   TASK_MOE_MUL_SUM_ADD_MI300 = 173,
+   TASK_GANG_MOE_W13_LINEAR_MI300 = 174,
+   TASK_GANG_MOE_W2_LINEAR_MI300 = 175,
++  // DeepSeek-V2-Lite decode tasks (fleet/tasks/mi300, docs/design-doc/02-task-graph.md)
++  TASK_MLA_PREP_MI300 = 185,
++  TASK_MLA_ATTEND_MI300 = 186,      // gang
++  TASK_MLA_MERGE_UV_MI300 = 187,    // gang
++  TASK_MOE_ROUTER_MI300 = 188,
++  TASK_COPY_MI300 = 189,
+   // Hopper Tasks
+   TASK_HOPPER_TASK_BEGIN = 150, // Hopper start placeholder, not a real task
+   TASK_LINEAR_WITH_RESIDUAL_HOPPER = 151,
+diff --git a/include/mirage/persistent_kernel/tasks/ampere/embedding.cuh b/include/mirage/persistent_kernel/tasks/ampere/embedding.cuh
+index 9358992..3f068f4 100644
+--- a/include/mirage/persistent_kernel/tasks/ampere/embedding.cuh
++++ b/include/mirage/persistent_kernel/tasks/ampere/embedding.cuh
+@@ -53,7 +53,16 @@ __device__ __forceinline__ void
+ 
+ #pragma unroll
+   for (int batch_idx = 0; batch_idx < BATCH_SIZE; batch_idx++) {
++#if defined(__HIP_PLATFORM_AMD__) || defined(MIRAGE_AMD_MI300)
++    // The first task of an iteration executes no acquire; tokens[step] was
++    // written by argmax_reduce on another XCD in the previous iteration, so
++    // read it at agent scope (sc1) rather than through the XCD's L2
++    // (docs/design-doc/03-synchronization.md, the embed stale-line edge).
++    int64_t wordIdx = __hip_atomic_load(const_cast<int64_t *>(input_ids) + batch_idx,
++                                        __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
++#else
+     int64_t wordIdx = input_ids[batch_idx];
++#endif
+     if (wordIdx >= 0) {
+ #pragma unroll
+       for (int i = threadIdx.x; i < CHUNK_SIZE; i += blockDim.x) {
+diff --git a/include/mirage/persistent_kernel/tasks/mi300/argmax_mi300.cuh b/include/mirage/persistent_kernel/tasks/mi300/argmax_mi300.cuh
+index 6963110..e144d30 100644
+--- a/include/mirage/persistent_kernel/tasks/mi300/argmax_mi300.cuh
++++ b/include/mirage/persistent_kernel/tasks/mi300/argmax_mi300.cuh
+@@ -115,7 +115,10 @@ __device__ __forceinline__ void
+     argmax_reduce_kernel(void const *__restrict__ input_val_ptr,
+                          void const *__restrict__ input_idx_ptr,
+                          void *__restrict__ final_output_ptr,
+-                         int num_active_tokens) {
++                         int num_active_tokens,
++                         long long *tokens_out = nullptr) {
++  // tokens_out: when non-null, the winning id is also written there
++  // (runtime_config.tokens + step + 1; online mode does not copy output_tokens)
+   T const *__restrict__ partial_vals = static_cast<T const *>(input_val_ptr);
+   long long const *__restrict__ partial_idxs =
+       static_cast<long long const *>(input_idx_ptr);
+@@ -150,8 +153,14 @@ __device__ __forceinline__ void
+         long long winning_relative_idx = local_packed_idx & 0xFFFFFFFF;
+         final_output[batch_idx] =
+             winning_chunk_idx * CHUNK_SIZE + winning_relative_idx;
++        if (tokens_out != nullptr) {
++          tokens_out[batch_idx] = final_output[batch_idx];
++        }
+       } else {
+         final_output[batch_idx] = -1;
++        if (tokens_out != nullptr) {
++          tokens_out[batch_idx] = -1;
++        }
+       }
+     }
+   }
+diff --git a/include/mirage/persistent_kernel/tasks/mi300/task_header.cuh b/include/mirage/persistent_kernel/tasks/mi300/task_header.cuh
+index afad1af..d84c90e 100755
+--- a/include/mirage/persistent_kernel/tasks/mi300/task_header.cuh
++++ b/include/mirage/persistent_kernel/tasks/mi300/task_header.cuh
+@@ -44,3 +44,10 @@
+ #include "tasks/ampere/merge_splitkv.cuh"
+ // Gang merge wrapper for split-KV CK FMHA (depends on merge_splitkv.cuh)
+ #include "tasks/mi300/gang_attention_merge_mi300.cuh"
++// DeepSeek-V2-Lite decode tasks (copied from fleet/tasks/mi300 by env/setup.sh)
++#include "tasks/mi300/mla_common_mi300.cuh"
++#include "tasks/mi300/mla_prep_mi300.cuh"
++#include "tasks/mi300/mla_attend_mi300.cuh"
++#include "tasks/mi300/mla_merge_uv_mi300.cuh"
++#include "tasks/mi300/moe_router_mi300.cuh"
++#include "tasks/mi300/copy_mi300.cuh"
+diff --git a/python/mirage/mpk/persistent_kernel.py b/python/mirage/mpk/persistent_kernel.py
+index ccb754b..b3239ec 100644
+--- a/python/mirage/mpk/persistent_kernel.py
++++ b/python/mirage/mpk/persistent_kernel.py
+@@ -2235,7 +2235,9 @@ class PersistentKernel:
+         output: DTensor,
+         grid_dim: tuple,
+         block_dim: tuple,
++        output_to_tokens: bool = False,
+     ):
++        # output_to_tokens: MI300 online mode; the reduce also writes tokens[step + 1]
+         # Currently assume that input/output
+         assert len(input) == 2
+         input_value, input_index = input
+@@ -2252,9 +2254,10 @@ class PersistentKernel:
+                 tb_graph, "argmax_reduce_sm100", [self.argmax_partial_output_size]
+             )
+         else:
+-            self.kn_graph.register_task(
+-                tb_graph, "argmax_reduce", [self.argmax_partial_output_size]
+-            )
++            params = [self.argmax_partial_output_size]
++            if output_to_tokens:
++                params.append(1)
++            self.kn_graph.register_task(tb_graph, "argmax_reduce", params)
+ 
+     def sampling_sm100_layer(
+         self,
+diff --git a/python/mirage/mpk/profiler_persistent.py b/python/mirage/mpk/profiler_persistent.py
+index f3f98ad..d780f61 100755
+--- a/python/mirage/mpk/profiler_persistent.py
++++ b/python/mirage/mpk/profiler_persistent.py
+@@ -58,6 +58,11 @@ event_name_list = {
+     174: "TASK_GANG_MOE_W13_LINEAR_MI300",
+     175: "TASK_GANG_MOE_W2_LINEAR_MI300",
+     176: "TASK_DEVICE_LINEAR_MI300",
++    185: "TASK_MLA_PREP_MI300",
++    186: "TASK_MLA_ATTEND_MI300",
++    187: "TASK_MLA_MERGE_UV_MI300",
++    188: "TASK_MOE_ROUTER_MI300",
++    189: "TASK_COPY_MI300",
+     177: "TASK_DEVICE_LINEAR_RES_MI300",
+     150: "TASK_HOPPER_TASK_BEGIN",
+     151: "TASK_LINEAR_WITH_RESIDUAL_HOPPER",
+diff --git a/src/kernel/graph.cc b/src/kernel/graph.cc
+index 97c4923..d548d64 100755
+--- a/src/kernel/graph.cc
++++ b/src/kernel/graph.cc
+@@ -841,6 +841,31 @@ void Graph::register_task(char const *task_type, std::vector<int> params) {
+         customized->bgraph, params);
+     task_config[op] =
+         std::make_tuple(3, 1, TASK_MOE_MUL_SUM_ADD_MI300, variant_id);
++  }
++  // DeepSeek-V2-Lite decode tasks (fleet/tasks/mi300)
++  else if (name == "mla_prep_mi300") {
++    assert(params.size() == 4);
++    int variant_id = task_register->register_mla_prep_mi300_task(customized->bgraph, params);
++    task_config[op] = std::make_tuple(5, 4, TASK_MLA_PREP_MI300, variant_id);
++  } else if (name == "mla_attend_mi300") {
++    assert(params.size() == 7);
++    int variant_id = task_register->register_mla_attend_mi300_task(customized->bgraph, params);
++    int num_outputs = (int)customized->bgraph.operators.size() - 4;   // partials [, debug scores]
++    task_config[op] = std::make_tuple(4, num_outputs, TASK_MLA_ATTEND_MI300, variant_id);
++    gang_task_tiles_per_xcd[op] = params[3]; // tiles_per_xcd = ceil(n_splits / 8)
++  } else if (name == "mla_merge_uv_mi300") {
++    assert(params.size() == 6);
++    int variant_id = task_register->register_mla_merge_uv_mi300_task(customized->bgraph, params);
++    task_config[op] = std::make_tuple(2, 1, TASK_MLA_MERGE_UV_MI300, variant_id);
++    gang_task_tiles_per_xcd[op] = params[2]; // heads per XCD
++  } else if (name == "moe_router_mi300") {
++    assert(params.size() == 6);
++    int variant_id = task_register->register_moe_router_mi300_task(customized->bgraph, params);
++    task_config[op] = std::make_tuple(2, 5, TASK_MOE_ROUTER_MI300, variant_id);
++  } else if (name == "copy_mi300") {
++    assert(params.size() == 1);
++    int variant_id = task_register->register_copy_mi300_task(customized->bgraph, params);
++    task_config[op] = std::make_tuple(1, 1, TASK_COPY_MI300, variant_id);
+   } else {
+     printf("Unsupported task name: %s\n", name.c_str());
+     assert(false && "Unsupported task type");
+diff --git a/src/kernel/runtime.cc b/src/kernel/runtime.cc
+index 9dde169..09d544a 100755
+--- a/src/kernel/runtime.cc
++++ b/src/kernel/runtime.cc
+@@ -416,7 +416,9 @@ void register_mugraph(
+               task_type == TASK_GANG_MOE_W13_LINEAR_MI300 ||
+               task_type == TASK_GANG_MOE_W2_LINEAR_MI300 ||
+               task_type == TASK_GANG_LINEAR_MSPLIT_MI300 ||
+-              task_type == TASK_GANG_LINEAR_RES_MSPLIT_MI300) {
++              task_type == TASK_GANG_LINEAR_RES_MSPLIT_MI300 ||
++              task_type == TASK_MLA_ATTEND_MI300 ||
++              task_type == TASK_MLA_MERGE_UV_MI300) {
+             auto it = graph.gang_task_tiles_per_xcd.find(op);
+             assert(it != graph.gang_task_tiles_per_xcd.end() &&
+                    "Gang task missing n_tiles_per_xcd");
+@@ -432,7 +434,9 @@ void register_mugraph(
+             // Gang attention: each XCD processes a different tile range
+             // bid.x = XCD index (0..7)
+             else if (task_type == TASK_GANG_ATTN_SPLIT_KV_MI300 ||
+-                task_type == TASK_GANG_ATTN_MERGE_MI300) {
++                task_type == TASK_GANG_ATTN_MERGE_MI300 ||
++                task_type == TASK_MLA_ATTEND_MI300 ||
++                task_type == TASK_MLA_MERGE_UV_MI300) {
+               task.task_metadata.n_tile_start = (uint16_t)(bid.x * tiles_per_xcd);
+             } else if (task_type == TASK_GANG_KSPLIT_GEMM_MI300) {
+               // K-split index = XCD index (bid.x)
+@@ -1536,6 +1540,11 @@ TaskGraphResult print_task_graph(
+       "TASK_GANG_LINEAR_MSPLIT_MI300";
+   task_type_to_name[TASK_GANG_LINEAR_RES_MSPLIT_MI300] =
+       "TASK_GANG_LINEAR_RES_MSPLIT_MI300";
++  task_type_to_name[TASK_MLA_PREP_MI300] = "TASK_MLA_PREP_MI300";
++  task_type_to_name[TASK_MLA_ATTEND_MI300] = "TASK_MLA_ATTEND_MI300";
++  task_type_to_name[TASK_MLA_MERGE_UV_MI300] = "TASK_MLA_MERGE_UV_MI300";
++  task_type_to_name[TASK_MOE_ROUTER_MI300] = "TASK_MOE_ROUTER_MI300";
++  task_type_to_name[TASK_COPY_MI300] = "TASK_COPY_MI300";
+   task_type_to_name[TASK_GANG_LINEAR_SILU_MI300] =
+       "TASK_GANG_LINEAR_SILU_MI300";
+   task_type_to_name[TASK_GANG_RMS_NORM_MI300] =
+@@ -1579,7 +1588,9 @@ TaskGraphResult print_task_graph(
+         task.first == TASK_GANG_MOE_W13_LINEAR_MI300 ||
+         task.first == TASK_GANG_MOE_W2_LINEAR_MI300 ||
+         task.first == TASK_GANG_LINEAR_MSPLIT_MI300 ||
+-        task.first == TASK_GANG_LINEAR_RES_MSPLIT_MI300)
++        task.first == TASK_GANG_LINEAR_RES_MSPLIT_MI300 ||
++        task.first == TASK_MLA_ATTEND_MI300 ||
++        task.first == TASK_MLA_MERGE_UV_MI300)
+       continue;
+     for (size_t variant_id = 0; variant_id < task.second.size(); variant_id++) {
+       std::string cond = first_task ? "if" : "else if";
+@@ -1618,7 +1629,9 @@ TaskGraphResult print_task_graph(
+           task.first != TASK_GANG_MOE_W13_LINEAR_MI300 &&
+           task.first != TASK_GANG_MOE_W2_LINEAR_MI300 &&
+           task.first != TASK_GANG_LINEAR_MSPLIT_MI300 &&
+-          task.first != TASK_GANG_LINEAR_RES_MSPLIT_MI300)
++          task.first != TASK_GANG_LINEAR_RES_MSPLIT_MI300 &&
++          task.first != TASK_MLA_ATTEND_MI300 &&
++          task.first != TASK_MLA_MERGE_UV_MI300)
+         continue;
+       for (size_t variant_id = 0; variant_id < task.second.size();
+            variant_id++) {
+diff --git a/src/kernel/task_register.cc b/src/kernel/task_register.cc
+index a4e2602..7ec0341 100755
+--- a/src/kernel/task_register.cc
++++ b/src/kernel/task_register.cc
+@@ -15,6 +15,8 @@
+ #include "mirage/kernel/task_register.h"
+ #include "mirage/kernel/operator.h"
+ #include "mirage/transpiler/utils.h"
++#include <cstdio>
++#include <cstring>
+ 
+ namespace mirage {
+ namespace runtime {
+@@ -1570,8 +1572,9 @@ int TaskRegister::register_argmax_partial_task(threadblock::Graph const &bgraph,
+ 
+ int TaskRegister::register_argmax_reduce_task(threadblock::Graph const &bgraph,
+                                               std::vector<int> const &params) {
+-  // params[0]: output size
+-  assert(params.size() == 1);
++  // params[0]: output size; params[1] (optional): 1 = also write tokens[step + 1]
++  assert(params.size() == 1 || params.size() == 2);
++  bool output_to_tokens = params.size() == 2 && params[1] == 1;
+   std::vector<tb::TBInputOp *> input_ops;
+   std::vector<tb::TBInputOp *> output_ops;
+   int num_inputs = 2;
+@@ -1599,7 +1602,14 @@ int TaskRegister::register_argmax_reduce_task(threadblock::Graph const &bgraph,
+   code.e("    task_desc->input_ptrs[0],");
+   code.e("    task_desc->input_ptrs[1],");
+   code.e("    task_desc->output_ptrs[0],");
+-  code.e("    runtime_config.qo_indptr_buffer[MPK_MAX_NUM_BATCHED_REQUESTS]);");
++  if (output_to_tokens) {
++    // online mode does not copy output_tokens into tokens; the reduce writes
++    // the id where the next iteration's embed reads it (02-task-graph.md, variants)
++    code.e("    runtime_config.qo_indptr_buffer[MPK_MAX_NUM_BATCHED_REQUESTS],");
++    code.e("    runtime_config.tokens + runtime_config.step[0] + 1);");
++  } else {
++    code.e("    runtime_config.qo_indptr_buffer[MPK_MAX_NUM_BATCHED_REQUESTS]);");
++  }
+   return register_task_variant(TASK_ARGMAX_REDUCE, code.to_string());
+ }
+ 
+@@ -4583,5 +4593,217 @@ int TaskRegister::register_paged_attention_split_kv_hopper_task(
+                                code.to_string());
+ }
+ 
++// ---------------------------------------------------------------------------
++// DeepSeek-V2-Lite decode tasks (fleet/tasks/mi300; pointer orders and params
++// from fleet/build_graph.py; math from harness/numpy_ref.py)
++
++namespace {
++// The ops of a customized graph: the first num_inputs are inputs.
++void split_io(threadblock::Graph const &bgraph, int num_inputs,
++              std::vector<tb::TBInputOp *> &input_ops,
++              std::vector<tb::TBInputOp *> &output_ops) {
++  for (auto const &op : bgraph.operators) {
++    assert(op->op_type == mirage::type::TB_INPUT_OP);
++    if (input_ops.size() < (size_t)num_inputs) {
++      input_ops.push_back(static_cast<tb::TBInputOp *>(op));
++    } else {
++      output_ops.push_back(static_cast<tb::TBInputOp *>(op));
++    }
++  }
++}
++
++std::string float_literal(int bits) {
++  float f;
++  static_assert(sizeof(float) == sizeof(int), "");
++  std::memcpy(&f, &bits, sizeof(f));
++  char buf[64];
++  std::snprintf(buf, sizeof(buf), "%.9ef", (double)f);
++  return std::string(buf);
++}
++
++// Rows the runtime adds to a pointer when the tensor's dim 0 is partitioned
++// by bid.x over the grid (runtime.cc: block_size = dim / grid_dim.x).
++int xcd_offset_dim0(tb::TBInputOp const *op, threadblock::Graph const &bgraph) {
++  if (op->input_map.x == 0) {
++    return op->dtensor.dim[0] / (int)bgraph.grid_dim.x;
++  }
++  return 0;
++}
++} // namespace
++
++// params: [nh, d_n, d_r, d_c]; inputs qkva, w_kv_norm, W_uk, cos, sin;
++// outputs c_kv, k_pe, ql_nope, q_pe
++int TaskRegister::register_mla_prep_mi300_task(
++    threadblock::Graph const &bgraph, std::vector<int> const &params) {
++  assert(params.size() == 4);
++  int nh = params[0], d_n = params[1], d_r = params[2], d_c = params[3];
++  std::vector<tb::TBInputOp *> input_ops, output_ops;
++  int num_inputs = 5, num_outputs = 4;
++  assert(bgraph.operators.size() == (size_t)num_inputs + num_outputs);
++  split_io(bgraph, num_inputs, input_ops, output_ops);
++  assert(input_ops[0]->dtensor.num_dims == 2);
++  assert(input_ops[0]->dtensor.dim[1] == nh * (d_n + d_r) + d_c + d_r);
++  assert(input_ops[2]->dtensor.num_dims == 3 && input_ops[2]->dtensor.dim[0] == nh &&
++         input_ops[2]->dtensor.dim[1] == d_n && input_ops[2]->dtensor.dim[2] == d_c);
++  assert(output_ops[0]->dtensor.dim[1] == d_c && output_ops[1]->dtensor.dim[1] == d_r);
++  assert(output_ops[2]->dtensor.dim[0] == nh && output_ops[2]->dtensor.dim[1] == d_c);
++  assert(output_ops[3]->dtensor.dim[0] == nh && output_ops[3]->dtensor.dim[1] == d_r);
++  mirage::transpiler::CodeKeeper code;
++  code.inc_indent();
++  code.e("kernel::mla_prep_mi300_task_impl<bfloat16, $, $, $, $>(", nh, d_n, d_r, d_c);
++  code.e("    task_desc->input_ptrs[0],");   // qkva
++  code.e("    task_desc->input_ptrs[1],");   // w_kv_norm
++  code.e("    task_desc->input_ptrs[2],");   // W_uk
++  code.e("    task_desc->input_ptrs[3],");   // cos
++  code.e("    task_desc->input_ptrs[4],");   // sin
++  code.e("    task_desc->output_ptrs[0],");  // c_kv (row step)
++  code.e("    task_desc->output_ptrs[1],");  // k_pe (row step)
++  code.e("    task_desc->output_ptrs[2],");  // ql_nope
++  code.e("    task_desc->output_ptrs[3],");  // q_pe
++  code.e("    runtime_config.step[0],");
++  code.e("    1e-6f);");                     // kv_a_layernorm eps (01-execution-flow.md)
++  return register_task_variant(TASK_MLA_PREP_MI300, code.to_string());
++}
++
++// params: [softmax_scale_bits, split, n_splits, tiles_per_xcd, nh, d_c, d_r];
++// inputs ql_nope, q_pe, c_kv, k_pe; outputs partials [, debug scores]
++int TaskRegister::register_mla_attend_mi300_task(
++    threadblock::Graph const &bgraph, std::vector<int> const &params) {
++  assert(params.size() == 7);
++  int split = params[1], n_splits = params[2], tiles_per_xcd = params[3];
++  int nh = params[4], d_c = params[5], d_r = params[6];
++  std::vector<tb::TBInputOp *> input_ops, output_ops;
++  int num_inputs = 4;
++  int num_outputs = (int)bgraph.operators.size() - num_inputs;
++  assert(num_outputs == 1 || num_outputs == 2);
++  split_io(bgraph, num_inputs, input_ops, output_ops);
++  assert(input_ops[0]->dtensor.dim[0] == nh && input_ops[0]->dtensor.dim[1] == d_c);
++  assert(input_ops[1]->dtensor.dim[0] == nh && input_ops[1]->dtensor.dim[1] == d_r);
++  int s_max = input_ops[2]->dtensor.dim[0];
++  assert(input_ops[2]->dtensor.dim[1] == d_c);
++  assert(input_ops[3]->dtensor.dim[0] == s_max && input_ops[3]->dtensor.dim[1] == d_r);
++  assert(output_ops[0]->dtensor.num_dims == 3 && output_ops[0]->dtensor.dim[0] == n_splits &&
++         output_ops[0]->dtensor.dim[1] == nh && output_ops[0]->dtensor.dim[2] == d_c + 1);
++  assert((s_max + split - 1) / split == n_splits);
++  assert(bgraph.grid_dim.x == 8);
++  int offset_rows = xcd_offset_dim0(output_ops[0], bgraph);
++  mirage::transpiler::CodeKeeper code;
++  code.inc_indent();
++  code.e("kernel::mla_attend_mi300_task_impl<bfloat16, $, $, $, $>(", nh, d_c, d_r, s_max);
++  code.e("    task_desc->input_ptrs[0],");   // ql_nope
++  code.e("    task_desc->input_ptrs[1],");   // q_pe
++  code.e("    task_desc->input_ptrs[2],");   // c_kv
++  code.e("    task_desc->input_ptrs[3],");   // k_pe
++  code.e("    task_desc->output_ptrs[0],");  // partials
++  code.e("    runtime_config.step[0],");
++  code.e("    $,", float_literal(params[0]));
++  code.e("    $,", split);
++  code.e("    $,", n_splits);
++  code.e("    $,", tiles_per_xcd);
++  code.e("    $,", offset_rows);
++  code.e("    tile_idx,");
++  if (num_outputs == 2) {
++    code.e("    task_desc->output_ptrs[1]);");   // debug scores (MLA_ATTEND_DEBUG_SCORES)
++  } else {
++    code.e("    nullptr);");
++  }
++  return register_task_variant(TASK_MLA_ATTEND_MI300, code.to_string());
++}
++
++// params: [split, n_splits, tiles_per_xcd, nh, d_v, d_c]; inputs partials, W_uv;
++// output attn
++int TaskRegister::register_mla_merge_uv_mi300_task(
++    threadblock::Graph const &bgraph, std::vector<int> const &params) {
++  assert(params.size() == 6);
++  int split = params[0], n_splits = params[1], tiles_per_xcd = params[2];
++  int nh = params[3], d_v = params[4], d_c = params[5];
++  std::vector<tb::TBInputOp *> input_ops, output_ops;
++  int num_inputs = 2, num_outputs = 1;
++  assert(bgraph.operators.size() == (size_t)num_inputs + num_outputs);
++  split_io(bgraph, num_inputs, input_ops, output_ops);
++  assert(input_ops[0]->dtensor.dim[0] == n_splits && input_ops[0]->dtensor.dim[1] == nh &&
++         input_ops[0]->dtensor.dim[2] == d_c + 1);
++  assert(input_ops[1]->dtensor.dim[0] == nh && input_ops[1]->dtensor.dim[1] == d_v &&
++         input_ops[1]->dtensor.dim[2] == d_c);
++  assert(output_ops[0]->dtensor.dim[1] == nh * d_v);
++  assert(bgraph.grid_dim.x == 8 && nh % 8 == 0);
++  int heads_per_xcd = nh / 8;
++  assert(tiles_per_xcd == heads_per_xcd);
++  int offset_rows = xcd_offset_dim0(input_ops[0], bgraph);
++  int w_uv_local = (input_ops[1]->input_map.x == 0) ? 1 : 0;
++  int out_local = (output_ops[0]->input_map.x == 1) ? 1 : 0;
++  mirage::transpiler::CodeKeeper code;
++  code.inc_indent();
++  code.e("kernel::mla_merge_uv_mi300_task_impl<bfloat16, $, $, $>(", nh, d_v, d_c);
++  code.e("    task_desc->input_ptrs[0],");   // partials
++  code.e("    task_desc->input_ptrs[1],");   // W_uv (this XCD's heads when partitioned)
++  code.e("    task_desc->output_ptrs[0],");  // attn (this XCD's columns when partitioned)
++  code.e("    runtime_config.step[0],");
++  code.e("    $,", split);
++  code.e("    $,", n_splits);
++  code.e("    $,", tiles_per_xcd);
++  code.e("    $,", heads_per_xcd);
++  code.e("    $,", offset_rows);
++  code.e("    $,", w_uv_local);
++  code.e("    $,", out_local);
++  code.e("    tile_idx);");
++  return register_task_variant(TASK_MLA_MERGE_UV_MI300, code.to_string());
++}
++
++// params: [topk, n_experts, n_forced, scaling_bits, layer_index, hidden];
++// inputs h, W_gate; outputs topk_w, routing, mask, logits, route_log
++int TaskRegister::register_moe_router_mi300_task(
++    threadblock::Graph const &bgraph, std::vector<int> const &params) {
++  assert(params.size() == 6);
++  int topk = params[0], n_experts = params[1], n_forced = params[2];
++  int layer_index = params[4], hidden = params[5];
++  std::vector<tb::TBInputOp *> input_ops, output_ops;
++  int num_inputs = 2, num_outputs = 5;
++  assert(bgraph.operators.size() == (size_t)num_inputs + num_outputs);
++  split_io(bgraph, num_inputs, input_ops, output_ops);
++  assert(input_ops[0]->dtensor.dim[1] == hidden);
++  assert(input_ops[1]->dtensor.dim[0] == n_experts && input_ops[1]->dtensor.dim[1] == hidden);
++  assert(output_ops[0]->dtensor.dim[1] == topk + n_forced);
++  assert(output_ops[1]->dtensor.dim[0] == n_experts + n_forced);
++  assert(output_ops[2]->dtensor.dim[0] == n_experts + n_forced + 1);
++  assert(output_ops[3]->dtensor.dim[1] == n_experts);
++  assert(output_ops[4]->dtensor.num_dims == 3 && output_ops[4]->dtensor.dim[2] == topk + n_forced);
++  int route_steps = output_ops[4]->dtensor.dim[0];
++  int route_layers = output_ops[4]->dtensor.dim[1];
++  mirage::transpiler::CodeKeeper code;
++  code.inc_indent();
++  code.e("kernel::moe_router_mi300_task_impl<bfloat16, $, $, $, $, $, $>(",
++         hidden, n_experts, n_forced, topk, route_steps, route_layers);
++  code.e("    task_desc->input_ptrs[0],");   // h
++  code.e("    task_desc->input_ptrs[1],");   // W_gate
++  code.e("    task_desc->output_ptrs[0],");  // topk_w
++  code.e("    task_desc->output_ptrs[1],");  // routing
++  code.e("    task_desc->output_ptrs[2],");  // mask
++  code.e("    task_desc->output_ptrs[3],");  // logits (boundary B8)
++  code.e("    task_desc->output_ptrs[4],");  // route_log
++  code.e("    runtime_config.step[0],");
++  code.e("    runtime_config.prompt_length[0],");   // row = step - (prompt_len - 1)
++  code.e("    $,", layer_index);
++  code.e("    $);", float_literal(params[3]));      // routed_scaling_factor
++  return register_task_variant(TASK_MOE_ROUTER_MI300, code.to_string());
++}
++
++// params: [n]; input [1, n]; output [1, n]
++int TaskRegister::register_copy_mi300_task(
++    threadblock::Graph const &bgraph, std::vector<int> const &params) {
++  assert(params.size() == 1);
++  std::vector<tb::TBInputOp *> input_ops, output_ops;
++  int num_inputs = 1, num_outputs = 1;
++  assert(bgraph.operators.size() == (size_t)num_inputs + num_outputs);
++  split_io(bgraph, num_inputs, input_ops, output_ops);
++  assert(input_ops[0]->dtensor.dim[1] == params[0] && output_ops[0]->dtensor.dim[1] == params[0]);
++  mirage::transpiler::CodeKeeper code;
++  code.inc_indent();
++  code.e("kernel::copy_mi300_task_impl<bfloat16, $>(", params[0]);
++  code.e("    task_desc->input_ptrs[0],");
++  code.e("    task_desc->output_ptrs[0]);");
++  return register_task_variant(TASK_COPY_MI300, code.to_string());
++}
++
+ } // namespace runtime
+ } // namespace mirage

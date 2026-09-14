@@ -115,6 +115,20 @@ fi
 git status --short
 
 # ---------------------------------------------------------------------------
+step "5b. new task kernels and their registration glue (fleet/tasks/README.md)"
+cp "$ROOT"/fleet/tasks/mi300/*.cuh "$FLEET/include/mirage/persistent_kernel/tasks/mi300/"
+ls "$FLEET"/include/mirage/persistent_kernel/tasks/mi300/ | grep -E "mla_|moe_router|copy_mi300"
+PATCH2="$ROOT/fleet/patches/new_tasks.patch"
+if git apply --reverse --check "$PATCH2" 2>/dev/null; then
+  echo "already applied"
+else
+  git apply --check "$PATCH2"
+  git apply "$PATCH2"
+  echo "applied"
+fi
+git status --short
+
+# ---------------------------------------------------------------------------
 step "6. build Fleet for gfx942 (gate 1)"
 # Entry point per the repo README: pip install -e . -v with config.cmake (USE_ROCM ON).
 # CMakeLists.txt reads AMDGPU_TARGETS into CMAKE_HIP_ARCHITECTURES (default gfx950).
