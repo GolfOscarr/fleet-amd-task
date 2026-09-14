@@ -56,11 +56,22 @@ L13, L10, L11, L3, L8, L14: the artifacts that make day 1 productive first
 
 ## Status (2026-09-14)
 
-All of L1-L14 are implemented on branch `local/harness` and independently
-reviewed; `PROGRESS.md` Stage 3 lists each item's file, and
-`harness/README.md` the run recipe. What the local work could not settle
-is exactly the list above ("What cannot be done locally"), plus two items
-found on the way: `kernel_tests.py` from `07-correctness.md` is still to
-be written (a standalone HIP launcher, day 2), and the CPU reassociation
-check showed that the attention threshold must be the calibrated floor,
-not the starting value (`07-correctness.md`, item 7).
+All of L1-L14 are implemented and independently reviewed (PR #3);
+`PROGRESS.md` Stage 3 lists each item's file, and `harness/README.md`
+the run recipe. The CPU reassociation check showed that the attention
+threshold must be the calibrated floor, not the starting value
+(`07-correctness.md`, item 7).
+
+Two of the three items listed under "What cannot be done locally" turned
+out to be doable without the GPU, because generating gfx942 code needs
+only the compiler: `env/offline_gfx942/` compiles the patched megakernel
+with ROCm 7.0's hipcc in Docker (MAJ-1's compile half, MIN-27, the
+`buffer_wbl2 sc1` / `buffer_inv sc1` lowering of MAJ-3, the static register
+union of MAJ-4), and reading CK's source at Fleet's pinned commit answered
+DQ3 (no 576-wide split-KV pipeline; `mla_attend` is the spec kernel). The
+dependency conflict between the checkpoint's modeling code (transformers
+up to 4.46) and Fleet's `install_requires` (4.57.1) is resolved by two
+venvs in `env/setup.sh`. `env/preflight.sh` runs every local check in one
+command; `11-day1-runbook.md` is the session script. What is left for
+the machine: the host-side build, every timing, every counter, the BF16
+floor on the GPU, and every boundary comparison.
