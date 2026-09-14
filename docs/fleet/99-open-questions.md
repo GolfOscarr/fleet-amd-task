@@ -13,14 +13,18 @@ aim only at the single-layer milestone.
 
 ---
 
-## Q2 — Does the runtime correctly detect 38 CUs/XCD on MI300X? `open`
+## Q2 — Does the runtime correctly detect 38 CUs/XCD on MI300X? `resolved` (2026-09-14)
 
-**Why.** The paper says X/W/C are runtime-queried, but every constant in the
-code was written against MI350 (32 CUs/XCD). `MI300X_NUM_XCDS = 8` is
-hard-coded; workers-per-XCD may be too.
-
-**Check.** Instrument `worker_xcd_map` at startup and print the per-XCD worker
-count. Expect 37 workers + 1 scheduler per XCD, 304 CUs total.
+**Resolved: nothing hard-codes 32 CUs per XCD.** `python/mirage/utils.py:38-60`
+derives the counts from `torch.cuda.get_device_properties().multi_processor_count`:
+on a device reporting 300 or more CUs, `workers = sm_cnt - 8 = 296` and
+`schedulers = 8`. The MI350 case (`:61-68`) is a separate `elif` with its own
+constant. On the device side, each scheduler discovers its workers by matching
+`worker_xcd_map` against its own `HW_REG_XCC_ID` (`persistent_kernel.cuh:1421-1436`),
+so 37 workers per XCD is a runtime outcome, not a constant. `MI300X_NUM_XCDS = 8`
+(`:183`) and `NUM_XCDS_INIT = 8` (`:2116`) remain hard-coded, which is correct
+for SPX mode. The `[SCHED_XCD] ... workers_on_xcd=37` line printed at startup
+is the confirmation. See `03-runtime.md`, "The code, read line by line".
 
 ---
 
@@ -62,10 +66,16 @@ instrumentation.
 
 ## Q6 — Does HIP agent-scope fence emit `buffer_wbl2` on our ROCm? `open`
 
-Inherited from `../mi300x/99-open-questions.md` Q4, now with a stronger prior:
-Fleet relies on `__builtin_amdgcn_fence(__ATOMIC_RELEASE, "agent")` doing the
-right thing. Still verify by disassembly on our ROCm version — a silent
-regression here corrupts results intermittently.
+Inherited from `../mi300x/99-open-questions.md` Q4, now narrowed by the code
+read (`03-runtime.md`): the runtime issues **no cache-control instruction by
+hand**. Every cross-XCD release is `threadfence_gpu()` =
+`__builtin_amdgcn_fence(__ATOMIC_RELEASE, "agent")` (`mpk_atoms.cuh:300`) and
+every acquire is `__builtin_amdgcn_fence(__ATOMIC_ACQUIRE, "agent")`
+(`persistent_kernel.cuh:948`); the global atomics are inline asm with
+`sc0 sc1` and no fence of their own. So the whole question is what our ROCm's
+LLVM emits for those two builtins on gfx942. Check by disassembling
+`threadfence_gpu` and the worker's dependency check: expect `buffer_wbl2 sc1`
++ `s_waitcnt` and `s_waitcnt` + `buffer_inv sc1` respectively.
 
 ---
 
@@ -130,3 +140,24 @@ head. Nothing transfers.
    cycles at decode) since it only does preprocessing and cache writes, no
    attention compute." Matches Table 2 in the paper. Our append should be
    similarly cheap, so if it is not, something is wrong.
+
+---
+
+## Q10 — Is scheduler block `k` guaranteed to run on XCD `k`? `open` — **day 1**
+
+**Why.** `get_rand_sched_id` returns the worker's `xcd_id` as the scheduler
+queue index, with the comment "scheduler_kernel block k runs on XCD k"
+(`persistent_kernel.cuh:591`). The worker enqueues to that queue with
+volatile stores and a compiler barrier only (`:1345-1360`), and the scheduler
+reads its own queue with volatile loads. That is sound only if the scheduler
+whose `blockIdx.x == k` is physically on XCD `k`. The scheduler discovers its
+real XCD from the register and builds its worker list from it, so a
+misplacement would not break dispatch, but it would make the worker-to-
+scheduler queue a cross-XCD channel with no fence, and events could be lost
+or seen late. The runtime never checks the assumption.
+
+**Check.** The startup line `[SCHED_XCD] sched_id=k xcd=m workers_on_xcd=n`
+(`:1436`) must show `k == m` for all eight schedulers, every launch. If it
+ever does not, the fix is to index the scheduler queue by the scheduler's
+discovered XCD rather than by block id, which is a small change in
+`execute_scheduler` and `get_rand_sched_id`.
