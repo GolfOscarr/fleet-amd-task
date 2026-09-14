@@ -21,6 +21,7 @@
 
 struct dim3 {
   unsigned x, y, z;
+  dim3(unsigned x_ = 1, unsigned y_ = 1, unsigned z_ = 1) : x(x_), y(y_), z(z_) {}
 };
 static dim3 threadIdx = {0, 0, 0};
 static dim3 blockIdx = {0, 0, 0};
@@ -62,3 +63,15 @@ struct bfloat16 {
   operator float() const { return __uint_as_float((unsigned)storage << 16); }
 };
 using hip_bfloat16 = bfloat16;
+
+// The real header's spelling (tasks/common/utils.cuh: kernel::bfloat16 =
+// type::bfloat16_t) and the worker's dynamic LDS budget (runtime_header.h:
+// 60 KiB minus the 3 KiB static reserve on MI300), both used by the launcher.
+namespace kernel {
+using bfloat16 = ::bfloat16;
+}
+namespace mirage {
+namespace runtime {
+constexpr int MAX_DYNAMIC_SHARED_MEMORY_SIZE = 60 * 1024 - 3 * 1024;
+}
+} // namespace mirage

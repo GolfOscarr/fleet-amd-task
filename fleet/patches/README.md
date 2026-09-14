@@ -30,12 +30,13 @@ Item L13 of `docs/design-doc/10-local-work.md`; the problems are
   day-1 disassembly.
 - `grep -rn "gfx950\|16x16x32\|mfma_f32_16x16x32"` over
   `include/mirage/persistent_kernel` hits only the two files patched above.
-- The `WarpGemmMfmaBf16Bf16F32M16N16K16TransposedCDistribution` name is what
-  `ck_tile` uses for the gfx942 16x16x16 BF16 warp GEMM in the CK versions
-  read for the design; it could not be compiled here (no ROCm, and the CK
-  submodule is not checked out locally). If the first gfx942 build reports it
-  missing, `ck_tile/ops/gemm/warp/warp_gemm.hpp` in the checked-out CK lists
-  the available names.
+- The `WarpGemmMfmaBf16Bf16F32M16N16K16TransposedCDistribution` name exists
+  in `ck_tile/ops/gemm/warp/warp_gemm.hpp` at the CK commit Fleet pins
+  (`d8ee107a`, line 238) and at `rocm-7.2.4` (line 201), and the patched
+  `linear_ck_mi300.cuh` parses for gfx942 with it under ROCm 7.0's hipcc
+  (`env/offline_gfx942/README.md`, 2026-09-14); the CK linear pipelines are
+  not instantiated there, so their device code is first generated on the
+  machine. Both patches were parsed by the real compiler, not only applied.
 
 ## `new_tasks.patch` (L6: the task-registration glue)
 

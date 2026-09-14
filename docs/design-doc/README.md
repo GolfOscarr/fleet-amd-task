@@ -28,6 +28,7 @@ names, then what this set adds.
 |---|---|
 | the optimization strategy (this stage's brief) | [`06-optimization-strategy.md`](06-optimization-strategy.md) |
 | decisions, with evidence and reversal conditions | [`00-decisions.md`](00-decisions.md) |
+| the day-1 run-book: command, PASS line, time box, action on failure | [`11-day1-runbook.md`](11-day1-runbook.md) |
 | what is still unknown at the design level | [`99-open-questions.md`](99-open-questions.md) |
 
 The plan that produced this set, and the checks it was written against, is

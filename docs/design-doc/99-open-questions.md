@@ -27,13 +27,23 @@ bandwidth (`09-expected-performance.md`).
 `W_uk` product into `mla_attend` as a per-XCD phase A or make `mla_prep` a
 16-tile gang op; both are local changes (`02-task-graph.md`).
 
-## DQ3 - CK split-KV FMHA at (576, 512) `open` - day 1 (= `docs/fleet` Q11)
+## DQ3 - CK split-KV FMHA at (576, 512) `resolved, negative` - 2026-09-14 (= `docs/fleet` Q11)
 
 **Why.** Decides whether `mla_attend` is a wrapper or a kernel
 (`00-decisions.md` D12).
 
 **Check.** Grep the ROCm `ck_tile` headers; compile a one-file instantiation
 at `kM0 = 16, kQKHeaddim = 576, kN1 = 512`; read the LDS `static_assert`.
+
+**Answer.** Not instantiable. Both split-KV pipelines carry
+`static_assert(kSubQKHeaddim <= 256, "hdim bigger than 256 is not suitable
+for this pipeline!")` (`block_fmha_fwd_splitkv_pipeline_qr_ks_vs.hpp:48` and
+the `nwarp_sshuffle` variant), at the CK commit Fleet pins (`d8ee107a`) and
+at `rocm-7.2.4`; `ck_tile/ops/fmha` has no MLA pipeline. D12's reversal
+condition is met: `mla_attend` is the spec kernel already written in
+`fleet/tasks/mi300/mla_attend_mi300.cuh`, and the day-1 probe
+(`env/probe_ck_fmha_576_512.cpp`, `check_day1.sh` check 5) is kept only to
+confirm the machine's CK says the same.
 
 ## DQ4 - What `buffer_inv sc1` invalidates for plain device memory in SPX + NPS1 `open` - day 1
 

@@ -69,15 +69,20 @@ XCDs ([`docs/design-doc/00-decisions.md`](docs/design-doc/00-decisions.md), D6).
 
 ## Status
 
-**Discovery complete; technical design written.** Implementation is blocked on
-MI300X access. The design is in [`docs/design-doc/`](docs/design-doc/README.md).
+**Discovery, design and the local harness are complete and reviewed;
+the GPU days have not started.** The design is in
+[`docs/design-doc/`](docs/design-doc/README.md); everything that runs
+without the MI300X is written, tested (66 tests) and, for the GPU code,
+compiled for `gfx942` offline with the ROCm 7.0 compiler.
 
 | | |
 |---|---|
-| Documentation | 5 discovery sets (41 files) + the design set (13 files, 1 script) |
-| Open problems | 6 major, 22 minor, 16 resolved ([`OPEN-PROBLEMS.md`](OPEN-PROBLEMS.md)) |
-| Milestone | M0 — not started ([`PROGRESS.md`](PROGRESS.md)) |
-| Day-1 blocker | does the Fleet runtime build for `gfx942`? |
+| Documentation | 5 discovery sets (41 files) + the design set (15 files, 1 script) |
+| Local harness | reference run and capture, comparison, weight packing, graph builder, four new kernels and their runtime glue, environment and measurement scripts (`harness/`, `fleet/`, `env/`) |
+| Offline gfx942 compile | the patched megakernel headers parse and our kernels compile and link, no spills; the cross-XCD fences lower as designed ([`env/offline_gfx942/`](env/offline_gfx942/README.md)) |
+| Open problems | 6 major (three narrowed offline), 18 minor, 22 resolved ([`OPEN-PROBLEMS.md`](OPEN-PROBLEMS.md)) |
+| Milestone | M0 not started; day 1 is the run-book in [`docs/design-doc/11-day1-runbook.md`](docs/design-doc/11-day1-runbook.md) ([`PROGRESS.md`](PROGRESS.md)) |
+| Day-1 question | does Fleet's host library build and run a graph on this machine? (`bash env/setup.sh`, then `bash env/check_day1.sh`) |
 
 ## Key numbers
 
@@ -200,7 +205,7 @@ are not tracked here — download them on the target machine.
 | Required by the task | Where |
 |---|---|
 | Technical design | [`docs/design-doc/`](docs/design-doc/README.md) |
-| Source, build and run instructions | *pending GPU access* |
+| Source, build and run instructions | `env/setup.sh`, `env/check_day1.sh`, `env/preflight.sh`, [`harness/README.md`](harness/README.md), [`fleet/tasks/README.md`](fleet/tasks/README.md), [`fleet/patches/README.md`](fleet/patches/README.md); results pending GPU access |
 | Correctness evidence at every boundary | method in [`docs/deepseek-v2-lite/08-correctness.md`](docs/deepseek-v2-lite/08-correctness.md) |
 | Profiling commands and results | plan in [`docs/mi300x/06-profiling.md`](docs/mi300x/06-profiling.md) |
 | Milestone reached, remaining fallbacks | [`PROGRESS.md`](PROGRESS.md) |

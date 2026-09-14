@@ -3,7 +3,7 @@
 Fleet-style batch-1 decode for DeepSeek-Coder-V2-Lite-Base on one AMD MI300X.
 Time limit: 5 days. Target: gfx942, BF16, 1024-token prompt, 32 greedy tokens.
 
-Last updated: 2026-09-14 · branch `main` at the merge of PR #3 (Stage 3 complete and reviewed)
+Last updated: 2026-09-14 · branch `local/gpu-ready` (GPU-readiness pass on top of Stage 3)
 
 **Where we are:** discovery complete (5 doc sets); the technical design is
 written and independently reviewed (`docs/design-doc/`, 14 files, one
@@ -13,8 +13,16 @@ comparison, weight packing, NumPy kernel specs, reassociation check,
 graph builder, run and measurement scripts, environment scripts, the
 gfx942 patch, the four kernels and their glue patch: 54 tests pass; the
 review's 1 blocker, 3 major and 5 minor findings are all fixed).
-GPU-dependent problems are parked, each with its check. Nothing built for
-the GPU yet; the day-1 blocker is whether Fleet builds for gfx942.
+GPU-dependent problems are parked, each with its check. On `local/gpu-ready`
+(2026-09-14) the GPU code was compiled for gfx942 offline with ROCm 7.0's
+hipcc in Docker (`env/offline_gfx942/`): every patched header parses and
+our kernels compile and link, no VGPR spills, the cross-XCD fences lower as
+designed; CK's source says its split-KV FMHA cannot take the MLA head
+dim, so `mla_attend` is our spec kernel; the transformers conflict
+between the checkpoint (4.46) and Fleet (4.57.1) is resolved by two
+venvs; `env/preflight.sh` runs every local check; `11-day1-runbook.md`
+is the session script. The day-1 question is now whether Fleet's host
+library builds and a graph runs on the machine.
 
 ---
 
@@ -119,7 +127,7 @@ Resolvable now, without the GPU: MIN-1, MIN-2, MIN-4, MIN-5, MIN-6 (`OPEN-PROBLE
 
 Branch `local/harness`. Every item has a check that runs here; the GPU-only
 ones are written to be run on day 1 (`docs/design-doc/10-local-work.md`).
-Test suite: `.venv/bin/python -m pytest harness/tests fleet/tests -q` (54 tests).
+Test suite: `.venv/bin/python -m pytest harness/tests fleet/tests -q` (66 tests).
 
 - [x] Read `gang_attention_merge_mi300.cuh` and `kv_cache_update_mi300.cuh` (both GQA-paged; merge math reusable, append is not)
 - [x] Read `gang_linear_mi300.cuh` + `ck_tile` idiom → `docs/fleet/04-repo-map.md` (worker contract, inner GEMV tiers, CK FMHA path, gfx950-only code)
@@ -142,7 +150,17 @@ Test suite: `.venv/bin/python -m pytest harness/tests fleet/tests -q` (54 tests)
 - [x] **L8** `harness/calibrate.py` (script; the floor itself needs the GPU) · **L14** `harness/route_analysis.py`
 - [ ] Calibrate BF16 noise floor and log expert routing on the machine: `run_reference.py`, then `calibrate.py` and `route_analysis.py` (MIN-2, MIN-6)
 - [x] Independent review of the branch against the Fleet source, the HF modeling file and the design docs: 1 blocker (`AMDGPU_TARGETS` unset, so the megakernel compiled for gfx950), 3 major (layer-1 B3 normalized with layer 0's weight; the B5 debug-scores path unreachable; B10 compared element-wise against an unordered `topk`), 5 minor; all fixed in separate commits, MIN-30 and MIN-31 closed by source inspection
-- [ ] `kernel_tests.py` (07-correctness.md harness table): a standalone HIP launcher that runs each new kernel in isolation on random inputs against `numpy_ref.py`, plus 1 split versus 33 splits. Not in L1-L14; writable locally (syntax check only), runs on day 2. The one local gap left.
+- [x] `fleet/tasks/kernel_tests.py` + `kernel_tests_mi300.cu` (07-correctness.md harness table): a standalone HIP launcher that runs each new kernel in isolation on random inputs against `numpy_ref.py`, plus 1 split versus 33 splits; `--dry-run` exercises the plumbing here (12 tests, including a Python-to-C++ contract test parsed from the launcher), the launcher compiles and links for gfx942 offline in both variants; the run itself is day 2
+
+**GPU-readiness pass (`local/gpu-ready`, 2026-09-14):**
+
+- [x] Dependency conflict found and resolved: Fleet's `install_requires` pins transformers 4.57.1, under which the checkpoint's modeling code fails (verified: 17 tests); `env/setup.sh` makes `.venv` (4.46.3) and `.venv-fleet` (Fleet's pins, `env/requirements-fleet.txt`)
+- [x] Dependency list corrected: at `51dce4f` no `.gitmodules` entry is a gitlink; CK (`d8ee107a`, the commit Fleet's other branches pin) and nlohmann/json are fetched by commit into `deps/`; PyTorch index fallback `rocm7.0`; ROCm 7.0+ recorded as Fleet's requirement
+- [x] Offline gfx942 compile with ROCm 7.0's hipcc in Docker (`env/offline_gfx942/`): three variants compile and device-link, zero errors; worker kernel 182 VGPRs, no VGPR spills; `buffer_wbl2 sc1` / `buffer_inv sc1` present (MAJ-1 compile half, MIN-27, MAJ-3 lowering, MAJ-4 static union)
+- [x] DQ3 / MIN-28 answered from CK's source: `static_assert(kSubQKHeaddim <= 256)` in both split-KV pipelines; D12 reversed, `mla_attend` is the spec kernel
+- [x] `env/preflight.sh`: tests, prompt check, graph dry run, kernel syntax, script parse, submodule pin, both patches on a clean worktree (8 PASS); `OFFLINE_COMPILE=1` adds the Docker compile
+- [x] `docs/design-doc/11-day1-runbook.md`: command, PASS line, time box, action on failure, per session
+- [x] Independent review of the branch (see the PR)
 
 **Found on the way:** the checkpoint's remote modeling code needs transformers 4.x (pinned 4.46.3 in `env/requirements.txt`); eager attention asserts on a missing mask at a one-token step; the model returns a legacy tuple cache unless a `DynamicCache` is passed; the reference rounds its attention scores to BF16 before the softmax, which sets the attention-output floor at large score magnitudes (`docs/design-doc/07-correctness.md`, item 7); the shipped `gang_linear_silu` wrapper expects 128-row gate/up groups (`num_groups = 88` for the padded width); `attach_input` asserts row-major, so `W_uk`/`W_uv` are contiguous copies; the online-mode stop test is `step + 2 >= max_seq_length` on the pre-increment step, so a K-iteration run uses `max_seq_length = 1024 + K`.
 
@@ -152,11 +170,11 @@ Test suite: `.venv/bin/python -m pytest harness/tests fleet/tests -q` (54 tests)
 
 **Day 1, in order — each gates the next:**
 
-- [ ] **Does the repo build for gfx942?** `AMDGPU_TARGETS=gfx942 pip install -e .` ← **BLOCKING**
+- [ ] **Does the repo build for gfx942?** `AMDGPU_TARGETS=gfx942 pip install -e .` ← **BLOCKING** (device code: compiled offline 2026-09-14, `env/offline_gfx942/`; left: the cmake and cargo host build and a graph run)
 - [ ] Capture `rocminfo`, `hipcc --version`, ROCm version, partition mode
 - [ ] Assert SPX + NPS1; find `amd-smi` query/set syntax
 - [ ] Confirm `XCC_ID` returns 0–7; map workgroup → XCD
-- [ ] Disassemble agent-scope fence: does `buffer_wbl2 sc1` / `buffer_inv sc1` appear?
+- [x] Disassemble agent-scope fence: does `buffer_wbl2 sc1` / `buffer_inv sc1` appear? Yes, offline (`env/offline_gfx942/fences.txt`); left: whether a system-scope fence sits on the per-task path of the generated kernel
 - [ ] Verify 38 CUs/XCD detected (repo constants are MI350's 32)
 - [ ] Download model (31 GB)
 - [ ] `rocprofv3 --list-avail` → confirm counter names (`TCC_EA0_*`)
@@ -218,7 +236,7 @@ Fleet sources.
 
 | Risk | Impact | Mitigation |
 |---|---|---|
-| Repo won't build for gfx942 | Strategy change | Decide day 1; minimal-runtime fallback |
+| Repo won't build for gfx942 | Strategy change | Device code compiles offline (2026-09-14); the host build is decided day 1; minimal-runtime fallback |
 | MLA task is the whole budget | Miss M3/M4 | ✅ prior art read, spec drafted; M2 is the required bar |
 | Megakernel occupancy = 1 wave/SIMD | Was feared fatal | ✅ resolved — `VMCNT`=63 allows enough in-flight loads; becomes a prefetch-depth requirement (MIN-22 to confirm) |
 | Attention uses 32 of 296 workers | 13–17% of budget if the model is right | `P_split` is one constant to sweep (MIN-23) |

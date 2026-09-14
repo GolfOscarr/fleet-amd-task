@@ -74,13 +74,13 @@ Reductions available if `t_b` is large, in order of ease:
 
 1. Fuse each `rmsnorm` into the op after it: the runtime ships
    `rmsnorm_linear` and `gang_rmsnorm_linear_mi300.cuh`; the router can
-   normalize its own input; `model.norm` into `lm_head`. Removes 54
-   boundaries (326 to 272).
+   normalize its own input; `model.norm` into `lm_head`. Removes 55
+   boundaries, 27 pairs plus `model.norm` (326 to 271).
 2. Fuse `moe_silu_mul` into the W13 gang task's epilogue, as
-   `gang_linear_silu` does for the dense layer. Removes 26 more (to 246).
+   `gang_linear_silu` does for the dense layer. Removes 26 more (to 245).
 3. Fuse `mla_prep` into `qkv_a_proj`'s last XCD or into `mla_attend`
    (redundantly per XCD, at 8x the `W_uk` read: +14 MiB per layer, 3 us).
-   Removes 27 (to 219). Only if the boundary cost exceeds 3 us.
+   Removes 27 (to 218). Only if the boundary cost exceeds 3 us.
 
 Each removes boundaries at the cost of a fused kernel variant; none is in
 the baseline plan.
@@ -108,8 +108,8 @@ is the same move. The router at 256 KiB is tolerable as one workgroup.
 |---|---|---|---|---|
 | bandwidth only (not reachable) | 0 | hidden | 1,148-1,349 us | 741-871 |
 | design as written, good case | 1 us | 20 us per layer, serial | 1,148 + 326 + 540 = ~2.0 ms to ~2.2 ms | 450-500 |
-| design with reductions 1-3 | 1 us | gang, hidden | 1,148 + 219 = ~1.37 ms to ~1.57 ms | 640-730 |
-| boundary-dominated, with reductions 1-3 (219 boundaries) | 5 us | gang | 1,148 + 1,095 = ~2.2 ms to ~2.4 ms | 410-450 |
+| design with reductions 1-3 | 1 us | gang, hidden | 1,148 + 218 = ~1.37 ms to ~1.57 ms | 640-730 |
+| boundary-dominated, with reductions 1-3 (218 boundaries) | 5 us | gang | 1,148 + 1,090 = ~2.2 ms to ~2.4 ms | 410-450 |
 
 The design as written targets **M2 correctness first** and reports the
 measured `t_b` and `mla_prep` time; the reductions are the documented next

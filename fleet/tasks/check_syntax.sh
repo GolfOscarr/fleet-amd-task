@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Syntax check only: parses each kernel with the host clang++ against the
 # stub headers in fleet/tasks/stub (no HIP, no device code generation, no
-# semantics). Correctness is established on the GPU (harness/kernel_tests.py).
+# semantics), then the launcher kernel_tests_mi300.cu against the same stubs
+# plus stub/hip/hip_runtime.h. Correctness is established on the GPU
+# (fleet/tasks/kernel_tests.py).
 set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 STUB="$ROOT/fleet/tasks/stub"
@@ -27,5 +29,14 @@ for f in mla_prep_mi300 mla_attend_mi300 mla_merge_uv_mi300 moe_router_mi300 cop
     echo "FAIL $f"; echo "$out" | head -30; fail=1
   fi
   rm -f "$tu"
+done
+# the launcher, in both build variants (the debug one adds the scores output)
+for variant in "" "-DMLA_ATTEND_DEBUG_SCORES"; do
+  label="kernel_tests_mi300${variant:+ $variant}"
+  if out=$("$CXX" -std=c++17 -fsyntax-only -Wall -Wno-unused-parameter -Wno-unused-variable $variant -I "$STUB" -I "$ROOT/fleet" -x c++ "$ROOT/fleet/tasks/kernel_tests_mi300.cu" 2>&1); then
+    echo "PASS $label"
+  else
+    echo "FAIL $label"; echo "$out" | head -30; fail=1
+  fi
 done
 exit $fail

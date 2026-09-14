@@ -1,6 +1,8 @@
 # 99 — Open Questions
 
-## Q1 — Does the repo build and run on MI300X / gfx942? `open` — **day 1, blocking**
+## Q1 — Does the repo build and run on MI300X / gfx942? `open, narrowed` — **day 1, blocking**
+
+**Offline, 2026-09-14.** Every header parses for gfx942 and our five kernels compile and link, with the CK linear templates parsed but not instantiated (`env/offline_gfx942/README.md`); what is left for the machine is the cmake and cargo build of the host library and a graph run.
 
 **Why.** Gates the entire strategy in `07-gap-analysis.md`. If it builds, we
 extend and spend our days on MLA. If it does not, we write a minimal runtime and
@@ -177,7 +179,9 @@ discovered XCD rather than by block id, which is a small change in
 
 ---
 
-## Q11 — Can CK's split-KV FMHA be instantiated at MLA head dims (576 / 512)? `open` — **day 1, high value**
+## Q11 — Can CK's split-KV FMHA be instantiated at MLA head dims (576 / 512)? `resolved, no` — 2026-09-14
+
+**Answer (from source, before the GPU).** Both split-KV pipelines `static_assert(kSubQKHeaddim <= 256)` at Fleet's pinned CK `d8ee107a` and at `rocm-7.2.4`; no MLA pipeline under `ck_tile/ops/fmha`. `mla_attend` is the spec kernel (`docs/design-doc/99-open-questions.md` DQ3, `env/offline_gfx942/README.md`). The original question follows.
 
 **Why.** `paged_attention_ck_fmha_split_kv_mi300.cuh:66-98` instantiates
 `BlockFmhaFwdSplitKVPipelineNWarpSShuffleQRKSVS` with tile
@@ -198,7 +202,9 @@ spec stands.
 
 ---
 
-## Q12 — Which gfx950-only code is in the gfx942 build? `open` — **day 1, part of Q1**
+## Q12 — Which gfx950-only code is in the gfx942 build? `resolved` — 2026-09-14
+
+**Answer.** Exactly the three items below: with `fleet/patches/gfx942.patch` the full header set compiles for gfx942 under ROCm 7.0's hipcc with zero errors, offline (`env/offline_gfx942/README.md`). The original question follows.
 
 Found by reading, not building (`04-repo-map.md`, "gfx950-only code"):
 

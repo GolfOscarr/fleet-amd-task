@@ -22,7 +22,8 @@ export MIRAGE_HOME="$FLEET"
 export AMDGPU_TARGETS=gfx942   # persistent_kernel.py compiles for gfx950 by default
 cd "$ROOT"
 # shellcheck disable=SC1091
-[ -x .venv/bin/python ] && source .venv/bin/activate
+# The Fleet venv: mirage and the Qwen3 smoke graph live there (env/setup.sh step 2).
+[ -x .venv-fleet/bin/python ] && source .venv-fleet/bin/activate
 
 RESULTS=()
 result() { RESULTS+=("$1  $2"); echo ">>> $1  $2"; }

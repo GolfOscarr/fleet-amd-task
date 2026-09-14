@@ -12,7 +12,13 @@ uv pip install --python .venv/bin/python -r env/requirements.txt
 ```
 
 transformers is pinned to 4.46.3: the checkpoint's `trust_remote_code`
-modeling file does not import under 5.x.
+modeling file does not import under 5.x, and under 4.57.1 (Fleet's own
+pin) its cache calls fail (`DynamicCache.get_usable_length`). On the
+MI300X box `env/setup.sh` therefore makes two venvs: `.venv` for the
+reference side (`run_reference.py`, `calibrate.py`, `reassoc_check.py`,
+`make_prompt.py`) and `.venv-fleet`, where the Fleet submodule is
+installed with its own pins, for `run_fleet.py`, `kernel_tests.py`,
+`compare.py` and `measure.py` (`env/requirements-fleet.txt`).
 
 ## Files
 
