@@ -19,6 +19,7 @@ ROCM_PATH="${ROCM_PATH:-/opt/rocm}"
 export ROCM_PATH
 export PATH="$ROCM_PATH/bin:$ROCM_PATH/llvm/bin:$PATH"
 export MIRAGE_HOME="$FLEET"
+export AMDGPU_TARGETS=gfx942   # persistent_kernel.py compiles for gfx950 by default
 cd "$ROOT"
 # shellcheck disable=SC1091
 [ -x .venv/bin/python ] && source .venv/bin/activate

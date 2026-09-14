@@ -190,6 +190,9 @@ def main():
     if args.debug_scores:
         os.environ["MPK_DEBUG_SCORES"] = "1"
     os.environ.setdefault("USE_GANG", "1")
+    # persistent_kernel.py:350 defaults --offload-arch to gfx950; the MI300X is gfx942,
+    # and the gfx942 patch's #if defined(__gfx950__) guards depend on this
+    os.environ.setdefault("AMDGPU_TARGETS", "gfx942")
 
     prompt = json.loads(Path(args.prompt).read_text())
     n_prompt = len(prompt)
