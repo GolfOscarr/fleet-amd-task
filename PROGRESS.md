@@ -8,8 +8,10 @@ Last updated: 2026-09-14 · branch `local/harness` (Stage 3 in progress)
 **Where we are:** discovery complete (5 doc sets); the technical design is
 written and independently reviewed (`docs/design-doc/`, 14 files, one
 counting script); the local harness is being built on `local/harness`
-(prompt, reference-run and capture script, comparison, weight packing,
-NumPy kernel specs, reassociation check: 33 tests pass). GPU-dependent
+(prompt, reference run and capture, comparison, weight packing, NumPy
+kernel specs, reassociation check, graph builder, run and measurement
+scripts, environment scripts, the gfx942 patch: 50 tests pass; the four
+kernels are the last local item). GPU-dependent
 problems are parked, each with its check. Nothing built for the GPU yet;
 the day-1 blocker is whether Fleet builds for gfx942.
 
@@ -112,33 +114,34 @@ Resolvable now, without the GPU: MIN-1, MIN-2, MIN-4, MIN-5, MIN-6 (`OPEN-PROBLE
 
 ---
 
-## Stage 3 — Local work (no GPU) 🟡 **12/20**
+## Stage 3 — Local work (no GPU) 🟡 **19/20**
 
 Branch `local/harness`. Every item has a check that runs here; the GPU-only
 ones are written to be run on day 1 (`docs/design-doc/10-local-work.md`).
+Test suite: `.venv/bin/python -m pytest harness/tests fleet/tests -q` (50 tests).
 
 - [x] Read `gang_attention_merge_mi300.cuh` and `kv_cache_update_mi300.cuh` (both GQA-paged; merge math reusable, append is not)
 - [x] Read `gang_linear_mi300.cuh` + `ck_tile` idiom → `docs/fleet/04-repo-map.md` (worker contract, inner GEMV tiers, CK FMHA path, gfx950-only code)
 - [x] Read the Python layer API + `demo/qwen3/demo_30B_A3B.py` (the MoE template; the `models/qwen3/` builder has no MoE) → `docs/fleet/04-repo-map.md`
 - [x] Read `persistent_kernel.cuh` main loop (launch structure, worker/scheduler loops, event counting, placement rules) → `docs/fleet/03-runtime.md`
-- [ ] Read Mirage MPK paper (arXiv:2512.22219)
+- [x] Read the Mirage MPK paper (arXiv 2512.22219) → `docs/fleet/08-mpk-paper.md` (no per-boundary number; DQ1 stays a measurement)
 - [x] Read vLLM / AITER / FlashMLA MLA decode kernels → `docs/mla-decode/`
 - [x] Split-KV partial-softmax numerics (in `docs/mla-decode/04`)
 - [x] **L1** prompt: `harness/prompt_ids.json` (BOS + 1,023 tokens of a pinned Fleet source file), `make_prompt.py` checks it
-- [x] **L7** `harness/run_reference.py`: prefill 1,023, 32-step argmax loop from position 1023 with hooks, `generate` cross-check, cache capture; `--smoke` runs it on a tiny random model; 10 tests
-- [x] **L9** `harness/compare.py`: metrics, thresholds, calibration override, exact checks, route log, growth curve, report; 7 tests
-- [x] **L4** `fleet/pack_weights.py`: `W_qkva`, `W_uk`/`W_uv`, padded + shuffled layer-0 MLP, 66-expert `W13`/`W2`, loader; 10 tests
-- [x] **L2** `harness/numpy_ref.py`: the four new kernels with explicit BF16 rounding; 6 tests against the tiny model's own modules (RoPE, `ql_nope` bit-exact; router exact)
-- [x] **L3** `harness/reassoc_check.py`: reassociation at the real shapes on CPU → `harness/results/reassoc_check.json` (MIN-1 resolved: within the reference's own ordering noise)
-- [ ] **L5** `fleet/build_graph.py` (call list of `02-task-graph.md`, `--layers N`, `--head`, `--debug`)
-- [ ] **L6** the four kernels + two variants + glue patch
-- [ ] **L12** `env/setup.sh`, `env/check_day1.sh`
-- [ ] **L13** gfx942 build and instrumentation patch
-- [ ] **L10** `harness/run_fleet.py` · **L11** `harness/measure.py`
-- [ ] **L8** `harness/calibrate.py` (script local; the floor itself needs the GPU) · **L14** `harness/route_analysis.py`
-- [ ] Calibrate BF16 noise floor and log expert routing: inputs come from `run_reference.py` on the machine (MIN-2, MIN-6)
+- [x] **L7** `harness/run_reference.py`: prefill 1,023, 32-step argmax loop from position 1023 with hooks, `generate` cross-check, cache capture; `--smoke` runs it on a tiny random model
+- [x] **L9** `harness/compare.py`: metrics, thresholds, calibration override, exact checks, route log, growth curve, report
+- [x] **L4** `fleet/pack_weights.py`: `W_qkva`, `W_uk`/`W_uv`, padded + shuffled layer-0 MLP, 66-expert `W13`/`W2`, loader
+- [x] **L2** `harness/numpy_ref.py`: the four new kernels with explicit BF16 rounding, tested against the tiny model's own modules (RoPE, `ql_nope` bit-exact; router exact)
+- [x] **L3** `harness/reassoc_check.py` → `harness/results/reassoc_check.json` (MIN-1 resolved: within the reference's own ordering noise)
+- [x] **L5** `fleet/graph_plan.py` + `fleet/build_graph.py`: the 326-op / 1,880-task graph as data, the `mpk.*` calls, the new `*_layer` methods, `--dry-run` against a recording fake with the wrappers' assertions, `--stop-after <label>` truncation
+- [ ] **L6** the four kernels + two variants + glue patch (in progress: `fleet/tasks/mi300/`, `fleet/patches/new_tasks.patch`)
+- [x] **L12** `env/setup.sh`, `env/check_day1.sh`, `env/probe_ck_fmha_576_512.cpp`
+- [x] **L13** `fleet/patches/gfx942.patch` (include guard, 16x16x16 warp GEMM on gfx942, `[FWD_PASS]` every iteration); applies cleanly
+- [x] **L10** `harness/run_fleet.py` (build, compile, meta tensors, run, boundary dumps by last writer) · **L11** `harness/measure.py` (`[FWD_PASS]`, event timing, rocprofv3 CSVs, the report table)
+- [x] **L8** `harness/calibrate.py` (script; the floor itself needs the GPU) · **L14** `harness/route_analysis.py`
+- [ ] Calibrate BF16 noise floor and log expert routing on the machine: `run_reference.py`, then `calibrate.py` and `route_analysis.py` (MIN-2, MIN-6)
 
-**Found on the way:** the checkpoint's remote modeling code needs transformers 4.x (pinned 4.46.3 in `env/requirements.txt`); eager attention asserts on a missing mask at a one-token step; the model returns a legacy tuple cache unless a `DynamicCache` is passed; the reference rounds its attention scores to BF16 before the softmax, which sets the attention-output floor at large score magnitudes (`docs/design-doc/07-correctness.md`, item 7).
+**Found on the way:** the checkpoint's remote modeling code needs transformers 4.x (pinned 4.46.3 in `env/requirements.txt`); eager attention asserts on a missing mask at a one-token step; the model returns a legacy tuple cache unless a `DynamicCache` is passed; the reference rounds its attention scores to BF16 before the softmax, which sets the attention-output floor at large score magnitudes (`docs/design-doc/07-correctness.md`, item 7); the shipped `gang_linear_silu` wrapper expects 128-row gate/up groups (`num_groups = 88` for the padded width); `attach_input` asserts row-major, so `W_uk`/`W_uv` are contiguous copies; the online-mode stop test is `step + 2 >= max_seq_length` on the pre-increment step, so a K-iteration run uses `max_seq_length = 1024 + K`.
 
 ---
 
