@@ -53,3 +53,14 @@ If the local time runs short, the order is L1, L7, L9, L4, L2, L5, L6, L12,
 L13, L10, L11, L3, L8, L14: the artifacts that make day 1 productive first
 (prompt, reference recipe, comparison), then what the GPU days build on
 (packing, kernel specs, graph, kernels), then measurement and analysis.
+
+## Status (2026-09-14)
+
+All of L1-L14 are implemented on branch `local/harness` and independently
+reviewed; `PROGRESS.md` Stage 3 lists each item's file, and
+`harness/README.md` the run recipe. What the local work could not settle
+is exactly the list above ("What cannot be done locally"), plus two items
+found on the way: `kernel_tests.py` from `07-correctness.md` is still to
+be written (a standalone HIP launcher, day 2), and the CPU reassociation
+check showed that the attention threshold must be the calibrated floor,
+not the starting value (`07-correctness.md`, item 7).

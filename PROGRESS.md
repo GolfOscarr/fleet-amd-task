@@ -3,17 +3,18 @@
 Fleet-style batch-1 decode for DeepSeek-Coder-V2-Lite-Base on one AMD MI300X.
 Time limit: 5 days. Target: gfx942, BF16, 1024-token prompt, 32 greedy tokens.
 
-Last updated: 2026-09-14 · branch `local/harness` (Stage 3 in progress)
+Last updated: 2026-09-14 · branch `local/harness` (Stage 3 complete and reviewed, PR open)
 
 **Where we are:** discovery complete (5 doc sets); the technical design is
 written and independently reviewed (`docs/design-doc/`, 14 files, one
-counting script); the local harness is being built on `local/harness`
-(prompt, reference run and capture, comparison, weight packing, NumPy
-kernel specs, reassociation check, graph builder, run and measurement
-scripts, environment scripts, the gfx942 patch, the four kernels and
-their glue patch: 50 tests pass). GPU-dependent
-problems are parked, each with its check. Nothing built for the GPU yet;
-the day-1 blocker is whether Fleet builds for gfx942.
+counting script); the local harness is complete and independently
+reviewed on `local/harness` (prompt, reference run and capture,
+comparison, weight packing, NumPy kernel specs, reassociation check,
+graph builder, run and measurement scripts, environment scripts, the
+gfx942 patch, the four kernels and their glue patch: 54 tests pass; the
+review's 1 blocker, 3 major and 5 minor findings are all fixed).
+GPU-dependent problems are parked, each with its check. Nothing built for
+the GPU yet; the day-1 blocker is whether Fleet builds for gfx942.
 
 ---
 
@@ -114,11 +115,11 @@ Resolvable now, without the GPU: MIN-1, MIN-2, MIN-4, MIN-5, MIN-6 (`OPEN-PROBLE
 
 ---
 
-## Stage 3 — Local work (no GPU) ✅ **20/20 local items** (the GPU run of calibration and routing stays for day 1)
+## Stage 3 — Local work (no GPU) ✅ **complete, reviewed** (the GPU run of calibration and routing stays for day 1)
 
 Branch `local/harness`. Every item has a check that runs here; the GPU-only
 ones are written to be run on day 1 (`docs/design-doc/10-local-work.md`).
-Test suite: `.venv/bin/python -m pytest harness/tests fleet/tests -q` (50 tests).
+Test suite: `.venv/bin/python -m pytest harness/tests fleet/tests -q` (54 tests).
 
 - [x] Read `gang_attention_merge_mi300.cuh` and `kv_cache_update_mi300.cuh` (both GQA-paged; merge math reusable, append is not)
 - [x] Read `gang_linear_mi300.cuh` + `ck_tile` idiom → `docs/fleet/04-repo-map.md` (worker contract, inner GEMV tiers, CK FMHA path, gfx950-only code)
@@ -140,6 +141,8 @@ Test suite: `.venv/bin/python -m pytest harness/tests fleet/tests -q` (50 tests)
 - [x] **L10** `harness/run_fleet.py` (build, compile, meta tensors, run, boundary dumps by last writer) · **L11** `harness/measure.py` (`[FWD_PASS]`, event timing, rocprofv3 CSVs, the report table)
 - [x] **L8** `harness/calibrate.py` (script; the floor itself needs the GPU) · **L14** `harness/route_analysis.py`
 - [ ] Calibrate BF16 noise floor and log expert routing on the machine: `run_reference.py`, then `calibrate.py` and `route_analysis.py` (MIN-2, MIN-6)
+- [x] Independent review of the branch against the Fleet source, the HF modeling file and the design docs: 1 blocker (`AMDGPU_TARGETS` unset, so the megakernel compiled for gfx950), 3 major (layer-1 B3 normalized with layer 0's weight; the B5 debug-scores path unreachable; B10 compared element-wise against an unordered `topk`), 5 minor; all fixed in separate commits, MIN-30 and MIN-31 closed by source inspection
+- [ ] `kernel_tests.py` (07-correctness.md harness table): a standalone HIP launcher that runs each new kernel in isolation on random inputs against `numpy_ref.py`, plus 1 split versus 33 splits. Not in L1-L14; writable locally (syntax check only), runs on day 2. The one local gap left.
 
 **Found on the way:** the checkpoint's remote modeling code needs transformers 4.x (pinned 4.46.3 in `env/requirements.txt`); eager attention asserts on a missing mask at a one-token step; the model returns a legacy tuple cache unless a `DynamicCache` is passed; the reference rounds its attention scores to BF16 before the softmax, which sets the attention-output floor at large score magnitudes (`docs/design-doc/07-correctness.md`, item 7); the shipped `gang_linear_silu` wrapper expects 128-row gate/up groups (`num_groups = 88` for the padded width); `attach_input` asserts row-major, so `W_uk`/`W_uv` are contiguous copies; the online-mode stop test is `step + 2 >= max_seq_length` on the pre-increment step, so a K-iteration run uses `max_seq_length = 1024 + K`.
 
