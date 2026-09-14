@@ -3,7 +3,11 @@
 Fleet-style batch-1 decode for DeepSeek-Coder-V2-Lite-Base on one AMD MI300X.
 Time limit: 5 days. Target: gfx942, BF16, 1024-token prompt, 32 greedy tokens.
 
-Last updated: 2026-09-14 · branch `research/references-and-planning`
+Last updated: 2026-09-14 · branch `research/references-and-planning` · 14 commits
+
+**Where we are:** discovery complete (5 doc sets, 40 files, ~5,300 lines, 9
+reproducible scripts). Nothing built yet. Next deliverable is the technical
+design document; the day-1 blocker is whether Fleet builds for gfx942.
 
 ---
 
@@ -18,7 +22,7 @@ Last updated: 2026-09-14 · branch `research/references-and-planning`
 
 ---
 
-## Stage 1 — Discovery ✅ complete
+## Stage 1 — Discovery ✅ **complete** (10/10)
 
 - [x] Read task description
 - [x] Init repo, branch, Fleet submodule, `.gitignore`
@@ -30,10 +34,38 @@ Last updated: 2026-09-14 · branch `research/references-and-planning`
 - [x] `docs/mla-decode/` — prior art survey + our MLA kernel spec (closes discovery)
 - [x] Correctness pass on every doc set
 
-**Key numbers:** 4,705.9 MiB/token · theoretical floor 931 µs · **realistic
-1.15-1.35 ms/token (742-871 tok/s)** at 3.66-4.3 TB/s achievable bandwidth ·
-routed experts = 55% of traffic · layer 1 milestone 31.6-45.7 µs · FP8 → 509 µs
-floor, 630-740 µs realistic
+| Doc set | Files | Lines | Covers |
+|---|---|---|---|
+| `mi300x/` | 9 | 1,388 | hardware, memory model, bandwidth, profiling |
+| `deepseek-v2-lite/` | 10 | 1,278 | config, MLA, MoE, tensor flow, roofline, correctness |
+| `fleet/` | 9 | 1,128 | paper, task model, runtime, repo map, our task graph |
+| `acceleration/` | 6 | 575 | precision, parallelism, kernel craft, ledger |
+| `mla-decode/` | 6 | 547 | prior art, kernel anatomy, **our kernel spec** |
+
+**Key numbers**
+
+| | |
+|---|---|
+| Traffic per token | 4,705.9 MiB (routed experts = 55%) |
+| Roofline | 931 µs theoretical floor · **1.15–1.35 ms realistic** (742–871 tok/s) |
+| Achievable bandwidth | 3.66–4.3 TB/s (69–81% of 5.3) |
+| Layer-1 milestone | 31.6 µs floor / 38.9–45.7 µs realistic |
+| FP8 (stretch) | 509 µs floor / 630–740 µs realistic — **1.83×** |
+| Task graph | 80 tasks/layer, ~2,135/token, **1 kernel launch** |
+| Eager baseline | ~800–1,000 launches/token |
+
+**Decisions locked** (to be consolidated into `docs/decisions.md`)
+
+| Decision | Rationale |
+|---|---|
+| Target **gfx942**, SPX + NPS1 | Our hardware; default mode; gfx950 binaries will not run |
+| **Extend** Fleet, don't reimplement | MoE, scheduler, sync already exist for MI300; only MLA is missing |
+| **Runtime reassociation**, not materialized MLA fusion | Fusion costs +44 MiB/layer to save 8.9 — ~2× worse at S=1024; vLLM does the same |
+| Latent KV cache, **split** `c_KV[S,512]` + `k_pe[S,64]` | Matches every implementation's `BLOCK_DMODEL`/`BLOCK_DPE` split |
+| **`BLOCK_H`=16, `P_split`=32** | 16 heads share one KV read (MQA); parallelism from sequence splits only |
+| **MFMA 16×16** for attention, VALU for weight GEMVs | M=16 fills the tile; M=1 wastes 15/16 |
+| **Weight-only** FP8 if reached | Activation is 4 KB at batch 1 — activation scales buy nothing |
+| Prefetch depth **4–8** in every inner loop | Required to saturate HBM at 1 wave/SIMD |
 
 ---
 
@@ -54,10 +86,10 @@ Required as the **first deliverable**. All inputs exist; this is assembly.
 
 ---
 
-## Stage 3 — Local work (no GPU) ⬜ not started
+## Stage 3 — Local work (no GPU) 🟡 **3/12**
 
 - [x] Read `gang_attention_merge_mi300.cuh` and `kv_cache_update_mi300.cuh` (both GQA-paged; merge math reusable, append is not)
-- [ ] Read `gang_linear_mi300.cuh` + `ck_tile` idiom
+- [ ] Read `gang_linear_mi300.cuh` + `ck_tile` idiom ← the template our MLA task is written against
 - [ ] Read `python/mirage/mpk/models/qwen3/` (template for our builder)
 - [ ] Read Mirage MPK paper (arXiv:2512.22219) + `persistent_kernel.cuh` main loop
 - [x] Read vLLM / AITER / FlashMLA MLA decode kernels → `docs/mla-decode/`
@@ -94,7 +126,7 @@ documented as blocked. **Decide end of day 1.**
 
 - [ ] Weight loader: pack experts into W13 `[64, 2816, 2048]`, precision as a parameter
 - [ ] Prefill → latent KV cache conversion (excluded from timed window)
-- [ ] **MLA decode Chiplet-task** ← the core work, no prior art in the repo
+- [ ] **MLA decode Chiplet-task** ← the core work; **spec ready** in `docs/mla-decode/04-our-kernel-spec.md`
 - [ ] Split-KV merge for MLA
 - [ ] Latent KV-cache buffer + append task
 - [ ] DeepSeek-V2 model builder in `python/mirage/mpk/models/`
@@ -128,8 +160,11 @@ documented as blocked. **Decide end of day 1.**
 | `docs/fleet/99-open-questions.md` | 7 open / 2 resolved | **Q1 does it build on gfx942** |
 | `docs/acceleration/99-open-questions.md` | 4 open / 2 resolved | Q2 MFMA vs VALU at M=1 |
 | `docs/mla-decode/99-open-questions.md` | 5 open | Q1 is `P_split`=32 right |
+| **total** | **34 open / 8 resolved** | |
 
-See `OPEN-PROBLEMS.md` for the consolidated, deduplicated view.
+`OPEN-PROBLEMS.md` holds the consolidated, deduplicated view: **6 major /
+18 minor open / 14 resolved**, plus 9 documentation defects found in AMD and
+Fleet sources.
 
 ---
 
@@ -138,8 +173,9 @@ See `OPEN-PROBLEMS.md` for the consolidated, deduplicated view.
 | Risk | Impact | Mitigation |
 |---|---|---|
 | Repo won't build for gfx942 | Strategy change | Decide day 1; minimal-runtime fallback |
-| MLA task is the whole budget | Miss M3/M4 | Read prior art first; M2 is the required bar |
-| Megakernel occupancy = 1 wave/SIMD | No latency hiding on a memory-bound load | Track VGPRs from commit 1 |
+| MLA task is the whole budget | Miss M3/M4 | ✅ prior art read, spec drafted; M2 is the required bar |
+| Megakernel occupancy = 1 wave/SIMD | Was feared fatal | ✅ resolved — `VMCNT`=63 allows enough in-flight loads; becomes a prefetch-depth requirement (MIN-22 to confirm) |
+| Attention uses 32 of 296 workers | 13–17% of budget if the model is right | `P_split` is one constant to sweep (MIN-23) |
 | Our tasks smaller than anything Fleet measured | Dispatch overhead dominates | Measure task vs dispatch time early |
 | Top-6 experts over 8 XCDs leaves 2 idle | 25% of machine during 99 MB phase | Compare vs N-split across all 8 |
 | 5 days, BF16 first | FP8 not reached | Document with arithmetic; precision as a loader parameter |
