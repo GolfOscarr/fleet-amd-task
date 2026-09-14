@@ -73,7 +73,10 @@ of the runtime's own merge (`tasks/ampere/merge_splitkv.cuh`). Passes of
 reassociation. The accumulator (16 x 512 FP32) lives in registers, 32 per
 thread; LDS about 22 KiB (`ql_nope`, `q_pe`, scores, probabilities). VALU
 only. `-DMLA_ATTEND_DEBUG_SCORES` and a second output tensor make it write
-the scaled scores (boundary B5).
+the scaled scores (boundary B5): `harness/run_fleet.py --debug-scores`
+sets `MPK_DEBUG_SCORES=1` (the glue patch turns it into the define at
+compile time) and `build_graph.py` passes the `scores [16, S_max]` FP32
+tensor as the second output; `run_fleet.py` dumps it as `L{l}.B5.scores`.
 
 ### `mla_merge_uv`
 

@@ -28,8 +28,8 @@ def host_buffers(plan_json, fill):
     return h
 
 
-def dump(layers, head, stop_after=None, iters=1, debug=False):
-    plan, _ = B.dry_run(REAL_DIMS, 1024 + iters, layers, head, debug, stop_after)
+def dump(layers, head, stop_after=None, iters=1, debug=False, debug_scores=False):
+    plan, _ = B.dry_run(REAL_DIMS, 1024 + iters, layers, head, debug, stop_after, debug_scores)
     pj = B.plan_json(plan)
     h = host_buffers(pj, lambda i: float(i % 7 + 1))
     h["mask"] = torch.tensor([5, 2, 9, 1, 40, 63, 64, 65, 8] + [-1] * 58, dtype=torch.int32)
@@ -61,6 +61,13 @@ def test_dump_full_layer1_and_head():
     assert torch.equal(b["L1.B12.shared"], h["out8"][0, 6].float() + h["out8"][0, 7].float())
     assert int(b["head.B16.token"]) == 4242
     assert not notes
+
+
+def test_dump_debug_scores():
+    b, _, h = dump(layers=2, head=False, stop_after="L1.mla_attend", debug_scores=True)
+    assert b["L1.B5.scores"].shape == (16, 1024) and torch.equal(b["L1.B5.scores"], h["scores"][:, :1024])
+    b, _, _ = dump(layers=2, head=False, stop_after="L1.mla_attend")
+    assert "L1.B5.scores" not in b
 
 
 def test_dump_layer0_dense_and_debug():

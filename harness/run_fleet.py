@@ -37,7 +37,7 @@ import common  # noqa: E402
 OUTPUTS = {
     "embed_layer": ["output"], "rmsnorm_layer": ["output"], "gang_linear_layer": ["output"],
     "gang_linear_with_residual_layer": ["output"], "gang_linear_silu_layer": ["output"],
-    "mla_prep_layer": ["c_kv", "k_pe", "ql_nope", "q_pe"], "mla_attend_layer": ["partials"],
+    "mla_prep_layer": ["c_kv", "k_pe", "ql_nope", "q_pe"], "mla_attend_layer": ["partials", "scores"],
     "mla_merge_uv_layer": ["output"], "moe_router_layer": ["topk_w", "routing", "mask", "logits", "route_log"],
     "gang_moe_w13_linear_layer": ["output"], "moe_silu_mul_layer": ["output"],
     "gang_moe_w2_linear_layer": ["output"], "moe_mul_sum_add_layer": ["output"],
@@ -50,6 +50,8 @@ def last_writers(calls):
     w = {}
     for c in calls:
         for k in OUTPUTS[c["method"]]:
+            if k not in c["args"]:            # optional outputs (scores)
+                continue
             v = c["args"][k]
             for name in (v if isinstance(v, list) else [v]):
                 w[name] = c["label"]
@@ -96,6 +98,9 @@ def boundary_dump(plan, host, tokens, n_prompt, dims, iters=1):
             l = int(name.split("_")[-1])
             put(f"L{l}.B3.c_kv", h[name][n_prompt - 1])
             put(f"L{l}.B3.k_pe", h[f"k_pe_{l}"][n_prompt - 1])
+    lab = w.get("scores")
+    if lab:
+        put(f"L{layer_of(lab)}.B5.scores", h["scores"][:, :n_prompt])     # positions 0..1023 at step 0
     lab = w.get("attn")
     if lab:
         put(f"L{layer_of(lab)}.B6.attn", h["attn"][0])
@@ -164,6 +169,8 @@ def main():
     ap.add_argument("--out", default=None)
     ap.add_argument("--event-timing", action="store_true", help="compile with MPK_EVENT_TIMING=1")
     ap.add_argument("--nt-weights", action="store_true", help="USE_NT_WEIGHTS=1 (E2)")
+    ap.add_argument("--debug-scores", action="store_true",
+                    help="MPK_DEBUG_SCORES=1 build; mla_attend also writes the scores (boundary B5)")
     ap.add_argument("--prompt", default=str(common.PROMPT_IDS))
     args = ap.parse_args()
 
@@ -172,13 +179,16 @@ def main():
     from fleet import build_graph as B
     from fleet.pack_weights import pack_all, Dims
 
-    name = f"L{args.layers}{'_head' if args.head else ''}_it{args.iters}" + (f"_{args.stop_after}" if args.stop_after else "")
+    name = (f"L{args.layers}{'_head' if args.head else ''}_it{args.iters}"
+            + (f"_{args.stop_after}" if args.stop_after else "") + ("_scores" if args.debug_scores else ""))
     out = Path(args.out) if args.out else common.ROOT / "harness/fleet_out" / name
     out.mkdir(parents=True, exist_ok=True)
     if args.event_timing:
         os.environ["MPK_EVENT_TIMING"] = "1"
     if args.nt_weights:
         os.environ["USE_NT_WEIGHTS"] = "1"
+    if args.debug_scores:
+        os.environ["MPK_DEBUG_SCORES"] = "1"
     os.environ.setdefault("USE_GANG", "1")
 
     prompt = json.loads(Path(args.prompt).read_text())
@@ -199,7 +209,8 @@ def main():
 
     t1 = time.time()
     mpk, host, plan = B.build(packed, capture, meta, dims=dims, s_max=s_max, layers=args.layers,
-                              head=args.head, debug=args.debug, stop_after=args.stop_after)
+                              head=args.head, debug=args.debug, stop_after=args.stop_after,
+                              debug_scores=args.debug_scores)
     pj = B.plan_json(plan)
     (out / "plan.json").write_text(json.dumps(pj) + "\n")
     mpk.compile(output_dir=str(out / "build"))
@@ -242,7 +253,8 @@ def main():
         "layers": args.layers, "head": args.head, "iters": args.iters, "debug": args.debug,
         "stop_after": args.stop_after, "s_max": s_max, "n_prompt": n_prompt,
         "ops": len(pj["calls"]), "tasks": sum(c["tasks"] for c in pj["calls"]),
-        "env": {k: os.environ.get(k) for k in ("MPK_EVENT_TIMING", "USE_NT_WEIGHTS", "USE_GANG", "AMDGPU_TARGETS")},
+        "env": {k: os.environ.get(k) for k in ("MPK_EVENT_TIMING", "USE_NT_WEIGHTS", "USE_GANG", "AMDGPU_TARGETS",
+                                                "MPK_DEBUG_SCORES")},
         "boundary_keys": sorted(b.keys()), "output_ids": ids, "notes": notes, "timings_s": wall,
     }
     (out / "fleet_run_meta.json").write_text(json.dumps(meta_out, indent=2) + "\n")

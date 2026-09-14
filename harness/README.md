@@ -43,11 +43,14 @@ task-registration glue).
 # M1: one reused operator
 python harness/run_fleet.py --layers 1 --model-dir $SNAP --stop-after L0.qkva
 python harness/compare.py --fleet harness/fleet_out/L1_it1_L0.qkva
-# M2: layer 1; two runs cover B1-B13 (x_res and h are overwritten in place)
+# M2: layer 1; two runs cover B1-B4, B6-B13 (x_res and h are overwritten in place)
 python harness/run_fleet.py --layers 2 --model-dir $SNAP --stop-after L1.o_proj
 python harness/run_fleet.py --layers 2 --model-dir $SNAP
 python harness/compare.py --fleet harness/fleet_out/L2_it1_L1.o_proj
 python harness/compare.py --fleet harness/fleet_out/L2_it1
+# B5 (scores): a debug build in which mla_attend also writes the scaled scores
+python harness/run_fleet.py --layers 2 --model-dir $SNAP --stop-after L1.mla_attend --debug-scores
+python harness/compare.py --fleet harness/fleet_out/L2_it1_L1.mla_attend_scores
 # M4: the full graph, 32 iterations
 python harness/run_fleet.py --layers 27 --head --iters 32 --model-dir $SNAP --event-timing
 python harness/compare.py --fleet harness/fleet_out/L27_head_it32

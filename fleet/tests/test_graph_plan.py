@@ -104,6 +104,15 @@ def test_debug_and_head_options():
     assert plan.n_ops == 10
 
 
+def test_debug_scores_option():
+    plan, calls = B.dry_run(layers=1, head=False, debug_scores=True)
+    att = [c for c in calls if c["task_type"] == "mla_attend_mi300"][0]
+    assert att["inputs"] == ["ql_nope", "q_pe", "c_kv_0", "k_pe_0", "partials", "scores"]
+    assert plan.tensors["scores"].shape == (16, 1056) and plan.tensors["scores"].dtype == "f32"
+    plan, calls = B.dry_run(layers=1, head=False)
+    assert "scores" not in plan.tensors and len([c for c in calls if c["task_type"] == "mla_attend_mi300"][0]["inputs"]) == 5
+
+
 def test_input_bytes_and_shapes():
     plan, _ = B.dry_run()
     inputs = {n: t for n, t in plan.tensors.items() if t.kind == "input"}

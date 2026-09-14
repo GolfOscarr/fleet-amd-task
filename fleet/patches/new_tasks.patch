@@ -128,10 +128,19 @@ index afad1af..d84c90e 100755
 +#include "tasks/mi300/moe_router_mi300.cuh"
 +#include "tasks/mi300/copy_mi300.cuh"
 diff --git a/python/mirage/mpk/persistent_kernel.py b/python/mirage/mpk/persistent_kernel.py
-index ccb754b..b3239ec 100644
+index ccb754b..8cbb601 100644
 --- a/python/mirage/mpk/persistent_kernel.py
 +++ b/python/mirage/mpk/persistent_kernel.py
-@@ -2235,7 +2235,9 @@ class PersistentKernel:
+@@ -338,6 +338,8 @@ def get_compile_command(
+             flags = flags + ["-DMPK_ENABLE_DEVICE_TASK_ACCUM"]
+         if int(os.environ.get("MPK_EVENT_TIMING", "0")) == 1:
+             flags = flags + ["-DMPK_ENABLE_EVENT_TIMING"]
++        if int(os.environ.get("MPK_DEBUG_SCORES", "0")) == 1:
++            flags = flags + ["-DMLA_ATTEND_DEBUG_SCORES"]   # mla_attend also writes the scores (B5)
+         if int(os.environ.get("USE_GANG", "0")) == 1:
+             flags = flags + ["-DMPK_ENABLE_GANG_TASKS"]
+         if int(os.environ.get("USE_NT_WEIGHTS", "0")) == 1:
+@@ -2235,7 +2237,9 @@ class PersistentKernel:
          output: DTensor,
          grid_dim: tuple,
          block_dim: tuple,
@@ -141,7 +150,7 @@ index ccb754b..b3239ec 100644
          # Currently assume that input/output
          assert len(input) == 2
          input_value, input_index = input
-@@ -2252,9 +2254,10 @@ class PersistentKernel:
+@@ -2252,9 +2256,10 @@ class PersistentKernel:
                  tb_graph, "argmax_reduce_sm100", [self.argmax_partial_output_size]
              )
          else:

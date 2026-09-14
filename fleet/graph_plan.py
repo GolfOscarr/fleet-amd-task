@@ -108,7 +108,9 @@ def gang_tiles(n_out, tile_n):
 
 
 def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head: bool = True,
-               debug: bool = False) -> Plan:
+               debug: bool = False, debug_scores: bool = False) -> Plan:
+    """debug_scores: the mla_attend kernel also writes the scaled pre-softmax scores
+    [NH, s_max] FP32 (boundary B5); needs the MLA_ATTEND_DEBUG_SCORES build (MPK_DEBUG_SCORES=1)."""
     d = dims
     assert 1 <= layers <= d.L
     assert d.H % 256 == 0                   # K of every CK linear (silent truncation otherwise)
@@ -146,6 +148,8 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
     if debug:
         for l in range(layers):
             p.t(f"dbg_x_res_{l}", (1, d.H))
+    if debug_scores:
+        p.t("scores", (d.NH, s_max), "f32")
 
     # ---- prologue ----------------------------------------------------------------
     p.op("embed_layer", 1, status="variant", note="sc1 load of tokens[step]", label="prologue.embed",
@@ -175,7 +179,8 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
              block_dim=(256, 1, 1))
         p.op("mla_attend_layer", XCDS, splits_per_xcd, status="new", label=f"L{l}.mla_attend",
              ql_nope="ql_nope", q_pe="q_pe", c_kv=f"c_kv_{l}", k_pe=f"k_pe_{l}",
-             partials="partials", softmax_scale=SOFTMAX_SCALE, split=SPLIT, n_splits=n_splits)
+             partials="partials", softmax_scale=SOFTMAX_SCALE, split=SPLIT, n_splits=n_splits,
+             **({"scores": "scores"} if debug_scores else {}))
         p.op("mla_merge_uv_layer", XCDS, d.NH // XCDS, status="new", label=f"L{l}.mla_merge_uv",
              partials="partials", w_uv=f"W_uv_{l}", output="attn", split=SPLIT, n_splits=n_splits)
         p.op("gang_linear_with_residual_layer", XCDS, gang_tiles(d.H, TILE_N_O), label=f"L{l}.o_proj",

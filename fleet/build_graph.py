@@ -62,16 +62,22 @@ def mla_prep_layer(mpk, qkva, w_kv_norm, w_uk, cos, sin, c_kv, k_pe, ql_nope, q_
 
 
 def mla_attend_layer(mpk, ql_nope, q_pe, c_kv, k_pe, partials, softmax_scale, split, n_splits,
-                     block_dim=(256, 1, 1)):
-    """Gang task, 8 x ceil(n_splits / 8) tiles: split = tile * 8 + bid.x; partials [n_splits, nh, d_c + 1]."""
+                     scores=None, block_dim=(256, 1, 1)):
+    """Gang task, 8 x ceil(n_splits / 8) tiles: split = tile * 8 + bid.x; partials [n_splits, nh, d_c + 1].
+
+    scores: optional second output [nh, s_max] FP32 for boundary B5; only written by the
+    MLA_ATTEND_DEBUG_SCORES build (MPK_DEBUG_SCORES=1 at compile time)."""
     assert partials.num_dims == 3 and partials.dim(0) == n_splits
     assert partials.dim(1) == ql_nope.dim(0) and partials.dim(2) == ql_nope.dim(1) + 1
     assert c_kv.dim(0) == k_pe.dim(0) and -(-c_kv.dim(0) // split) == n_splits
     tiles_per_xcd = -(-n_splits // XCDS)
-    _new_task(mpk, (XCDS, 1, 1), block_dim,
-              [(ql_nope, (-1, -1, -1), -1), (q_pe, (-1, -1, -1), -1),
+    tensors = [(ql_nope, (-1, -1, -1), -1), (q_pe, (-1, -1, -1), -1),
                (c_kv, (-1, -1, -1), -1), (k_pe, (-1, -1, -1), -1),
-               (partials, (0, -1, -1), -1)],                       # partition by split slot
+               (partials, (0, -1, -1), -1)]                        # partition by split slot
+    if scores is not None:
+        assert scores.num_dims == 2 and scores.dim(0) == ql_nope.dim(0) and scores.dim(1) == c_kv.dim(0)
+        tensors.append((scores, (-1, -1, -1), -1))
+    _new_task(mpk, (XCDS, 1, 1), block_dim, tensors,
               "mla_attend_mi300",
               [G.float_bits(softmax_scale), split, n_splits, tiles_per_xcd, ql_nope.dim(0),
                ql_nope.dim(1), q_pe.dim(1)])
@@ -193,6 +199,7 @@ def make_meta(torch, s_max, prompt_ids, n_prompt):
 def plan_json(plan):
     """The plan as JSON-able data (written next to every run for measure.py and the dumps)."""
     return {"layers": plan.layers, "head": plan.head, "debug": plan.debug, "s_max": plan.s_max,
+            "debug_scores": "scores" in plan.tensors,
             "tensors": {n: {"shape": list(t.shape), "dtype": t.dtype, "kind": t.kind, "source": t.source}
                         for n, t in plan.tensors.items()},
             "calls": [{"method": c.method, "label": c.label, "status": c.status, "tasks": c.tasks,
@@ -201,12 +208,12 @@ def plan_json(plan):
 
 
 def build(packed, capture, meta, dims=REAL_DIMS, s_max=1056, layers=27, head=True, debug=False,
-          stop_after=None, num_workers=296, num_schedulers=8, profiler_tensor=None):
+          stop_after=None, debug_scores=False, num_workers=296, num_schedulers=8, profiler_tensor=None):
     """On the machine: construct the PersistentKernel, attach, issue, return (mpk, host tensors, plan)."""
     import torch
     import mirage as mi
 
-    plan = G.build_plan(dims, s_max, layers, head, debug)
+    plan = G.build_plan(dims, s_max, layers, head, debug, debug_scores)
     if stop_after:
         plan.truncate(stop_after)
     mpk = mi.PersistentKernel(
@@ -367,8 +374,9 @@ class FakeMPK:
         self.register_task(None, "argmax_reduce", [self.argmax_partial_output_size, int(output_to_tokens)])
 
 
-def dry_run(dims=REAL_DIMS, s_max=1056, layers=27, head=True, debug=False, stop_after=None):
-    plan = G.build_plan(dims, s_max, layers, head, debug)
+def dry_run(dims=REAL_DIMS, s_max=1056, layers=27, head=True, debug=False, stop_after=None,
+            debug_scores=False):
+    plan = G.build_plan(dims, s_max, layers, head, debug, debug_scores)
     if stop_after:
         plan.truncate(stop_after)
     mpk = FakeMPK()
@@ -385,11 +393,13 @@ def main():
     ap.add_argument("--debug", action="store_true")
     ap.add_argument("--s-max", type=int, default=1056)
     ap.add_argument("--stop-after", default=None, help="operator label, e.g. L1.o_proj")
+    ap.add_argument("--debug-scores", action="store_true")
     ap.add_argument("--out", default=None)
     args = ap.parse_args()
     if not args.dry_run:
         sys.exit("the real build is driven from harness/run_fleet.py on the machine; use --dry-run here")
-    plan, calls = dry_run(REAL_DIMS, args.s_max, args.layers, not args.no_head, args.debug, args.stop_after)
+    plan, calls = dry_run(REAL_DIMS, args.s_max, args.layers, not args.no_head, args.debug, args.stop_after,
+                          args.debug_scores)
     s = G.summary(plan)
     print(json.dumps({k: v for k, v in s.items()}, indent=None))
     print(f"{len(calls)} calls recorded; task types: {sorted(set(c['task_type'] for c in calls))}")
