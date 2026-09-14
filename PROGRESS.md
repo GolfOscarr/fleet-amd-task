@@ -6,8 +6,8 @@ Time limit: 5 days. Target: gfx942, BF16, 1024-token prompt, 32 greedy tokens.
 Last updated: 2026-09-14 · branch `design/technical-spec` (from `main` at `11293d8`)
 
 **Where we are:** discovery complete (5 doc sets); the technical design is
-written (`docs/design-doc/`, 13 files, one counting script), pending the
-final review pass. Nothing built yet; the day-1 blocker is whether Fleet
+written and independently reviewed (`docs/design-doc/`, 14 files, one
+counting script). GPU-dependent problems are parked, each with its check. Nothing built yet; the day-1 blocker is whether Fleet
 builds for gfx942, and the code read found the first known gfx950-only item
 that will break it.
 
@@ -71,7 +71,7 @@ that will break it.
 
 ---
 
-## Stage 2 — Design doc 🟡 **written, review pass pending** — `docs/design-doc/`
+## Stage 2 — Design doc ✅ **complete, reviewed** — `docs/design-doc/`
 
 Required as the **first deliverable**.
 
@@ -91,7 +91,22 @@ Required as the **first deliverable**.
 - [x] `09-expected-performance.md`
 - [x] `10-local-work.md`
 - [x] `README.md`, `99-open-questions.md`
-- [ ] Independent review pass over the set; fixes; merge to `main`
+- [x] Independent review pass (17 findings, all confirmed against the source and fixed in `4d36f7a`)
+- [ ] Merge to `main`
+
+---
+
+## Parked until GPU access is confirmed
+
+Everything below needs the machine (a build, a disassembly, a counter, or a
+timing) and is documented rather than resolved. Each entry names the check
+that settles it; nothing here blocks the local work in Stage 3.
+
+- Design-level: `docs/design-doc/99-open-questions.md` DQ1-DQ10 (DQ1 per-boundary latency and DQ3 CK FMHA at 576/512 first)
+- Consolidated index, `gpu` or `build` in the When column: MAJ-1, MAJ-2, MAJ-3, MAJ-4, MAJ-5, MAJ-6, MIN-25, MIN-26, MIN-27, MIN-28, MIN-29, MIN-11, MIN-14, MIN-15, MIN-21, MIN-23, MIN-24, MIN-22, MIN-16, MIN-17, MIN-18, MIN-19, MIN-20 (`OPEN-PROBLEMS.md`)
+- Day-1 order: `OPEN-PROBLEMS.md`, Triage; day-by-day: `docs/design-doc/08-milestones.md`
+
+Resolvable now, without the GPU: MIN-1, MIN-2, MIN-4, MIN-5, MIN-6 (`OPEN-PROBLEMS.md`, When = local) and Stage 3 below.
 
 ---
 
