@@ -7,8 +7,9 @@ Last updated: 2026-09-14 · branch `design/technical-spec` (from `main` at `1129
 
 **Where we are:** discovery complete (5 doc sets, 41 files, ~5,300 lines, 9
 reproducible scripts). Design document in progress per
-`docs/design-doc/PLAN.md`: pre-work reads P1 done, P2 and P3 next. Nothing
-built yet; the day-1 blocker is whether Fleet builds for gfx942.
+`docs/design-doc/PLAN.md`: pre-work reads P1-P3 done, design files next.
+Nothing built yet; the day-1 blocker is whether Fleet builds for gfx942, and
+the code read found the first known gfx950-only item that will break it.
 
 ---
 
@@ -76,8 +77,8 @@ Required as the **first deliverable**. All inputs exist; this is assembly.
 
 - [x] Plan (`docs/design-doc/PLAN.md`)
 - [x] P1 `persistent_kernel.cuh` scheduler/worker loops → `docs/fleet/03-runtime.md`
-- [ ] P2 `persistent_kernel.py` layer API + MoE demo conventions → `docs/fleet/04-repo-map.md`
-- [ ] P3 `gang_linear_mi300.cuh` + `ck_tile` idiom → `docs/fleet/04-repo-map.md`
+- [x] P2 `persistent_kernel.py` layer API + MoE demo conventions → `docs/fleet/04-repo-map.md`
+- [x] P3 `gang_linear_mi300.cuh` + `ck_tile` idiom → `docs/fleet/04-repo-map.md`
 
 - [ ] Model execution flow
 - [ ] Fleet task graph (draft in `docs/fleet/06-our-task-graph.md`)
@@ -92,11 +93,11 @@ Required as the **first deliverable**. All inputs exist; this is assembly.
 
 ---
 
-## Stage 3 — Local work (no GPU) 🟡 **4/13**
+## Stage 3 — Local work (no GPU) 🟡 **6/13**
 
 - [x] Read `gang_attention_merge_mi300.cuh` and `kv_cache_update_mi300.cuh` (both GQA-paged; merge math reusable, append is not)
-- [ ] Read `gang_linear_mi300.cuh` + `ck_tile` idiom ← the template our MLA task is written against
-- [ ] Read `python/mirage/mpk/models/qwen3/` (template for our builder)
+- [x] Read `gang_linear_mi300.cuh` + `ck_tile` idiom → `docs/fleet/04-repo-map.md` (worker contract, inner GEMV tiers, CK FMHA path, gfx950-only code)
+- [x] Read the Python layer API + `demo/qwen3/demo_30B_A3B.py` (the MoE template; the `models/qwen3/` builder has no MoE) → `docs/fleet/04-repo-map.md`
 - [x] Read `persistent_kernel.cuh` main loop (launch structure, worker/scheduler loops, event counting, placement rules) → `docs/fleet/03-runtime.md`
 - [ ] Read Mirage MPK paper (arXiv:2512.22219)
 - [x] Read vLLM / AITER / FlashMLA MLA decode kernels → `docs/mla-decode/`
@@ -164,13 +165,13 @@ documented as blocked. **Decide end of day 1.**
 |---|---|---|
 | `docs/mi300x/99-open-questions.md` | 13 open / 1 resolved | Q4 agent-scope fence emits right cache ops |
 | `docs/deepseek-v2-lite/99-open-questions.md` | 6 open / 3 resolved | Q1 reassociation within tolerance (no GPU) |
-| `docs/fleet/99-open-questions.md` | 7 open / 3 resolved | **Q1 does it build on gfx942** |
+| `docs/fleet/99-open-questions.md` | 10 open / 3 resolved | **Q1 does it build on gfx942**, Q11 CK FMHA at 576/512 |
 | `docs/acceleration/99-open-questions.md` | 4 open / 2 resolved | Q2 MFMA vs VALU at M=1 |
 | `docs/mla-decode/99-open-questions.md` | 5 open | Q1 is `P_split`=32 right |
-| **total** | **35 open / 9 resolved** | |
+| **total** | **38 open / 9 resolved** | |
 
 `OPEN-PROBLEMS.md` holds the consolidated, deduplicated view: **6 major /
-18 minor open / 16 resolved**, plus 9 documentation defects found in AMD and
+21 minor open / 16 resolved**, plus 9 documentation defects found in AMD and
 Fleet sources.
 
 ---
@@ -184,7 +185,7 @@ Fleet sources.
 | Megakernel occupancy = 1 wave/SIMD | Was feared fatal | ✅ resolved — `VMCNT`=63 allows enough in-flight loads; becomes a prefetch-depth requirement (MIN-22 to confirm) |
 | Attention uses 32 of 296 workers | 13–17% of budget if the model is right | `P_split` is one constant to sweep (MIN-23) |
 | Our tasks smaller than anything Fleet measured | Dispatch overhead dominates | Measure task vs dispatch time early |
-| Top-6 experts over 8 XCDs leaves 2 idle | 25% of machine during 99 MB phase | Compare vs N-split across all 8 |
+| Top-6 experts over 8 XCDs leaves 2 idle | 25% of machine during 99 MB phase | Candidate: fold shared experts in as experts 64-65 (8 active on 8 XCDs); compare vs N-split |
 | 5 days, BF16 first | FP8 not reached | Document with arithmetic; precision as a loader parameter |
 
 ---

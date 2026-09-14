@@ -40,14 +40,24 @@ after adding each MLA task; track VGPR/AGPR/LDS as a time series in the repo.
 
 ---
 
-## Q4 — Is the 6-of-64 expert → 8-XCD mapping wasteful? `open`
+## Q4 — Is the 6-of-64 expert → 8-XCD mapping wasteful? `open` — candidate resolution found
 
 **Why.** `ae_idx = xcd_id + expert_local_idx * 8` leaves 2 of 8 chiplets idle
 during the 99 MB routed-expert phase — 25% of the machine, on the layer's
 largest traffic item.
 
-**Check.** Instrument per-XCD busy cycles during tasks 15–16. Compare against an
-N-split variant where all 8 XCDs share each expert.
+**Candidate (2026-09-14).** Fold the two shared experts into the routed set
+as experts 64 and 65, always selected with weight 1.0. The shared MLP's
+intermediate width is 2816 = 2 x 1408, so splitting it into two 1408-wide
+experts and summing their `down_proj` outputs is exact up to FP32
+accumulation order. The layer becomes top-8-of-66: 8 active experts, 8
+XCDs, one each under the round-robin rule, and the separate shared-expert
+ops disappear (the chain dependency model in `03-runtime.md` could not have
+overlapped them anyway). Needs a routing variant that appends the two forced
+entries; that is the same variant that fixes `renormalize` (Q13).
+
+**Check.** Build both graphs; compare per-XCD busy cycles during the expert
+phase and the layer time. The fused form should win on both.
 
 ---
 
@@ -157,7 +167,69 @@ scheduler queue a cross-XCD channel with no fence, and events could be lost
 or seen late. The runtime never checks the assumption.
 
 **Check.** The startup line `[SCHED_XCD] sched_id=k xcd=m workers_on_xcd=n`
-(`:1436`) must show `k == m` for all eight schedulers, every launch. If it
+(`:1436`) must show `k == m` for all eight schedulers, every launch. The
+`[WORKER_XCD] worker_id=w xcd=x` lines for workers 0-7 (`:751-754`) should
+show `x == w mod 8`; that is what puts eight consecutive gang tasks on eight
+distinct XCDs under the prelaunch dispatch rule (`03-runtime.md`). If it
 ever does not, the fix is to index the scheduler queue by the scheduler's
 discovered XCD rather than by block id, which is a small change in
 `execute_scheduler` and `get_rand_sched_id`.
+
+---
+
+## Q11 — Can CK's split-KV FMHA be instantiated at MLA head dims (576 / 512)? `open` — **day 1, high value**
+
+**Why.** `paged_attention_ck_fmha_split_kv_mi300.cuh:66-98` instantiates
+`BlockFmhaFwdSplitKVPipelineNWarpSShuffleQRKSVS` with tile
+`sequence<16, 128, 32, 128, 32, 128>`, whose last entry is the QK head dim
+and whose `kN1` is the V head dim. CK upstream keeps these separate and
+recent releases add a 576/512 configuration for DeepSeek MLA decode. If the
+ROCm on the machine ships it, phase B of `../mla-decode/04-our-kernel-spec.md`
+is an instantiation plus a `tile_idx -> split` wrapper over our two
+contiguous arrays, and phase C is CK's merge. That would cut the core work
+of the project from writing a kernel to wrapping one. `ck_tile` is not
+vendored (`deps/` has only `rocblas`), so this cannot be checked locally.
+
+**Check.** On the machine: `grep -rn "576" /opt/rocm/include/ck_tile/ops/fmha`
+and the `TileFmhaShape` definition; then compile a one-file instantiation at
+`(kM0=16, kQKHeaddim=576, kN1=512)` and read the `static_assert` on LDS
+against 57 KiB. If it compiles and fits, take it; if not, the from-scratch
+spec stands.
+
+---
+
+## Q12 — Which gfx950-only code is in the gfx942 build? `open` — **day 1, part of Q1**
+
+Found by reading, not building (`04-repo-map.md`, "gfx950-only code"):
+
+1. `paged_attention_decode_minimal_mi300.cuh:27` uses
+   `__builtin_amdgcn_mfma_f32_16x16x32_f16` unguarded; included by
+   `task_header.cuh:34`, never registered. Expected to fail the gfx942
+   compile outright. Fix: drop the include.
+2. `linear_ck_mi300.cuh:73`, `:331` select a `16x16x32` BF16 warp GEMM
+   "(MI350 2x K)". CK may lower it to two K=16 MFMAs on gfx942 or refuse.
+3. `linear_ck_mi300.cuh:394` coherence value 18 (`sc1 nt`) is commented
+   "for gfx950"; the encoding is shared with gfx942, expected fine.
+
+**Check.** The first compile with `AMDGPU_TARGETS=gfx942` answers 1 and 2;
+the disassembly of a `linear` task answers 3.
+
+---
+
+## Q13 — Router: renormalization and precision `open` — needed for M2
+
+`register_moe_topk_softmax_mi300_task` emits `renormalize = true`
+(`task_register.cc:3689`); this model has `norm_topk_prob = false`, so the
+stock routing produces wrong expert weights. The demo also feeds the top-k
+kernel BF16 logits from the `linear` task, while the reference router is
+FP32 end to end (`../deepseek-v2-lite/03-moe.md`); near-tie selections can
+flip and break the exact-match requirement on boundary B9. The kernel also
+zeroes the logits after reading them (`moe_topk_softmax_mi300.cuh:116-122`),
+so boundary B8 needs a copy.
+
+**Resolution path.** One routing variant: `renormalize=false`, the two
+forced shared-expert entries from Q4, and (if the router GEMV is kept in
+BF16) a check on how often the BF16 and FP32 selections differ over the 32
+reference steps, done locally (`OPEN-PROBLEMS.md` MIN-6 already logs the
+routing). If they ever differ, add an FP32-output router GEMV; it is 64 dot
+products of length 2048.
