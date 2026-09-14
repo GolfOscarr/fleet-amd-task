@@ -198,18 +198,27 @@ fi
 
 # ---------------------------------------------------------------------------
 step "7. CU count seen by the runtime (296 workers + 8 schedulers expected)"
-python - <<'EOF' || result UNKNOWN "7 CU count: torch or mirage query failed"
+set +e
+CU_OUT=$(python - <<'PYEOF'
 import torch
 p = torch.cuda.get_device_properties(0)
 print("device", p.name, "CUs", p.multi_processor_count)
 try:
-    from mirage.mpk import utils
-    print("mirage utils:", [n for n in dir(utils) if "worker" in n.lower() or "sched" in n.lower()])
+    from mirage.utils import get_configurations_from_gpu   # python/mirage/utils.py
+    print("workers, schedulers from the runtime:", get_configurations_from_gpu(0))
 except Exception as e:
-    print("mirage.mpk.utils not importable:", e)
+    print("mirage.utils query failed:", e)
 assert p.multi_processor_count == 304, p.multi_processor_count
-print(">>> PASS  7 CU count: 304 CUs (8 x 38)")
-EOF
+PYEOF
+)
+CU_RC=$?
+set -e
+echo "$CU_OUT"
+if [ "$CU_RC" -eq 0 ]; then
+  result PASS "7 CU count: 304 CUs (8 x 38); $(echo "$CU_OUT" | grep -o 'workers, schedulers.*' || true)"
+else
+  result UNKNOWN "7 CU count: torch or mirage query failed (see output above)"
+fi
 
 # ---------------------------------------------------------------------------
 step "summary"
