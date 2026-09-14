@@ -193,7 +193,7 @@ def latent_rows(model, kva, positions, cos, sin):
     return outs
 
 
-def step0_boundaries(model, cap, pkv, l, pos, cos, sin):
+def step0_boundaries(model, cap, pkv, l, pos, cos, sin, row=0):
     """Derived boundaries for layer l at the one-token step at position `pos`."""
     from importlib import import_module
 
@@ -202,30 +202,99 @@ def step0_boundaries(model, cap, pkv, l, pos, cos, sin):
     at = model.model.layers[l].self_attn
     nh, d_n, d_r = at.num_heads, at.qk_nope_head_dim, at.qk_rope_head_dim
     out = {}
-    q = cap.store[f"L{l}.B2.q"]                                       # [1, 1, nh*(d_n+d_r)]
+    q = cap.store[f"L{l}.B2.q"].reshape(-1)                           # [nh*(d_n+d_r)]
     q = q.view(1, 1, nh, d_n + d_r).transpose(1, 2)                   # [1, nh, 1, d]
     q_nope, q_pe = q.split([d_n, d_r], dim=-1)
     pos_ids = torch.tensor([[pos]], device=q.device)
     q_pe_rot, _ = apply_rotary_pos_emb(q_pe, q_pe, cos, sin, pos_ids)
     out["B4.q_pe"] = q_pe_rot[0, :, 0].contiguous()                   # [nh, d_r]
     q_states = torch.cat([q_nope, q_pe_rot], dim=-1)                  # [1, nh, 1, d]
-    keys = pkv.key_cache[l]                                           # [1, nh, S, d], RoPE applied
+    keys = pkv.key_cache[l][row:row + 1]                              # [1, nh, S, d], RoPE applied
     scores = torch.matmul(q_states, keys.transpose(2, 3)) * at.softmax_scale
     out["B5.scores"] = scores[0, :, 0].float().contiguous()           # [nh, S]
     # self-check: the reference's own attention output must follow from these
     # scores (FP32 softmax, BF16 probabilities, BF16 values), which proves the
     # recomputed B5 is what the model used
     probs = torch.softmax(scores, dim=-1, dtype=torch.float32).to(q.dtype)
-    attn = torch.matmul(probs, pkv.value_cache[l])                    # [1, nh, 1, d_v]
+    attn = torch.matmul(probs, pkv.value_cache[l][row:row + 1])       # [1, nh, 1, d_v]
     attn = attn[0, :, 0].reshape(-1)
     err = (attn.float() - cap.store[f"L{l}.B6.attn"].reshape(-1).float()).abs().max().item()
     out["_selfcheck_b5_to_b6_max_abs_err"] = err
     # B3: the kv_a_proj row this step produced, after the model's norm and RoPE
-    kva = cap.store[f"kva.L{l}"]                                      # [1, 1, d_c + d_r]
+    kva = cap.store[f"kva.L{l}"].reshape(1, 1, -1)                    # [1, 1, d_c + d_r]
     c, kpe = latent_rows(model, [kva], pos_ids, cos, sin)[0]      # [1, d_c], [1, d_r]
     out["B3.c_kv"] = c[0]
     out["B3.k_pe"] = kpe[0]
     return out
+
+
+def first_row(v, n_rows):
+    """Row 0 of a captured tensor when the forward ran n_rows identical rows."""
+    if n_rows > 1 and torch.is_tensor(v) and v.dim() >= 2 and v.shape[0] == n_rows:
+        return v[0:1]
+    return v
+
+
+def route_entry(model, cap, n_rows=1):
+    return [
+        {"idx": first_row(cap.store[f"route.L{l}"][0], n_rows)[0].tolist(),
+         "w": first_row(cap.store[f"route.L{l}"][1], n_rows)[0].float().tolist()}
+        for l in moe_layers(model)
+    ]
+
+
+def capture_step0(model, cap, ids, P, layers, cos, sin, pkv, n_rows=1):
+    """Run position P as a one-token step (n_rows identical rows) with the
+    boundary hooks registered and collect every step-0 artifact.
+
+    Returns a dict: boundaries, selfcheck (B5 -> B6 max abs err per layer),
+    hidden [L, H], row_handover [(c, k_pe)] per layer, logits [V], token,
+    route (this step's routing entry), pkv (the cache after the step).
+    """
+    cfg = model.config
+    device = next(model.parameters()).device
+    L = cfg.num_hidden_layers
+    cur = ids[:, P:P + 1].repeat(n_rows, 1)
+    mask = torch.ones(n_rows, P + 1, device=device, dtype=torch.long)
+    with torch.inference_mode():
+        out = model(cur, attention_mask=mask, past_key_values=pkv, use_cache=True)
+        pkv = out.past_key_values
+        if n_rows > 1:
+            cap.store = {k: (tuple(first_row(x, n_rows) for x in v) if isinstance(v, tuple)
+                             else first_row(v, n_rows)) for k, v in cap.store.items()}
+        logits = out.logits[0, -1].detach().clone()
+        tok = int(torch.argmax(logits.float()).item())
+        boundaries, selfcheck = {}, {}
+        for l in layers:
+            for k, v in cap.store.items():
+                if k.startswith(f"L{l}."):
+                    boundaries[k] = v.reshape(-1).clone() if v.numel() == v.shape[-1] else v.clone()
+            derived = step0_boundaries(model, cap, pkv, l, P, cos, sin, row=0)
+            selfcheck[f"L{l}"] = derived.pop("_selfcheck_b5_to_b6_max_abs_err")
+            for k, v in derived.items():
+                boundaries[f"L{l}.{k}"] = v.clone()
+            if hasattr(model.model.layers[l].mlp, "gate"):
+                h_in = cap.store[f"L{l}.gate_in"].reshape(-1)
+                w_gate = model.model.layers[l].mlp.gate.weight
+                boundaries[f"L{l}.B8.router_logits"] = F.linear(h_in.float(), w_gate.float()).clone()
+                idx, w, _ = cap.store[f"route.L{l}"]
+                boundaries[f"L{l}.B9.topk_idx"] = idx[0].clone()
+                boundaries[f"L{l}.B10.topk_w"] = w[0].float().clone()
+                for e in range(cfg.n_routed_experts):
+                    if e not in idx[0].tolist():
+                        boundaries.pop(f"L{l}.B11.expert_{e}", None)
+        boundaries["head.B14.norm"] = cap.store["head.B14.norm"].reshape(-1).clone()
+        boundaries["head.B15.logits"] = logits.clone()
+        boundaries["head.B16.token"] = torch.tensor([tok], dtype=torch.int64)
+        hidden = torch.stack([cap.store[f"hidden.L{l}"].reshape(-1) for l in range(L)])
+        kva_step0 = [cap.store[f"kva.L{l}"].reshape(1, 1, -1) for l in range(L)]
+        pos_ids = torch.tensor([[P]], device=device)
+        row_handover = latent_rows(model, kva_step0, pos_ids, cos, sin)
+        route = route_entry(model, cap)
+        # keep only the routing entries so later steps do not accumulate stale keys
+        cap.store = {k: v for k, v in cap.store.items() if k.startswith("route.")}
+    return dict(boundaries=boundaries, selfcheck=selfcheck, hidden=hidden, row_handover=row_handover,
+                logits=logits, token=tok, route=route, pkv=pkv)
 
 
 def run(args):
@@ -271,60 +340,22 @@ def run(args):
 
     # ---- the greedy loop: position P (iteration 0) .. P + n_steps - 1 --------
     register_boundary_hooks(model, cap, layers)
-    route_log = []
-    out_ids = []
-    boundaries = {}
-    selfcheck = {}
-    hidden_per_layer = None
-    row_handover = None
-    logits_step0 = None
     t2 = time.time()
-    cur = ids[:, P:P + 1]
+    st = capture_step0(model, cap, ids, P, layers, cos, sin, pkv)
+    boundaries, selfcheck, hidden_per_layer = st["boundaries"], st["selfcheck"], st["hidden"]
+    row_handover, logits_step0, pkv = st["row_handover"], st["logits"], st["pkv"]
+    out_ids = [st["token"]]
+    route_log = [st["route"]]
+    cur = torch.tensor([[st["token"]]], device=device)
     with torch.inference_mode():
-        for step in range(n_steps):
+        for step in range(1, n_steps):
             pos = P + step
             mask = torch.ones(1, pos + 1, device=device, dtype=torch.long)
             out = model(cur, attention_mask=mask, past_key_values=pkv, use_cache=True)
             pkv = out.past_key_values
-            logits = out.logits[0, -1]
-            tok = int(torch.argmax(logits.float()).item())
+            tok = int(torch.argmax(out.logits[0, -1].float()).item())
             out_ids.append(tok)
-            route_log.append([
-                {"idx": cap.store[f"route.L{l}"][0][0].tolist(),
-                 "w": cap.store[f"route.L{l}"][1][0].float().tolist()}
-                for l in moe_layers(model)
-            ])
-            if step == 0:
-                logits_step0 = logits.detach().clone()
-                for l in layers:
-                    for k, v in cap.store.items():
-                        if k.startswith(f"L{l}."):
-                            # [1, 1, X] or [1, X] (an expert at M = 1) -> [X]
-                            boundaries[k] = v.reshape(-1).clone() if v.numel() == v.shape[-1] else v.clone()
-                    derived = step0_boundaries(model, cap, pkv, l, pos, cos, sin)
-                    selfcheck[f"L{l}"] = derived.pop("_selfcheck_b5_to_b6_max_abs_err")
-                    for k, v in derived.items():
-                        boundaries[f"L{l}.{k}"] = v.clone()
-                    if hasattr(model.model.layers[l].mlp, "gate"):
-                        h_in = cap.store[f"L{l}.gate_in"][0, 0]
-                        w_gate = model.model.layers[l].mlp.gate.weight
-                        boundaries[f"L{l}.B8.router_logits"] = F.linear(h_in.float(), w_gate.float()).clone()
-                        idx, w, _ = cap.store[f"route.L{l}"]
-                        boundaries[f"L{l}.B9.topk_idx"] = idx[0].clone()
-                        boundaries[f"L{l}.B10.topk_w"] = w[0].float().clone()
-                        # only the selected experts fired; drop stale keys of others
-                        for e in range(cfg.n_routed_experts):
-                            if e not in idx[0].tolist():
-                                boundaries.pop(f"L{l}.B11.expert_{e}", None)
-                boundaries["head.B14.norm"] = cap.store["head.B14.norm"][0, 0].clone()
-                boundaries["head.B15.logits"] = logits_step0.clone()
-                boundaries["head.B16.token"] = torch.tensor([tok], dtype=torch.int64)
-                hidden_per_layer = torch.stack([cap.store[f"hidden.L{l}"][0, 0] for l in range(L)])
-                kva_step0 = [cap.store[f"kva.L{l}"] for l in range(L)]           # [1, 1, 576]
-                pos_ids = torch.tensor([[pos]], device=device)
-                row_handover = latent_rows(model, kva_step0, pos_ids, cos, sin)
-                # drop per-step-only entries so later steps do not accumulate
-                cap.store = {k: v for k, v in cap.store.items() if k.startswith("route.")}
+            route_log.append(route_entry(model, cap))
             cur = torch.tensor([[tok]], device=device)
     t_loop = time.time() - t2
     cap.remove()
