@@ -73,6 +73,21 @@ compile ours || ok=1
 compile ckfmha -DMPK_USE_CK_FMHA=1 || ok=1
 compile debugscores -DMLA_ATTEND_DEBUG_SCORES=1 || ok=1
 
+# The standalone kernel-test launcher (fleet/tasks/kernel_tests_mi300.cu),
+# with the build line of fleet/tasks/README.md, both variants; it links to an
+# executable, so this is the day-2 binary minus the run.
+for v in "" "-DMLA_ATTEND_DEBUG_SCORES"; do
+  docker run --rm --platform linux/amd64 -v "$ROOT:/w" -v "$WORK/fleet:/fleet" -v "$WORK/out:/out" "$IMAGE" bash -c "
+    cd /w && hipcc --offload-arch=gfx942 -O2 -std=c++17 \
+      -D__HIP_PLATFORM_AMD__=1 -DMIRAGE_AMD_MI300 -DMIRAGE_BACKEND_USE_ROCM -DMPK_TARGET_CC=94 -DMODE_ONLINE $v \
+      -I fleet -I /fleet/include -I /fleet/include/mirage/persistent_kernel \
+      -Rpass-analysis=kernel-resource-usage fleet/tasks/kernel_tests_mi300.cu -o /out/kernel_tests${v:+_debug} \
+      > /out/kernel_tests${v:+_debug}.log 2>&1; echo \$? > /out/kernel_tests${v:+_debug}.rc"
+  rc=$(cat "$WORK/out/kernel_tests${v:+_debug}.rc")
+  echo "kernel_tests launcher${v:+ (debug scores)}: hipcc exit $rc, errors: $(grep -c 'error:' "$WORK/out/kernel_tests${v:+_debug}.log" || true)"
+  [ "$rc" = 0 ] || ok=1
+done
+
 # The gfx942 assembly of the "ours" variant, for the fence question (MAJ-3):
 # does __builtin_amdgcn_fence(..., "agent") lower to buffer_wbl2 sc1 on
 # release and buffer_inv sc1 on acquire? Counted per kernel into fences.txt.
@@ -117,12 +132,12 @@ cat "$HERE/fences.txt"
 {
   echo "# Offline gfx942 compile, $(date -u +%Y-%m-%dT%H:%M:%SZ), $(cat "$WORK/out/hipcc.txt" | tr '\n' ' ')"
   echo "# fleet 51dce4f + gfx942.patch + new_tasks.patch; composable_kernel $CK_COMMIT; json $JSON_TAG"
-  for v in ours ckfmha debugscores; do
-    echo; echo "## variant $v (hipcc exit $(cat "$WORK/out/mk_$v.rc"))"
-    grep -E "Function Name|    VGPRs:|AGPRs|SGPRs Spill|VGPRs Spill|LDS Size|ScratchSize|Occupancy" "$WORK/out/mk_$v.log" \
+  for v in mk_ours mk_ckfmha mk_debugscores kernel_tests kernel_tests_debug; do
+    echo; echo "## $v (hipcc exit $(cat "$WORK/out/$v.rc"))"
+    grep -E "Function Name|    VGPRs:|AGPRs|SGPRs Spill|VGPRs Spill|LDS Size|ScratchSize|Occupancy" "$WORK/out/$v.log" \
       | sed 's/.*remark: *//; s/ \[-Rpass.*//; s/Function Name: //' | paste - - - - - - - - \
       | grep -v flush_cache | awk -F'\t' '{printf "%-58s %-12s %-10s %-27s %-25s %-17s %-17s %s\n",$1,$2,$3,$4,$5,$6,$7,$8}'
-    grep -E "error:" "$WORK/out/mk_$v.log" | head -10 || true
+    grep -E "error:" "$WORK/out/$v.log" | head -10 || true
   done
 } > "$HERE/resources.txt"
 cat "$HERE/resources.txt"

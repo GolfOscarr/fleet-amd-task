@@ -40,6 +40,12 @@ resource usage is in `resources.txt`, the fence census in `fences.txt`.
 | `mla_attend` alone | 63 | 0 | 0 | dynamic | 8 |
 | `mla_merge_uv` alone | 32 | 0 | 0 | dynamic | 8 |
 | `moe_router` alone | 78 | 0 | 0 | dynamic | 8 |
+| `kernel_tests` launcher, `k_mla_attend` (its largest) | 90 | 0 | 0 | dynamic | - |
+
+The standalone launcher `fleet/tasks/kernel_tests_mi300.cu` also compiles
+and links to an executable in both variants with the build line of
+`fleet/tasks/README.md`, so day 2 starts from a binary that is known to
+build.
 
 What this settles and what it does not:
 
