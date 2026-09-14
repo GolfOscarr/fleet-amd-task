@@ -68,12 +68,20 @@ From Fleet's `mpk_atoms.cuh`:
 Non-temporal is a cache hint, not a synchronization primitive. Flags still need
 the agent-scope fences from `../mi300x/03-memory-model.md`.
 
-## Wide loads
+## Wide loads and prefetch depth — a hard requirement
 
 Use `global_load_dwordx4` (128 bits per lane) wherever alignment allows. A
-64-lane wave then pulls 1 KiB per instruction, which is what keeps the memory
-pipeline fed with few outstanding instructions — important when occupancy is
-1 wave/SIMD and we cannot hide latency by switching waves.
+64-lane wave then pulls 1 KiB per instruction.
+
+**Every GEMV and MLA inner loop must issue 4-8 independent loads before the
+first `s_waitcnt`.** Per `../mi300x/07-achievable-bandwidth.md`, at 1 wave/SIMD
+the device needs ~2-4 outstanding loads per wave to saturate HBM, and `VMCNT`
+allows 63 — so the hardware is not the constraint, the loop structure is. A
+naive `load -> waitcnt -> use` loop will run at roughly `1/N` of peak and will
+look like a bandwidth problem when it is a scheduling problem.
+
+Budget ~32 VGPRs for a depth of 8. That is additive with every other task in the
+megakernel's register union.
 
 For BF16 weights that is 8 elements per lane; for FP8, 16.
 

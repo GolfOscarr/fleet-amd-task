@@ -217,9 +217,11 @@ cooperative dispatch unnecessary.
 ## §7 Related work worth knowing
 
 - **HazyResearch megakernel** — fuses a Llama decoder into one persistent kernel
-  with an on-GPU interpreter, **78% of H100 memory bandwidth at bs=1**. That is a
-  concrete bandwidth-efficiency target for a batch-1 megakernel; 78% of 5.3 TB/s
-  would put us at ~1.19 ms/token against our 931 µs roofline.
+  with an on-GPU interpreter, **78% of H100 memory bandwidth at bs=1**. Tempting
+  as a target, but it **does not transfer**: their 78% is of *theoretical* peak
+  on H100, where measured peak is ~90% of theoretical. On MI300X measured peak is
+  81%, so 78% of theoretical would be 96% of what BabelStream achieves. See
+  `../mi300x/07-achievable-bandwidth.md`.
 - **FlashFormer** — whole-model fusion with pipelined shared buffers.
 - **Mirage MPK** — the base system; 1.0–1.7× over SGLang/vLLM on A100/H100.
 - **HipKittens** — ThunderKittens ported to CDNA3/CDNA4 with XCD grouping, +19%

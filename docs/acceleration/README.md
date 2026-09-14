@@ -44,11 +44,14 @@ by construction.
 
 ## Headline
 
-| Configuration | Traffic/token | Roofline TPOT | tok/s |
-|---|---|---|---|
-| BF16 (task baseline) | 4,705.9 MiB | 931 µs | 1,074 |
-| FP8 weights, BF16 `lm_head` | 2,568.1 MiB | 508 µs | 1,968 |
-| FP8 weights incl. `lm_head` | 2,422.1 MiB | 479 µs | 2,087 |
+| Configuration | Traffic/token | @5.3 theo | @4.3 meas | @3.66 consv |
+|---|---|---|---|---|
+| BF16 (task baseline) | 4,705.9 MiB | 931 µs | 1,148 µs | 1,348 µs |
+| FP8 weights, BF16 `lm_head` + router | 2,571.4 MiB | 509 µs | 627 µs | 737 µs |
+| FP8 weights incl. `lm_head` | 2,422.1 MiB | 479 µs | 591 µs | 694 µs |
+
+Bandwidth band from `../mi300x/07-achievable-bandwidth.md`. The theoretical
+column is the hard floor; the other two are what to expect.
 
 **FP8 is worth ~1.9× — more than everything else in this document combined.**
 And an FP8 checkpoint for our exact model already exists.

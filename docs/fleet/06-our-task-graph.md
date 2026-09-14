@@ -106,11 +106,13 @@ we have understood the mechanism correctly.
 
 ## Milestone mapping
 
-| Milestone | Tasks | Roofline |
-|---|---|---|
-| Single operator (e.g. `q_proj` Chiplet-task) | 8 | ~2.3 µs |
-| **Layer 1 complete (required)** | **80** | **31.6 µs** |
-| 4 consecutive MoE layers | 320 | 126 µs |
-| All 27 layers + head | ~2,135 | 931 µs |
+| Milestone | Tasks | @5.3 theo | @4.3 meas | @3.66 consv |
+|---|---|---|---|---|
+| Single operator (e.g. `q_proj` Chiplet-task) | 8 | ~2.3 µs | 2.9 µs | 3.4 µs |
+| **Layer 1 complete (required)** | **80** | **31.6 µs** | **38.9 µs** | **45.7 µs** |
+| 4 consecutive MoE layers | 320 | 126 µs | 156 µs | 183 µs |
+| All 27 layers + head | ~2,135 | 931 µs | 1,148 µs | 1,348 µs |
 
-Rooflines from `../deepseek-v2-lite/07-roofline.md`.
+Rooflines from `../deepseek-v2-lite/07-roofline.md`; bandwidth band from
+`../mi300x/07-achievable-bandwidth.md`. The theoretical column is a floor, not
+a target.

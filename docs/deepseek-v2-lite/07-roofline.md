@@ -57,6 +57,21 @@ primary).
 
 For 32 output tokens: **~29.8 ms** of pure decode, excluding prefill.
 
+### ...but 5.3 TB/s is not achievable
+
+Nothing reaches theoretical peak. Per `../mi300x/07-achievable-bandwidth.md`,
+MI300X measures **4.3 TB/s** (81%) on BabelStream, and AMD's own read-only
+acceptance threshold is **3.66 TB/s** (69%). Our traffic is ~98% reads, and a
+GEMV is structurally a dot product, so the Dot figure is the closest proxy.
+
+| | @5.3 (theoretical) | @4.3 (measured) | @3.66 (conservative) |
+|---|---|---|---|
+| Per token | **931 µs** | **1,148 µs** | **1,348 µs** |
+| Tokens/s | 1,074 | 871 | 742 |
+| 32 tokens | 29.8 ms | 36.7 ms | 43.1 ms |
+
+**Treat 931 µs as the hard floor and 1.15-1.35 ms as the realistic band.**
+
 ### How to read this number
 
 This is a **hard lower bound under one assumption**: that every active weight is
@@ -72,6 +87,8 @@ So:
 - Anything reporting **below ~931 µs/token is measuring something wrong** —
   a warm cache, a skipped layer, or a mis-timed window. This number is our
   sanity check on our own results.
+- Conversely, landing at 1.2-1.4 ms is **success, not failure** — it is at or
+  near the achievable ceiling.
 - Kernel-launch overhead, which Fleet exists to remove, is *on top of* this.
   With ~800–1,000 launches per token (`04-tensor-flow.md`) at a few µs each, an
   eager baseline could plausibly spend as much time launching as streaming —
@@ -123,12 +140,12 @@ Both are hypotheses from arithmetic, not measurements. Q3 in
 
 ## What this means for milestones
 
-| Milestone | Expected traffic/token | Roofline |
-|---|---|---|
-| One MoE layer (layer 1) | 159.6 MiB | **31.6 µs** |
-| 4 consecutive MoE layers | 638.5 MiB | 126 µs |
-| All 27 layers, no head | 4,305.9 MiB | 852 µs |
-| Full decode incl. `lm_head` | 4,705.9 MiB | **931 µs** |
+| Milestone | Traffic/token | @5.3 theo | @4.3 meas | @3.66 consv |
+|---|---|---|---|---|
+| One MoE layer (layer 1) | 159.6 MiB | **31.6 µs** | 38.9 µs | 45.7 µs |
+| 4 consecutive MoE layers | 638.5 MiB | 126 µs | 156 µs | 183 µs |
+| All 27 layers, no head | 4,305.9 MiB | 852 µs | 1,050 µs | 1,234 µs |
+| Full decode incl. `lm_head` | 4,705.9 MiB | **931 µs** | **1,148 µs** | **1,348 µs** |
 
 (All "MB" in these notes means MiB = 1024². The roofline divides bytes by
 5.3e12 B/s.)

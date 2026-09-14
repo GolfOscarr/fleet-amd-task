@@ -94,10 +94,14 @@ roofline. Worth knowing, not worth worrying about.
 
 All computed from `config.json`; reproduce with `sources/fp8_roofline.py`.
 
+All TPOT figures below are at **theoretical** 5.3 TB/s — the hard floor. At
+the realistic 4.3/3.66 TB/s band, multiply by 1.23 / 1.45
+(`../mi300x/07-achievable-bandwidth.md`).
+
 | Scenario | Traffic/token | TPOT | tok/s | vs BF16 |
 |---|---|---|---|---|
 | BF16 everywhere (task baseline) | 4,705.9 MiB | 931.0 µs | 1,074 | 1.00× |
-| **RedHatAI FP8 as shipped** (`lm_head` BF16) | 2,568.1 MiB | 508.1 µs | 1,968 | **1.83×** |
+| **RedHatAI FP8 as shipped** (`lm_head` + router BF16) | 2,571.4 MiB | 508.7 µs | 1,966 | **1.83×** |
 | ... + `kv_b_proj` dequantized (vLLM behaviour) | 2,622.1 MiB | 518.8 µs | 1,928 | 1.79× |
 | ... + `lm_head` also FP8 | 2,422.1 MiB | 479.2 µs | 2,087 | 1.94× |
 | FP8 weights + FP8 latent KV cache | 2,406.9 MiB | 476.2 µs | 2,100 | 1.96× |

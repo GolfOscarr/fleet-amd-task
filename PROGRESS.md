@@ -26,10 +26,13 @@ Last updated: 2026-09-14 · branch `research/references-and-planning`
 - [x] `docs/deepseek-v2-lite/` — config, MLA, MoE, tensor flow, weights, roofline, correctness
 - [x] `docs/fleet/` — paper review, task model, runtime, repo map, sync cross-check, task graph, gaps
 - [x] `docs/acceleration/` — precision, decode parallelism, kernel craft, ledger
+- [x] Achievable bandwidth band + memory-level-parallelism analysis (`docs/mi300x/07`)
 - [x] Correctness pass on every doc set
 
-**Key numbers:** roofline 931 µs/token (1,074 tok/s) · 4,705.9 MiB/token ·
-routed experts = 55% of traffic · layer 1 roofline 31.6 µs · FP8 → 508 µs
+**Key numbers:** 4,705.9 MiB/token · theoretical floor 931 µs · **realistic
+1.15-1.35 ms/token (742-871 tok/s)** at 3.66-4.3 TB/s achievable bandwidth ·
+routed experts = 55% of traffic · layer 1 milestone 31.6-45.7 µs · FP8 → 509 µs
+floor, 630-740 µs realistic
 
 ---
 

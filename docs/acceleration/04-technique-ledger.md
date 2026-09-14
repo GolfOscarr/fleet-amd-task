@@ -54,11 +54,19 @@ is 2× worse than doing nothing at 1,024 context.
 
 Stacking what is realistically in scope for five days — megakernel, chiplet
 dispatch, split-KV, runtime reassociation, fused activations, non-temporal
-policy — the destination is **the BF16 roofline of 931 µs, approached but not
-reached**. HazyResearch's megakernel reportedly achieves 78% of peak bandwidth
-at batch 1 (Fleet §7), which for us would be **~1.19 ms/token**. That is a
-reasonable target to state in the design document.
+policy — the destination is the **achievable** BF16 band of **1.15-1.35 ms per
+token**, not the 931 µs theoretical floor.
 
-FP8, if reached, moves the target to ~508 µs roofline / ~650 µs realistic. It
-should be written up with the arithmetic regardless of whether we implement it,
-since "recommended next steps" is a required deliverable.
+**Correction.** An earlier draft adopted "78% of peak at batch 1" from Fleet §7's
+description of the HazyResearch megakernel, giving ~1.19 ms. That was wrong:
+their 78% is of *theoretical* peak on *H100*, where measured peak is ~90% of
+theoretical. On MI300X, measured peak is 81%, so 78% of theoretical would be 96%
+of what BabelStream itself achieves — effectively the hardware ceiling, for a
+kernel far more complex than a streaming benchmark.
+
+**Defensible target: 60-70% of theoretical, i.e. 1.33-1.55 ms/token**, with
+1.15 ms as a stretch. See `../mi300x/07-achievable-bandwidth.md`.
+
+FP8, if reached, moves the floor to ~509 µs and the realistic band to
+**630-740 µs**. Write it up with the arithmetic regardless of whether we
+implement it, since "recommended next steps" is a required deliverable.

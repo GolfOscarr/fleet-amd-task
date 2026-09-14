@@ -73,8 +73,10 @@ Everything in `01`–`05` and `07` is `checkpoint` or `derived`. Nothing is
 
 ## Roofline headline
 
-Reading 4,705.9 MiB per token against 5.3 TB/s gives a **lower bound of 931 µs
-per token (1,074 tok/s)**. Derivation and caveats in `07-roofline.md`.
+Reading 4,705.9 MiB per token against 5.3 TB/s gives a **hard floor of 931 µs
+per token (1,074 tok/s)**. Against realistically achievable bandwidth
+(3.66-4.3 TB/s, `../mi300x/07-achievable-bandwidth.md`) the band is
+**1.15-1.35 ms/token, 742-871 tok/s**. Derivation in `07-roofline.md`.
 
 ## Sources
 

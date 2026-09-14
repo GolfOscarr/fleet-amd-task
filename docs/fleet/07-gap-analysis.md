@@ -79,9 +79,11 @@ For our design document, the honest framing is:
 
 - Expected gain = elimination of ~800–1,000 kernel launches/token, plus reduced
   dispatch overhead from Chiplet-task batching. **Not** a bandwidth improvement.
-- Our 931 µs roofline (`../deepseek-v2-lite/07-roofline.md`) is unchanged by
-  Fleet. The reference point for "good" is HazyResearch's 78% of peak bandwidth
-  at bs=1 (paper §7), which for us would be **~1.19 ms/token**.
+- Our roofline (`../deepseek-v2-lite/07-roofline.md`) is unchanged by Fleet:
+  931 µs theoretical floor, **1.15-1.35 ms realistic**. Note the paper's §7
+  reference to HazyResearch achieving "78% of H100 memory bandwidth at bs=1"
+  does **not** transfer — see `../acceleration/04-technique-ledger.md` for why
+  78% of theoretical is near MI300X's hardware ceiling.
 - The one place we might beat Fleet's own batch-1 result *in kind* is KV-cache
   L2 residency, which is a property of MLA, not of Fleet.
 

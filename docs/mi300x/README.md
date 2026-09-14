@@ -13,6 +13,7 @@ Working notes on the target hardware for the Fleet-style batch-1 decode path
 | `04-persistent-kernel.md` | Occupancy math, spin/sleep/wake primitives, on-device timing |
 | `05-software-stack.md` | ROCm, HIP, hipBLASLt, CK, AITER, Triton, vLLM/SGLang |
 | `06-profiling.md` | rocprofv3 / rocprof-compute, counters for each required metric |
+| `07-achievable-bandwidth.md` | Realistic bandwidth band, and whether 1 wave/SIMD can reach it |
 | `99-open-questions.md` | Unverified claims and the microbenchmark that settles each |
 | `sources/` | Downloaded primary documents |
 
@@ -42,6 +43,9 @@ Anything not `primary` or `machine` that our design depends on belongs in
 3. **`S_WAKEUP` only wakes waves in the same threadgroup**, so the cheap
    sleep/wake handshake does not extend across workgroups; cross-workgroup
    waiting must poll. See `04-persistent-kernel.md`.
+4. **Realistic bandwidth is 3.66-4.3 TB/s, not 5.3**, and a megakernel at
+   1 wave/SIMD *can* saturate it provided the inner loop keeps 4-8 loads in
+   flight. See `07-achievable-bandwidth.md`.
 
 ## Primary sources
 

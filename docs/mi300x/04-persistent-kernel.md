@@ -99,7 +99,13 @@ architectural maximum per wave, not the file size — so the wave-slot arithmeti
 should be confirmed with the occupancy API rather than assumed. See
 `99-open-questions.md` Q6.
 
-Query it directly rather than deriving it:
+**This is less alarming than it sounds.** `VMCNT` is 6 bits, so a single wave
+may have up to 63 outstanding vector loads — memory-level parallelism inside the
+wave substitutes for the thread-level parallelism lost to 1 wave/SIMD. The
+required prefetch depth is only 4-8. Full analysis in
+`07-achievable-bandwidth.md`.
+
+Query occupancy directly rather than deriving it:
 
 ```c
 hipOccupancyMaxActiveBlocksPerMultiprocessor(&blocks, kernel, threads, dynLDS);
