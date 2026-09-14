@@ -3,7 +3,7 @@
 Consolidated index of everything unresolved, so a problem can be located without
 re-reading four doc sets. Detail lives in each set's `99-open-questions.md`.
 
-Last updated: 2026-09-14 · 6 major · **22 minor open** · 18 resolved · 9 documentation defects
+Last updated: 2026-09-14 · 6 major · **21 minor open** · 19 resolved · 9 documentation defects
 
 **When** — `local` = resolvable without a GPU · `gpu` = needs the MI300X ·
 `build` = needs a working toolchain
@@ -47,7 +47,6 @@ Last updated: 2026-09-14 · 6 major · **22 minor open** · 18 resolved · 9 doc
 | MIN-27 | **gfx950-only code in the gfx942 build.** Unguarded `__builtin_amdgcn_mfma_f32_16x16x32_f16` in `paged_attention_decode_minimal_mi300.cuh:27` (dead code, but compiled); `16x16x32` warp GEMM selection in `linear_ck_mi300.cuh:73,331`; coherence value 18 commented "for gfx950". First known failures under MAJ-1. | Build | `docs/fleet` Q12 | build |
 | MIN-28 | **CK split-KV FMHA at MLA head dims.** `ck_tile` is not vendored; if the machine's CK has the 576/512 configuration, MAJ-2 shrinks to a wrapper. Check first on day 1. | Kernel | `docs/fleet` Q11 | build |
 | MIN-29 | **`mla_prep` is one workgroup streaming 2 MiB of `W_uk`**, serial on the chain: estimated 20-40 us per layer if it shows. Local fix: fold the product into `mla_attend` per XCD or make `mla_prep` a 16-tile gang op. | Kernel | `docs/design-doc` DQ2 | gpu |
-| MIN-30 | **`MAX_OUTPUTS_PER_TASK` raised from 3 to 5** in `runtime_header.h` by `fleet/patches/new_tasks.patch` (`mla_prep` writes 4 outputs, the router 5). Effect beyond the `TaskDesc` size is unverified; if the first build or run misbehaves, split the router's `route_log`/`logits` into a second task or pack the outputs. | Runtime | `fleet/patches/README.md` | build |
 | MIN-31 | **`partials` imap in `mla_attend`/`mla_merge_uv`.** `build_graph.py` partitions `partials` on the split dimension (33 rows over 8 tasks) for the attend op; the kernels index absolutely and take the runtime's per-task pointer offset as a parameter, so they are correct either way, but whether the event slicing (gcd of the producer's and consumer's partitions) tolerates 33 over 8 is a day-2 check; `(-1, -1, -1)` on both ops is the fallback. | Runtime | `fleet/tasks/README.md` | gpu |
 | MIN-11 | Top-6 experts over 8 XCDs leaves **2 chiplets idle** during the 99 MB phase. **Candidate fix:** fold the two shared experts in as always-selected experts 64 and 65 (exact split of the 2816-wide shared MLP), giving 8 active experts on 8 XCDs and removing the separate shared-expert ops. | Scheduling | `docs/fleet` Q4 | gpu |
 | MIN-14 | MFMA vs VALU for the **weight** GEMVs (M=1). Settled for MLA attention: M=`BLOCK_H`=16 fills a 16×16 MFMA tile, and vLLM ships `matrix_instr_nonkdim: 16`. | Kernel | `docs/acceleration` Q2 · `docs/mla-decode` Q2 | build |
@@ -109,6 +108,7 @@ Not our bugs — but each one could mislead us, so they are recorded.
 | ✅ | What bandwidth is actually achievable? | **3.66-4.3 TB/s (69-81%)**. AMD's Dot acceptance threshold and BabelStream peak. Realistic BF16 target 1.15-1.35 ms/token. |
 | MIN-1 (resolved) | Runtime MLA reassociation within tolerance? | **Yes, within the reference's own ordering noise.** At the real shapes on CPU, B5 differs by 3.2e-3 and B6 by 2.0e-2 to 2.7e-2 at score magnitude 37, the same as the reference's own arithmetic in another summation order (2.5e-2 to 3.0e-2); score magnitude, not reassociation, sets the attention floor. `harness/results/reassoc_check.json`, `docs/design-doc/07-correctness.md` item 7 |
 | MIN-5 (resolved) | Prompt not chosen | `harness/prompt_ids.json`: BOS plus the first 1,023 tokens of `split_linear_tasks.py` from the pinned Fleet submodule; `make_prompt.py` checks it, never regenerates it. `docs/deepseek-v2-lite` Q8 |
+| MIN-30 (resolved) | `MAX_OUTPUTS_PER_TASK` 3 -> 5 | **Safe by inspection of the source:** `sizeof(TaskDesc)` grows from 112 to 128 bytes, both static asserts (`% sizeof(int)`, `% 16`) still hold, and the HIP path's fixed `16 * sizeof(TaskDesc)` shared buffer plus task ids goes from 1,920 to 2,176 bytes against the 3,016-byte reserve (`persistent_kernel.cuh:704-713`). Independent review of `local/harness`. |
 
 ---
 
