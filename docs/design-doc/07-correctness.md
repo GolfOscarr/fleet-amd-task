@@ -116,6 +116,18 @@ Documented, not eliminated (`docs/deepseek-v2-lite/08-correctness.md`):
 6. Chiplet-parallel GEMVs: each output column is one worker's dot product
    over the full K in the CK pipeline; the summation order differs from
    PyTorch's, within the BF16 floor.
+7. Score rounding versus score magnitude. The reference computes its
+   scores with a BF16 matmul and rounds them to BF16 before the FP32
+   softmax; at a score magnitude of 40 one BF16 ulp is 0.25, so any
+   difference in summation order moves individual probabilities by
+   percent. `harness/reassoc_check.py` (real attention shapes, random
+   weights, 1,024 positions) measures the reassociated path at 2.0e-2 to
+   2.7e-2 on B6 with scores up to 37, and the reference's own arithmetic
+   in another summation order at 2.5e-2 to 3.0e-2 on the same inputs;
+   B5 is 3.2e-3 in every case. Reassociation is therefore within the
+   reference's own ordering noise, and the attention threshold is whatever
+   the calibration says, not the starting 3e-2
+   (`harness/results/reassoc_check.json`).
 
 ## Protocol per milestone
 
@@ -134,9 +146,12 @@ tolerance.
 
 | Script | Runs on | Does |
 |---|---|---|
-| `run_reference.py` | GPU (once) | loads HF, runs prefill + generate with hooks, writes every artifact in the table above and the cache capture of `05-prefill-interface.md` |
+| `make_prompt.py` | anywhere | recomputes the 1,024 ids and compares them with the committed `prompt_ids.json` (`--write` only once) |
+| `run_reference.py` | GPU (once); `--smoke` anywhere | loads HF, prefills 1,023 ids, runs the 32-step argmax loop with hooks (position 1023 first), cross-checks `generate`, writes every artifact in the table above and the cache capture of `05-prefill-interface.md` |
+| `numpy_ref.py` | anywhere | the four new kernels' math in NumPy with explicit BF16 rounding; tested against the tiny model's own modules |
+| `reassoc_check.py` | anywhere | the reassociation error at the real attention shapes on CPU (item 7 above) |
 | `calibrate.py` | GPU | the two-run floor measurement; writes `calibration.json` |
-| `run_fleet.py --layers N [--head] [--iters K] [--debug-scores]` | GPU | builds the truncated or full graph, sets meta tensors, runs `mpk()`, dumps every boundary tensor to `fleet_boundaries.safetensors` and `tokens` to `fleet_output_ids.json` |
+| `run_fleet.py --layers N [--head] [--iters K] [--stop-after <op>] [--debug] [--debug-scores]` | GPU | builds the truncated or full graph, sets meta tensors, runs `mpk()`, dumps every boundary tensor to `fleet_boundaries.safetensors` and `tokens` to `fleet_output_ids.json` |
 | `compare.py` | anywhere | pairs reference and Fleet tensors by boundary name, prints the three metrics, the floor, the threshold, and PASS/FAIL per boundary; exact-match checks for B9, B16 and the route log; writes `correctness_report.md` |
 | `kernel_tests.py` | GPU | for each new kernel, 100 random inputs against `numpy_ref.py`; also `mla_attend` with 1 split versus 33 splits (isolates the merge) |
 

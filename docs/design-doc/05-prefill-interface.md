@@ -39,25 +39,39 @@ for l, layer in enumerate(model.model.layers):
     layer.self_attn.kv_a_proj_with_mqa.register_forward_hook(
         lambda m, i, o, l=l: kva.__setitem__(l, o.detach()))
 
+P = 1023                                                # prefill length; position 1023 is Fleet iteration 0
+mask = lambda n: torch.ones(1, n, dtype=torch.long, device="cuda")
 with torch.inference_mode():
-    out = model(ids, use_cache=True)                        # the prefill; also gives logits[:, -1]
-    # reference continuation for the oracle (07-correctness.md), same call chain as HF generate:
+    out = model(ids[:, :P], attention_mask=mask(P), past_key_values=DynamicCache(), use_cache=True)
+    # kva[l] is now [1, 1023, 576]: the cache rows the Fleet path is given
+    # position 1023 as a one-token step, hooks on: this is what Fleet iteration 0 computes, at M = 1
+    out = model(ids[:, P:P + 1], attention_mask=mask(P + 1), past_key_values=out.past_key_values, use_cache=True)
+    # kva[l] is now [1, 1, 576]: ref_row_1023; out.logits[0, -1].argmax() is output token 0
+    # ... 31 more argmax steps (the loop is the oracle for the 32 ids), then, as a cross-check,
     ref = model.generate(ids, max_new_tokens=32, do_sample=False, eos_token_id=None,
                          pad_token_id=model.config.eos_token_id)
 
 S_MAX = 1056
 c_kv = torch.zeros(27, S_MAX, 512, dtype=torch.bfloat16, device="cuda")
 k_pe = torch.zeros(27, S_MAX,  64, dtype=torch.bfloat16, device="cuda")
-pos = torch.arange(1024, device="cuda")[None]
-cos, sin = model.model.layers[0].self_attn.rotary_emb(kva[0], seq_len=S_MAX)   # [S_MAX, 64] each, BF16
+pos = torch.arange(P, device="cuda")[None]
+cos, sin = model.model.layers[0].self_attn.rotary_emb(probe_bf16, seq_len=S_MAX)   # [S_MAX, 64] each, BF16
 for l, layer in enumerate(model.model.layers):
-    c, kpe = kva[l].split([512, 64], dim=-1)               # [1, 1024, 512], [1, 1024, 64]
+    c, kpe = kva_prefill[l].split([512, 64], dim=-1)       # [1, 1023, 512], [1, 1023, 64]
     c = layer.self_attn.kv_a_layernorm(c)                  # the model's own module, eps 1e-6
-    kpe = kpe.view(1, 1024, 1, 64).transpose(1, 2)         # [1, 1, 1024, 64], the reference's shape
+    kpe = kpe.view(1, P, 1, 64).transpose(1, 2)            # [1, 1, 1023, 64], the reference's shape
     _, kpe = apply_rotary_pos_emb(kpe, kpe, cos, sin, pos) # the model's own function
-    c_kv[l, :1023] = c[0, :1023]
-    k_pe[l, :1023] = kpe[0, 0, :1023]
+    c_kv[l, :P] = c[0]
+    k_pe[l, :P] = kpe[0, 0]
 ```
+
+This is `harness/run_reference.py` (`10-local-work.md` L7), exercised end to
+end on a tiny random model by `harness/tests`. Two facts of the runtime
+found while writing it: the eager attention asserts on a missing mask at a
+one-token step, so an explicit all-ones `attention_mask` is passed, and
+the model returns a legacy tuple cache unless a `DynamicCache` is passed
+in. The checkpoint's remote modeling code needs transformers 4.x
+(`env/requirements.txt`).
 
 Three properties of this capture:
 
@@ -65,10 +79,10 @@ Three properties of this capture:
    own module and function, applied to the model's own intermediate, in the
    model's own dtype. The stored rows are bit-identical to what the reference
    computed for those positions during its prefill.
-2. **Row 1023 is deliberately left for Fleet.** The reference computed it;
-   we keep it aside as `ref_row_1023[l] = (c[0, 1023], kpe[0, 0, 1023])` and
-   compare it with what `mla_prep` writes in iteration 0. That is boundary
-   B3/B4 at every layer for free (`07-correctness.md`).
+2. **Row 1023 is deliberately left for Fleet.** The reference computes it
+   in its one-token step; we keep it aside as `ref_row_1023[l]` and compare
+   it with what `mla_prep` writes in iteration 0. That is boundary B3 at
+   every layer for free (`07-correctness.md`).
 3. **The RoPE tables** are the model's `rotary_emb` output, which for this
    checkpoint carries a table multiplier of exactly 1.0 (`mscale ==
    mscale_all_dim`, `modeling_deepseek.py:316-326`), and the softmax scale
@@ -109,9 +123,12 @@ Same process, same model object, before the hooks are removed:
 
 - `ref_tokens = ref[0, 1024:1056]`, 32 ids, committed as `ref_output_ids.json`.
 - Per-boundary tensors for layer 0 and layer 1 at decode step 0, captured by
-  hooks on the same modules during a single `model(ids[:, :1024])` forward
-  followed by `model(ids_1024, past_key_values=...)` for one step; saved as
-  `.safetensors` (`07-correctness.md` lists the boundaries).
+  hooks on the same modules during the one-token step at position 1023
+  above (the step after `model(ids[:, :1023])`), so they are computed at
+  M = 1 exactly as the Fleet path computes them; saved as `.safetensors`
+  (`07-correctness.md` lists the boundaries). The 32 oracle ids come from
+  the argmax loop that continues from that step; `generate` on the full
+  1,024-id prompt is run afterwards and its agreement recorded.
 - The BF16 noise-floor calibration, from two orderings of the same
   computation (`07-correctness.md`).
 

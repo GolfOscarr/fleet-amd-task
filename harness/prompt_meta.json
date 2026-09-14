@@ -1,0 +1,11 @@
+{
+  "model": "deepseek-ai/DeepSeek-Coder-V2-Lite-Base",
+  "n_tokens": 1024,
+  "bos_prepended": true,
+  "source_file": "repos/fleet-chiplet-megakernel/python/mirage/mpk/split_linear_tasks.py",
+  "source_sha256": "8c939f83907f2e1ff9495876d3e2cda75303eae5de71ed49ffc1a130ee6ecab4",
+  "source_tokens_total": 1714,
+  "tokenizer_class": "LlamaTokenizerFast",
+  "tokenizer_json_sha256": "091b9dadb9845f0e8386c38bdb87e98db8adc7b0aacf36cb9257c00d0a668714",
+  "decoded_tail": " and split large LINEAR tasks.\n\n    Args:\n        input_path"
+}

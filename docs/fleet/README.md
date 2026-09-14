@@ -16,6 +16,7 @@ Sources: `../paper/fleet.pdf` (11 pp., read in full) and
 | `05-sync-crosscheck.md` | Fleet's sync vs our `../mi300x/03-memory-model.md` |
 | `06-our-task-graph.md` | DeepSeek-V2-Lite layer 1 expressed as Fleet tasks |
 | `07-gap-analysis.md` | What we must add; corrected after reading the code |
+| `08-mpk-paper.md` | The MPK paper (arXiv 2512.22219) read for the per-boundary question: no per-event number; AOT pre-enqueue is Fleet's prelaunch rewrite |
 | `99-open-questions.md` | |
 
 ## What Fleet actually is
