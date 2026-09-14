@@ -3,11 +3,13 @@
 Fleet-style batch-1 decode for DeepSeek-Coder-V2-Lite-Base on one AMD MI300X.
 Time limit: 5 days. Target: gfx942, BF16, 1024-token prompt, 32 greedy tokens.
 
-Last updated: 2026-09-14 · branch `research/references-and-planning` · 14 commits
+Last updated: 2026-09-14 · branch `design/technical-spec` (from `main` at `11293d8`)
 
-**Where we are:** discovery complete (5 doc sets, 40 files, ~5,300 lines, 9
-reproducible scripts). Nothing built yet. Next deliverable is the technical
-design document; the day-1 blocker is whether Fleet builds for gfx942.
+**Where we are:** discovery complete (5 doc sets); the technical design is
+written and independently reviewed (`docs/design-doc/`, 14 files, one
+counting script). GPU-dependent problems are parked, each with its check. Nothing built yet; the day-1 blocker is whether Fleet
+builds for gfx942, and the code read found the first known gfx950-only item
+that will break it.
 
 ---
 
@@ -51,10 +53,10 @@ design document; the day-1 blocker is whether Fleet builds for gfx942.
 | Achievable bandwidth | 3.66–4.3 TB/s (69–81% of 5.3) |
 | Layer-1 milestone | 31.6 µs floor / 38.9–45.7 µs realistic |
 | FP8 (stretch) | 509 µs floor / 630–740 µs realistic — **1.83×** |
-| Task graph | 80 tasks/layer, ~2,135/token, **1 kernel launch** |
+| Task graph | 326 ops, 1,880 tasks per token; **3 kernel dispatches per 32-token generation** |
 | Eager baseline | ~800–1,000 launches/token |
 
-**Decisions locked** (to be consolidated into `docs/decisions.md`)
+**Decisions locked** (interim table; the authoritative list is `docs/design-doc/00-decisions.md`, which withdraws the VALU-for-weight-GEMVs row and restates `P_split`)
 
 | Decision | Rationale |
 |---|---|
@@ -69,29 +71,52 @@ design document; the day-1 blocker is whether Fleet builds for gfx942.
 
 ---
 
-## Stage 2 — Design doc ⬜ not started — **next**
+## Stage 2 — Design doc ✅ **complete, reviewed** — `docs/design-doc/`
 
-Required as the **first deliverable**. All inputs exist; this is assembly.
+Required as the **first deliverable**.
 
-- [ ] Model execution flow
-- [ ] Fleet task graph (draft in `docs/fleet/06-our-task-graph.md`)
-- [ ] Synchronization strategy
-- [ ] Memory plan + KV-cache layout
-- [ ] Prefill → Fleet-decode interface
-- [ ] Correctness methodology (draft in `docs/deepseek-v2-lite/08-correctness.md`)
-- [ ] Implementation milestones
-- [ ] Expected performance
-- [ ] Local-vs-GPU work split
-- [ ] `docs/decisions.md` — consolidate SPX+NPS1, runtime reassociation, extend-not-reimplement, gfx942, weight-only FP8
+- [x] Plan (`docs/design-doc/PLAN.md`)
+- [x] P1 `persistent_kernel.cuh` scheduler/worker loops → `docs/fleet/03-runtime.md`
+- [x] P2 `persistent_kernel.py` layer API + MoE demo conventions → `docs/fleet/04-repo-map.md`
+- [x] P3 `gang_linear_mi300.cuh` + `ck_tile` idiom → `docs/fleet/04-repo-map.md`
+- [x] `00-decisions.md` — 26 decisions with evidence and reversal conditions (supersedes the interim table below)
+- [x] `01-execution-flow.md` + `sources/graph_counts.py`
+- [x] `02-task-graph.md` — 326 ops / 1,880 tasks, 4 new kernels, 2 variants
+- [x] `03-synchronization.md`
+- [x] `04-memory-plan.md`
+- [x] `05-prefill-interface.md`
+- [x] `06-optimization-strategy.md`
+- [x] `07-correctness.md`
+- [x] `08-milestones.md`
+- [x] `09-expected-performance.md`
+- [x] `10-local-work.md`
+- [x] `README.md`, `99-open-questions.md`
+- [x] Independent review pass (17 findings, all confirmed against the source and fixed in `4d36f7a`)
+- [ ] Merge to `main`
 
 ---
 
-## Stage 3 — Local work (no GPU) 🟡 **3/12**
+## Parked until GPU access is confirmed
+
+Everything below needs the machine (a build, a disassembly, a counter, or a
+timing) and is documented rather than resolved. Each entry names the check
+that settles it; nothing here blocks the local work in Stage 3.
+
+- Design-level: `docs/design-doc/99-open-questions.md` DQ1-DQ10 (DQ1 per-boundary latency and DQ3 CK FMHA at 576/512 first)
+- Consolidated index, `gpu` or `build` in the When column: MAJ-1, MAJ-2, MAJ-3, MAJ-4, MAJ-5, MAJ-6, MIN-25, MIN-26, MIN-27, MIN-28, MIN-29, MIN-11, MIN-14, MIN-15, MIN-21, MIN-23, MIN-24, MIN-22, MIN-16, MIN-17, MIN-18, MIN-19, MIN-20 (`OPEN-PROBLEMS.md`)
+- Day-1 order: `OPEN-PROBLEMS.md`, Triage; day-by-day: `docs/design-doc/08-milestones.md`
+
+Resolvable now, without the GPU: MIN-1, MIN-2, MIN-4, MIN-5, MIN-6 (`OPEN-PROBLEMS.md`, When = local) and Stage 3 below.
+
+---
+
+## Stage 3 — Local work (no GPU) 🟡 **6/13**
 
 - [x] Read `gang_attention_merge_mi300.cuh` and `kv_cache_update_mi300.cuh` (both GQA-paged; merge math reusable, append is not)
-- [ ] Read `gang_linear_mi300.cuh` + `ck_tile` idiom ← the template our MLA task is written against
-- [ ] Read `python/mirage/mpk/models/qwen3/` (template for our builder)
-- [ ] Read Mirage MPK paper (arXiv:2512.22219) + `persistent_kernel.cuh` main loop
+- [x] Read `gang_linear_mi300.cuh` + `ck_tile` idiom → `docs/fleet/04-repo-map.md` (worker contract, inner GEMV tiers, CK FMHA path, gfx950-only code)
+- [x] Read the Python layer API + `demo/qwen3/demo_30B_A3B.py` (the MoE template; the `models/qwen3/` builder has no MoE) → `docs/fleet/04-repo-map.md`
+- [x] Read `persistent_kernel.cuh` main loop (launch structure, worker/scheduler loops, event counting, placement rules) → `docs/fleet/03-runtime.md`
+- [ ] Read Mirage MPK paper (arXiv:2512.22219)
 - [x] Read vLLM / AITER / FlashMLA MLA decode kernels → `docs/mla-decode/`
 - [x] Split-KV partial-softmax numerics (in `docs/mla-decode/04`)
 - [ ] Pick + tokenize the 1,024-token prompt, commit token IDs (recipe in `docs/deepseek-v2-lite` Q8)
@@ -157,13 +182,14 @@ documented as blocked. **Decide end of day 1.**
 |---|---|---|
 | `docs/mi300x/99-open-questions.md` | 13 open / 1 resolved | Q4 agent-scope fence emits right cache ops |
 | `docs/deepseek-v2-lite/99-open-questions.md` | 6 open / 3 resolved | Q1 reassociation within tolerance (no GPU) |
-| `docs/fleet/99-open-questions.md` | 7 open / 2 resolved | **Q1 does it build on gfx942** |
+| `docs/fleet/99-open-questions.md` | 10 open / 3 resolved | **Q1 does it build on gfx942**, Q11 CK FMHA at 576/512 |
 | `docs/acceleration/99-open-questions.md` | 4 open / 2 resolved | Q2 MFMA vs VALU at M=1 |
 | `docs/mla-decode/99-open-questions.md` | 5 open | Q1 is `P_split`=32 right |
-| **total** | **35 open / 8 resolved** | |
+| `docs/design-doc/99-open-questions.md` | 10 open (3 restate `docs/fleet` Q3, Q4, Q11) | **DQ1 per-boundary latency** |
+| **total** | **48 open / 9 resolved** | |
 
 `OPEN-PROBLEMS.md` holds the consolidated, deduplicated view: **6 major /
-18 minor open / 14 resolved**, plus 9 documentation defects found in AMD and
+21 minor open / 16 resolved**, plus 9 documentation defects found in AMD and
 Fleet sources.
 
 ---
@@ -177,7 +203,7 @@ Fleet sources.
 | Megakernel occupancy = 1 wave/SIMD | Was feared fatal | ✅ resolved — `VMCNT`=63 allows enough in-flight loads; becomes a prefetch-depth requirement (MIN-22 to confirm) |
 | Attention uses 32 of 296 workers | 13–17% of budget if the model is right | `P_split` is one constant to sweep (MIN-23) |
 | Our tasks smaller than anything Fleet measured | Dispatch overhead dominates | Measure task vs dispatch time early |
-| Top-6 experts over 8 XCDs leaves 2 idle | 25% of machine during 99 MB phase | Compare vs N-split across all 8 |
+| Top-6 experts over 8 XCDs leaves 2 idle | 25% of machine during 99 MB phase | Candidate: fold shared experts in as experts 64-65 (8 active on 8 XCDs); compare vs N-split |
 | 5 days, BF16 first | FP8 not reached | Document with arithmetic; precision as a loader parameter |
 
 ---
