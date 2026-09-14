@@ -3,7 +3,7 @@
 Fleet-style batch-1 decode for DeepSeek-Coder-V2-Lite-Base on one AMD MI300X.
 Time limit: 5 days. Target: gfx942, BF16, 1024-token prompt, 32 greedy tokens.
 
-Last updated: 2026-09-14 · branch `local/harness` (Stage 3 complete and reviewed, PR open)
+Last updated: 2026-09-14 · branch `main` at the merge of PR #3 (Stage 3 complete and reviewed)
 
 **Where we are:** discovery complete (5 doc sets); the technical design is
 written and independently reviewed (`docs/design-doc/`, 14 files, one
