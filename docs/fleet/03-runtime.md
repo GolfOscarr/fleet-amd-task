@@ -208,45 +208,104 @@ Event handling, in code order:
 | index 0 (termination) | `terminate_schedulers` | push `TaskId 0` (`TASK_TERMINATE`) to each of its workers; return (`:1509-1527`) |
 | `EVENT_END_OF_TASK_GRAPH` | last task of the graph; also seeded by `prepare_kernel` | print `[FWD_PASS]`; call `prepare_next_batch`; on `false` call `terminate_schedulers`, else push `compute_task_id(iteration_num + 1, 1)` to one of its workers (`:1528-1603`) |
 | `EVENT_LAUNCH_DEPENDENT_TASKS` | fired once per graph by `TASK_BEGIN_TASK_GRAPH` (`runtime.cc:176-181`) | `iteration_num += 1` (`:1605`); dispatch position `first + i * 296 + j` to worker `j` for each of its workers `j` (`:1705`); if the event holds exactly `num_xcds` gang tasks, take task `first + sched_id` and broadcast it to `min(n_tile_count, 37)` of its workers (`:1616-1660`) |
-| `EVENT_LAUNCH_MASSIVE_TASKS` (8 or more consumers, `runtime.cc:102-105`) | broadcast queue | split the task range across the 8 schedulers with `get_first_last_ids` (`:1756-1763`); a gang slice must be exactly one task (`:1778`), broadcast to its workers; otherwise round-robin over its own workers |
-| `EVENT_LAUNCH_TASKS` (fewer than 8 consumers) | the firing worker's own-XCD queue | round-robin all consumers over its own workers |
+| `EVENT_LAUNCH_MASSIVE_TASKS` (8 or more consumers, `runtime.cc:102-105`; **never reaches a queue**, see prelaunch below) | broadcast queue | split the task range across the 8 schedulers with `get_first_last_ids` (`:1756-1763`); a gang slice must be exactly one task (`:1778`), broadcast to its workers; otherwise round-robin over its own workers |
+| `EVENT_LAUNCH_TASKS` (fewer than 8 consumers; **never reaches a queue**, see prelaunch below) | the firing worker's own-XCD queue | round-robin all consumers over its own workers |
 
 On `iteration_num == 1` each dispatch path also fills
 `xcd_event_num_tasks[my_xcd * num_events + trigger_event]`, the per-XCD
 threshold used by the worker's two-level counting. The graph is identical
 every iteration, so this is computed once.
 
-### Placement rules the graph must be built against
+### How the graph is actually dispatched: prelaunch
 
-These follow from the table above and decide which XCD a task runs on.
+The scheduler table above describes every code path, but `register_mugraph`
+ends with a rewrite that makes most of them unreachable (`runtime.cc:593-610`):
 
-1. **Eight gang tasks per operator, one per XCD.** A gang event with exactly
-   8 tasks is split one per scheduler. Task `first + k` runs on the XCD of
-   scheduler `k`. This is the N-split Chiplet-task mechanism; the tile loop
-   inside the worker then spreads `n_tile_count` tiles over the 37 workers.
-2. **Small events stay on one XCD.** An `EVENT_LAUNCH_TASKS` (fewer than 8
-   consumers) is handled by the scheduler on the XCD of the worker that
-   completed the last producer, and all consumers land on that XCD. A 1-task
-   consumer such as the merge or a norm therefore runs wherever the last
-   producer finished; there is no way to pin it.
-3. **Massive non-gang events are sliced contiguously.** Scheduler `k` gets
-   tasks `[first + k * n / 8, first + (k + 1) * n / 8)`. Consecutive tasks
-   share an XCD, in blocks of `n / 8`.
-4. **The dependent-tasks event interleaves by worker id.** Only the graph's
-   first fan-out uses it; task `first + m` goes to worker `m mod 296`.
-5. **Scheduler `k` is assumed to sit on XCD `k`.** `get_rand_sched_id`
-   returns the worker's `xcd_id` as the scheduler-queue index with the
-   comment "scheduler_kernel block k runs on XCD k" (`:591`). The scheduler
-   itself does not assume this: it discovers its XCD from the register and
-   collects matching workers. But the worker-side enqueue writes queue
-   `xcd_id` with volatile stores and no fence (`:1345-1360`), so if
-   scheduler block `k` were placed on a different XCD, its own-queue reads
-   (`ld_local_u64`) would be cross-XCD without a fence. Correctness rests on
-   the hardware dispatching scheduler blocks 0..7 to XCDs 0..7 in order,
-   which `../mi300x/02-chiplet-dispatch.md` says is the round-robin default
-   but which the runtime never checks. The `[SCHED_XCD] sched_id=k xcd=k`
-   line printed at `:1436` is the check; it should read `sched_id == xcd`
-   on all eight lines. Logged as Q10.
+```c
+all_events[1].first_task_id = 2;               // the begin-graph event ...
+all_events[1].last_task_id = all_tasks.size(); // ... now covers every task
+for e in 2..num_events:
+  if type is LAUNCH_TASKS or LAUNCH_MASSIVE_TASKS:
+    type = EVENT_EMPTY
+    for t in [first_task_id, last_task_id): all_tasks[t].dependent_event = e
+```
+
+Task 0 is `TASK_TERMINATE` and event 0 is `EVENT_TERMINATION`
+(`runtime.cc:1661-1665`); task 1 is `TASK_BEGIN_TASK_GRAPH` and event 1 its
+`EVENT_LAUNCH_DEPENDENT_TASKS` (`:176-181`). After the rewrite:
+
+1. At the start of every iteration, `TASK_BEGIN_TASK_GRAPH` fires event 1
+   and every scheduler dispatches the **entire graph** to its workers by the
+   interleaved rule: task at position `p` (2 <= p < N) goes to worker
+   `(p - 2) mod 296`, in position order (`persistent_kernel.cuh:1705`).
+   A gang task at position `p` is instead broadcast to
+   `min(n_tile_count, 37)` workers of the XCD that owns worker
+   `(p - 2) mod 296` (`:1708-1735`).
+2. Every other event is `EVENT_EMPTY`: when its counter fills, the firing
+   worker does nothing (`:1311-1314`). Consumers are already queued; each
+   waits in its worker's dependency check (`:914-975`) until the counter it
+   names reaches `num_triggers * iteration_num`.
+3. Workers therefore run their queue strictly in graph order and block at
+   the head; because the graph is a chain (below), a later task in a queue
+   is never ready before an earlier one, so the head-of-line blocking costs
+   nothing beyond what the chain already imposes.
+
+Two consequences for the design. Which XCD a task lands on is decided by
+`(p - 2) mod 296` and by which XCD the hardware placed worker `w` on. With
+296 = 37 x 8 and round-robin block placement (`../mi300x/02-chiplet-dispatch.md`),
+worker `w` sits on XCD `w mod 8` and eight consecutive gang tasks land on
+eight distinct XCDs; if placement is not round-robin, two of them can share
+an XCD and one XCD idles for that operator. The `[WORKER_XCD]` lines printed
+at startup for workers 0-7 (`:751-754`) are the check. And a 1-task
+operator (a norm, the merge, the router) runs on whichever worker
+`(p - 2) mod 296` is; there is no way to pin it, and no reason to.
+
+### The dependency model is a chain
+
+`register_mugraph` links each operator only to the operator immediately
+before it in the Python call order (`runtime.cc:516-531`): it finds a tensor
+that the current op reads and the previous op wrote
+(`assert(num_shared_tensors >= 1)`, so consecutive ops **must** share one),
+and creates events between the two ops' task grids sliced by the gcd of their
+partitions of that tensor (`:532-572`, `dfs_create_events_add_tasks` at
+`:53-161`). A consumer that reads the shared tensor whole (input map
+`(-1, -1, -1)`) gets one event with one trigger per producer task, a full
+barrier; a consumer partitioned the same way as the producer gets one event
+per slice.
+
+There is no DAG. An op cannot depend on an op two steps back except
+transitively, and two ops cannot run concurrently unless one is the
+producer of the other and the events are sliced. Concretely for
+`06-our-task-graph.md`: the "shared experts overlap the routing latency"
+branch is not expressible as two ops side by side. The ways to get it are
+to fuse the shared experts into the routed-expert op (treat them as two
+always-selected experts, see `99-open-questions.md` Q4) or to accept
+sequential execution. The 12 to 15 edge in that document remains the only
+data-dependent stall, but it is now a stall on the whole layer, not on one
+branch.
+
+The `iteration_num` counter on the scheduler increments once per
+`EVENT_LAUNCH_DEPENDENT_TASKS` (`persistent_kernel.cuh:1605`), which after
+the rewrite is exactly once per iteration; the event counters are never
+reset within a launch, which is why every threshold is multiplied by it.
+
+### Scheduler block `k` is assumed to sit on XCD `k`
+
+`get_rand_sched_id` returns the worker's `xcd_id` as the scheduler-queue
+index with the comment "scheduler_kernel block k runs on XCD k" (`:591`).
+The scheduler itself does not assume this: it discovers its XCD from the
+register and collects matching workers. But the worker-side enqueue writes
+queue `xcd_id` with volatile stores and no fence (`:1345-1360`), so if
+scheduler block `k` were placed on a different XCD, its own-queue reads
+(`ld_local_u64`) would be cross-XCD without a fence. Correctness rests on
+the hardware dispatching scheduler blocks 0..7 to XCDs 0..7 in order, which
+`../mi300x/02-chiplet-dispatch.md` says is the round-robin default but which
+the runtime never checks. The `[SCHED_XCD] sched_id=k xcd=k` line printed at
+`:1436` is the check; it should read `sched_id == xcd` on all eight lines.
+Logged as Q10. After the prelaunch rewrite the only events that reach a
+scheduler queue during an iteration are event 1 (broadcast queue, GPU-scope
+ops) and `EVENT_END_OF_TASK_GRAPH` (own-XCD queue, local ops), so the
+exposure is one enqueue per iteration.
 
 ### The primitives (`mpk_atoms.cuh`)
 
