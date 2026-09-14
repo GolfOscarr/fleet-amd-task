@@ -1,0 +1,80 @@
+diff --git a/include/mirage/persistent_kernel/persistent_kernel.cuh b/include/mirage/persistent_kernel/persistent_kernel.cuh
+index 45438dc..9241ae6 100755
+--- a/include/mirage/persistent_kernel/persistent_kernel.cuh
++++ b/include/mirage/persistent_kernel/persistent_kernel.cuh
+@@ -1044,7 +1044,8 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+         unsigned long long cur_clk = get_wallclock_ns();
+ #ifndef MPK_ENABLE_PROFILING
+         int num_active_tokens = config.qo_indptr_buffer[MPK_MAX_NUM_BATCHED_REQUESTS];
+-        if (prev_begin_clk != 0 && (fwd_pass_count < 10 || fwd_pass_count % 50 == 0)) {
++        // every iteration is printed: 32 iterations per generation are the measurement
++        if (prev_begin_clk != 0) {
+           printf("[FWD_PASS] iter=%d time_ms=%.3f num_active_tokens=%d\n",
+                  fwd_pass_count,
+                  (double)(cur_clk - prev_begin_clk) / 1000000.0,
+@@ -1532,8 +1533,8 @@ __device__ __forceinline__ void execute_scheduler(RuntimeConfig config,
+           unsigned long long iter_end_clk = get_wallclock_ns();
+           int num_active_tokens = config.qo_indptr_buffer[MPK_MAX_NUM_BATCHED_REQUESTS];
+ #ifndef MPK_ENABLE_PROFILING
+-          if (prev_end_of_graph_clk != 0 &&
+-              (end_of_graph_count < 10 || end_of_graph_count % 100 == 0)) {
++          // every iteration is printed: 32 iterations per generation are the measurement
++          if (prev_end_of_graph_clk != 0) {
+ #ifdef MPK_ENABLE_DISPATCH_TIMING
+             double compute_after_dispatch_us = last_dep_dispatch_end_ns > 0
+                 ? (double)(iter_end_clk - last_dep_dispatch_end_ns) / 1000.0
+diff --git a/include/mirage/persistent_kernel/tasks/mi300/linear_ck_mi300.cuh b/include/mirage/persistent_kernel/tasks/mi300/linear_ck_mi300.cuh
+index 509463e..6f2a06e 100644
+--- a/include/mirage/persistent_kernel/tasks/mi300/linear_ck_mi300.cuh
++++ b/include/mirage/persistent_kernel/tasks/mi300/linear_ck_mi300.cuh
+@@ -73,11 +73,21 @@ struct BlockGemmSmallM16Policy
+         // Use 16x16x32 MFMA with transposed C distribution (MI350 2x K)
+         // MWarp=1 allows MPerBlock=16 (minimal padding for batch=8)
+         // NWarp=4 to maintain parallelism across 4 warps (128 threads)
++        // gfx942 (MI300X) has no 16x16x32 BF16 MFMA; use the 16x16x16 warp GEMM
++        // with the same M/N warp grid so every small-tile linear keeps its layout.
++#if defined(__gfx950__)
+         return ck_tile::make_tuple(
+             ck_tile::WarpGemmMfmaBf16Bf16F32M16N16K32TransposedCDistribution{},
+             1,  // MWarp = 1 -> MPerBlock >= 16
+             4   // NWarp = 4 -> NPerBlock >= 64
+         );
++#else
++        return ck_tile::make_tuple(
++            ck_tile::WarpGemmMfmaBf16Bf16F32M16N16K16TransposedCDistribution{},
++            1,  // MWarp = 1 -> MPerBlock >= 16
++            4   // NWarp = 4 -> NPerBlock >= 64
++        );
++#endif
+     }
+ };
+ 
+@@ -328,7 +338,11 @@ __device__ __forceinline__ void linear_kernel_ck(void const *input_ptr,
+     // MIterPerWarp/NIterPerWarp are computed automatically by BlockUniversalGemmAsBsCr.
+     constexpr index_t WarpM = (use_xlarge_tile || use_medium_tile) ? 32 : 16;
+     constexpr index_t WarpN = (use_xlarge_tile || use_medium_tile) ? 32 : 16;
++#if defined(__gfx950__)
+     constexpr index_t WarpK = (use_xlarge_tile || use_medium_tile) ? 16 : 32;  // MI350: K=32 for small tile
++#else
++    constexpr index_t WarpK = 16;  // gfx942: 16x16x16 is the only BF16 MFMA K for the small tile
++#endif
+     using WarpTile = sequence<WarpM, WarpN, WarpK>;
+ 
+     using GemmShape = TileGemmShape<BlockTile, BlockWarps, WarpTile>;
+diff --git a/include/mirage/persistent_kernel/tasks/mi300/task_header.cuh b/include/mirage/persistent_kernel/tasks/mi300/task_header.cuh
+index afad1af..9906f75 100755
+--- a/include/mirage/persistent_kernel/tasks/mi300/task_header.cuh
++++ b/include/mirage/persistent_kernel/tasks/mi300/task_header.cuh
+@@ -31,7 +31,12 @@
+ #include "tasks/mi300/multitoken_paged_attention_split_kv_mi300.cuh"
+ #include "tasks/mi300/kv_cache_update_mi300.cuh"
+ #ifdef MPK_USE_CK_FMHA
++// gfx942: paged_attention_decode_minimal_mi300.cuh uses the gfx950-only
++// __builtin_amdgcn_mfma_f32_16x16x32_f16 unguarded and registers no task;
++// it is not compiled into the gfx942 megakernel.
++#if defined(__gfx950__)
+ #include "tasks/mi300/paged_attention_decode_minimal_mi300.cuh"
++#endif
+ #include "tasks/mi300/paged_attention_ck_fmha_split_kv_mi300.cuh"
+ #include "tasks/mi300/gang_attention_mi300.cuh"
+ #endif
