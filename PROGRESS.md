@@ -3,7 +3,7 @@
 Fleet-style batch-1 decode for DeepSeek-Coder-V2-Lite-Base on one AMD MI300X.
 Time limit: 5 days. Target: gfx942, BF16, 1024-token prompt, 32 greedy tokens.
 
-Last updated: 2026-09-16 · branch `local/hw-collection` (hardware collection on the VM, run 2026-09-15)
+Last updated: 2026-09-16 · branch `local/gpu-bringup` (the first GPU sessions, 2026-09-15: hardware record, gate 1, M1 to M3)
 
 **Where we are (2026-09-16):** M0, M1, M2 and M3 reached on the MI300X
 on 2026-09-15 (Hot Aisle, one VM, about $12): gate 1 passed after three
@@ -11,9 +11,9 @@ fixes, layer 1 validated end to end with all 16 boundaries and exact top-k,
 27 layers run, the full model with the head produces the reference's first
 two tokens, 15.6 ms per iteration (the gang model's eight workgroups per
 operator, MAJ-7). Open: the fault at 7 to 9 layers and at 27 layers with
-the head at 32 iterations (`docs/hw-collection/03-lessons-and-ideas.md`
+the head at 32 iterations (`docs/gpu-bringup/03-lessons-and-ideas.md`
 item 14); the session image (`env/docker/README.md`) not yet pushed. The
-next session starts from `docs/hw-collection/05-next-session.md`.
+next session starts from `docs/gpu-bringup/05-next-session.md`.
 Earlier state: discovery complete (5 doc sets); the technical design is
 written and independently reviewed (`docs/design-doc/`, 14 files, one
 counting script); the local harness is complete and independently
@@ -41,7 +41,7 @@ library builds and a graph runs on the machine.
 - [x] **M1** One validated operator through the Fleet path — 2026-09-15 (`env/hw/20260915/runs/L1_it1_L0.qkva`)
 - [x] **M2** Layer 1 (MoE) validated end-to-end ← **required milestone** — 2026-09-15: all 16 boundaries PASS, top-k indices exact, route log PASS (`env/hw/20260915/runs/L2_it1`, B5 in `L2_it1_L1.mla_attend_scores`)
 - [x] **M3** N consecutive persistent layers — the 27-layer graph without the head runs 32 iterations (1,822 tasks, 15.6 ms per iteration, `env/hw/20260915/runs/L27_it32`); with the head it produces the reference's first two tokens; layers 0 and 1 validated boundary by boundary, the growth curve of the rest pending
-- [ ] **M4** End-to-end 32-token decode — the 27-layer graph with the head produces the reference's tokens at 1 and 2 iterations ([25], then [25, 16228]); at 32 iterations it faults with an illegal memory access (2026-09-15), with and without event timing and with larger runtime queues; the fault does not need the head: 7, 8 and 9 layers fault at 2 iterations with or without it, 2, 3, 4, 16 and 27 layers run, and 27 layers fault only at the 1,056-position sequence length; deterministic, before the first iteration reports; the signature of a 16-byte vector access on a buffer whose base address moves with the allocation size, first suspect the 513-float rows of the split-KV partials (`docs/hw-collection/03-lessons-and-ideas.md`, item 14; the padding test is the first task of the next session)
+- [ ] **M4** End-to-end 32-token decode — the 27-layer graph with the head produces the reference's tokens at 1 and 2 iterations ([25], then [25, 16228]); at 32 iterations it faults with an illegal memory access (2026-09-15), with and without event timing and with larger runtime queues; the fault does not need the head: 7, 8 and 9 layers fault at 2 iterations with or without it, 2, 3, 4, 16 and 27 layers run, and 27 layers fault only at the 1,056-position sequence length; deterministic, before the first iteration reports; the signature of a 16-byte vector access on a buffer whose base address moves with the allocation size, first suspect the 513-float rows of the split-KV partials (`docs/gpu-bringup/03-lessons-and-ideas.md`, item 14; the padding test is the first task of the next session)
 - [ ] **M5** FP8 (stretch)
 
 ---
@@ -180,7 +180,7 @@ Test suite: `.venv/bin/python -m pytest harness/tests fleet/tests -q` (66 tests)
 The hour of measurements that precedes the build ran on Hot Aisle VM
 `enc1-gpuvm005` (ROCm 7.2.4, hipcc 7.2.53211, two MI300X VF devices, device 0
 used). Record and readings: `env/hw/20260915/`, summarised in
-`docs/hw-collection/README.md`.
+`docs/gpu-bringup/README.md`.
 
 **Day 1, in order — each gates the next:**
 

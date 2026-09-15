@@ -10,7 +10,7 @@ instead of spending 20 minutes in `env/setup.sh`. Target name:
 Status on 2026-09-16: **not yet pushed.** Four builds ran on the first VM;
 the first three failed for the reasons below, each fixed in the tree; the
 fourth was still building when this was written. Whether it landed is in
-`docs/hw-collection/04-session-log.md` and the GHCR package list
+`docs/gpu-bringup/04-session-log.md` and the GHCR package list
 (`gh api /user/packages?package_type=container`).
 
 ## Why the builds failed
@@ -21,7 +21,7 @@ fourth was still building when this was written. Whether it landed is in
 | 2 | `fatal error: 'rocblas/rocblas.h' file not found` in the Fleet build | `rocm/dev-ubuntu-24.04:7.2` ships the compiler and runtime, not the rocBLAS and hipBLAS development headers the Fleet build includes and links; the VM host has them as packages | `apt-get install rocblas-dev hipblas-dev rocprofiler-sdk rocprofiler-sdk-roctx amd-smi-lib` in the Dockerfile (names from the host's `dpkg -l`, `env/hw/20260915/raw/dpkg-rocm.txt`) |
 | 3 | build succeeded, `import mirage` failed: `libz3.so.5.1: cannot open shared object file` | the same failure as the VM's first build: pip's isolated build environment installs the newest z3-solver (unpinned in Fleet's `pyproject` build requirements) and the extension links against it, while the venv holds the pinned 4.15; `PIP_CONSTRAINT` on the build did not change the outcome | `setup.sh` builds with `--no-build-isolation`, so the build sees the venv's own cmake, cython, setuptools, graphviz and z3 4.15, and the venv's `z3/lib` is on the loader path through `activate` |
 | 3b | with `--no-build-isolation`: `BackendUnavailable: Cannot import 'hatchling.build'` | without isolation, every dependency built from source needs its backend in the venv; `tg4perfetto`, which Fleet installs from git, builds with hatchling | `hatchling` and `graphviz` added to `env/requirements-fleet.txt` |
-| 4 | in progress at the time of writing | | |
+| 4 | stopped before completion: the VM was deleted at the end of the session with the build 2 minutes into `setup.sh` | | next session builds it first |
 
 Each attempt costs about 8 minutes up to the Fleet build (torch is 6.2 GB
 per venv, downloaded twice, plus the rustup and cargo build of Fleet's two
@@ -63,7 +63,7 @@ on GHCR); start it with at least 30 minutes of balance left.
 
 ## Using it
 
-`docs/hw-collection/05-next-session.md`, "On the VM": pull, run with
+`docs/gpu-bringup/05-next-session.md`, "On the VM": pull, run with
 `--device=/dev/kfd --device=/dev/dri --group-add video --group-add render
 --security-opt seccomp=unconfined`, mount the Hugging Face cache and the
 fresh repo tree, rsync the code in, and the graphs run. Rebuild the image

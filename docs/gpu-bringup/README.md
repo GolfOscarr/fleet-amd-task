@@ -1,9 +1,11 @@
-# Hardware collection
+# GPU bring-up
 
-The first hour of GPU access: every machine assumption the design makes,
-measured on the Hot Aisle MI300X VM and committed before the VM is
-deleted. Written 2026-09-15, after access was granted and before the
-first VM was created.
+Stage 4 of `PROGRESS.md`: the first sessions on the MI300X. The set
+holds the plan and checklist for the hour of measurements that precedes
+the build, what those measurements found, the log of every run of the
+first sessions (gate 1, M1 to M3, the timing, the image builds) with
+every failure and its fix, the lessons and ideas, and the quick start
+for the next session. Written from 2026-09-15 on.
 
 | File | What |
 |---|---|

@@ -1,4 +1,4 @@
-// stream_read - group E of docs/hw-collection/01-plan.md.
+// stream_read - group E of docs/gpu-bringup/01-plan.md.
 //
 // Achievable read bandwidth: a read-only reduction over a uint4 buffer, with
 // the prefetch depth (how many loads are issued before the first wait) and
