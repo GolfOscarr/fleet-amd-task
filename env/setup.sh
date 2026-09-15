@@ -173,6 +173,20 @@ fi
 git status --short
 
 # ---------------------------------------------------------------------------
+step "5c. scheduler queue indexed by the discovered XCD (fleet/patches/README.md, MIN-25)"
+# The dispatcher placed block k on XCD (k + 4) mod 8 on the first VM
+# (env/hw/20260915, F2-F4); the stock scheduler reads queue k by block id.
+PATCH3="$ROOT/fleet/patches/sched_xcd.patch"
+if git apply --reverse --check "$PATCH3" 2>/dev/null; then
+  echo "already applied"
+else
+  git apply --check "$PATCH3"
+  git apply "$PATCH3"
+  echo "applied"
+fi
+git status --short
+
+# ---------------------------------------------------------------------------
 step "6. build Fleet for gfx942 (gate 1)"
 # Entry point per the repo README: pip install -e . -v with config.cmake (USE_ROCM ON).
 # CMakeLists.txt reads AMDGPU_TARGETS into CMAKE_HIP_ARCHITECTURES (default gfx950).

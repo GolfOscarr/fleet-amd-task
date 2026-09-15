@@ -37,7 +37,7 @@ check "env scripts parse (bash -n)" bash -c 'for f in env/*.sh fleet/tasks/*.sh;
 check "hardware collection script parses (bash -n env/collect_hw.sh)" bash -n env/collect_hw.sh
 check "submodule at the pinned commit 51dce4f" bash -c '[ "$(git -C "$1" rev-parse --short HEAD)" = "51dce4f" ]' _ "$FLEET"
 
-# Both patches, in order, on a clean throwaway worktree of the submodule.
+# The three patches, in order, on a clean throwaway worktree of the submodule.
 patches_apply() {
   local wt
   wt="$(mktemp -d)"
@@ -46,10 +46,12 @@ patches_apply() {
   git -C "$wt" apply --check "$ROOT/fleet/patches/gfx942.patch" || rc=1
   [ $rc = 0 ] && git -C "$wt" apply "$ROOT/fleet/patches/gfx942.patch" || rc=1
   [ $rc = 0 ] && git -C "$wt" apply --check "$ROOT/fleet/patches/new_tasks.patch" || rc=1
+  [ $rc = 0 ] && git -C "$wt" apply "$ROOT/fleet/patches/new_tasks.patch" || rc=1
+  [ $rc = 0 ] && git -C "$wt" apply --check "$ROOT/fleet/patches/sched_xcd.patch" || rc=1
   git -C "$FLEET" worktree remove --force "$wt"
   return $rc
 }
-check "gfx942.patch then new_tasks.patch apply on a clean tree" patches_apply
+check "gfx942.patch, new_tasks.patch, sched_xcd.patch apply in order on a clean tree" patches_apply
 
 if [ "${OFFLINE_COMPILE:-0}" = "1" ]; then
   check "offline gfx942 compile of the patched megakernel (Docker, hipcc 7.0)" bash env/offline_gfx942/run.sh

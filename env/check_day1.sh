@@ -86,11 +86,14 @@ else
     # [SCHED_XCD] sched_id=k xcd=k workers_on_xcd=n block=b
     SCHED_MISMATCH=$(grep "\[SCHED_XCD\]" "$GRAPH_LOG" | awk '{split($2,a,"="); split($3,b,"="); if (a[2]!=b[2]) c++} END{print c+0}')
     WORKERS_TOTAL=$(grep "\[SCHED_XCD\]" "$GRAPH_LOG" | awk '{split($4,a,"="); s+=a[2]} END{print s+0}')
-    # [WORKER_XCD] worker_id=w block=b xcd=x : expect x == w mod 8 for the 8 printed workers
-    WORKER_MISMATCH=$(grep "\[WORKER_XCD\]" "$GRAPH_LOG" | sort -u | awk '{split($2,a,"="); split($4,b,"="); if (a[2]%8!=b[2]) c++} END{print c+0}')
-    echo "schedulers printed: $NSCHED, sched_id!=xcd: $SCHED_MISMATCH, workers summed over schedulers: $WORKERS_TOTAL, worker mod 8 != xcd: $WORKER_MISMATCH"
+    # [WORKER_XCD] worker_id=w block=b xcd=x : expect x == (w + c) mod 8 for one
+    # constant c over the 8 printed workers (c = 4 on the first VM, env/hw/20260915
+    # F2; the design needs consecutive workers on distinct XCDs, not c = 0)
+    WORKER_OFFSET=$(grep "\[WORKER_XCD\]" "$GRAPH_LOG" | sort -u | awk '{split($2,a,"="); split($4,b,"="); print ((b[2]-a[2])%8+8)%8; exit}')
+    WORKER_MISMATCH=$(grep "\[WORKER_XCD\]" "$GRAPH_LOG" | sort -u | awk -v c="${WORKER_OFFSET:-0}" '{split($2,a,"="); split($4,b,"="); if ((a[2]+c)%8!=b[2]) k++} END{print k+0}')
+    echo "schedulers printed: $NSCHED, sched_id!=xcd: $SCHED_MISMATCH, workers summed over schedulers: $WORKERS_TOTAL, worker offset c=$WORKER_OFFSET, worker (w+c) mod 8 != xcd: $WORKER_MISMATCH"
     if [ "$NSCHED" = "8" ] && [ "$SCHED_MISMATCH" = "0" ] && [ "$WORKERS_TOTAL" = "296" ] && [ "$WORKER_MISMATCH" = "0" ]; then
-      result PASS "3 XCD placement: 8 schedulers on their XCDs, 296 workers, worker mod 8 == xcd"
+      result PASS "3 XCD placement: 8 schedulers on their XCDs, 296 workers, xcd == (worker + $WORKER_OFFSET) mod 8"
     else
       result FAIL "3 XCD placement: schedulers=$NSCHED mismatches=$SCHED_MISMATCH workers=$WORKERS_TOTAL worker-mismatches=$WORKER_MISMATCH (MIN-25)"
     fi

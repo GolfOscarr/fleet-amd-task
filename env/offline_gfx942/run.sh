@@ -26,6 +26,7 @@ git -C "$FLEET" archive --format=tar HEAD | tar -x -C "$WORK" --one-top-level=fl
   || { mkdir -p "$WORK/fleet" && git -C "$FLEET" archive --format=tar HEAD | tar -x -C "$WORK/fleet"; }
 patch -p1 -s -d "$WORK/fleet" < "$ROOT/fleet/patches/gfx942.patch"
 patch -p1 -s -d "$WORK/fleet" < "$ROOT/fleet/patches/new_tasks.patch"
+patch -p1 -s -d "$WORK/fleet" < "$ROOT/fleet/patches/sched_xcd.patch"
 cp "$ROOT"/fleet/tasks/mi300/*.cuh "$WORK/fleet/include/mirage/persistent_kernel/tasks/mi300/"
 
 echo "== composable_kernel at $CK_COMMIT and json at $JSON_COMMIT"
@@ -132,7 +133,7 @@ cat "$HERE/fences.txt"
 # One table per variant: every kernel's registers, spills, LDS, occupancy.
 {
   echo "# Offline gfx942 compile, $(date -u +%Y-%m-%dT%H:%M:%SZ), $(cat "$WORK/out/hipcc.txt" | tr '\n' ' ')"
-  echo "# fleet 51dce4f + gfx942.patch + new_tasks.patch; composable_kernel $CK_COMMIT; json $JSON_COMMIT"
+  echo "# fleet 51dce4f + gfx942.patch + new_tasks.patch + sched_xcd.patch; composable_kernel $CK_COMMIT; json $JSON_COMMIT"
   for v in mk_ours mk_ckfmha mk_debugscores kernel_tests kernel_tests_debug; do
     echo; echo "## $v (hipcc exit $(cat "$WORK/out/$v.rc"))"
     grep -E "Function Name|    VGPRs:|AGPRs|SGPRs Spill|VGPRs Spill|LDS Size|ScratchSize|Occupancy" "$WORK/out/$v.log" \

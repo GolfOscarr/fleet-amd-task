@@ -38,6 +38,22 @@ Item L13 of `docs/design-doc/10-local-work.md`; the problems are
   not instantiated there, so their device code is first generated on the
   machine. Both patches were parsed by the real compiler, not only applied.
 
+## `sched_xcd.patch` (MIN-25: the scheduler reads the queue of its own XCD)
+
+One hunk in `include/mirage/persistent_kernel/persistent_kernel.cuh`,
+`execute_scheduler`. The stock code sets `sched_id = blockIdx.x + offset` and
+reads `sched_queues[sched_id]`, on the comment "scheduler_kernel block k runs
+on XCD k". Workers signal `sched_queues[xcd_id]` (`get_rand_sched_id`). On
+the first VM the dispatcher placed block k on XCD (k + 4) mod 8, on every
+grid and every launch (`env/hw/20260915/summary.md` F2 to F4), so each
+scheduler read a queue written from another XCD through a channel that has
+no fence. With the patch a local scheduler on AMD, when `worker_xcd_map` is
+allocated, takes `sched_id` from `HW_REG_XCC_ID`; the 8 scheduler blocks
+cover the 8 XCDs once each (F3), so every queue keeps exactly one reader and
+`[SCHED_XCD] sched_id=k xcd=k` holds by construction. `check_day1.sh` check 3
+accepts any constant offset for the worker lines. Applied third, after
+`new_tasks.patch`; the hunk is independent of both.
+
 ## `new_tasks.patch` (L6: the task-registration glue)
 
 Applied after `gfx942.patch` on the same commit:
