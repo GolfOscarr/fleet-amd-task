@@ -71,7 +71,7 @@ is one) runs before any `compare.py`.
 
 ## What to do first, in order of value
 
-1. **The M4 fault** (`04-session-log.md`, last rows; `03` item 14). The
+1. **The M4 fault** (`04-session-log.md`, last rows; `03` item 13). The
    frontier is known: 7, 8 and 9 layers fault in every configuration,
    2, 3, 4, 16 and 27 layers run, and 27 layers fault only at the
    1,056-position sequence length with the head. The variable is what

@@ -40,9 +40,9 @@ env/hw/probes/occupancy.cu        group B (residency and wall-clock rate)
 
 Each probe has a fixed command line, listed in `02-checklist.md`, so two
 people produce the same measurement. `OFFLINE_COMPILE=1 bash env/preflight.sh`
-must be extended to compile all six, and must pass, before the session.
-This is the next local work item on this branch; until it lands, the
-plan is not runnable.
+compiles all six in Docker (`env/hw/probes/compile_offline.sh`) and must
+pass before the session. On 2026-09-15 the whole collection ran in about
+one minute on the VM, plus four for BabelStream.
 
 ## What is produced on the VM
 
@@ -293,22 +293,23 @@ container start is the saved-image plan itself.
 
 ## Procedure on the VM
 
-1. `ssh hotaisle@<ip>`; `git clone --recursive <repo>`; `cd <repo>`.
-   The clone uses HTTPS with a token so that the push in step 6 works
-   from a machine that has no key of its own; `scp -r env/hw/<date>` to
-   the laptop is the fallback.
+1. `ssh hotaisle@<ip>`; the repo goes over by rsync from the laptop (the
+   VM has no GitHub credentials; the command is in `06-agent-guide.md`)
+   and the record comes back the same way, to an absolute path.
 2. Start the model download in the background without depending on the
    venvs, which do not exist yet: `mkdir -p env/logs`, then
-   `python3 -m venv /tmp/hfdl && /tmp/hfdl/bin/pip install huggingface_hub`
-   (a throwaway venv, because `pip install --user` is refused on images
-   with an externally managed system Python), then
+   `python3 -m venv --without-pip /tmp/hfdl && curl -sS https://bootstrap.pypa.io/get-pip.py | /tmp/hfdl/bin/python3 - -q && /tmp/hfdl/bin/pip install huggingface_hub`
+   (a throwaway venv made without `ensurepip`, which the image lacks;
+   `pip install --user` is refused on an externally managed system
+   Python), then
    `nohup /tmp/hfdl/bin/python3 -c "from huggingface_hub import snapshot_download; snapshot_download('deepseek-ai/DeepSeek-Coder-V2-Lite-Base')" > env/logs/download.log 2>&1 &`.
 3. `bash env/collect_hw.sh`. It writes `env/hw/<date>/raw/*`, compiles
    the six probes with the machine's hipcc, and prints the summary table.
 4. Read the summary against `02-checklist.md`. Every MISMATCH gets a line
    in `OPEN-PROBLEMS.md` and the owning `99-open-questions.md`.
-5. `git add env/hw/<date> && git commit && git push` before anything
-   else happens on the VM.
+5. rsync `env/hw/<date>` back to the laptop, `git add` and commit it there
+   before anything else happens on the VM (a laptop dry run of the script
+   on the same UTC date once deleted the record: `collect_hw.sh --out`).
 6. Only then `SKIP_DOWNLOAD=1 bash env/setup.sh` (the download is
    already running) and the rest of `docs/design-doc/11-day1-runbook.md`.
 

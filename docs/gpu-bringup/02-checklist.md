@@ -71,7 +71,7 @@ in `01-plan.md` group E.
 | E1 | Read bandwidth, `full`, 1 GiB, N=8, three runs | `stream_read --occupancy full --size 1G --unroll 8 --repeat 3` | 3.66 to 4.3 TB/s (69 to 81% of 5.3); spread under 3% | the band of `09-expected-performance.md`; `07-achievable-bandwidth.md` |
 | E2 | Read bandwidth at one wave/SIMD versus N | `stream_read --occupancy one --size 1G --unroll N`, N in 1,2,4,8,16,32 | knee at N about 4, plateau within 10% of E1 | Q14, MIN-22 (prefetch depth suffices; no hidden queue limit) |
 | E3 | Same at two waves/SIMD | `stream_read --grid 608 --size 1G --unroll N` (two blocks per CU forced by a 32 KiB LDS request; the occupancy query is printed) | plateau reached at about half the N of E2 (`07-achievable-bandwidth.md`: "at 2 waves/SIMD every figure halves") | the register-limited ceiling the compiler reports (`resources.txt`), an upper bracket; the runtime's occupancy is one wave per SIMD (B10) |
-| E4 | Read bandwidth versus working set | `stream_read --occupancy full --unroll 8 --size W`, W in 4,16,32,64,128,256,512,1024 MiB | step above 32 MiB (L2) and above 256 MiB (Infinity Cache, if it exists) | Q13; whether anything above HBM serves the 31.3 MiB latent cache, read at about 30 MiB per token (MAJ-6) |
+| E4 | Read bandwidth versus working set | `stream_read --occupancy full --unroll 8 --size W --passes 1024/W`, W in 4,16,32,64,128,256,512,1024 MiB (constant loads per thread; the 2026-09-15 record predates `--passes` and its small sizes are launch-bound) | step above 32 MiB (L2) and above 256 MiB (Infinity Cache, if it exists) | Q13; whether anything above HBM serves the 31.3 MiB latent cache, read at about 30 MiB per token (MAJ-6) |
 | E5 | Vendor streaming numbers | HIP BabelStream `-n 50 -s 268435456`, one GPU | Dot at or above 3,660,781 MB/s, Copy at or above 4,177,285 MB/s (AMD acceptance thresholds, `07-achievable-bandwidth.md`) | cross-check of E1; skipped if the source build is not quick |
 | E6 | Host-to-device bandwidth | `rocm-bandwidth-test -a` | INFO | time to upload the 31.4 GB of packed weights in session 2 |
 
@@ -111,9 +111,9 @@ in `01-plan.md` group E.
 
 | # | Check | Command or file | Expected | Settles |
 |---|---|---|---|---|
-| I1 | Counter names present | `rocprofv3 --list-avail` (fallbacks `-L`, `--list-metrics`) grep | `TCC_EA0_RDREQ_sum`, `TCC_EA0_RDREQ_32B_sum`, `TCC_EA0_WRREQ_sum`, `TCC_EA0_WRREQ_64B_sum`, `TCC_HIT_sum`, `TCC_MISS_sum` | `docs/mi300x` Q11; `measure.py parse_pmc` keys |
+| I1 | Counter names present | `rocprofv3 --list-avail` (fallbacks `-L`, `--list-metrics`) grep | `TCC_BUBBLE_sum`, `TCC_EA0_RDREQ_sum`, `TCC_EA0_RDREQ_32B_sum`, `TCC_EA0_WRREQ_sum`, `TCC_EA0_WRREQ_64B_sum`, `TCC_HIT_sum`, `TCC_MISS_sum` | `docs/mi300x` Q11; `measure.py` keys |
 | I2 | Counters readable in the VM | `rocprofv3 --pmc <the six> -- copy_bytes` | non-zero values, no error | whether the traffic column of the report is measured or computed |
-| I3 | Bytes-from-requests arithmetic | both forms against the 1 GiB read and 1 GiB written: the `06-profiling.md` decomposition and `measure.py`'s flat 64 B per request | the decomposition within 5%; the flat form recorded either way, and `measure.py` changed if it is off | `docs/mi300x` Q12 |
+| I3 | Bytes-from-requests arithmetic | both forms against the 1 GiB read and 1 GiB written of `copy_kernel` alone: reads = 128 x `TCC_BUBBLE` + 64 x (`RDREQ` - `BUBBLE` - `RDREQ_32B`) + 32 x `RDREQ_32B` (rocprofv3's own FETCH_SIZE expression), writes = 64 x `WRREQ_64B` + 32 x (`WRREQ` - `WRREQ_64B`); and the flat 64 B per request | the decomposition within 5% each way (exact on 2026-09-15); the flat form recorded, it undercounts reads by 2x | `docs/mi300x` Q12; `measure.py bytes_read`, `bytes_written` |
 | I4 | Kernel trace works | `rocprofv3 --kernel-trace -- copy_bytes` | one dispatch row with a duration | the launches-per-token metric (`measure.py parse_kernel_trace`) |
 | I5 | TCC instance count | number of `TCC_EA0_RDREQ[n]` instances listed | INFO; 16 channels per XCD times 8 XCDs = 128 in SPX (gk); `06-profiling.md`'s "reportedly [0..31]" is the MI200 figure | Q11 |
 

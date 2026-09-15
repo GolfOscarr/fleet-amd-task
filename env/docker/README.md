@@ -23,6 +23,12 @@ fourth was still building when this was written. Whether it landed is in
 | 3b | with `--no-build-isolation`: `BackendUnavailable: Cannot import 'hatchling.build'` | without isolation, every dependency built from source needs its backend in the venv; `tg4perfetto`, which Fleet installs from git, builds with hatchling | `hatchling` and `graphviz` added to `env/requirements-fleet.txt` |
 | 4 | stopped before completion: the VM was deleted at the end of the session with the build 2 minutes into `setup.sh` | | next session builds it first |
 
+The build without isolation (fix 3 and 3b) has not yet run to completion
+anywhere: attempt 4 was stopped with the VM. The first `env/setup.sh` or
+image build of the next session is its test; if `pip install -e .` then
+fails on a missing build backend, the package it names goes into
+`env/requirements-fleet.txt` next to hatchling and graphviz.
+
 Each attempt costs about 8 minutes up to the Fleet build (torch is 6.2 GB
 per venv, downloaded twice, plus the rustup and cargo build of Fleet's two
 crates) and about 15 minutes in total when the build runs to the end.

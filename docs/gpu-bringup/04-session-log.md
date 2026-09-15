@@ -2,7 +2,7 @@
 
 The first two VM sessions, 2026-09-15 UTC, Hot Aisle `enc1-gpuvm005`
 (2x MI300X VF, ROCm 7.2.4, hipcc 7.2.53211, Ubuntu 24.04, Python 3.12,
-26 cores, 440 GiB RAM). One VM, about 3.5 hours, about $11. Every log is
+26 cores, 440 GiB RAM). One VM, about 4.5 hours, $12.56 of the $20 balance. Every log is
 under `env/hw/20260915/logs/`, every run's report under
 `env/hw/20260915/runs/<name>/`, the hardware record in
 `env/hw/20260915/summary.md`. The next session starts from
@@ -54,14 +54,15 @@ under `env/hw/20260915/logs/`, every run's report under
 | 17:12 | `--layers 27 --iters 32 --event-timing` (sequential) | 15.6 ms per iteration; the whole-model profile |
 | 17:15 | frontier runs with the head, sequential: 8 layers at 2 fails; 4 at 4 and 8 pass; 16 at 2 passes; 7 and 9 at 2 fail; 8 without the head at 2, 16, 32 fails; 8 with the head stopped after the first operator passes, stopped after the last MoE operator fails | the fault depends on the layer count, not on the head or the sequence length |
 | 17:20 | `--layers 27 --debug` (growth curve) | aborted: the snapshot copy shares no tensor with its successor (`register_mugraph` assertion) |
-| 17:25 | image build, attempt 4 (hatchling added) | running at the end of the session; `env/docker/README.md` |
+| 17:25 | image build, attempt 4 (hatchling added) | stopped at 17:48 when the VM was deleted, 2 minutes into `setup.sh`; `env/docker/README.md` |
+| 17:48 | VM deleted from the TUI | balance $7.66, rate $0.00 |
 
 ## Failures and fixes
 
 | Failure | Cause | Fix, where |
 |---|---|---|
 | `setup.sh` aborted at the first pip install | the image's `python3 -m venv` has no `ensurepip`, so the venv has no pip; `apt-get install python3.12-venv` 404s without `apt-get update` | `setup.sh` step 2 installs `python3.12-venv` when `ensurepip` is missing (needs sudo, which the `hotaisle` user has) |
-| `import mirage` failed after a successful build: `libz3.so.5.1` not found | pip's isolated build environment installed z3-solver 5.1 (unpinned in Fleet's `pyproject` build requirements) and the extension linked against it; the venv holds the pinned 4.15; neither `z3/lib` is on the loader path | `setup.sh` step 6 builds with `--no-build-isolation` (a `PIP_CONSTRAINT` on the build environment did not change the outcome in the image build), so the extension links the venv's pinned z3; `graphviz` and `hatchling` added to `env/requirements-fleet.txt` as the build backends the venv then has to hold; `export LD_LIBRARY_PATH=<venv>/z3/lib` appended to `.venv-fleet/bin/activate`; the gate check runs from the Fleet directory |
+| `import mirage` failed after a successful build: `libz3.so.5.1` not found | pip's isolated build environment installed z3-solver 5.1 (unpinned in Fleet's `pyproject` build requirements) and the extension linked against it; the venv holds the pinned 4.15; neither `z3/lib` is on the loader path | `setup.sh` step 6 builds with `--no-build-isolation` (a `PIP_CONSTRAINT` on the build environment did not change the outcome in the image build), so the extension links the venv's pinned z3; this form of the build has not yet run to completion anywhere (the VM's build used the manual z3 match, the image's fourth attempt was stopped), so the first `setup.sh` of the next session is its test; `graphviz` and `hatchling` added to `env/requirements-fleet.txt` as the build backends the venv then has to hold; `export LD_LIBRARY_PATH=<venv>/z3/lib` appended to `.venv-fleet/bin/activate`; the gate check runs from the Fleet directory |
 | The Qwen3 smoke graph's JIT failed: `use of undeclared identifier 'paged_attention_minimal_decode'` | the CK split-KV wrapper calls the gfx950-only minimal decode kernel whose include `gfx942.patch` hides; the offline compile had parsed the file without instantiating that wrapper; an `if (false)` guard was not enough, two-phase lookup still needs the name | a `#if defined(__gfx950__)` hunk in `gfx942.patch` sends the one-token step through the CK prefill pipeline; only the smoke graph takes this path |
 | `check_day1.sh` check 3 FAIL: worker mod 8 != xcd | workgroup k lands on XCD (k + c) mod 8, c = 4 in the probe, 5 for the worker kernel and 6 for the scheduler kernel of one process; the runtime's scheduler read queue k by block id | `fleet/patches/sched_xcd.patch`: a local scheduler takes its queue index from `HW_REG_XCC_ID`; check 3 accepts any constant offset per kernel |
 | `check_day1.sh` check 6 UNKNOWN although every counter is listed | `grep -q` closed the pipe early and `pipefail` failed the test; also `rocprofv3 --list-avail` exits 120 with a complete listing | here-strings instead of pipes; the exit code is ignored, the presence of `TCC_` decides |
@@ -74,7 +75,7 @@ under `env/hw/20260915/logs/`, every run's report under
 | A laptop dry run deleted the real record | same UTC date directory; the dry-run cleanup removed it | committed immediately after every copy; `collect_hw.sh --out DIR`; nothing under `env/hw/2*/` is deleted |
 | `pkill -f <pattern>` dropped the SSH session twice | the pattern matched the SSH command line itself | kill by pid from `pgrep -f "^python ..."`; never a pattern that appears in the caller's own command |
 | Queued chains waited forever | `while pgrep -f run_fleet.py` matched the waiting shell itself | anchored patterns; or `setsid nohup` and poll a log line |
-| The 27-layer graph with the head faults at 32 iterations | open; see `03-lessons-and-ideas.md` item 14: not the queues, not the clocks, not event timing; needs a deeper graph and a larger configured iteration count with the head | next session: verbose runtime, bisect on `--layers 2..27 --head --iters 8` |
+| The 27-layer graph with the head faults at 32 iterations | open; see `03-lessons-and-ideas.md` item 13: not the queues, not the clocks, not event timing; needs a deeper graph and a larger configured iteration count with the head | next session: verbose runtime, bisect on `--layers 2..27 --head --iters 8` |
 | Every operator 10 to 100x slower than its bandwidth time | the gang model runs one workgroup per XCD per operator (MAJ-7) | per-tile tasks or multi-workgroup gangs, in the graph builder and the task glue; the next performance step |
 
 ## What each artifact proves

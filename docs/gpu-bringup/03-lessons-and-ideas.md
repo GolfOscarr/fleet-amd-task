@@ -92,14 +92,15 @@ Each idea names the number it rests on and what it would take to try.
    and `calibrate.py`; nothing else changes. Saves about 40 minutes of a
    $5.98 hour per session.
 
-8. **Placement offset is a per-boot fact; read it, never assume it.**
+8. **Placement offset is a per-launch fact; read it, never assume it.**
    Everything that maps work to XCDs must go through `HW_REG_XCC_ID`
    (the runtime does for workers and, with the patch, for schedulers).
    The expert-to-XCD affinity idea of MIN-11 should key on the physical id
    too, and be re-derived at launch.
 
 9. **The clocks idle at 138 MHz engine and 901 MHz memory.** The first
-   iteration of any timed run is slow for that reason alone. The 32-token
+   iteration of any timed run may be slow for that reason (the per-operator
+   times of MAJ-7 are not: they did not move with the clocks held up). The 32-token
    generation should be preceded by a warm-up generation, and the
    measurement matrix should report iteration 0 separately.
 
@@ -116,7 +117,7 @@ Each idea names the number it rests on and what it would take to try.
     later session's setup into a pull. Measure the build time first (the
     watcher on `setup.sh` gives it).
 
-13. **The gang model is the batch-1 bottleneck, not the memory system.**
+12. **The gang model is the batch-1 bottleneck, not the memory system.**
     Measured per-operator times are 20 to 100 times the bandwidth time and
     do not move when the clocks are held up (MAJ-7). One workgroup per
     XCD per operator cannot stream more than about 25 GB/s each; the
@@ -132,8 +133,8 @@ Each idea names the number it rests on and what it would take to try.
     runtime's per-task pointer offsets). Expect an order of magnitude;
     the 4 ms of boundaries (idea 1) then becomes the next term.
 
-14. **The head faults when the run is configured for many iterations,
-    before the first iteration completes.** Facts from the bisection
+13. **A graph of 7, 8 or 9 layers faults; 27 layers fault at the full
+    sequence length with the head; the fault does not need the head.** Facts from the bisection
     (2026-09-15): with the head, 27 layers at 1 and 2 iterations are
     exact ([25], [25, 16228]) and 2 layers at 4 iterations run; 27 layers
     at 32 and 8 layers at 8, 16 and 32 iterations fault with an illegal
@@ -179,7 +180,7 @@ Each idea names the number it rests on and what it would take to try.
     session: `--layers 2 --head` at 8, 16 and 32 iterations, then the
     runtime's verbose mode to name the faulting task.
 
-12. **The E4 working-set sweep needs constant loads per thread.** The
+14. **The E4 working-set sweep needs constant loads per thread.** The
     first version changed code path with size (the reviewer's finding);
     the `--passes` flag fixes it. Re-run E4 alone next session (seconds)
     to get the MALL size from the plateau, which idea 4 would like to know.
