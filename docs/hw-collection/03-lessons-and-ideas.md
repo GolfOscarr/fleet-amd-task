@@ -125,13 +125,21 @@ Each idea names the number it rests on and what it would take to try.
     splits and a prefetch loop. Expect an order of magnitude; the
     boundary cost of idea 1 then becomes the next term.
 
-14. **A 32-iteration run at 27 layers faults; 2 iterations are exact.**
-    The tokens [25, 16228] match the reference, so the decode loop, the
-    cache append and the head are right; the fault is an out-of-bounds
-    that grows with the iteration count at 27 layers and not at 2 or 8.
-    The candidates are the per-iteration event or task counters of the
-    runtime at 1,880 tasks times 32 iterations and the cache row index at
-    position 1,024 + i for a deep layer; bisect by iteration count first.
+14. **The head faults when the run is configured for many iterations,
+    before the first iteration completes.** Facts from the bisection
+    (2026-09-15): with the head, 27 layers at 1 and 2 iterations are
+    exact ([25], [25, 16228]) and 2 layers at 4 iterations run; 27 layers
+    at 32 and 8 layers at 8, 16 and 32 iterations fault with an illegal
+    address before any iteration reports, with and without event timing,
+    and with the runtime's queues raised from 1,024 to 16,384 entries (so
+    the queues are not the cause). Without the head, 27 layers at 4 and
+    2 layers at 32 iterations run. The only build-time quantity that
+    grows with the iteration count is `max_seq_length = 1,024 + K` and
+    the buffers sized from it, and only the head path breaks: the first
+    suspects are the `lm_head` gang tiles, the `argmax_partial` slices
+    and `argmax_reduce`'s `tokens + step + 1` against those sizes. Next
+    session: `--layers 2 --head` at 8, 16 and 32 iterations, then the
+    runtime's verbose mode to name the faulting task.
 
 12. **The E4 working-set sweep needs constant loads per thread.** The
     first version changed code path with size (the reviewer's finding);
