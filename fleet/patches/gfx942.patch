@@ -61,6 +61,34 @@ index 509463e..6f2a06e 100644
      using WarpTile = sequence<WarpM, WarpN, WarpK>;
  
      using GemmShape = TileGemmShape<BlockTile, BlockWarps, WarpTile>;
+diff --git a/include/mirage/persistent_kernel/tasks/mi300/paged_attention_ck_fmha_split_kv_mi300.cuh b/include/mirage/persistent_kernel/tasks/mi300/paged_attention_ck_fmha_split_kv_mi300.cuh
+index 05b1819..e7fbc91 100644
+--- a/include/mirage/persistent_kernel/tasks/mi300/paged_attention_ck_fmha_split_kv_mi300.cuh
++++ b/include/mirage/persistent_kernel/tasks/mi300/paged_attention_ck_fmha_split_kv_mi300.cuh
+@@ -590,6 +590,12 @@ __device__ __forceinline__ void paged_attention_ck_fmha_split_kv_impl(
+ 
+   ck_tile::index_t seqlen_q = query_end - query_start;
+ 
++  // gfx942: paged_attention_minimal_decode needs a gfx950-only MFMA and its
++  // include is guarded in task_header.cuh; the name must not appear at all in
++  // the gfx942 compile, so the one-token step takes the CK prefill pipeline,
++  // which handles seqlen_q == 1 (the day-1 smoke graph only; the DeepSeek
++  // graph runs its own MLA kernels).
++#if defined(__gfx950__)
+   if (seqlen_q == 1) {
+     paged_attention_minimal_decode<T, NUM_QO_PER_KV, HEAD_DIM, PAGE_SIZE,
+         MAX_SEQ_LEN, NUM_KV_CHUNKS, Q_WORKSPACE_STRIDE, KV_CACHE_STRIDE_T,
+@@ -599,7 +605,9 @@ __device__ __forceinline__ void paged_attention_ck_fmha_split_kv_impl(
+         qo_indptr_buffer_ptr, paged_kv_indptr_buffer_ptr,
+         paged_kv_indices_buffer_ptr, paged_kv_last_page_len_buffer_ptr,
+         request_id, kv_head_idx, kv_chunk_idx, scale_s);
+-  } else {
++  } else
++#endif
++  {
+     paged_attention_ck_fmha_prefill<T, NUM_QO_PER_KV, HEAD_DIM, PAGE_SIZE,
+         MAX_SEQ_LEN, NUM_KV_CHUNKS, Q_WORKSPACE_STRIDE, KV_CACHE_STRIDE_T,
+         NUM_KV_HEADS_T>(
 diff --git a/include/mirage/persistent_kernel/tasks/mi300/task_header.cuh b/include/mirage/persistent_kernel/tasks/mi300/task_header.cuh
 index afad1af..9906f75 100755
 --- a/include/mirage/persistent_kernel/tasks/mi300/task_header.cuh

@@ -80,9 +80,19 @@ if ! curl -sSf -o /dev/null "$TORCH_INDEX/torch/" 2>/dev/null; then
 fi
 echo "torch index: $TORCH_INDEX"
 
+# The Hot Aisle image ships python3 without ensurepip (2026-09-15): a venv is
+# created but has no pip and the first install aborts. python3-venv from apt
+# fixes it; apt-get update first, the stale lists 404 on the package.
+if ! python3 -c "import ensurepip" 2>/dev/null; then
+  echo "ensurepip missing: installing python3-venv (needs sudo)"
+  PYMM=$(python3 -c "import sys; print('%d.%d' % sys.version_info[:2])")
+  sudo apt-get update -qq && sudo apt-get install -y -qq "python${PYMM}-venv"
+fi
+
 make_venv() {
   # $1 venv dir, $2 requirements file
-  if [ ! -x "$1/bin/python" ]; then
+  if [ ! -x "$1/bin/pip" ]; then
+    rm -rf "$1"
     python3 -m venv "$1"
   fi
   "$1/bin/python" -m pip install -q --upgrade pip
@@ -199,7 +209,20 @@ BUILD_LOG="$LOGDIR/build.$(date +%Y%m%d-%H%M%S).log"
 deactivate 2>/dev/null || true
 # shellcheck disable=SC1091
 source "$ROOT/.venv-fleet/bin/activate"
-if AMDGPU_TARGETS=gfx942 python -m pip install -e . -v 2>&1 | tee "$BUILD_LOG"; then
+# pip builds in an isolated environment whose z3-solver is unpinned in Fleet's
+# pyproject build-requires: on 2026-09-15 it linked core.so against libz3.so.5.1
+# while the venv held the pinned 4.15, and import failed. The constraint pins
+# the build environment's z3 to the venv's, and the venv's z3/lib goes on the
+# loader path through activate (neither wheel's lib is on it by itself).
+CONSTRAINTS="$LOGDIR/build-constraints.txt"
+"$ROOT/.venv-fleet/bin/python" -m pip freeze 2>/dev/null | grep -i "^z3-solver==" > "$CONSTRAINTS" || echo "z3-solver==4.15" > "$CONSTRAINTS"
+echo "build constraints: $(cat "$CONSTRAINTS")"
+Z3LIB="$ROOT/.venv-fleet/lib/$("$ROOT/.venv-fleet/bin/python" -c 'import sys; print("python%d.%d" % sys.version_info[:2])')/site-packages/z3/lib"
+if ! grep -q "LD_LIBRARY_PATH.*z3/lib" "$ROOT/.venv-fleet/bin/activate"; then
+  echo "export LD_LIBRARY_PATH=$Z3LIB:\${LD_LIBRARY_PATH:-}" >> "$ROOT/.venv-fleet/bin/activate"
+fi
+export LD_LIBRARY_PATH="$Z3LIB:${LD_LIBRARY_PATH:-}"
+if AMDGPU_TARGETS=gfx942 PIP_CONSTRAINT="$CONSTRAINTS" python -m pip install -e . -v 2>&1 | tee "$BUILD_LOG"; then
   BUILD_OK=1
 else
   BUILD_OK=0
@@ -216,7 +239,7 @@ echo "venvs:          .venv (run_reference.py, calibrate.py, reassoc_check.py, m
 echo "                .venv-fleet (run_fleet.py, kernel_tests.py, compare.py, measure.py, the Qwen3 smoke graph)"
 echo "export MIRAGE_HOME=$FLEET AMDGPU_TARGETS=gfx942 before running any graph: the compile"
 echo "step in persistent_kernel.py defaults --offload-arch to gfx950 (run_fleet.py sets it itself)"
-if [ "$BUILD_OK" = "1" ] && "$ROOT/.venv-fleet/bin/python" -c "import mirage" 2>/dev/null; then
+if [ "$BUILD_OK" = "1" ] && (cd "$FLEET" && "$ROOT/.venv-fleet/bin/python" -c "import mirage") 2>/dev/null; then
   echo "GATE 1: PASS - Fleet built for gfx942 and imports"
   echo "next: bash env/check_day1.sh"
 else

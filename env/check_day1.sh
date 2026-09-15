@@ -183,15 +183,19 @@ fi
 step "6. rocprofv3 counters (docs/mi300x/06-profiling.md)"
 AVAIL=""
 for c in "rocprofv3 --list-avail" "rocprofv3 -L" "rocprofv3 --list-metrics"; do
-  if AVAIL=$(bash -c "$c" 2>&1); then echo "[rocprofv3] worked: $c"; break; fi
+  # keep the first listing that names a TCC counter, whatever the exit code
+  # (rocprofv3 7.2 lists counters as "Counter_Name : TCC_EA0_RDREQ" blocks)
+  out=$(bash -c "$c" 2>&1 || true)
+  # here-string, not a pipe: grep -q closes the pipe early and pipefail would fail the test
+  if grep -q "TCC_" <<<"$out"; then AVAIL="$out"; echo "[rocprofv3] worked: $c"; break; fi
   AVAIL=""
 done
 if [ -z "$AVAIL" ]; then
   result UNKNOWN "6 rocprofv3: no listing command worked"
 else
   MISSING=""
-  for ctr in TCC_EA0_RDREQ TCC_EA0_WRREQ TCC_HIT TCC_MISS SQ_LEVEL_WAVES SQ_ACCUM_PREV_HIRES; do
-    if echo "$AVAIL" | grep -q "$ctr"; then echo "   $ctr: yes"; else echo "   $ctr: NO"; MISSING="$MISSING $ctr"; fi
+  for ctr in TCC_EA0_RDREQ TCC_EA0_RDREQ_32B TCC_BUBBLE TCC_EA0_WRREQ TCC_EA0_WRREQ_64B TCC_HIT TCC_MISS SQ_LEVEL_WAVES SQ_ACCUM_PREV_HIRES; do
+    if grep -qw "$ctr" <<<"$AVAIL"; then echo "   $ctr: yes"; else echo "   $ctr: NO"; MISSING="$MISSING $ctr"; fi
   done
   if [ -z "$MISSING" ]; then
     result PASS "6 rocprofv3 counters: all design names present"
