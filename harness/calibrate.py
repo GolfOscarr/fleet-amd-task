@@ -52,7 +52,8 @@ def capture(model, ids, layers, n_rows, s_max):
         cap.store = {k: RR.first_row(v, n_rows) for k, v in cap.store.items()}
     st = RR.capture_step0(model, cap, ids, P, layers, cos, sin, pkv, n_rows=n_rows)
     cap.remove()
-    return st["boundaries"]
+    # to the CPU, where the reference artifacts live and where floors() compares
+    return {k: (v.detach().cpu() if hasattr(v, "detach") else v) for k, v in st["boundaries"].items()}
 
 
 def floors(ref, runs):

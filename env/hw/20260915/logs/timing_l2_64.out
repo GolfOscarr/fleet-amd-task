@@ -1,0 +1,13 @@
+Traceback (most recent call last):
+  File "/home/hotaisle/metalOps/harness/run_fleet.py", line 268, in <module>
+    main()
+  File "/home/hotaisle/metalOps/harness/run_fleet.py", line 214, in main
+    mpk, host, plan = B.build(packed, capture, meta, dims=dims, s_max=s_max, layers=args.layers,
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hotaisle/metalOps/fleet/build_graph.py", line 227, in build
+    dt, host = make_tensors(mpk, plan, packed, capture, meta_for_inputs, torch)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hotaisle/metalOps/fleet/build_graph.py", line 143, in make_tensors
+    assert tuple(src.shape) == t.shape, (t.name, tuple(src.shape), t.shape)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ('cos', (1056, 64), (1088, 64))

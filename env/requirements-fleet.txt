@@ -20,3 +20,5 @@ z3-solver==4.15
 ninja
 cython
 pytest
+graphviz            # a build requirement of Fleet's pyproject; needed because the build runs without isolation
+hatchling           # build backend of tg4perfetto (installed from git by Fleet); needed without build isolation

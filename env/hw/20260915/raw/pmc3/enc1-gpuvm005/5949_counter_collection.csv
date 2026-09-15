@@ -1,0 +1,27 @@
+"Correlation_Id","Dispatch_Id","Agent_Id","Queue_Id","Process_Id","Thread_Id","Grid_Size","Kernel_Id","Kernel_Name","Workgroup_Size","LDS_Block_Size","Scratch_Size","VGPR_Count","Accum_VGPR_Count","SGPR_Count","Counter_Name","Counter_Value","Start_Timestamp","End_Timestamp"
+1,1,"Agent 2",1,5949,5949,262144,3,"fill_kernel(HIP_vector_type<unsigned int, 4u>*, unsigned long)",256,0,0,12,4,32,"TCC_HIT_sum",8391880.000000,6164691689838,6164691980536
+1,1,"Agent 2",1,5949,5949,262144,3,"fill_kernel(HIP_vector_type<unsigned int, 4u>*, unsigned long)",256,0,0,12,4,32,"TCC_MISS_sum",8389465.000000,6164691689838,6164691980536
+2,2,"Agent 2",1,5949,5949,77824,13,"__amd_rocclr_fillBufferAligned",256,0,0,12,4,48,"TCC_HIT_sum",8393128.000000,6164695341181,6164695564125
+2,2,"Agent 2",1,5949,5949,77824,13,"__amd_rocclr_fillBufferAligned",256,0,0,12,4,48,"TCC_MISS_sum",8389277.000000,6164695341181,6164695564125
+3,3,"Agent 2",1,5949,5949,65536,13,"__amd_rocclr_fillBufferAligned",256,0,0,12,4,48,"TCC_HIT_sum",12422.000000,6164695790638,6164695793083
+3,3,"Agent 2",1,5949,5949,65536,13,"__amd_rocclr_fillBufferAligned",256,0,0,12,4,48,"TCC_MISS_sum",8320.000000,6164695790638,6164695793083
+4,4,"Agent 2",1,5949,5949,65536,2,"warmup_kernel(HIP_vector_type<unsigned int, 4u> const*, HIP_vector_type<unsigned int, 4u>*, unsigned long)",256,0,0,8,0,16,"TCC_HIT_sum",11000.000000,6164696001515,6164696003840
+4,4,"Agent 2",1,5949,5949,65536,2,"warmup_kernel(HIP_vector_type<unsigned int, 4u> const*, HIP_vector_type<unsigned int, 4u>*, unsigned long)",256,0,0,8,0,16,"TCC_MISS_sum",16464.000000,6164696001515,6164696003840
+5,5,"Agent 2",1,5949,5949,67108864,1,"copy_kernel(HIP_vector_type<unsigned int, 4u> const*, HIP_vector_type<unsigned int, 4u>*, unsigned long)",256,0,0,8,0,16,"TCC_HIT_sum",8391568.000000,6164696191385,6164696756544
+5,5,"Agent 2",1,5949,5949,67108864,1,"copy_kernel(HIP_vector_type<unsigned int, 4u> const*, HIP_vector_type<unsigned int, 4u>*, unsigned long)",256,0,0,8,0,16,"TCC_MISS_sum",16777296.000000,6164696191385,6164696756544
+6,6,"Agent 2",1,5949,5949,512,11,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_HIT_sum",11.000000,6164696953830,6164696956516
+6,6,"Agent 2",1,5949,5949,512,11,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_MISS_sum",76.000000,6164696953830,6164696956516
+7,7,"Agent 2",1,5949,5949,512,11,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_HIT_sum",11.000000,6164697161580,6164697164427
+7,7,"Agent 2",1,5949,5949,512,11,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_MISS_sum",76.000000,6164697161580,6164697164427
+8,8,"Agent 2",1,5949,5949,512,11,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_HIT_sum",11.000000,6164697348604,6164697351290
+8,8,"Agent 2",1,5949,5949,512,11,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_MISS_sum",76.000000,6164697348604,6164697351290
+9,9,"Agent 2",1,5949,5949,512,11,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_HIT_sum",11.000000,6164697538514,6164697541079
+9,9,"Agent 2",1,5949,5949,512,11,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_MISS_sum",76.000000,6164697538514,6164697541079
+10,10,"Agent 2",1,5949,5949,512,11,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_HIT_sum",11.000000,6164697722049,6164697724615
+10,10,"Agent 2",1,5949,5949,512,11,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_MISS_sum",76.000000,6164697722049,6164697724615
+11,11,"Agent 2",1,5949,5949,512,11,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_HIT_sum",11.000000,6164697919456,6164697922142
+11,11,"Agent 2",1,5949,5949,512,11,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_MISS_sum",76.000000,6164697919456,6164697922142
+12,12,"Agent 2",1,5949,5949,512,11,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_HIT_sum",11.000000,6164698129651,6164698132338
+12,12,"Agent 2",1,5949,5949,512,11,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_MISS_sum",76.000000,6164698129651,6164698132338
+13,13,"Agent 2",1,5949,5949,512,11,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_HIT_sum",11.000000,6164698314991,6164698317477
+13,13,"Agent 2",1,5949,5949,512,11,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_MISS_sum",76.000000,6164698314991,6164698317477

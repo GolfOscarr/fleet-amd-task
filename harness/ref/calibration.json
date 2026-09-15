@@ -1,0 +1,145 @@
+{
+  "what": "BF16 noise floor: rel_err of the reference against itself under a different accumulation order, per boundary and per class (max over boundaries and runs)",
+  "runs": [
+    "B_batch2_row0"
+  ],
+  "smoke": false,
+  "device": "cuda",
+  "torch": "2.14.0+rocm7.2",
+  "transformers": "4.46.3",
+  "platform": "Linux-6.8.0-124-generic-x86_64-with-glibc2.39",
+  "timings_s": {
+    "load": 24.37,
+    "B": 4.83
+  },
+  "floor": {
+    "scores": 0.0026064360668344023,
+    "router": 0.003592693202851592,
+    "logits": 0.04101277443445128,
+    "norm": 0.045298799780918324,
+    "layer": 0.004333725109723548,
+    "gemv": 0.003235070061726544,
+    "rope": 0.005293508401187492,
+    "attention": 0.010010196633014822,
+    "expert": 0.010991134430369365
+  },
+  "threshold_at_4x": {
+    "scores": 0.01042574426733761,
+    "router": 0.014370772811406368,
+    "logits": 0.16405109773780513,
+    "norm": 0.1811951991236733,
+    "layer": 0.017334900438894192,
+    "gemv": 0.012940280246906176,
+    "rope": 0.021174033604749967,
+    "attention": 0.04004078653205929,
+    "expert": 0.04396453772147746
+  },
+  "starting_threshold": {
+    "norm": 0.01,
+    "rope": 0.01,
+    "gemv": 0.02,
+    "scores": 0.03,
+    "attention": 0.03,
+    "router": 0.02,
+    "expert": 0.03,
+    "layer": 0.05,
+    "logits": 0.05
+  },
+  "exact_checks_hold": {
+    "L1.B9.topk_idx": {
+      "B_batch2_row0": true
+    },
+    "head.B16.token": {
+      "B_batch2_row0": true
+    }
+  },
+  "per_boundary": {
+    "L0.B5.scores": {
+      "B_batch2_row0": 5.809200857809267e-05
+    },
+    "L1.B10.topk_w": {
+      "B_batch2_row0": 0.0031591715392418553
+    },
+    "L1.B5.scores": {
+      "B_batch2_row0": 0.0026064360668344023
+    },
+    "L1.B8.router_logits": {
+      "B_batch2_row0": 0.003592693202851592
+    },
+    "head.B15.logits": {
+      "B_batch2_row0": 0.04101277443445128
+    },
+    "L0.B1.norm1": {
+      "B_batch2_row0": 0.0
+    },
+    "L0.B13.layer_out": {
+      "B_batch2_row0": 0.0011218651181029873
+    },
+    "L0.B2.q": {
+      "B_batch2_row0": 0.0
+    },
+    "L0.B3.c_kv": {
+      "B_batch2_row0": 0.0
+    },
+    "L0.B3.k_pe": {
+      "B_batch2_row0": 0.0
+    },
+    "L0.B4.q_pe": {
+      "B_batch2_row0": 0.0
+    },
+    "L0.B6.attn": {
+      "B_batch2_row0": 0.000268514819232791
+    },
+    "L0.B7.x_res_attn": {
+      "B_batch2_row0": 0.00031781217694620476
+    },
+    "L1.B1.norm1": {
+      "B_batch2_row0": 0.001156107055087022
+    },
+    "L1.B11.expert_19": {
+      "B_batch2_row0": 0.010991134430369365
+    },
+    "L1.B11.expert_2": {
+      "B_batch2_row0": 0.009470655519241792
+    },
+    "L1.B11.expert_39": {
+      "B_batch2_row0": 0.00802587169801444
+    },
+    "L1.B11.expert_40": {
+      "B_batch2_row0": 0.009197176827711123
+    },
+    "L1.B11.expert_47": {
+      "B_batch2_row0": 0.009445057173551642
+    },
+    "L1.B11.expert_49": {
+      "B_batch2_row0": 0.010025991020867646
+    },
+    "L1.B12.shared": {
+      "B_batch2_row0": 0.009537783642903187
+    },
+    "L1.B13.layer_out": {
+      "B_batch2_row0": 0.004333725109723548
+    },
+    "L1.B2.q": {
+      "B_batch2_row0": 0.0017950952584516696
+    },
+    "L1.B3.c_kv": {
+      "B_batch2_row0": 0.0022597142175945113
+    },
+    "L1.B3.k_pe": {
+      "B_batch2_row0": 0.005293508401187492
+    },
+    "L1.B4.q_pe": {
+      "B_batch2_row0": 0.0015294054443900414
+    },
+    "L1.B6.attn": {
+      "B_batch2_row0": 0.010010196633014822
+    },
+    "L1.B7.x_res_attn": {
+      "B_batch2_row0": 0.003235070061726544
+    },
+    "head.B14.norm": {
+      "B_batch2_row0": 0.045298799780918324
+    }
+  }
+}

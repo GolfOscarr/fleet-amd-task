@@ -9,7 +9,26 @@ and the command that produced it.
 
 ---
 
-## Q1 — What is the actual workgroup→XCD mapping? `open`
+## Q1 — What is the actual workgroup→XCD mapping? `resolved` (2026-09-15)
+
+**Resolved: round-robin at workgroup granularity, with a constant offset.**
+Probe `env/hw/probes/xcc_map.cu` over 21 launches at grid sizes 296, 8, 304,
+608, 1000 and 37, each run alone and concurrently with a second process
+(`env/hw/20260915/`, VM `enc1-gpuvm005`, ROCm 7.2.4). Every block of every
+launch satisfied
+
+```
+xcd == (blockIdx.x + 4) mod 8
+```
+
+and the per-XCD counts were exactly balanced: 37 blocks each at grid 296, one
+each at grid 8, 38 each at grid 304, and 5,4,4,4,5,5,5,5 at grid 37. The
+mapping was stable across launches and across processes. The offset of 4 is
+constant within a session but is not a constant to build on — it is
+presumably fixed at boot or by the virtual function — so code must read
+`HW_REG_XCC_ID` rather than derive the XCD from `blockIdx`. That is the same
+finding that makes `../fleet/99-open-questions.md` Q10 false on this VM. The
+original question follows.
 
 **Why it matters.** Chiplet-task placement is the whole point of Fleet. If we
 place tasks by assuming `blockIdx.x % 8`, and the real policy differs, we get
@@ -49,9 +68,24 @@ asm volatile ("s_getreg_b32 %0, hwreg(HW_REG_XCC_ID, 0, 16)" : "=s"(xcd_id));
 **Residual check on the machine:** confirm returned values land in 0..7 and that
 all eight appear across a large grid. Folded into Q1.
 
+**Residual check done (2026-09-15).** `env/hw/probes/xcc_map.cu` reads the
+register exactly this way; every value returned was in 0..7 and all eight
+appeared on every launch of 8 blocks or more. The upper 12 bits read zero.
+
 ---
 
-## Q3 — Partition query/set commands `open`
+## Q3 — Partition query/set commands `resolved` (2026-09-15)
+
+**Resolved: the working query is `amd-smi static --partition`, and the VM is
+SPX + NPS1.** Several candidate spellings were tried on VM `enc1-gpuvm005`;
+which ones failed and which one printed the modes is recorded in
+`env/hw/20260915/raw/partition-cmd.txt`, and that query's output is beside
+it in `raw/partition.txt`. Both devices report `ACCELERATOR_PARTITION: SPX`
+and `MEMORY_PARTITION: NPS1`, which is what every measurement in that
+directory was taken under and what the design assumes. The set syntax
+was not exercised: the VM was already in the mode we want, and a virtual
+function is not the place to repartition. Recording the mode in the startup
+assertion still stands as a work item for the runtime path.
 
 **Why it matters.** SPX vs CPX silently changes dispatch, coherence behaviour,
 and available memory. A reboot restores SPX; a prior user may have left it in
@@ -66,7 +100,26 @@ assertion to our startup path.
 
 ---
 
-## Q4 — Does HIP's agent-scope atomic emit the right cache ops? `open`
+## Q4 — Does HIP's agent-scope atomic emit the right cache ops? `resolved` (2026-09-15)
+
+**Resolved: yes, and nothing more.** `env/hw/probes/fence_probe.cu` compiled
+for gfx942 with the VM's hipcc 7.2.53211 and disassembled
+(`env/hw/20260915/`):
+
+| Construct | gfx942 lowering |
+|---|---|
+| agent-scope release fence | `buffer_wbl2 sc1` |
+| agent-scope acquire fence | `buffer_inv sc1` |
+| `__threadfence()` | `buffer_wbl2 sc1` then `buffer_inv sc1`, agent scope |
+| agent-scope atomic load | `sc1` load followed by `buffer_inv sc1` |
+
+Both required instructions appear, in the required order. No `sc0 sc1`
+appears in any of the four kernels, so none of these constructs silently
+takes system scope; the system-scope sites seen in the offline build come
+from the printf and assert hostcall paths instead (`OPEN-PROBLEMS.md`
+MAJ-3). The same result settles `../fleet/99-open-questions.md` Q6. The
+follow-up below, a cross-XCD producer/consumer stress test on the real task
+path, is still worth running. The original question follows.
 
 **Why it matters.** This is the single highest-risk correctness item in the
 project. Per `03-memory-model.md`, cross-XCD visibility needs `buffer_wbl2 sc1`
@@ -85,7 +138,27 @@ fail on stale reads, and run it long enough to trust it.
 
 ---
 
-## Q5 — Cost of `buffer_inv sc1` / `buffer_wbl2 sc1` `open`
+## Q5 — Cost of `buffer_inv sc1` / `buffer_wbl2 sc1` `resolved` (2026-09-15)
+
+**Resolved: a few hundred nanoseconds per fence, uncontended or not.**
+`env/hw/probes/fence_probe.cu` times a store-fence-load loop at agent scope
+against the identical loop at workgroup scope; the difference is the
+cache-operation cost, per iteration (`env/hw/20260915/`):
+
+| Case | Workgroup scope | Agent scope | Difference |
+|---|---|---|---|
+| One workgroup, release | 410 ns | 525 ns | 115 ns |
+| One workgroup, acquire | 756 ns | 894 ns | 137 ns |
+| Eight XCDs, release | 829 ns | 798 ns | none measurable |
+| Eight XCDs, acquire | 673 ns | 991 ns | 317 ns |
+
+Contention across all eight XCDs leaves release unchanged and roughly
+doubles the acquire penalty, to 317 ns. So a release plus acquire pair costs
+at most a few hundred nanoseconds of cache work, and per-operator cross-XCD
+dependencies are affordable. Per-tensor dependencies at this granularity are
+not obviously affordable, and the boundary count remains the term that
+matters (`../design-doc/99-open-questions.md` DQ1). This settles
+`OPEN-PROBLEMS.md` MIN-16. The original question follows.
 
 **Why it matters.** Sets the granularity of the task graph. If an agent-scope
 acquire costs a few hundred nanoseconds, fine-grained per-tensor dependencies
@@ -97,7 +170,25 @@ both uncontended and with 8 XCDs participating.
 
 ---
 
-## Q6 — Real wave slots per SIMD at our register footprint `open`
+## Q6 — Real wave slots per SIMD at our register footprint `resolved, for our footprint` (2026-09-15)
+
+**Resolved: one wave per SIMD, and LDS is what binds, not registers.**
+`env/hw/probes/occupancy.cu` with a 184-VGPR, 256-thread kernel matching the
+worker kernel's footprint (`env/hw/20260915/`):
+
+| Limit applied | Blocks per CU |
+|---|---|
+| registers only | 2 |
+| registers plus the worker kernel's 58,368 B dynamic LDS request | 1 |
+
+A 304-block grid was confirmed co-resident on the 304 CUs, so the
+cooperative launch the design needs does not deadlock at this footprint. One
+256-thread block per CU is four waves over four SIMDs, that is one wave per
+SIMD, which is what `07-achievable-bandwidth.md` already assumes. The
+question the sources could not answer, the per-SIMD physical register file
+size, stays open but is moot for us: the LDS request binds first, and it
+would take a much smaller LDS request before registers became the limit. The
+original question follows.
 
 **Why it matters.** Determines worker count and whether the whole grid is
 co-resident (a non-co-resident graph deadlocks).
@@ -137,11 +228,31 @@ wake-up latency and the L2/EA traffic generated by polling.
 
 ---
 
-## Q9 — ROCm version and library availability on the machine `open`
+## Q9 — ROCm version and library availability on the machine `resolved` (2026-09-15)
 
-**Check.** `rocminfo`, `hipcc --version`, `amd-smi static`, and
-`python -c "import torch; print(torch.__version__, torch.version.hip)"`.
-Commit the output — it is part of the reproducibility claim.
+**Resolved and committed** — the raw `rocminfo`, `hipcc --version` and
+`amd-smi static` output is in `env/hw/20260915/`, summarised in that
+directory's `summary.md`.
+
+The Hot Aisle VM `enc1-gpuvm005` runs ROCm 7.2.4 with hipcc 7.2.53211 and
+presents two AMD Instinct MI300X VF devices; device 0 carried every
+measurement. The device reports 304 CUs over 8 XCDs, 4 SIMDs per CU,
+wavefront 64, 32 waves per CU, 64 KiB LDS, 4 MiB L2 per XCD and 192 GB of
+HBM. `rocminfo` lists no L3 row, which is the negative half of Q13. The
+wall-clock rate is 100,000 kHz, that is 100 MHz, and `s_memrealtime` ticks
+agree with the host clock to within 2%, so the probes' timings are sound.
+
+Clocks and limits: memory 1,300 MHz maximum against 901 MHz idle, engine
+2,100 MHz maximum, 144 W and 46 C at idle. `amd-smi` 25.x has no
+`--throttle` flag, so throttle state has to be inferred from the clock and
+power readings rather than queried.
+
+Host and environment: Xeon Platinum 8470, 26 cores, 440 GiB RAM, 12 TB free;
+Docker with GPU passthrough works, with `rocm/dev-ubuntu-24.04:7.2` seeing
+gfx942 inside the container. The VM was usable about two minutes after
+provisioning and pulled the 30 GB checkpoint in 79 s. The
+`torch.version.hip` half of the check is captured with the Fleet build
+rather than here.
 
 ---
 
@@ -159,7 +270,15 @@ against HF Transformers.
 
 ---
 
-## Q11 — Counter names and TCC instance count `open`
+## Q11 — Counter names and TCC instance count `resolved` (2026-09-15)
+
+**Resolved: `rocprofv3 --list-avail` lists every counter, PMC collection
+works inside the virtual function, and there are 128 TCC instances** — 16
+channels per XCC across the 8 XCCs (`env/hw/20260915/`). Collection inside a
+VF was the real risk, since some counters are host-only on partitioned
+parts, and it is not a problem here. The names used in `06-profiling.md`
+were confirmed against the listing before the copy-kernel validation of Q12
+was run. The original question follows.
 
 **Why it matters.** The TCC counter names in `06-profiling.md` came through a
 summarizer, not verbatim documentation, and the MI200→MI300 prefix change
@@ -170,7 +289,31 @@ erroring loudly.
 
 ---
 
-## Q12 — Validate bytes-from-requests arithmetic `open`
+## Q12 — Validate bytes-from-requests arithmetic `resolved` (2026-09-15)
+
+**Resolved: the decomposition is exact, and it shows the read formula in
+`06-profiling.md` is wrong.** A 1 GiB copy (`env/hw/probes/copy_bytes.cu`)
+under `rocprofv3`, counting the `copy_kernel` rows only
+(`env/hw/20260915/`):
+
+```
+reads  = 128 * TCC_BUBBLE
+       + 64 * (TCC_RDREQ - TCC_BUBBLE - TCC_RDREQ_32B)
+       + 32 * TCC_RDREQ_32B
+writes = 64 * TCC_WRREQ_64B
+       + 32 * (TCC_WRREQ - TCC_WRREQ_64B)
+```
+
+gives exactly 1.0000 GiB of reads and exactly 1.000 GiB of writes against a
+known 1 GiB each way. The raw counts were `TCC_BUBBLE` 8,388,608, `TCC_RDREQ`
+8,388,760, `TCC_RDREQ_32B` 0, `TCC_WRREQ` 16,777,216, all of them 64 B.
+
+**Defect this exposes.** `06-profiling.md` charges a flat 64 B per read
+request and has no 128 B term, so on this traffic, which is almost entirely
+128 B requests, it undercounts reads by a factor of two. That file is not
+edited here; the correction is logged as a work item in `OPEN-PROBLEMS.md`.
+Use the formula above, not the one in `06-profiling.md`, until they agree.
+The original question follows.
 
 **Why it matters.** "Memory traffic" and "achieved bandwidth" are required
 metrics, and the documentation gives no conversion formula — the decomposition
@@ -181,7 +324,34 @@ derived figure matches within a few percent before reporting any real number.
 
 ---
 
-## Q13 — Infinity Cache size, bandwidth, and behaviour `open`
+## Q13 — Infinity Cache size, bandwidth, and behaviour `open, narrowed` (2026-09-15)
+
+**Narrowed: a tier between L2 and HBM exists on this part. Its size and
+bandwidth are still unmeasured.** Pointer-chase latency
+(`env/hw/probes/chase.cu`, `env/hw/20260915/`):
+
+| Working set | Latency |
+|---|---|
+| 1 MiB, inside L2 | 81 ns |
+| 64 MiB | 258 ns |
+| 1 GiB, HBM | 342 ns |
+
+The 64 MiB point sits clearly between the two ends, which is the plateau the
+check predicted, so the memory-side cache is real; the secondary source's
+figure for it was 218 ns. `rocminfo` still lists no L3 row, so the hardware
+does not advertise it. What is open is capacity and bandwidth: all this
+measurement supports is that a 64 MiB working set hits the tier and a 1 GiB
+one does not. Whether the `nt` bit controls allocation into it is DQ5 in
+`../design-doc/99-open-questions.md`, and it is the remaining residency
+candidate for the latent cache (`OPEN-PROBLEMS.md` MAJ-6). The original
+question follows.
+
+**The bandwidth half of the check did not answer it.** The working-set sweep
+in the same probe is launch-bound below 256 MiB, so only the large points are
+bandwidth measurements at all: 3,249 GB/s at 512 MiB and 3,529 GB/s at
+1024 MiB. Both are HBM-rate, and the probe cannot see a plateau at sizes it
+cannot measure. A sweep with the launch cost amortised is what would give the
+capacity number.
 
 **Why it matters.** 256 MB of last-level cache between L2 and HBM would change
 the memory model of the whole design — DeepSeek-V2-Lite's active weights per
@@ -194,7 +364,36 @@ sweep across working-set sizes should show a plateau between L2 (32 MB) and HBM.
 
 ---
 
-## Q14 — Does prefetch depth actually control achieved bandwidth? `open`
+## Q14 — Does prefetch depth actually control achieved bandwidth? `resolved` (2026-09-15)
+
+**Resolved: the knee is at N=4 and the plateau is where predicted, so no
+undocumented queue limit binds before the wave-level one.**
+`env/hw/probes/stream_read.cu`, 1 GiB, full residency
+(`env/hw/20260915/`), at one wave per SIMD, that is 304 blocks:
+
+| Unroll N | Achieved read bandwidth |
+|---|---|
+| 1 | 2,706 GB/s |
+| 2 | 2,410 GB/s |
+| 4 | 4,325 GB/s |
+| 8 | 4,304 GB/s |
+| 16 | 3,787 GB/s |
+| 32 | 4,095 GB/s |
+
+Bandwidth jumps between N=2 and N=4 and is flat at about 4.3 TB/s after it;
+the variation above the knee is run-to-run noise, not a trend. Two waves per
+SIMD gives the same knee at N=4 and a 4,033 GB/s plateau, so the second wave
+buys nothing, which is the conclusion `07-achievable-bandwidth.md` needs.
+The headline read rate at unroll 8 is 3.943 TB/s mean with a 0.32% spread
+across repeats.
+
+**Corroboration.** BabelStream in HIP (`-n 50 -s 268435456`, double) on the
+same VM: Copy 4,319,424 MB/s, Mul 4,231,808, Add 3,894,077, Triad
+4,133,844, Dot 4,038,666. All five are above AMD's acceptance thresholds in
+`07-achievable-bandwidth.md`, and the 3.66 to 4.3 TB/s band that file
+derives holds, so the design's bandwidth term stands as written.
+
+This settles `OPEN-PROBLEMS.md` MIN-22. The original question follows.
 
 **Why.** `07-achievable-bandwidth.md` concludes that 1 wave/SIMD can saturate
 HBM provided each wave keeps 4-8 loads in flight, based on `VMCNT` being 6 bits.

@@ -1,0 +1,84 @@
+== setup.sh 2026-09-15T15:27:50+00:00 on enc1-gpuvm005; log /home/hotaisle/metalOps/env/logs/setup.20260915-152750.log
+
+---- 1. environment record
+[rocminfo] worked: rocminfo | head -40
+[37mROCk module version 6.16.13 is loaded[0m
+=====================    
+HSA System Attributes    
+=====================    
+Runtime Version:         1.18
+Runtime Ext Version:     1.15
+System Timestamp Freq.:  1000.000000MHz
+Sig. Max Wait Duration:  18446744073709551615 (0xFFFFFFFFFFFFFFFF) (timestamp count)
+Machine Model:           LARGE                              
+System Endianness:       LITTLE                             
+Mwaitx:                  DISABLED
+XNACK enabled:           NO
+DMAbuf Support:          YES
+VMM Support:             YES
+
+==========               
+HSA Agents               
+==========               
+*******                  
+Agent 1                  
+*******                  
+  Name:                    Intel(R) Xeon(R) Platinum 8470     
+  Uuid:                    CPU-XX                             
+  Marketing Name:          Intel(R) Xeon(R) Platinum 8470     
+  Vendor Name:             CPU                                
+  Feature:                 None specified                     
+  Profile:                 FULL_PROFILE                       
+  Float Round Mode:        NEAR                               
+  Max Queue Number:        0(0x0)                             
+  Queue Min Size:          0(0x0)                             
+  Queue Max Size:          0(0x0)                             
+  Queue Type:              MULTI                              
+  Node:                    0                                  
+  Device Type:             CPU                                
+  Cache Info:              
+    L1:                      32768(0x8000) KB                   
+  Chip ID:                 0(0x0)                             
+  ASIC Revision:           0(0x0)                             
+  Cacheline Size:          64(0x40)                           
+  Max Clock Freq. (MHz):   0                                  
+[hipcc] worked: hipcc --version
+HIP version: 7.2.53211-97f5574fe2
+AMD clang version 22.0.0git (https://github.com/RadeonOpenCompute/llvm-project roc-7.2.4 26084 f58b06dce1f9c15707c5f808fd002e18c2accf7e)
+Target: x86_64-unknown-linux-gnu
+Thread model: posix
+InstalledDir: /opt/rocm-7.2.4/lib/llvm/bin
+Configuration file: /opt/rocm-7.2.4/lib/llvm/bin/clang++.cfg
+[rocm version] worked: cat /opt/rocm/.info/version
+7.2.4
+[amd-smi version] worked: amd-smi version
+AMDSMI Tool: 26.2.2+97f5574fe2 | AMDSMI Library version: 26.2.2 | ROCm version: 7.2.4 | amdgpu version: 6.16.13 | hsmp version: N/A
+[partition] worked: amd-smi static --partition
+GPU: 0
+    PARTITION:
+        ACCELERATOR_PARTITION: SPX
+        MEMORY_PARTITION: NPS1
+        PARTITION_ID: 0
+
+GPU: 1
+    PARTITION:
+        ACCELERATOR_PARTITION: SPX
+        MEMORY_PARTITION: NPS1
+        PARTITION_ID: 0
+Python 3.12.3
+(no torch/transformers in the system python)
+ROCm version: 7.2.4 (major.minor 7.2)
+
+---- 2. two venvs: .venv (reference, transformers 4.46.3) and .venv-fleet (Fleet, its own pins)
+torch index: https://download.pytorch.org/whl/rocm7.2
+The virtual environment was not created successfully because ensurepip is not
+available.  On Debian/Ubuntu systems, you need to install the python3-venv
+package using the following command.
+
+    apt install python3.12-venv
+
+You may need to use sudo with that command.  After installing the python3-venv
+package, recreate your virtual environment.
+
+Failing command: /home/hotaisle/metalOps/.venv/bin/python3
+

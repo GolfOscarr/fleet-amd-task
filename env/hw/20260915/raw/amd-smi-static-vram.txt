@@ -1,0 +1,17 @@
+GPU: 0
+    VRAM:
+        TYPE: HBM
+        VENDOR: MICRON
+        SIZE: 196288 MB
+        BIT_WIDTH: 2048
+        MAX_BANDWIDTH: 5325 GB/s
+
+GPU: 1
+    VRAM:
+        TYPE: HBM
+        VENDOR: MICRON
+        SIZE: 196288 MB
+        BIT_WIDTH: 2048
+        MAX_BANDWIDTH: 5325 GB/s
+
+

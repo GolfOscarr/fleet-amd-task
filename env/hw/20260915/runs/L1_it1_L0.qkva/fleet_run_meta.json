@@ -1,0 +1,34 @@
+{
+  "layers": 1,
+  "head": false,
+  "iters": 1,
+  "debug": false,
+  "stop_after": "L0.qkva",
+  "s_max": 1025,
+  "n_prompt": 1024,
+  "ops": 3,
+  "tasks": 10,
+  "env": {
+    "MPK_EVENT_TIMING": null,
+    "USE_NT_WEIGHTS": null,
+    "USE_GANG": "1",
+    "AMDGPU_TARGETS": "gfx942",
+    "MPK_DEBUG_SCORES": null
+  },
+  "boundary_keys": [
+    "L0.B1.norm1",
+    "L0.B2.q",
+    "L0.kva",
+    "prologue.embed"
+  ],
+  "output_ids": [
+    0
+  ],
+  "notes": [],
+  "timings_s": {
+    "mpk_wall_s": 0.028692960739135742,
+    "iters": 1,
+    "pack_s": 0.476041316986084,
+    "build_s": 29.582546949386597
+  }
+}

@@ -5,12 +5,33 @@ observation that settles it. Questions inherited from the discovery sets
 keep their original ids; `OPEN-PROBLEMS.md` at the repository root holds the
 consolidated view.
 
-## DQ1 - Per-boundary latency `t_b` `open` - decisive, day 3
+## DQ1 - Per-boundary latency `t_b` `open, narrowed` - decisive, day 3
 
 **Why.** `09-expected-performance.md`: 326 chain boundaries per iteration,
 none overlapped. At 1 us each the boundary term is 28% of the band; at 5 us
 it exceeds it. No source we read measures a release-flush plus
 cross-XCD-atomic plus acquire round trip on MI300X.
+
+**First measured input (2026-09-15).** Two microbenchmarks in
+`env/hw/20260915/` put a floor under `t_b`. A release store on XCD 0 with an
+acquire poll on XCD 1, over 10,000 rounds, costs 703 ns one way. The fence
+work itself adds 115 ns on release and 137 ns on acquire uncontended, 317 ns
+on acquire with all eight XCDs participating
+(`../mi300x/99-open-questions.md` Q5). Release plus hop plus acquire is
+therefore about 0.9 to 1.0 us per boundary before any task-dispatch or
+wake-up cost is counted.
+
+At that rate 326 boundaries cost roughly 300 us, which is 25 to 30% of the
+1,148 to 1,349 us band — the 1 us row of the sensitivity table in
+`09-expected-performance.md`, reached from a lower bound rather than a
+guess. The consequence is decided: the boundary-count reductions in that
+file are worth doing rather than contingent. Reductions 1 and 2, the
+`rmsnorm` and `moe_silu_mul` fusions, take 326 boundaries to 245 and are
+justified by this number alone. Reduction 3, folding `mla_prep` in, keeps
+its own gate of 3 us per boundary, which 0.9 to 1.0 us does not meet. The question stays open because these numbers
+are a microbenchmark floor, not `t_b`; the layer-1 measurement below is
+still the calibration, and it is what says how much dispatch and poll
+latency sits on top.
 
 **Check.** Layer 1 alone in a one-iteration graph: `(T_layer1 - T_bw - T_serial) / 12`
 from `[FWD_PASS]` and the event-timing gaps across the two norm-to-gang
@@ -57,7 +78,16 @@ operator boundaries, and the residency experiment changes meaning.
 twice on the same rows (a debug graph with the op duplicated): a second-pass
 hit rate near zero confirms the invalidate; near one refutes it.
 
-## DQ5 - Does the Infinity Cache exist and does `nt` control its allocation `open` - day 5
+## DQ5 - Does the Infinity Cache exist and does `nt` control its allocation `open, narrowed` - day 5
+
+**First half answered (2026-09-15): it exists.** Pointer-chase latency on
+the VM is 81 ns at a 1 MiB working set, 258 ns at 64 MiB and 342 ns at 1 GiB
+(`env/hw/probes/chase.cu`, `env/hw/20260915/`), so there is a tier between
+L2 and HBM, and it is no longer `secondary` in our sources. Its size is not
+measured: 64 MiB hits it, 1 GiB does not, and `rocminfo` lists no L3 row
+(`../mi300x/99-open-questions.md` Q13). The 30 MiB of cache reads per token
+would fit. The second half, whether `nt` controls allocation into it, is
+untouched and E2 below is still the experiment.
 
 **Why.** The only residency layer left to the cache reads
 (`03-synchronization.md`); its existence on MI300X is `secondary` in our

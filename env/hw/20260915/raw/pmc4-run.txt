@@ -1,0 +1,9 @@
+W20260915 15:21:40.204075 126802426663680 simple_timer.cpp:55] [rocprofv3] tool initialization ::     0.172873 sec
+W20260915 15:21:40.204644 126802426663680 simple_timer.cpp:55] [rocprofv3] '../build/copy_bytes' ::     0.000000 sec
+W20260915 15:21:40.247314 126802426663680 tool.cpp:2422] HSA version 8.20.4 initialized (instance=0)
+W20260915 15:21:40.297571 126802426663680 simple_timer.cpp:55] [rocprofv3] '../build/copy_bytes' ::     0.092927 sec
+E20260915 15:21:40.305461 126802426663680 output_stream.cpp:111] Opened result file: raw/pmc4/enc1-gpuvm005/6693_counter_collection.csv
+E20260915 15:21:40.312117 126802426663680 output_stream.cpp:111] Opened result file: raw/pmc4/enc1-gpuvm005/6693_agent_info.csv
+W20260915 15:21:40.313793 126802426663680 simple_timer.cpp:55] [rocprofv3] output generation ::     0.015670 sec
+W20260915 15:21:40.313820 126802426663680 simple_timer.cpp:55] [rocprofv3] tool finalization ::     0.015702 sec
+copy_bytes bytes=1073741824 ms=0.707943 gbps=3033.413

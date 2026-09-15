@@ -29,14 +29,14 @@ check() {
 }
 
 check "python venv present ($PY)" test -x "$PY"
-check "test suite (harness/tests fleet/tests)" "$PY" -m pytest harness/tests fleet/tests -q
+check "test suite (harness/tests fleet/tests env/hw/tests)" "$PY" -m pytest harness/tests fleet/tests env/hw/tests -q
 check "prompt ids match the pinned source (make_prompt.py --check)" "$PY" harness/make_prompt.py
 check "graph builder dry run (326 ops / 1,880 tasks)" "$PY" fleet/build_graph.py --dry-run --layers 27
 check "kernel syntax against the stub headers (check_syntax.sh)" bash fleet/tasks/check_syntax.sh
-check "env scripts parse (bash -n)" bash -c 'for f in env/*.sh fleet/tasks/*.sh; do bash -n "$f" || exit 1; done'
+check "env scripts parse (bash -n)" bash -c 'for f in env/*.sh env/hw/probes/*.sh fleet/tasks/*.sh; do bash -n "$f" || exit 1; done'
 check "submodule at the pinned commit 51dce4f" bash -c '[ "$(git -C "$1" rev-parse --short HEAD)" = "51dce4f" ]' _ "$FLEET"
 
-# Both patches, in order, on a clean throwaway worktree of the submodule.
+# The three patches, in order, on a clean throwaway worktree of the submodule.
 patches_apply() {
   local wt
   wt="$(mktemp -d)"
@@ -45,13 +45,16 @@ patches_apply() {
   git -C "$wt" apply --check "$ROOT/fleet/patches/gfx942.patch" || rc=1
   [ $rc = 0 ] && git -C "$wt" apply "$ROOT/fleet/patches/gfx942.patch" || rc=1
   [ $rc = 0 ] && git -C "$wt" apply --check "$ROOT/fleet/patches/new_tasks.patch" || rc=1
+  [ $rc = 0 ] && git -C "$wt" apply "$ROOT/fleet/patches/new_tasks.patch" || rc=1
+  [ $rc = 0 ] && git -C "$wt" apply --check "$ROOT/fleet/patches/sched_xcd.patch" || rc=1
   git -C "$FLEET" worktree remove --force "$wt"
   return $rc
 }
-check "gfx942.patch then new_tasks.patch apply on a clean tree" patches_apply
+check "gfx942.patch, new_tasks.patch, sched_xcd.patch apply in order on a clean tree" patches_apply
 
 if [ "${OFFLINE_COMPILE:-0}" = "1" ]; then
   check "offline gfx942 compile of the patched megakernel (Docker, hipcc 7.0)" bash env/offline_gfx942/run.sh
+  check "offline gfx942 compile of the six hardware probes (Docker, hipcc 7.0)" bash env/hw/probes/compile_offline.sh
 fi
 
 echo

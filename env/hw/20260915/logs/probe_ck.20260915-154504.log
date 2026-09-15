@@ -1,0 +1,75 @@
+clang++: warning: argument unused during compilation: '--hip-link' [-Wunused-command-line-argument]
+In file included from /home/hotaisle/metalOps/env/probe_ck_fmha_576_512.cpp:19:
+/opt/rocm-7.2.4/lib/llvm/bin/../../../include/ck_tile/ops/fmha/pipeline/tile_fmha_shape.hpp:65:75: error: no member named 'tensor_layout' in namespace 'ck_tile'
+   65 |                                                                  ck_tile::tensor_layout::gemm::RowMajor,
+      |                                                                  ~~~~~~~~~^
+In file included from /home/hotaisle/metalOps/env/probe_ck_fmha_576_512.cpp:21:
+/opt/rocm-7.2.4/lib/llvm/bin/../../../include/ck_tile/ops/fmha/pipeline/block_fmha_pipeline_problem.hpp:253:49: error: no member named 'tensor_layout' in namespace 'ck_tile'
+  253 |                                        ck_tile::tensor_layout::gemm::RowMajor,
+      |                                        ~~~~~~~~~^
+/home/hotaisle/metalOps/env/probe_ck_fmha_576_512.cpp:45:31: error: too many template arguments for class template 'TileFmhaFwdSplitKVTraits'
+   45 | using DecodeTraits = ck_tile::TileFmhaFwdSplitKVTraits<
+      |                               ^
+   46 |     true, true, false, false, false,
+   47 |     ck_tile::BlockAttentionBiasEnum::NO_BIAS,
+   48 |     false, true, false, true, true,
+   49 |     true,   // kMergeNumHeadGroupsSeqLenQ
+   50 |     -1, false>;
+      |         ~~~~~~
+/opt/rocm-7.2.4/lib/llvm/bin/../../../include/ck_tile/ops/fmha/pipeline/tile_fmha_traits.hpp:98:8: note: template is declared here
+   85 | template <bool kPadSeqLenQ_ /* padding for seqlen_q */,
+      | ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   86 |           bool kPadSeqLenK_ /* padding for seqlen_k */,
+      |           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   87 |           bool kPadHeadDimQ_ /* paddding for hdim_q */,
+      |           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   88 |           bool kPadHeadDimV_ /* paddding for hdim_v */,
+      |           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   89 |           bool kHasLogitsSoftCap_,
+      |           ~~~~~~~~~~~~~~~~~~~~~~~~
+   90 |           BlockAttentionBiasEnum BiasEnum_,
+      |           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   91 |           bool kHasBiasGrad_,
+      |           ~~~~~~~~~~~~~~~~~~~
+   92 |           bool kStoreLSE_, /* set to true if either num_splits > 1 or fwd training is running */
+      |           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   93 |           bool kDoFp8StaticQuant_,
+      |           ~~~~~~~~~~~~~~~~~~~~~~~~
+   94 |           bool kIsPagedKV_,
+      |           ~~~~~~~~~~~~~~~~~
+   95 |           bool kHasUnevenSplits_,
+      |           ~~~~~~~~~~~~~~~~~~~~~~~
+   96 |           bool kMergeNumHeadGroupsSeqLenQ_ = false,
+      |           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   97 |           index_t kBlockPerCu_             = -1 /* overwrite occupancy if not -1 */>
+      |           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   98 | struct TileFmhaFwdSplitKVTraits
+      |        ^
+/home/hotaisle/metalOps/env/probe_ck_fmha_576_512.cpp:57:42: error: use of undeclared identifier 'DecodeTraits'
+   57 |     ShapeMla, true, Variant, DecodeMask, DecodeTraits>;
+      |                                          ^~~~~~~~~~~~
+/home/hotaisle/metalOps/env/probe_ck_fmha_576_512.cpp:59:77: error: use of undeclared identifier 'ProblemMla'
+   59 | using PipelineMla = ck_tile::BlockFmhaFwdSplitKVPipelineNWarpSShuffleQRKSVS<ProblemMla>;
+      |                                                                             ^~~~~~~~~~
+/home/hotaisle/metalOps/env/probe_ck_fmha_576_512.cpp:67:23: error: use of undeclared identifier 'PipelineMla'
+   67 | constexpr int kSmem = PipelineMla::GetSmemSize();
+      |                       ^
+/home/hotaisle/metalOps/env/probe_ck_fmha_576_512.cpp:68:15: error: static assertion expression is not an integral constant expression
+   68 | static_assert(kSmem > 0, "pipeline reports no LDS");
+      |               ^~~~~~~~~
+/home/hotaisle/metalOps/env/probe_ck_fmha_576_512.cpp:68:15: note: initializer of 'kSmem' is unknown
+/home/hotaisle/metalOps/env/probe_ck_fmha_576_512.cpp:67:15: note: declared here
+   67 | constexpr int kSmem = PipelineMla::GetSmemSize();
+      |               ^
+/home/hotaisle/metalOps/env/probe_ck_fmha_576_512.cpp:69:15: error: static assertion expression is not an integral constant expression
+   69 | static_assert(kSmem <= kMaxDynamicSmem,
+      |               ^~~~~~~~~~~~~~~~~~~~~~~~
+/home/hotaisle/metalOps/env/probe_ck_fmha_576_512.cpp:69:15: note: initializer of 'kSmem' is unknown
+/home/hotaisle/metalOps/env/probe_ck_fmha_576_512.cpp:67:15: note: declared here
+   67 | constexpr int kSmem = PipelineMla::GetSmemSize();
+      |               ^
+/home/hotaisle/metalOps/env/probe_ck_fmha_576_512.cpp:81:40: error: use of undeclared identifier 'PipelineMla'
+   81 | __global__ void probe_kernel() { touch<PipelineMla>(); }
+      |                                        ^~~~~~~~~~~
+9 errors generated when compiling for host.
+failed to execute:/opt/rocm/lib/llvm/bin/clang++  --offload-arch=gfx942 -O3 --driver-mode=g++ -O3 --hip-link  -fsyntax-only -std=c++17 -DCK_TILE_FMHA_FWD_FAST_EXP2=1 -I/opt/rocm/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include/mirage/persistent_kernel -x hip /home/hotaisle/metalOps/env/probe_ck_fmha_576_512.cpp

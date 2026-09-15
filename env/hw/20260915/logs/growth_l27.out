@@ -1,0 +1,2 @@
+python: /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/kernel/runtime.cc:535: void mirage::kernel::register_mugraph(const mirage::kernel::Graph &, int, int, std::vector<FullTaskDesc> &, std::vector<EventDesc> &, std::vector<TaskId> &, std::map<kernel::KNOperator *, std::map<dim3, TaskId, Dim3Comparator>> &, const std::unordered_map<const kn::KNOperator *, std::tuple<int, int, TaskType, int>> &): Assertion `num_shared_tensors >= 1' failed.
+timeout: the monitored command dumped core

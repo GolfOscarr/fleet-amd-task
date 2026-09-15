@@ -174,7 +174,9 @@ def test_rows():
     assert K.row_bf16("x", got, exp)["ok"]
     got[7] = bf1(exp[7] + abs(exp[7]) * 2 ** -8)                  # one BF16 ulp up
     assert got[7] != exp[7] and K.row_bf16("x", got, exp)["ok"]
-    got[7] = bf1(exp[7] * (1 + 4 * 2 ** -8))                      # four ulps of that element
+    j = int(np.argmax(np.abs(exp)))                              # the largest element: no cancellation slack
+    got[7] = exp[7]
+    got[j] = bf1(exp[j] * (1 + 8 * 2 ** -8))                      # four ulps of the largest element
     assert not K.row_bf16("x", got, exp)["ok"]
     got = exp.copy()
     k = int(np.argmin(np.abs(exp)))                              # a small element: its own ulp, not the array's

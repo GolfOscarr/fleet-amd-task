@@ -12,7 +12,9 @@ Inputs (all optional; what is present is reported):
                         written by PersistentKernel when MPK_EVENT_TIMING=1
   plan.json             the operator list of the run (fleet/build_graph.py dry-run format)
   rocprof kernel trace  --kernel-trace CSV: dispatches per generation
-  rocprof pmc CSV       --pmc CSV with TCC_EA0_RDREQ_sum, TCC_EA0_WRREQ_sum, TCC_HIT_sum, TCC_MISS_sum
+  rocprof pmc CSV       --pmc CSV with TCC_BUBBLE_sum, TCC_EA0_RDREQ_sum, TCC_EA0_RDREQ_32B_sum,
+                        TCC_EA0_WRREQ_sum, TCC_EA0_WRREQ_64B_sum, TCC_HIT_sum, TCC_MISS_sum
+                        (two counters per rocprofv3 run; concatenate or pass the run directory)
   wall.json             {"mpk_wall_s": ..., "iters": K} from run_fleet.py
 
     python harness/measure.py --run harness/fleet_out [--kernel-trace k.csv] [--pmc p.csv]
@@ -29,7 +31,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import common  # noqa: E402
 
 FWD_RE = re.compile(r"\[FWD_PASS\] iter=(\d+) time_ms=([0-9.]+) num_active_tokens=(\d+)")
-BYTES_PER_REQUEST = 64          # validated against a copy kernel of known size on day 1 (09, metrics table)
 TICK_US = 0.01                  # the event-timing clock is 100 MHz (persistent_kernel.py:_read_event_timing)
 
 PREDICTED = {
@@ -121,15 +122,39 @@ def parse_pmc(path):
     return sums
 
 
+def bytes_read(c):
+    """Bytes fetched, by rocprofv3's own FETCH_SIZE expression on MI300.
+
+    A read is a 128-byte request counted by TCC_BUBBLE; what is left of
+    TCC_EA0_RDREQ after the 128 B and the 32 B requests are removed is 64 B
+    each. The flat 64 B per request this file used until the day-1 collection
+    reported half the real traffic: measured on the VM against a copy of known
+    size, TCC_BUBBLE 8,388,608 and TCC_EA0_RDREQ 8,388,760 are 1.0000 GiB,
+    while 64 x TCC_EA0_RDREQ is 0.5000 GiB (env/hw/20260915/summary.md, I3).
+    """
+    bubble, rdreq = c.get("TCC_BUBBLE_sum"), c.get("TCC_EA0_RDREQ_sum")
+    rd32 = c.get("TCC_EA0_RDREQ_32B_sum")
+    if bubble is None or rdreq is None or rd32 is None:
+        return None
+    return 128 * bubble + 64 * (rdreq - bubble - rd32) + 32 * rd32
+
+
+def bytes_written(c):
+    """Bytes written: 64 B per 64-byte request, 32 B for the rest."""
+    wrreq, wr64 = c.get("TCC_EA0_WRREQ_sum"), c.get("TCC_EA0_WRREQ_64B_sum")
+    if wrreq is None or wr64 is None:
+        return None
+    return 64 * wr64 + 32 * (wrreq - wr64)
+
+
 def traffic_from_counters(c, iters):
-    rd = c.get("TCC_EA0_RDREQ_sum")
-    wr = c.get("TCC_EA0_WRREQ_sum")
     hit, miss = c.get("TCC_HIT_sum"), c.get("TCC_MISS_sum")
     out = {}
-    if rd is not None:
-        out["read_MiB_per_iteration"] = rd * BYTES_PER_REQUEST / 2**20 / iters
-    if wr is not None:
-        out["write_MiB_per_iteration"] = wr * BYTES_PER_REQUEST / 2**20 / iters
+    reads, writes = bytes_read(c), bytes_written(c)
+    if reads is not None:
+        out["read_MiB_per_iteration"] = reads / 2**20 / iters
+    if writes is not None:
+        out["write_MiB_per_iteration"] = writes / 2**20 / iters
     if hit is not None and miss is not None and hit + miss > 0:
         out["l2_hit_rate"] = hit / (hit + miss)
     return out
@@ -223,8 +248,13 @@ def report_table(m):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--run", required=True, help="run_fleet.py output directory")
-    ap.add_argument("--kernel-trace", default=None)
-    ap.add_argument("--pmc", default=None)
+    ap.add_argument("--kernel-trace", default=None,
+                    help="rocprofv3 --kernel-trace CSV")
+    ap.add_argument("--pmc", default=None,
+                    help="rocprofv3 --pmc CSV. Traffic needs TCC_BUBBLE_sum, "
+                         "TCC_EA0_RDREQ_sum and TCC_EA0_RDREQ_32B_sum for reads "
+                         "and TCC_EA0_WRREQ_sum with TCC_EA0_WRREQ_64B_sum for "
+                         "writes; a read is a 128 B request counted by TCC_BUBBLE")
     args = ap.parse_args()
     m = measure(Path(args.run), args.kernel_trace, args.pmc)
     out = Path(args.run)

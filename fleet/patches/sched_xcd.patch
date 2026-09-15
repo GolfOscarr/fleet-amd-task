@@ -1,0 +1,29 @@
+diff --git a/include/mirage/persistent_kernel/persistent_kernel.cuh b/include/mirage/persistent_kernel/persistent_kernel.cuh
+index 7961830..8c8a08d 100755
+--- a/include/mirage/persistent_kernel/persistent_kernel.cuh
++++ b/include/mirage/persistent_kernel/persistent_kernel.cuh
+@@ -1397,7 +1397,24 @@ __device__ __forceinline__ void execute_scheduler(RuntimeConfig config,
+       config.num_local_schedulers + config.num_remote_schedulers;
+   // CANNOT use syncthreads below — only thread 0 runs the scheduler
+   if (threadIdx.x == 0) {
++#if defined(__HIP_PLATFORM_AMD__) || defined(MIRAGE_AMD_MI300)
++    // The dispatcher places block k on XCD (k + c) mod 8 for a constant c that
++    // is not always 0 (c = 4 measured on an MI300X VF, env/hw/20260915). A
++    // worker signals the queue of its own XCD (get_rand_sched_id), so a local
++    // scheduler must read the queue of the XCD it actually runs on, not of
++    // its block id; otherwise the worker-to-scheduler queue, which has no
++    // fence, crosses XCDs. The 8 scheduler blocks cover the 8 XCDs once each,
++    // so every queue still has exactly one reader.
++    int const sched_id =
++        (assigned_sched_id >= 0)
++            ? assigned_sched_id
++            : (config.worker_xcd_map != nullptr &&
++               blockIdx.x + offset < config.num_local_schedulers)
++                  ? get_current_xcd_id()
++                  : (blockIdx.x + offset);
++#else
+     int const sched_id = (assigned_sched_id >= 0) ? assigned_sched_id : (blockIdx.x + offset);
++#endif
+     int num_sched_queues = 1;
+     size_t iteration_num = 0;
+     unsigned long long prev_end_of_graph_clk = 0;

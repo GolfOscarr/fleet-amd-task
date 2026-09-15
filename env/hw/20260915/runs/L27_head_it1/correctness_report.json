@@ -1,0 +1,519 @@
+{
+  "threshold_source": "4 x calibrated floor",
+  "thresholds": {
+    "norm": 0.1811951991236733,
+    "rope": 0.021174033604749967,
+    "gemv": 0.012940280246906176,
+    "scores": 0.01042574426733761,
+    "attention": 0.04004078653205929,
+    "router": 0.014370772811406368,
+    "expert": 0.04396453772147746,
+    "layer": 0.017334900438894192,
+    "logits": 0.16405109773780513,
+    "exact": 0.0
+  },
+  "boundaries": [
+    {
+      "key": "L0.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "max_abs_err": 0.001953125,
+      "rel_err": 0.0026120173628092673,
+      "cos_sim": 0.999996632660527,
+      "n": 512,
+      "threshold": 0.1811951991236733,
+      "floor": 0.045298799780918324,
+      "result": "PASS"
+    },
+    {
+      "key": "L0.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "max_abs_err": 0.03125,
+      "rel_err": 0.001385134158151605,
+      "cos_sim": 0.9999990785142518,
+      "n": 64,
+      "threshold": 0.021174033604749967,
+      "floor": 0.005293508401187492,
+      "result": "PASS"
+    },
+    {
+      "key": "L1.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "max_abs_err": 0.00640869140625,
+      "rel_err": 0.007161075706184219,
+      "cos_sim": 0.9999743957319527,
+      "n": 512,
+      "threshold": 0.1811951991236733,
+      "floor": 0.045298799780918324,
+      "result": "PASS"
+    },
+    {
+      "key": "L1.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "max_abs_err": 0.125,
+      "rel_err": 0.005867725148768542,
+      "cos_sim": 0.9999944655579893,
+      "n": 64,
+      "threshold": 0.021174033604749967,
+      "floor": 0.005293508401187492,
+      "result": "PASS"
+    },
+    {
+      "key": "L2.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L2.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L3.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L3.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L4.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L4.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L5.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L5.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L6.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L6.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L7.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L7.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L8.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L8.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L9.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L9.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L10.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L10.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L11.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L11.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L12.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L12.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L13.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L13.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L14.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L14.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L15.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L15.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L16.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L16.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L17.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L17.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L18.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L18.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L19.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L19.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L20.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L20.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L21.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L21.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L22.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L22.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L23.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L23.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L24.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L24.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L25.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L25.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L26.B2.q",
+      "boundary": "B2",
+      "class": "gemv",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L26.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L26.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L26.B4.q_pe",
+      "boundary": "B4",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L26.B6.attn",
+      "boundary": "B6",
+      "class": "attention",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L26.B8.router_logits",
+      "boundary": "B8",
+      "class": "router",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L26.B9.topk_idx",
+      "boundary": "B9",
+      "class": "exact",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L26.B10.topk_w",
+      "boundary": "B10",
+      "class": "router",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L26.B11.expert_10",
+      "boundary": "B11",
+      "class": "expert",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L26.B11.expert_14",
+      "boundary": "B11",
+      "class": "expert",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L26.B11.expert_25",
+      "boundary": "B11",
+      "class": "expert",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L26.B11.expert_40",
+      "boundary": "B11",
+      "class": "expert",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L26.B11.expert_43",
+      "boundary": "B11",
+      "class": "expert",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L26.B11.expert_58",
+      "boundary": "B11",
+      "class": "expert",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L26.B12.shared",
+      "boundary": "B12",
+      "class": "expert",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L26.B13.layer_out",
+      "boundary": "B13",
+      "class": "layer",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "head.B14.norm",
+      "boundary": "B14",
+      "class": "norm",
+      "max_abs_err": 0.0625,
+      "rel_err": 0.009766892126138382,
+      "cos_sim": 0.999953813898511,
+      "n": 2048,
+      "threshold": 0.1811951991236733,
+      "floor": 0.045298799780918324,
+      "result": "PASS"
+    },
+    {
+      "key": "head.B15.logits",
+      "boundary": "B15",
+      "class": "logits",
+      "max_abs_err": 0.3125,
+      "rel_err": 0.016342519756604654,
+      "cos_sim": 0.9998688440606713,
+      "n": 102400,
+      "threshold": 0.16405109773780513,
+      "floor": 0.04101277443445128,
+      "result": "PASS"
+    },
+    {
+      "key": "head.B16.token",
+      "boundary": "B16",
+      "class": "exact",
+      "result": "PASS",
+      "detail": "fleet 25 ref 25"
+    }
+  ],
+  "output_ids": {
+    "n_ref": 32,
+    "n_fleet": 1,
+    "compared": 1,
+    "matched_prefix": 1,
+    "first_divergence": null,
+    "all_match": false,
+    "result": "PARTIAL"
+  },
+  "route_log": {
+    "steps_compared": 1,
+    "mismatches": [
+      {
+        "step": 0,
+        "moe_layer_index": 4,
+        "ref": [
+          4,
+          19,
+          30,
+          34,
+          46,
+          49
+        ],
+        "fleet": [
+          2,
+          4,
+          19,
+          30,
+          34,
+          46
+        ]
+      }
+    ],
+    "result": "FAIL"
+  },
+  "n_pass": 8,
+  "n_fail": 1,
+  "n_missing": 64,
+  "overall": "FAIL"
+}

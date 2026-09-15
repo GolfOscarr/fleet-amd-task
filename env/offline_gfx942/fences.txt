@@ -1,6 +1,6 @@
 # static instruction counts per function in the gfx942 assembly of mk_tu.cu (variant ours)
 # sc1 = agent scope (the cross-XCD fence the design relies on); sc0 sc1 = system scope
-# (printf/assert hostcall paths and __threadfence()); s_getreg_b32 = the HW_REG_XCC_ID read
+# (printf/assert hostcall paths; a plain __threadfence() lowers to agent scope on this hipcc, env/hw/probes/fence_probe.cu, 2026-09-15); s_getreg_b32 = the HW_REG_XCC_ID read
 # function                                                    buffer_wbl2 sc0 sc1      buffer_wbl2 sc1      buffer_wbl2 sc0   buffer_inv sc0 sc1       buffer_inv sc1       buffer_inv sc0         s_getreg_b32              s_sleep
 __ockl_fprintf_append_string_n                                               12                    0                    0                    8                    0                    0                    0                    8
 __assert_fail                                                                48                    0                    0                   32                    0                    0                    0                   32

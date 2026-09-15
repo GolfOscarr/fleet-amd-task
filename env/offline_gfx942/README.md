@@ -68,9 +68,12 @@ What this settles and what it does not:
   release and acquire the design relies on, as the LLVM memory model says
   `__builtin_amdgcn_fence(..., "agent")` lowers on gfx942. It also carries
   system-scope `buffer_wbl2 sc0 sc1` / `buffer_inv sc0 sc1` (72 / 48 static
-  sites), which come from the printf and assert hostcall paths and from
-  `__threadfence()`; whether any sit on the per-task path is a day-2 look
-  at the generated kernel, since a system-scope fence also writes back L2.
+  sites), which come from the printf and assert hostcall paths; a plain
+  `__threadfence()` is not among them, it lowers to the agent-scope pair
+  `buffer_wbl2 sc1` / `buffer_inv sc1` on this hipcc
+  (`env/hw/probes/fence_probe.cu`, 2026-09-15). Whether any system-scope
+  site sits on the per-task path is a day-2 look at the generated kernel,
+  since a system-scope fence also writes back L2.
   `s_getreg_b32 hwreg(HW_REG_XCC_ID, 0, 16)` appears once in the worker and
   scheduler kernels and four times in `persistent_kernel`.
 - **DQ3 / MIN-28, by source.** Both CK split-KV pipelines

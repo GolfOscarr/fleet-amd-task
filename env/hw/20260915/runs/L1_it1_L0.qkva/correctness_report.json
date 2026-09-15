@@ -1,0 +1,54 @@
+{
+  "threshold_source": "4 x calibrated floor",
+  "thresholds": {
+    "norm": 0.1811951991236733,
+    "rope": 0.021174033604749967,
+    "gemv": 0.012940280246906176,
+    "scores": 0.01042574426733761,
+    "attention": 0.04004078653205929,
+    "router": 0.014370772811406368,
+    "expert": 0.04396453772147746,
+    "layer": 0.017334900438894192,
+    "logits": 0.16405109773780513,
+    "exact": 0.0
+  },
+  "boundaries": [
+    {
+      "key": "L0.B1.norm1",
+      "boundary": "B1",
+      "class": "norm",
+      "max_abs_err": 0.015625,
+      "rel_err": 0.0023085548996357673,
+      "cos_sim": 0.9999973408074626,
+      "n": 2048,
+      "threshold": 0.1811951991236733,
+      "floor": 0.045298799780918324,
+      "result": "PASS"
+    },
+    {
+      "key": "L0.B2.q",
+      "boundary": "B2",
+      "class": "gemv",
+      "max_abs_err": 0.0625,
+      "rel_err": 0.001973708498772509,
+      "cos_sim": 0.9999981441003546,
+      "n": 3072,
+      "threshold": 0.012940280246906176,
+      "floor": 0.003235070061726544,
+      "result": "PASS"
+    }
+  ],
+  "output_ids": {
+    "n_ref": 32,
+    "n_fleet": 1,
+    "compared": 1,
+    "matched_prefix": 0,
+    "first_divergence": 0,
+    "all_match": false,
+    "result": "FAIL"
+  },
+  "n_pass": 2,
+  "n_fail": 1,
+  "n_missing": 0,
+  "overall": "FAIL"
+}

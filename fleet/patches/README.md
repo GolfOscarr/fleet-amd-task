@@ -20,6 +20,7 @@ Item L13 of `docs/design-doc/10-local-work.md`; the problems are
 | `include/mirage/persistent_kernel/tasks/mi300/task_header.cuh` (line 34) | the include of `paged_attention_decode_minimal_mi300.cuh` is wrapped in `#if defined(__gfx950__)` | that file calls `__builtin_amdgcn_mfma_f32_16x16x32_f16` unguarded (`:27`), an MFMA that does not exist on gfx942, so the include fails the gfx942 compile; nothing else in `include/`, `src/` or `python/` references its symbols (`__mfma_qk`, `__mfma_pv`, `paged_attention_minimal_decode`), and no task is registered for it |
 | `include/mirage/persistent_kernel/tasks/mi300/linear_ck_mi300.cuh` (`BlockGemmSmallM16Policy::GetWarpGemmMWarpNWarp`, line 73) | `WarpGemmMfmaBf16Bf16F32M16N16K32TransposedCDistribution` is kept under `#if defined(__gfx950__)`; gfx942 gets `WarpGemmMfmaBf16Bf16F32M16N16K16TransposedCDistribution` with the same `MWarp = 1, NWarp = 4` | gfx942 has no 16x16x32 BF16 MFMA. This policy is the block GEMM of `GemmPipelineSmallTilePolicy` for every `MPerBlock = 16` tile (`:267`), so it is what all the M = 1 linears (`gang_linear*`, `gang_moe_*`, `linear`) run through |
 | same file, `linear_kernel_ck` warp tile (line 331) | `WarpK` is 16 on gfx942 instead of 32 for the small tile | must match the warp GEMM above; the larger tiles already use K = 16 |
+| `include/mirage/persistent_kernel/tasks/mi300/paged_attention_ck_fmha_split_kv_mi300.cuh` (`paged_attention_ck_fmha_split_kv_impl`, the `seqlen_q == 1` branch, line 594) | the call to `paged_attention_minimal_decode` is kept under `#if defined(__gfx950__)`; gfx942 sends the one-token step through `paged_attention_ck_fmha_prefill`, which handles `seqlen_q == 1` | the earlier claim that nothing references the hidden kernel's symbols was wrong for this wrapper, which the Qwen3 smoke graph instantiates through `gang_attention_mi300.cuh:131` (found on the VM, 2026-09-15: the JIT failed with "use of undeclared identifier"); the DeepSeek graph never takes this path, it runs `mla_attend` |
 | `include/mirage/persistent_kernel/persistent_kernel.cuh` (`:1047` worker variant, `:1535-1536` scheduler variant) | the `[FWD_PASS]` print condition drops `fwd_pass_count < 10 || ... % 50 == 0` and `end_of_graph_count < 10 || ... % 100 == 0` | every iteration is printed so the 32 per-iteration times of a generation are all visible (`docs/design-doc/09-expected-performance.md`, D23); the format strings are unchanged for `measure.py` |
 
 ## What was checked and left alone
@@ -37,6 +38,22 @@ Item L13 of `docs/design-doc/10-local-work.md`; the problems are
   (`env/offline_gfx942/README.md`, 2026-09-14); the CK linear pipelines are
   not instantiated there, so their device code is first generated on the
   machine. Both patches were parsed by the real compiler, not only applied.
+
+## `sched_xcd.patch` (MIN-25: the scheduler reads the queue of its own XCD)
+
+One hunk in `include/mirage/persistent_kernel/persistent_kernel.cuh`,
+`execute_scheduler`. The stock code sets `sched_id = blockIdx.x + offset` and
+reads `sched_queues[sched_id]`, on the comment "scheduler_kernel block k runs
+on XCD k". Workers signal `sched_queues[xcd_id]` (`get_rand_sched_id`). On
+the first VM the dispatcher placed block k on XCD (k + 4) mod 8, on every
+grid and every launch (`env/hw/20260915/summary.md` F2 to F4), so each
+scheduler read a queue written from another XCD through a channel that has
+no fence. With the patch a local scheduler on AMD, when `worker_xcd_map` is
+allocated, takes `sched_id` from `HW_REG_XCC_ID`; the 8 scheduler blocks
+cover the 8 XCDs once each (F3), so every queue keeps exactly one reader and
+`[SCHED_XCD] sched_id=k xcd=k` holds by construction. `check_day1.sh` check 3
+accepts any constant offset for the worker lines. Applied third, after
+`new_tasks.patch`; the hunk is independent of both.
 
 ## `new_tasks.patch` (L6: the task-registration glue)
 

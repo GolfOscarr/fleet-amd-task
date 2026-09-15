@@ -1,0 +1,8 @@
+chase mode=size size_mib=1 loads=1048576 ns_per_load_wall=81.297 ns_per_load_memrealtime=81.110 rate_khz=100000
+chase mode=size size_mib=64 loads=1048576 ns_per_load_wall=258.236 ns_per_load_memrealtime=257.643 rate_khz=100000
+chase mode=size size_mib=1024 loads=1048576 ns_per_load_wall=341.616 ns_per_load_memrealtime=340.834 rate_khz=100000
+chase mode=fence kind=release xcds=1 ns_per_iter_agent=525.188 ns_per_iter_workgroup=410.129 ns_fence_cost=115.059
+chase mode=fence kind=acquire xcds=1 ns_per_iter_agent=893.576 ns_per_iter_workgroup=756.152 ns_fence_cost=137.424
+chase mode=fence kind=release xcds=8 ns_per_iter_agent=798.400 ns_per_iter_workgroup=828.467 ns_fence_cost=-30.067
+chase mode=fence kind=acquire xcds=8 ns_per_iter_agent=990.532 ns_per_iter_workgroup=673.228 ns_fence_cost=317.303
+chase mode=pingpong xcd_a=0 xcd_b=1 rounds=10000 ns_one_way=703.426 fine=0
