@@ -35,8 +35,10 @@ import common  # noqa: E402
 
 def metrics(a: torch.Tensor, b: torch.Tensor) -> dict:
     """a = Fleet, b = reference; both upcast (FP64 for the reductions) and flattened."""
-    a = a.detach().double().reshape(-1)
-    b = b.detach().double().reshape(-1)
+    # on the CPU: a captured GPU tensor against a reference loaded from disk
+    # (calibrate.py on the VM, 2026-09-15, failed on the device mismatch)
+    a = a.detach().cpu().double().reshape(-1)
+    b = b.detach().cpu().double().reshape(-1)
     if a.numel() != b.numel():
         return {"shape_mismatch": [list(a.shape), list(b.shape)]}
     d = a - b
