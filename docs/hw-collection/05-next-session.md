@@ -78,9 +78,11 @@ is one) runs before any `compare.py`.
    the whole model.
 4. **E2, E3, E4 re-run** with the `--passes` probe (`collect_hw.sh` does it
    in a minute) to settle the two MISMATCH rows of the record.
-5. Growth curve over 27 layers: `run_fleet.py --layers 27` writes
-   `fleet_hidden_per_layer.safetensors` if `--debug` is given; `compare.py`
-   grades it against the reference's per-layer hidden states.
+5. Growth curve over 27 layers: `run_fleet.py --layers 27 --debug` is
+   meant to write `fleet_hidden_per_layer.safetensors` for `compare.py`
+   to grade, but on 2026-09-15 it aborted at graph registration because
+   the snapshot copy shares no tensor with its successor (`03` lessons
+   table). Re-wire the snapshot in `fleet/graph_plan.py` first.
 
 ## Before deleting the VM
 
