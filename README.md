@@ -80,6 +80,7 @@ compiled for `gfx942` offline with the ROCm 7.0 compiler.
 | Documentation | 5 discovery sets (41 files) + the design set (15 files, 1 script) |
 | Local harness | reference run and capture, comparison, weight packing, graph builder, four new kernels and their runtime glue, environment and measurement scripts (`harness/`, `fleet/`, `env/`) |
 | Offline gfx942 compile | the patched megakernel headers parse and our kernels compile and link, no spills; the cross-XCD fences lower as designed ([`env/offline_gfx942/`](env/offline_gfx942/README.md)) |
+| Session image | `ghcr.io/golfoscarr/fleet-amd-task:20260915`: both venvs, the patched and built Fleet, the probes; a new VM runs a graph in ten minutes ([`docs/hw-collection/05-next-session.md`](docs/hw-collection/05-next-session.md)); every run and fix of the first sessions in [`04-session-log.md`](docs/hw-collection/04-session-log.md) |
 | Hardware record | the first hour on the MI300X: 62 checks, the placement offset, the bandwidth band confirmed, the latencies ([`env/hw/20260915/`](env/hw/20260915/summary.md), [`docs/hw-collection/`](docs/hw-collection/README.md)) |
 | Open problems | 4 major open (three narrowed), 13 minor, 30 resolved ([`OPEN-PROBLEMS.md`](OPEN-PROBLEMS.md)) |
 | Milestone | **M2 reached 2026-09-15**: layer 1 validated end to end on the machine, all 16 boundaries, top-k exact; 27 layers run without the head; M4 faults with the head, bisection in progress ([`PROGRESS.md`](PROGRESS.md)) |
