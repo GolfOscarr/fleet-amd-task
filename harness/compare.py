@@ -243,9 +243,15 @@ def run(ref_dir: Path, fleet_dir: Path, calibration_path: Path | None, report: P
     result["boundaries"] = compare_boundaries(ref, fleet, th, floor)
 
     f_ids = fleet_dir / "fleet_output_ids.json"
-    if f_ids.exists():
+    f_meta = fleet_dir / "fleet_run_meta.json"
+    run_meta = json.loads(f_meta.read_text()) if f_meta.exists() else {}
+    if f_ids.exists() and run_meta.get("head", True) and not run_meta.get("stop_after"):
         result["output_ids"] = compare_ids(json.loads((ref_dir / "ref_output_ids.json").read_text()),
                                            json.loads(f_ids.read_text()))
+    elif f_ids.exists():
+        # a truncated graph (no head or --stop-after) writes placeholder ids;
+        # the M1 run on the VM (2026-09-15) reported them as a FAIL
+        result["output_ids"] = {"result": "SKIP", "note": "truncated graph: no head, ids are placeholders"}
     f_route = fleet_dir / "fleet_route_log.json"
     if f_route.exists():
         result["route_log"] = compare_route_log(json.loads((ref_dir / "ref_route_log.json").read_text()),
