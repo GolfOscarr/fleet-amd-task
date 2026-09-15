@@ -1,6 +1,6 @@
 # Hardware collection 20260915
 
-Collected on 20260915 on enc1-gpuvm005, ROCm 7.2.4, hipcc 7.2.53211. 62 checklist rows: 33 PASS, 3 MISMATCH, 25 INFO, 1 UNAVAILABLE. Raw captures are in raw/, one file per command, and collect.log holds the run. Every MISMATCH belongs in OPEN-PROBLEMS.md and the owning 99-open-questions.md with its date and command (docs/hw-collection/02-checklist.md, Sign-off).
+Collected on 20260915 on enc1-gpuvm005, ROCm 7.2.4, hipcc 7.2.53211. 62 checklist rows: 32 PASS, 5 MISMATCH, 24 INFO, 1 UNAVAILABLE. Raw captures are in raw/, one file per command, and collect.log holds the run. Every MISMATCH belongs in OPEN-PROBLEMS.md and the owning 99-open-questions.md with its date and command (docs/hw-collection/02-checklist.md, Sign-off).
 
 | # | Check | Measured | Expected | Result |
 |---|---|---|---|---|
@@ -22,7 +22,7 @@ Collected on 20260915 on enc1-gpuvm005, ROCm 7.2.4, hipcc 7.2.53211. 62 checklis
 | B8 | Last-level cache | 262144(0x40000) KB | INFO; 256 MB is the secondary figure | INFO |
 | B9 | HBM size | rocminfo GLOBAL 191.7 GiB, amd-smi 191.7 GiB | 192 GB (about 196,000 MiB) | PASS |
 | B10 | Residency of the worker kernel | register-only 2 block(s) per CU (184 VGPRs), with the 58,368 B request 1 block(s) per CU, 304 co-resident | 1 block per CU with the 58,368 B dynamic LDS request; 2 register-limited | PASS |
-| B11 | Wall-clock rate | rate 100000 kHz, ratio 0.981665 | INFO; the two agree within 1% | INFO |
+| B11 | Wall-clock rate | rate 100000 kHz, ratio 0.981665 | the attribute and the host clock agree within 1% | MISMATCH |
 | C1 | Compute partition | SPX | SPX | PASS |
 | C2 | Memory partition | NPS1 | NPS1 | PASS |
 | C3 | Query syntax that works | amd-smi static --partition | INFO | INFO |
@@ -34,8 +34,8 @@ Collected on 20260915 on enc1-gpuvm005, ROCm 7.2.4, hipcc 7.2.53211. 62 checklis
 | D5 | Memory in use, processes | 0.28 GiB used, 0 process(es) | near 0, no other process | PASS |
 | E1 | Read bandwidth, full, 1 GiB, N=8 | 3 runs, mean 3.943 TB/s, spread 0.32% | 3.66 to 4.3 TB/s; spread under 3% | PASS |
 | E2 | Bandwidth at one wave/SIMD vs N | knee at N=4, plateau 4325 GB/s (N1:2706, N2:2410, N4:4325, N8:4304, N16:3787, N32:4095) | knee at N about 4, plateau within 10% of E1 | PASS |
-| E3 | Same at two waves/SIMD | knee at N=4, plateau 4033 GB/s | plateau at about half the N of E2 | PASS |
-| E4 | Bandwidth vs working set | 4MiB:44, 16MiB:175, 32MiB:350, 64MiB:627, 128MiB:1152, 256MiB:2202, 512MiB:3249, 1024MiB:3529; step above 32 MiB: yes; above 256 MiB: yes; sizes under 256 MiB are launch-bound in this probe, so only the 512 and 1024 MiB points are bandwidth | step above 32 MiB (L2) and above 256 MiB (Infinity Cache) | INFO |
+| E3 | Same at two waves/SIMD | knee at N=4, plateau 4033 GB/s (E2 knee 4, so at or below N=2) | plateau at about half the N of E2 | MISMATCH |
+| E4 | Bandwidth vs working set | 4MiB:44, 16MiB:175, 32MiB:350, 64MiB:627, 128MiB:1152, 256MiB:2202, 512MiB:3249, 1024MiB:3529; step above 32 MiB: yes; above 256 MiB: yes; sizes under 256 MiB are launch-bound in this run (no --passes), so only the 512 and 1024 MiB points are bandwidth | step above 32 MiB (L2) and above 256 MiB (Infinity Cache) | INFO |
 | E5 | BabelStream | Copy 4,319,424 MB/s, Mul 4,231,808 MB/s, Add 3,894,077 MB/s, Triad 4,133,844 MB/s, Dot 4,038,666 MB/s | Dot >= 3,660,781 MB/s, Copy >= 4,177,285 MB/s | PASS |
 | E6 | Host-to-device bandwidth | - | INFO | UNAVAILABLE |
 | F1 | XCC_ID readable and in range | 8 distinct ids, in range: yes | ids in 0..7, all eight present | PASS |
@@ -45,7 +45,7 @@ Collected on 20260915 on enc1-gpuvm005, ROCm 7.2.4, hipcc 7.2.53211. 62 checklis
 | F5 | Stability across launches | 21 of 21 runs identical to run 0 | identical maps across three launches | PASS |
 | F6 | Blocks per XCD at 304 | per XCD [38, 38, 38, 38, 38, 38, 38, 38] | 38 per XCD at 304 | PASS |
 | G1 | Agent-scope release | buffer_wbl2 sc1 x1, sc0 sc1 x0 | buffer_wbl2 sc1, no sc0 sc1 in that kernel | PASS |
-| G2 | Agent-scope acquire | buffer_inv sc1 x1, sc0 sc1 x0 | buffer_inv sc1 | PASS |
+| G2 | Agent-scope acquire | buffer_inv sc1 x1, sc0 sc1 x0 | buffer_inv sc1, no sc0 sc1 in that kernel | PASS |
 | G3 | __threadfence() | wbl2 sc1 x1, inv sc1 x1, wbl2 sc0 sc1 x0, inv sc0 sc1 x0: agent | agent scope: buffer_wbl2 sc1 and buffer_inv sc1, no sc0 sc1 | PASS |
 | G4 | Agent-scope atomic load | load sc1 x1, buffer_inv sc1 x1 | sc1 on the load, buffer_inv sc1 after | PASS |
 | H1 | L2 hit latency | 81.3 ns wall, 81.1 ns s_memrealtime | INFO | INFO |
