@@ -140,9 +140,18 @@ Each idea names the number it rests on and what it would take to try.
     and with the runtime's queues raised from 1,024 to 16,384 entries (so
     the queues are not the cause); 2 layers with the head run all 32
     iterations. Without the head, 27 layers at 4 and 2 layers at 32
-    iterations run. So the fault needs both a deeper graph and a larger
-    configured iteration count, which is the signature of a race or of
-    a size that scales with both, not of a single index. The only build-time quantity that
+    iterations run. Sequential re-runs (the concurrent ones were
+    discarded) give the frontier with the head: 2 layers pass at 4 and
+    32 iterations, 4 layers at 4 and 8, 16 layers at 2 ([25, 429]), 27
+    layers at 1 and 2 ([25, 16228]) but not at 32; 8 layers fail at 2, 4,
+    8, 16 and 32, deterministically, before the first iteration reports.
+    Without the head, 27 layers run 4 and 32 iterations. A fault that
+    depends on the layer count non-monotonically (8 fails, 16 passes) and
+    on the configured iteration count at 27 layers is a size or index
+    computed from the plan, not a race; the verbose runtime will name the
+    task. Note that a plan of 8 layers with the head has 548 tasks, the
+    same count as the Qwen3 smoke graph, which runs; the coincidence is
+    worth one look at what else is sized from the task count. The only build-time quantity that
     grows with the iteration count is `max_seq_length = 1,024 + K` and
     the buffers sized from it, and only the head path breaks: the first
     suspects are the `lm_head` gang tiles, the `argmax_partial` slices
