@@ -112,6 +112,25 @@ Each idea names the number it rests on and what it would take to try.
     later session's setup into a pull. Measure the build time first (the
     watcher on `setup.sh` gives it).
 
+13. **The gang model is the batch-1 bottleneck, not the memory system.**
+    Measured per-operator times are 20 to 100 times the bandwidth time and
+    do not move when the clocks are held up (MAJ-7). One workgroup per
+    XCD per operator cannot stream more than about 25 GB/s each; the
+    design's band assumed the whole machine streams every operator.
+    Two ways out, both in the graph builder and the task glue rather than
+    in the runtime: issue the linears as per-tile tasks (37 per XCD, the
+    runtime's per-task pointer offsets), and give `mla_attend` more
+    splits and a prefetch loop. Expect an order of magnitude; the
+    boundary cost of idea 1 then becomes the next term.
+
+14. **A 32-iteration run at 27 layers faults; 2 iterations are exact.**
+    The tokens [25, 16228] match the reference, so the decode loop, the
+    cache append and the head are right; the fault is an out-of-bounds
+    that grows with the iteration count at 27 layers and not at 2 or 8.
+    The candidates are the per-iteration event or task counters of the
+    runtime at 1,880 tasks times 32 iterations and the cache row index at
+    position 1,024 + i for a deep layer; bisect by iteration count first.
+
 12. **The E4 working-set sweep needs constant loads per thread.** The
     first version changed code path with size (the reviewer's finding);
     the `--passes` flag fixes it. Re-run E4 alone next session (seconds)

@@ -32,7 +32,7 @@ library builds and a graph runs on the machine.
 - [x] **M1** One validated operator through the Fleet path — 2026-09-15 (`env/hw/20260915/runs/L1_it1_L0.qkva`)
 - [x] **M2** Layer 1 (MoE) validated end-to-end ← **required milestone** — 2026-09-15: all 16 boundaries PASS, top-k indices exact, route log PASS (`env/hw/20260915/runs/L2_it1`, B5 in `L2_it1_L1.mla_attend_scores`)
 - [ ] **M3** N consecutive persistent layers — the 27-layer graph without the head runs (1,822 tasks, 71 boundary tensors, 2026-09-15); layers 0 and 1 validated, the growth curve of the rest pending
-- [ ] **M4** End-to-end 32-token decode — the 27-layer graph with the head and 32 iterations faults with an illegal memory access (2026-09-15); 2 layers with the head at 1 iteration runs; bisection in progress
+- [ ] **M4** End-to-end 32-token decode — the 27-layer graph with the head produces the reference's tokens at 1 and 2 iterations ([25], then [25, 16228]); at 32 iterations it faults with an illegal memory access (2026-09-15), with and without event timing; bisection in progress
 - [ ] **M5** FP8 (stretch)
 
 ---
