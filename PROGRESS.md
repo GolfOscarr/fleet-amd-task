@@ -28,11 +28,11 @@ library builds and a graph runs on the machine.
 
 ## Milestone ladder
 
-- [ ] **M0** Environment up, model downloaded, reference runs
-- [ ] **M1** One validated operator through the Fleet path
-- [ ] **M2** Layer 1 (MoE) validated end-to-end ← **required milestone**
-- [ ] **M3** N consecutive persistent layers
-- [ ] **M4** End-to-end 32-token decode
+- [x] **M0** Environment up, model downloaded, reference runs — 2026-09-15, Hot Aisle `enc1-gpuvm005` (`env/check_day1.log`, `harness/ref/`)
+- [x] **M1** One validated operator through the Fleet path — 2026-09-15 (`env/hw/20260915/runs/L1_it1_L0.qkva`)
+- [x] **M2** Layer 1 (MoE) validated end-to-end ← **required milestone** — 2026-09-15: all 16 boundaries PASS, top-k indices exact, route log PASS (`env/hw/20260915/runs/L2_it1`, B5 in `L2_it1_L1.mla_attend_scores`)
+- [ ] **M3** N consecutive persistent layers — the 27-layer graph without the head runs (1,822 tasks, 71 boundary tensors, 2026-09-15); layers 0 and 1 validated, the growth curve of the rest pending
+- [ ] **M4** End-to-end 32-token decode — the 27-layer graph with the head and 32 iterations faults with an illegal memory access (2026-09-15); 2 layers with the head at 1 iteration runs; bisection in progress
 - [ ] **M5** FP8 (stretch)
 
 ---
@@ -175,12 +175,12 @@ used). Record and readings: `env/hw/20260915/`, summarised in
 
 **Day 1, in order — each gates the next:**
 
-- [ ] **Does the repo build for gfx942?** `AMDGPU_TARGETS=gfx942 pip install -e .` ← **BLOCKING** (device code: compiled offline 2026-09-14, `env/offline_gfx942/`; left: the cmake and cargo host build and a graph run)
+- [x] **Does the repo build for gfx942?** Yes (2026-09-15): `env/setup.sh` builds and `import mirage` works once the isolated build environment's z3 is pinned to the venv's and `z3/lib` is on the loader path; the Qwen3 smoke graph and our graphs run through the persistent kernel (`env/check_day1.log`, gate 1 PASS)
 - [x] Capture `rocminfo`, `hipcc --version`, ROCm version, partition mode — ROCm 7.2.4, hipcc 7.2.53211, SPX + NPS1, 304 CUs over 8 XCDs, 64 KiB LDS, 4 MiB L2 per XCD, 192 GB HBM, no L3 row (`docs/mi300x` Q9)
 - [x] Assert SPX + NPS1; find `amd-smi` query/set syntax — the query that works is `amd-smi static --partition`; the set syntax was not exercised, the VM was already in the mode we want (`docs/mi300x` Q3)
 - [x] Confirm `XCC_ID` returns 0–7; map workgroup → XCD — all values in 0–7, all eight present; the mapping is `xcd == (blockIdx.x + 4) mod 8`, balanced and stable across launches and processes, which is **not** what the runtime assumed: fixed by `fleet/patches/sched_xcd.patch` (`docs/mi300x` Q1, `docs/fleet` Q10, MIN-25)
 - [x] Disassemble agent-scope fence: does `buffer_wbl2 sc1` / `buffer_inv sc1` appear? Yes, offline (`env/offline_gfx942/fences.txt`) and again on the VM's own hipcc 7.2 with no `sc0 sc1` anywhere in the four probe kernels, at 115–317 ns per fence; left: whether a system-scope fence sits on the per-task path of the generated kernel (`docs/mi300x` Q4, Q5)
-- [ ] Verify 38 CUs/XCD detected (repo constants are MI350's 32) — the hardware half is confirmed, 304 CUs over 8 XCDs; what the runtime detects needs the build
+- [x] Verify 38 CUs/XCD detected (repo constants are MI350's 32) — the runtime reports 296 workers and 8 schedulers, 37 workers on every XCD (`[SCHED_XCD]` lines, `env/check_day1.log`)
 - [x] Download model (31 GB) — 30 GB in 79 s on the VM
 - [x] `rocprofv3 --list-avail` → confirm counter names (`TCC_EA0_*`) — names confirmed, PMC collection works inside the VF, 128 TCC instances (16 channels x 8 XCC) (`docs/mi300x` Q11)
 - [x] Validate bytes-from-requests against a known-size copy kernel — exact on a 1 GiB copy, and it showed `docs/mi300x/06-profiling.md`'s read formula undercounts by 2x for want of a 128 B term (`docs/mi300x` Q12, MIN-32)
@@ -198,18 +198,18 @@ documented as blocked. **Decide end of day 1.**
 
 ---
 
-## Stage 5 — Implementation ⬜ not started
+## Stage 5 — Implementation 🟡 M2 reached on the machine (2026-09-15)
 
-- [ ] Weight loader: pack experts into W13 `[64, 2816, 2048]`, precision as a parameter
-- [ ] Prefill → latent KV cache conversion (excluded from timed window)
-- [ ] **MLA decode Chiplet-task** ← the core work; **spec ready** in `docs/mla-decode/04-our-kernel-spec.md`
-- [ ] Split-KV merge for MLA
-- [ ] Latent KV-cache buffer + append task
-- [ ] DeepSeek-V2 model builder in `python/mirage/mpk/models/`
-- [ ] Chiplet-parallel `lm_head` + argmax reduce
-- [ ] Wire layer 1 task graph → **M2**
-- [ ] Extend to N layers → **M3**
-- [ ] End-to-end decode → **M4**
+- [x] Weight loader: pack experts into W13 `[64, 2816, 2048]`, precision as a parameter — `fleet/pack_weights.py`, 272 tensors, 31.42 GB, checks pass on the VM
+- [x] Prefill → latent KV cache conversion (excluded from timed window) — captured by `run_reference.py`, consumed by `run_fleet.py`
+- [x] **MLA decode Chiplet-task** — `mla_attend` validated: kernel tests 100/100, B6 attention rel 7e-3 to 8e-3 (threshold 0.040) at layers 0 and 1, B5 scores rel 5.4e-3
+- [x] Split-KV merge for MLA — inside `mla_attend` (33 splits), tested against 1 split and the NumPy merge
+- [x] Latent KV-cache buffer + append task — `mla_prep`; B3 c_kv and k_pe within threshold at both layers
+- [x] DeepSeek-V2 model builder — `fleet/graph_plan.py` and `fleet/build_graph.py` (the graph is built in our harness, not in `python/mirage/mpk/models/`)
+- [x] Chiplet-parallel `lm_head` + argmax reduce — runs (a 2-layer graph with the head produces a token); correct only with all 27 layers, see M4
+- [x] Wire layer 1 task graph → **M2** — PASS
+- [ ] Extend to N layers → **M3** — 27 layers run without the head; growth curve pending
+- [ ] End-to-end decode → **M4** — faults with the head at 27 layers and 32 iterations; bisection in progress
 
 ---
 
