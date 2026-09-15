@@ -92,7 +92,7 @@ in `01-plan.md` group E.
 |---|---|---|---|---|
 | G1 | Agent-scope release | `hipcc --offload-arch=gfx942 -S --offload-device-only fence_probe.cu`, grep per kernel | `buffer_wbl2 sc1`, no `sc0 sc1` in that kernel | MAJ-3 and `docs/mi300x` Q4 on this compiler; `03-memory-model.md` |
 | G2 | Agent-scope acquire | same | `buffer_inv sc1` | same |
-| G3 | `__threadfence()` | same | unresolved in the repo: `03-memory-model.md` item 5 says agent scope (`sc1` only), `env/offline_gfx942/fences.txt` and MAJ-3 imply system scope (`sc0 sc1`); the assembly decides and the other text is corrected | the attribution of the 72 system-scope sites in the worker kernel |
+| G3 | `__threadfence()` | same | agent scope: `buffer_wbl2 sc1` and `buffer_inv sc1`, no `sc0 sc1` (the offline compile of the probe on hipcc 7.0.51831, 2026-09-15, settled what the repo had held two ways; `03-memory-model.md` item 5 was right, the census attribution in MAJ-3 is corrected); the machine's hipcc must agree | the attribution of the 72 system-scope sites in the worker kernel: printf and assert paths only |
 | G4 | Agent-scope atomic load | same | `sc1` on the load, `buffer_inv sc1` after | the counter poll of the runtime |
 
 ## H. Latency, fence cost, round trip (`chase.cu`)

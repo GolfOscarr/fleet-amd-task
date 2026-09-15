@@ -215,11 +215,12 @@ and an agent-scope `__hip_atomic_load`. Compiled with
 
 Verifies: `buffer_wbl2 sc1` on release and `buffer_inv sc1` on acquire
 (`03-memory-model.md`, `docs/mi300x` Q4, MAJ-3), on this hipcc rather than
-the offline 7.0.51831. The `__threadfence()` kernel closes a contradiction
-the repo currently holds: `03-memory-model.md` item 5 says it is an
-agent-scope fence, while the offline census (`env/offline_gfx942/fences.txt`,
-MAJ-3) attributes the 72 system-scope sites of the worker kernel partly to
-it. Whichever the assembly shows, the other text is corrected.
+the offline 7.0.51831. The `__threadfence()` kernel was compiled offline
+first (2026-09-15): on hipcc 7.0.51831 it lowers to the agent-scope pair,
+which settled a contradiction the repo had held (`03-memory-model.md`
+item 5 said agent scope, the offline census in MAJ-3 had attributed the
+72 system-scope sites of the worker kernel partly to it; the census text
+is corrected). On the machine the row confirms the same on its hipcc.
 `check_day1.sh` check 4 repeats the grep on the megakernel's disassembly
 after the build; the per-task-path half of MAJ-3 is the day-2 read of the
 generated `kernel_0.cu`.

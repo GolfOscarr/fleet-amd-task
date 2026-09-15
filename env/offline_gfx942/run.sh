@@ -122,7 +122,7 @@ for l in lines:
             break
 print("# static instruction counts per function in the gfx942 assembly of mk_tu.cu (variant ours)")
 print("# sc1 = agent scope (the cross-XCD fence the design relies on); sc0 sc1 = system scope")
-print("# (printf/assert hostcall paths and __threadfence()); s_getreg_b32 = the HW_REG_XCC_ID read")
+print("# (printf/assert hostcall paths; a plain __threadfence() lowers to agent scope on this hipcc, env/hw/probes/fence_probe.cu, 2026-09-15); s_getreg_b32 = the HW_REG_XCC_ID read")
 print(f"# {'function':<58} " + " ".join(f"{k:>20}" for k in kinds))
 for f, c in counts.items():
     print(f"{f[:58]:<58} " + " ".join(f"{c.get(k, 0):>20}" for k in kinds))
