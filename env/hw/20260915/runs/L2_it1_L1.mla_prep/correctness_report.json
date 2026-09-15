@@ -1,0 +1,164 @@
+{
+  "threshold_source": "4 x calibrated floor",
+  "thresholds": {
+    "norm": 0.1811951991236733,
+    "rope": 0.021174033604749967,
+    "gemv": 0.012940280246906176,
+    "scores": 0.01042574426733761,
+    "attention": 0.04004078653205929,
+    "router": 0.014370772811406368,
+    "expert": 0.04396453772147746,
+    "layer": 0.017334900438894192,
+    "logits": 0.16405109773780513,
+    "exact": 0.0
+  },
+  "boundaries": [
+    {
+      "key": "L0.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "max_abs_err": 0.001953125,
+      "rel_err": 0.0026120173628092673,
+      "cos_sim": 0.999996632660527,
+      "n": 512,
+      "threshold": 0.1811951991236733,
+      "floor": 0.045298799780918324,
+      "result": "PASS"
+    },
+    {
+      "key": "L0.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "max_abs_err": 0.03125,
+      "rel_err": 0.001385134158151605,
+      "cos_sim": 0.9999990785142518,
+      "n": 64,
+      "threshold": 0.021174033604749967,
+      "floor": 0.005293508401187492,
+      "result": "PASS"
+    },
+    {
+      "key": "L0.B6.attn",
+      "boundary": "B6",
+      "class": "attention",
+      "max_abs_err": 0.0048828125,
+      "rel_err": 0.00799502712615088,
+      "cos_sim": 0.9999695777128635,
+      "n": 2048,
+      "threshold": 0.04004078653205929,
+      "floor": 0.010010196633014822,
+      "result": "PASS"
+    },
+    {
+      "key": "L0.B13.layer_out",
+      "boundary": "B13",
+      "class": "layer",
+      "max_abs_err": 0.00390625,
+      "rel_err": 0.003720790614743899,
+      "cos_sim": 0.9999931487430628,
+      "n": 2048,
+      "threshold": 0.017334900438894192,
+      "floor": 0.004333725109723548,
+      "result": "PASS"
+    },
+    {
+      "key": "L1.B1.norm1",
+      "boundary": "B1",
+      "class": "norm",
+      "max_abs_err": 0.046875,
+      "rel_err": 0.004287401170161153,
+      "cos_sim": 0.9999908141382515,
+      "n": 2048,
+      "threshold": 0.1811951991236733,
+      "floor": 0.045298799780918324,
+      "result": "PASS"
+    },
+    {
+      "key": "L1.B2.q",
+      "boundary": "B2",
+      "class": "gemv",
+      "max_abs_err": 0.0625,
+      "rel_err": 0.005426283633856425,
+      "cos_sim": 0.9999853355804267,
+      "n": 3072,
+      "threshold": 0.012940280246906176,
+      "floor": 0.003235070061726544,
+      "result": "PASS"
+    },
+    {
+      "key": "L1.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "max_abs_err": 0.00640869140625,
+      "rel_err": 0.007161075706184219,
+      "cos_sim": 0.9999743957319527,
+      "n": 512,
+      "threshold": 0.1811951991236733,
+      "floor": 0.045298799780918324,
+      "result": "PASS"
+    },
+    {
+      "key": "L1.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "max_abs_err": 0.125,
+      "rel_err": 0.005867725148768542,
+      "cos_sim": 0.9999944655579893,
+      "n": 64,
+      "threshold": 0.021174033604749967,
+      "floor": 0.005293508401187492,
+      "result": "PASS"
+    },
+    {
+      "key": "L1.B4.q_pe",
+      "boundary": "B4",
+      "class": "rope",
+      "max_abs_err": 0.03125,
+      "rel_err": 0.004632242037270538,
+      "cos_sim": 0.9999894763707251,
+      "n": 1024,
+      "threshold": 0.021174033604749967,
+      "floor": 0.005293508401187492,
+      "result": "PASS"
+    }
+  ],
+  "output_ids": {
+    "n_ref": 32,
+    "n_fleet": 1,
+    "compared": 1,
+    "matched_prefix": 0,
+    "first_divergence": 0,
+    "all_match": false,
+    "result": "FAIL"
+  },
+  "route_log": {
+    "steps_compared": 1,
+    "mismatches": [
+      {
+        "step": 0,
+        "moe_layer_index": 0,
+        "ref": [
+          2,
+          19,
+          39,
+          40,
+          47,
+          49
+        ],
+        "fleet": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    ],
+    "result": "FAIL"
+  },
+  "n_pass": 9,
+  "n_fail": 2,
+  "n_missing": 0,
+  "overall": "FAIL"
+}

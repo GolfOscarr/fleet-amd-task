@@ -207,12 +207,16 @@ def write_report(path: Path, result: dict):
                          f"{fmt(r['threshold'])} | **{r['result']}** |")
     lines.append("")
     ids = result.get("output_ids")
-    if ids:
+    if ids and ids["result"] == "SKIP":
+        lines.append(f"Output ids: **SKIP**, {ids['note']}.")
+    elif ids:
         lines.append(f"Output ids: **{ids['result']}**, {ids['matched_prefix']} of {ids['n_ref']} matched"
                      + ("" if ids["first_divergence"] is None else f", first divergence at index {ids['first_divergence']}")
                      + ".")
     rl = result.get("route_log")
-    if rl:
+    if rl and rl["result"] == "SKIP":
+        lines.append(f"Route log: **SKIP**, {rl['note']}.")
+    elif rl:
         lines.append(f"Route log: **{rl['result']}**, {rl['steps_compared']} steps compared, "
                      f"{len(rl['mismatches'])} mismatching (step, layer) pairs.")
     gc = result.get("growth_curve")
@@ -254,8 +258,14 @@ def run(ref_dir: Path, fleet_dir: Path, calibration_path: Path | None, report: P
         result["output_ids"] = {"result": "SKIP", "note": "truncated graph: no head, ids are placeholders"}
     f_route = fleet_dir / "fleet_route_log.json"
     if f_route.exists():
-        result["route_log"] = compare_route_log(json.loads((ref_dir / "ref_route_log.json").read_text()),
-                                                json.loads(f_route.read_text()))
+        fleet_log = json.loads(f_route.read_text())
+        has_routes = any(any(layer for layer in step) for step in fleet_log) if fleet_log else False
+        if has_routes or not run_meta.get("stop_after"):
+            result["route_log"] = compare_route_log(json.loads((ref_dir / "ref_route_log.json").read_text()),
+                                                    fleet_log)
+        else:
+            # stopped before the first router: nothing to compare (VM run 2026-09-15)
+            result["route_log"] = {"result": "SKIP", "note": "truncated graph: stopped before any router"}
     f_hidden = fleet_dir / "fleet_hidden_per_layer.safetensors"
     if f_hidden.exists():
         rh = load_file(str(ref_dir / "ref_hidden_per_layer_step0.safetensors"))["hidden"]
