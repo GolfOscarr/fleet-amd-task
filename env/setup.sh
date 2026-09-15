@@ -209,20 +209,20 @@ BUILD_LOG="$LOGDIR/build.$(date +%Y%m%d-%H%M%S).log"
 deactivate 2>/dev/null || true
 # shellcheck disable=SC1091
 source "$ROOT/.venv-fleet/bin/activate"
-# pip builds in an isolated environment whose z3-solver is unpinned in Fleet's
-# pyproject build-requires: on 2026-09-15 it linked core.so against libz3.so.5.1
-# while the venv held the pinned 4.15, and import failed. The constraint pins
-# the build environment's z3 to the venv's, and the venv's z3/lib goes on the
-# loader path through activate (neither wheel's lib is on it by itself).
-CONSTRAINTS="$LOGDIR/build-constraints.txt"
-"$ROOT/.venv-fleet/bin/python" -m pip freeze 2>/dev/null | grep -i "^z3-solver==" > "$CONSTRAINTS" || echo "z3-solver==4.15" > "$CONSTRAINTS"
-echo "build constraints: $(cat "$CONSTRAINTS")"
+# pip's isolated build environment installs its own z3-solver (unpinned in
+# Fleet's pyproject build-requires): on 2026-09-15 it linked core.so against
+# libz3.so.5.1 while the venv held the pinned 4.15, and import failed; a
+# PIP_CONSTRAINT on the build environment did not change that in the image
+# build. So the build runs without isolation, against the venv's own cmake,
+# cython, setuptools, graphviz and z3 (env/requirements-fleet.txt), and the
+# venv's z3/lib goes on the loader path through activate (no wheel puts it
+# there by itself).
 Z3LIB="$ROOT/.venv-fleet/lib/$("$ROOT/.venv-fleet/bin/python" -c 'import sys; print("python%d.%d" % sys.version_info[:2])')/site-packages/z3/lib"
 if ! grep -q "LD_LIBRARY_PATH.*z3/lib" "$ROOT/.venv-fleet/bin/activate"; then
   echo "export LD_LIBRARY_PATH=$Z3LIB:\${LD_LIBRARY_PATH:-}" >> "$ROOT/.venv-fleet/bin/activate"
 fi
 export LD_LIBRARY_PATH="$Z3LIB:${LD_LIBRARY_PATH:-}"
-if AMDGPU_TARGETS=gfx942 PIP_CONSTRAINT="$CONSTRAINTS" python -m pip install -e . -v 2>&1 | tee "$BUILD_LOG"; then
+if AMDGPU_TARGETS=gfx942 python -m pip install -e . -v --no-build-isolation 2>&1 | tee "$BUILD_LOG"; then
   BUILD_OK=1
 else
   BUILD_OK=0

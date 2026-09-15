@@ -15,7 +15,11 @@ FROM rocm/dev-ubuntu-24.04:7.2
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update -qq && apt-get install -y -qq --no-install-recommends \
         python3.12-venv python3-pip git rsync curl ca-certificates build-essential \
+        rocblas-dev hipblas-dev rocprofiler-sdk rocprofiler-sdk-roctx amd-smi-lib \
     && rm -rf /var/lib/apt/lists/*
+# rocblas-dev and hipblas-dev: the Fleet build includes rocblas/rocblas.h and
+# links -lrocblas -lhipblas (the dev base image ships the compiler, not these);
+# rocprofiler-sdk: rocprofv3 for measure.py; amd-smi-lib: the day-1 checks
 
 WORKDIR /work/metalOps
 # the repo tree (see .dockerignore: no venvs, no model, no run outputs)
@@ -29,6 +33,8 @@ RUN git -C repos/fleet-chiplet-megakernel checkout -q -- . \
 # status is gate 1 (import mirage), which is what makes the image worth keeping.
 ENV ROCM_PATH=/opt/rocm
 RUN SKIP_DOWNLOAD=1 bash env/setup.sh
+# the gate check again, verbosely: a failed import names its missing library
+RUN bash -c 'source .venv-fleet/bin/activate && cd repos/fleet-chiplet-megakernel && python -c "import mirage; print(\"import mirage OK\")"'
 
 # the kernel-test launcher and the probes, so session 2 starts from binaries
 RUN mkdir -p fleet/tasks/build env/hw/build && \
