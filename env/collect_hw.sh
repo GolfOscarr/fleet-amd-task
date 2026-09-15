@@ -5,8 +5,9 @@
 #   bash env/collect_hw.sh                       # everything
 #   bash env/collect_hw.sh --skip-probes         # no probe compile and no probe run
 #   bash env/collect_hw.sh --skip-babelstream    # no BabelStream clone and build
+#   bash env/collect_hw.sh --out /tmp/hwdry      # a dry run, outside env/hw
 #
-# Output, all under env/hw/<YYYYMMDD>/ :
+# Output, under --out, by default env/hw/<UTC YYYYMMDD>/ :
 #   raw/<slug>.txt   one file per command, stdout and stderr together
 #   collect.log      this script's whole output
 #   summary.md       the filled-in checklist, written by env/hw/summarize.py
@@ -59,16 +60,19 @@
 #             e3                        stream_read, grid 608, unroll 1..32
 #             e4                        stream_read, full occupancy, 4 MiB .. 1024 MiB
 #             babelstream               HIP BabelStream clone, build and run
+#                                       (cloned into env/hw/build/, not into the record)
 #             rocm-bandwidth-test       rocm-bandwidth-test -a
 #   group F   xcc-map                   every xcc_map run
 #             xcc-map-296.csv           the per-block dump of the 296-block grid
+#             xcc-map-8.csv             the same for the 8-block scheduler grid
 #   group G   fence-asm                 the hipcc -S compile of fence_probe.cu
 #             fence_probe.s             the generated gfx942 assembly
 #             fence                     fence_grep.py on that assembly
+#             fence-run                 the fence_probe binary, showing the kernels launch
 #   group H   chase                     every chase run
 #   group I   rocprof-list              rocprofv3 counter listing
-#             pmc1-run, pmc2-run, pmc3-run   the three rocprofv3 --pmc runs
-#             pmc1/, pmc2/, pmc3/       their CSV output directories
+#             pmc1-run .. pmc4-run      the four rocprofv3 --pmc runs
+#             pmc1/ .. pmc4/            their CSV output directories
 #             ktrace-run, ktrace/       the rocprofv3 --kernel-trace run
 #             copy-bytes                copy_bytes without the profiler
 #   group J   lscpu, nproc, free, df-root, df-home, ulimit
@@ -86,19 +90,31 @@ export PATH="$ROCM_PATH/bin:$ROCM_PATH/llvm/bin:$PATH"
 
 SKIP_PROBES=0
 SKIP_BABELSTREAM=0
+OUT_DIR=""
 usage() {
-  echo "usage: bash env/collect_hw.sh [--skip-probes] [--skip-babelstream]"
+  echo "usage: bash env/collect_hw.sh [--out DIR] [--skip-probes] [--skip-babelstream]"
+  echo "  --out DIR   where the collection goes; default env/hw/<UTC date>."
+  echo "              A dry run must pass a scratch directory outside env/hw:"
+  echo "              everything under env/hw/2*/ is a committed record of a"
+  echo "              rented machine that cannot be measured again."
 }
-for arg in "$@"; do
-  case "$arg" in
+while [ "$#" -gt 0 ]; do
+  case "$1" in
     --skip-probes) SKIP_PROBES=1 ;;
     --skip-babelstream) SKIP_BABELSTREAM=1 ;;
+    --out)
+      shift
+      [ "$#" -gt 0 ] || { echo "--out needs a directory"; usage; exit 2; }
+      OUT_DIR="$1"
+      ;;
+    --out=*) OUT_DIR="${1#--out=}" ;;
     -h|--help) usage; exit 0 ;;
-    *) echo "unknown argument: $arg"; usage; exit 2 ;;
+    *) echo "unknown argument: $1"; usage; exit 2 ;;
   esac
+  shift
 done
 
-OUT="$ROOT/env/hw/$(date -u +%Y%m%d)"
+OUT="${OUT_DIR:-$ROOT/env/hw/$(date -u +%Y%m%d)}"
 RAW="$OUT/raw"
 BUILD="$ROOT/env/hw/build"
 PROBE_SRC="$ROOT/env/hw/probes"
@@ -191,8 +207,11 @@ else
       echo "[build] $p: source missing at $PROBE_SRC/$p.cu"
       continue
     fi
+    # Remove first: a binary left by an earlier run would otherwise pass the
+    # -x test below and be measured as though this compile had produced it.
+    rm -f "$BUILD/$p"
     cap "build-$p" hipcc --offload-arch=gfx942 -O2 -std=c++17 "$PROBE_SRC/$p.cu" -o "$BUILD/$p"
-    if [ -x "$BUILD/$p" ]; then
+    if [ -x "$BUILD/$p" ] && ! grep -q '^UNAVAILABLE:' "$RAW/build-$p.txt"; then
       PROBES_BUILT="$PROBES_BUILT $p"
       echo "[build] $p: ok"
     else
@@ -314,23 +333,56 @@ for n in 1 2 4 8 16 32; do
   probe e3 stream_read --grid 608 --size 1G --unroll "$n"
 done
 : > "$RAW/e4.txt"
+# --passes keeps the loads per thread constant across the sweep: at 4 MiB the
+# buffer is read 256 times, at 1024 MiB once, so every point does the same work
+# and the small sizes are not dominated by the launch.
 for w in 4 16 32 64 128 256 512 1024; do
-  probe e4 stream_read --occupancy full --unroll 8 --size "${w}M"
+  probe e4 stream_read --occupancy full --unroll 8 --size "${w}M" --passes "$((1024 / w))"
 done
 
 : > "$RAW/babelstream.txt"
+# The VM image ships no cmake. Rather than skip the only vendor cross-check of
+# group E, fetch one into a throwaway venv: the cmake wheel carries its own
+# binary and nothing outside /tmp is touched. --without-pip plus get-pip.py
+# because the image's python3-venv has no bundled pip either.
+ensure_cmake() {
+  if command -v cmake >/dev/null 2>&1; then
+    echo "cmake: $(command -v cmake)"
+    return 0
+  fi
+  local venv="/tmp/hwcmake"
+  echo "cmake is not on PATH; installing one into $venv"
+  if [ ! -x "$venv/bin/cmake" ]; then
+    rm -rf "$venv"
+    python3 -m venv --without-pip "$venv" || return 1
+    curl -sSL -o "$venv/get-pip.py" https://bootstrap.pypa.io/get-pip.py || return 1
+    "$venv/bin/python" "$venv/get-pip.py" || return 1
+    "$venv/bin/python" -m pip install -q cmake || return 1
+  fi
+  [ -x "$venv/bin/cmake" ] || return 1
+  PATH="$venv/bin:$PATH"
+  export PATH
+  echo "cmake: $(command -v cmake)"
+  return 0
+}
+
 babelstream_run() {
-  local src="$OUT/babelstream-src"
+  # Into the gitignored build tree, never under $OUT: $OUT is the committed
+  # record and a vendor benchmark's source tree does not belong in it.
+  local src="$BUILD/babelstream-src"
   rm -rf "$src"
-  git clone --depth 1 https://github.com/UoB-HPC/BabelStream "$src" || return 1
-  cmake -S "$src" -B "$src/build" -DMODEL=hip -DCMAKE_CXX_COMPILER=hipcc \
+  ensure_cmake || return 1
+  # GIT_TERMINAL_PROMPT=0 so a credential prompt fails instead of hanging.
+  GIT_TERMINAL_PROMPT=0 timeout 300 git clone --depth 1 \
+    https://github.com/UoB-HPC/BabelStream "$src" || return 1
+  timeout 300 cmake -S "$src" -B "$src/build" -DMODEL=hip -DCMAKE_CXX_COMPILER=hipcc \
     -DCXX_EXTRA_FLAGS="--offload-arch=gfx942" || return 1
   timeout 600 cmake --build "$src/build" -j "$(nproc 2>/dev/null || echo 4)" || return 1
   local bin
   bin="$src/build/hip-stream"
   [ -x "$bin" ] || bin="$(find "$src/build" -maxdepth 2 -name 'hip-stream' -type f 2>/dev/null | head -1)"
   [ -n "$bin" ] && [ -x "$bin" ] || return 1
-  "$bin" -n 50 -s 268435456 || return 1
+  timeout 300 "$bin" -n 50 -s 268435456 || return 1
   return 0
 }
 if [ "$SKIP_BABELSTREAM" = "1" ]; then
@@ -342,7 +394,7 @@ else
 fi
 
 if command -v rocm-bandwidth-test >/dev/null 2>&1; then
-  cap rocm-bandwidth-test rocm-bandwidth-test -a
+  cap rocm-bandwidth-test timeout 300 rocm-bandwidth-test -a
 else
   : > "$RAW/rocm-bandwidth-test.txt"
   unavailable rocm-bandwidth-test "rocm-bandwidth-test is not on PATH"
@@ -351,8 +403,10 @@ fi
 # ---------------------------------------------------------------------------
 step "F. workgroup-to-XCD placement"
 : > "$RAW/xcc-map.txt"
+# The dumps carry the placement itself; the summary lines carry only counts.
+# 296 gives the round-robin offset, 8 gives the scheduler blocks F3 asks about.
 probe xcc-map xcc_map --grid 296 --runs 3 --dump "$RAW/xcc-map-296.csv"
-probe xcc-map xcc_map --grid 8 --runs 3
+probe xcc-map xcc_map --grid 8 --runs 3 --dump "$RAW/xcc-map-8.csv"
 probe xcc-map xcc_map --grid 8 --runs 3 --concurrent
 for g in 304 608 1000 37; do
   probe xcc-map xcc_map --grid "$g" --runs 3
@@ -378,6 +432,10 @@ else
     unavailable fence "fence_probe.s is empty or was not produced"
   fi
 fi
+# The same source also links, so running it shows the four kernels launch and
+# the assembly counted above belongs to code that executes.
+: > "$RAW/fence-run.txt"
+probe fence-run fence_probe
 
 # ---------------------------------------------------------------------------
 step "H. latency, fence cost and the cross-XCD round trip"
@@ -394,9 +452,9 @@ probe chase chase --pingpong
 # ---------------------------------------------------------------------------
 step "I. profiler"
 ROCPROF_CANDIDATES=(
-  "rocprofv3 --list-avail"
-  "rocprofv3 -L"
-  "rocprofv3 --list-metrics"
+  "timeout 300 rocprofv3 --list-avail"
+  "timeout 300 rocprofv3 -L"
+  "timeout 300 rocprofv3 --list-metrics"
 )
 : > "$RAW/rocprof-list.txt"
 ROCPROF_DONE=0
@@ -415,10 +473,15 @@ if [ "$ROCPROF_DONE" = "0" ]; then
   unavailable rocprof-list "no rocprofv3 listing command worked; candidates: ${ROCPROF_CANDIDATES[*]}"
 fi
 
+# Two counters per run: more than two on one run multiplexes on this hardware.
+# The fourth pair is the read side of the byte arithmetic: a read on MI300 is a
+# 128-byte request counted by TCC_BUBBLE, which is what rocprofv3's own
+# FETCH_SIZE expression uses.
 PMC_SETS=(
   "TCC_EA0_RDREQ_sum TCC_EA0_RDREQ_32B_sum"
   "TCC_EA0_WRREQ_sum TCC_EA0_WRREQ_64B_sum"
   "TCC_HIT_sum TCC_MISS_sum"
+  "TCC_BUBBLE_sum TCC_EA0_RDREQ_sum"
 )
 k=0
 for set_ in "${PMC_SETS[@]}"; do
@@ -430,14 +493,14 @@ for set_ in "${PMC_SETS[@]}"; do
   fi
   # shellcheck disable=SC2086
   # $set_ is two counter names and must split into two arguments.
-  capa "pmc$k-run" rocprofv3 --pmc $set_ -d "$RAW/pmc$k" --output-format csv -- "$BUILD/copy_bytes"
+  capa "pmc$k-run" timeout 300 rocprofv3 --pmc $set_ -d "$RAW/pmc$k" --output-format csv -- "$BUILD/copy_bytes"
 done
 
 : > "$RAW/ktrace-run.txt"
 if [ "$SKIP_PROBES" = "1" ] || ! probe_built copy_bytes; then
   unavailable ktrace-run "copy_bytes is not available"
 else
-  capa ktrace-run rocprofv3 --kernel-trace -d "$RAW/ktrace" --output-format csv -- "$BUILD/copy_bytes"
+  capa ktrace-run timeout 300 rocprofv3 --kernel-trace -d "$RAW/ktrace" --output-format csv -- "$BUILD/copy_bytes"
 fi
 
 : > "$RAW/copy-bytes.txt"

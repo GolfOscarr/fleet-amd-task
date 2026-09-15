@@ -106,12 +106,16 @@ def test_event_timing_iterations_and_ops():
 
 def test_pmc_and_trace_parsers(tmp_path):
     pmc = tmp_path / "pmc.csv"
-    pmc.write_text("Dispatch_Id,Kernel_Name,TCC_EA0_RDREQ_sum,TCC_EA0_WRREQ_sum,TCC_HIT_sum,TCC_MISS_sum\n"
-                   "1,worker,1000,10,30,70\n2,scheduler,24,2,1,1\n")
+    pmc.write_text("Dispatch_Id,Kernel_Name,TCC_BUBBLE_sum,TCC_EA0_RDREQ_sum,"
+                   "TCC_EA0_RDREQ_32B_sum,TCC_EA0_WRREQ_sum,TCC_EA0_WRREQ_64B_sum,"
+                   "TCC_HIT_sum,TCC_MISS_sum\n"
+                   "1,worker,1000,1000,0,10,10,30,70\n2,scheduler,24,24,0,2,2,1,1\n")
     c = measure.parse_pmc(pmc)
     assert c["TCC_EA0_RDREQ_sum"] == 1024 and c["TCC_HIT_sum"] == 31
     tr = measure.traffic_from_counters(c, iters=32)
-    assert abs(tr["read_MiB_per_iteration"] - 1024 * 64 / 2**20 / 32) < 1e-12
+    # Every read request is a 128 B TCC_BUBBLE one here, so reads are 128 x 1024.
+    assert abs(tr["read_MiB_per_iteration"] - 1024 * 128 / 2**20 / 32) < 1e-12
+    assert abs(tr["write_MiB_per_iteration"] - 12 * 64 / 2**20 / 32) < 1e-12
     assert abs(tr["l2_hit_rate"] - 31 / 102) < 1e-12
     pmc2 = tmp_path / "pmc2.csv"
     pmc2.write_text("Counter_Name,Counter_Value\nTCC_EA0_RDREQ_sum,5\nTCC_EA0_RDREQ_sum,7\n")
@@ -120,6 +124,38 @@ def test_pmc_and_trace_parsers(tmp_path):
     kt.write_text("Kernel_Name,Start\nprepare_kernel,1\nworker_kernel,2\nscheduler_kernel,3\n")
     assert measure.parse_kernel_trace(kt) == {"dispatches": 3, "by_kernel": {"prepare_kernel": 1, "worker_kernel": 1,
                                                                             "scheduler_kernel": 1}}
+
+
+def test_bytes_from_requests_matches_the_measured_copy():
+    """The counters a 1 GiB device-to-device copy produced on the VM
+    (env/hw/20260915, group I3) must come back as 1 GiB each way.
+
+    A read on MI300 is a 128-byte request counted by TCC_BUBBLE. The flat 64 B
+    per request this file used before the collection reports half the reads."""
+    counters = {
+        "TCC_BUBBLE_sum": 8388608.0,
+        "TCC_EA0_RDREQ_sum": 8388760.0,
+        "TCC_EA0_RDREQ_32B_sum": 0.0,
+        "TCC_EA0_WRREQ_sum": 16777216.0,
+        "TCC_EA0_WRREQ_64B_sum": 16777216.0,
+    }
+    gib = float(1 << 30)
+    assert measure.bytes_written(counters) == gib
+    assert abs(measure.bytes_read(counters) - gib) / gib < 0.0001
+    assert abs(64 * counters["TCC_EA0_RDREQ_sum"] - gib / 2) / gib < 0.0001
+
+    # A 32 B request contributes 32 and a plain 64 B request 64.
+    mixed = {"TCC_BUBBLE_sum": 1.0, "TCC_EA0_RDREQ_sum": 3.0,
+             "TCC_EA0_RDREQ_32B_sum": 1.0,
+             "TCC_EA0_WRREQ_sum": 3.0, "TCC_EA0_WRREQ_64B_sum": 1.0}
+    assert measure.bytes_read(mixed) == 128 + 64 + 32
+    assert measure.bytes_written(mixed) == 64 + 32 + 32
+
+    # Without TCC_BUBBLE_sum the read side cannot be computed at all.
+    assert measure.bytes_read({k: v for k, v in counters.items()
+                               if k != "TCC_BUBBLE_sum"}) is None
+    assert measure.traffic_from_counters({"TCC_HIT_sum": 1.0, "TCC_MISS_sum": 1.0},
+                                         iters=1) == {"l2_hit_rate": 0.5}
 
 
 def test_measure_end_to_end(tmp_path):

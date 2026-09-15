@@ -33,8 +33,7 @@ check "test suite (harness/tests fleet/tests env/hw/tests)" "$PY" -m pytest harn
 check "prompt ids match the pinned source (make_prompt.py --check)" "$PY" harness/make_prompt.py
 check "graph builder dry run (326 ops / 1,880 tasks)" "$PY" fleet/build_graph.py --dry-run --layers 27
 check "kernel syntax against the stub headers (check_syntax.sh)" bash fleet/tasks/check_syntax.sh
-check "env scripts parse (bash -n)" bash -c 'for f in env/*.sh fleet/tasks/*.sh; do bash -n "$f" || exit 1; done'
-check "hardware collection script parses (bash -n env/collect_hw.sh)" bash -n env/collect_hw.sh
+check "env scripts parse (bash -n)" bash -c 'for f in env/*.sh env/hw/probes/*.sh fleet/tasks/*.sh; do bash -n "$f" || exit 1; done'
 check "submodule at the pinned commit 51dce4f" bash -c '[ "$(git -C "$1" rev-parse --short HEAD)" = "51dce4f" ]' _ "$FLEET"
 
 # The three patches, in order, on a clean throwaway worktree of the submodule.

@@ -36,7 +36,14 @@ PMC_NAMES = [
     "TCC_EA0_WRREQ_64B_sum",
     "TCC_HIT_sum",
     "TCC_MISS_sum",
+    # Reads on MI300 arrive as 128 B requests counted by TCC_BUBBLE, so the
+    # read side of the byte arithmetic cannot be computed without it.
+    "TCC_BUBBLE_sum",
 ]
+# The copy program dispatches fill_kernel and warmup_kernel besides the 1 GiB
+# copy, and the runtime adds its own blit kernels for the readback, so counters
+# are summed over this kernel only.
+PMC_KERNEL = "copy_kernel"
 COMPUTE_PARTITIONS = ("SPX", "DPX", "TPX", "QPX", "CPX")
 MEMORY_PARTITIONS = ("NPS1", "NPS2", "NPS4", "NPS8")
 UNITS = {"B": 1, "KB": 1 << 10, "KIB": 1 << 10, "MB": 1 << 20, "MIB": 1 << 20,
@@ -232,6 +239,43 @@ def kfd_gpu_node(nodes):
     return None
 
 
+def parse_xcc_dump(path):
+    """[(block, xcd)] from an xcc_map --dump CSV of "block,xcd" lines."""
+    try:
+        text = Path(path).read_text(errors="replace")
+    except OSError:
+        return []
+    pairs = []
+    for line in text.splitlines():
+        fields = line.strip().split(",")
+        if len(fields) != 2:
+            continue
+        block, xcd = to_int(fields[0]), to_int(fields[1])
+        if block is not None and xcd is not None:
+            pairs.append((block, xcd))
+    return pairs
+
+
+def round_robin_offset(pairs, xcds=8):
+    """k with xcd == (block + k) mod xcds for every block, or None if none fits.
+
+    The design assumes k == 0. The machine measured k == 4, which is still a
+    round robin over all eight XCDs and still puts eight consecutive blocks on
+    eight distinct XCDs, but it moves which one."""
+    if not pairs:
+        return None
+    offsets = {(xcd - block) % xcds for block, xcd in pairs}
+    return offsets.pop() if len(offsets) == 1 else None
+
+
+def expected_per_xcd(grid, offset, xcds=8):
+    """Blocks per XCD for a grid placed round robin with this offset."""
+    counts = [0] * xcds
+    for block in range(grid):
+        counts[(block + offset) % xcds] += 1
+    return counts
+
+
 def parse_partition(text):
     up = (text or "").upper()
     compute = next((m for m in COMPUTE_PARTITIONS if re.search(r"\b" + m + r"\b", up)), None)
@@ -239,11 +283,74 @@ def parse_partition(text):
     return compute, memory
 
 
+def bytes_read(counters):
+    """Bytes fetched, by rocprofv3's own FETCH_SIZE expression on this machine.
+
+    A read on MI300 is a 128-byte request counted by TCC_BUBBLE; what is left
+    of TCC_EA0_RDREQ after the 128 B and the 32 B requests are taken out is
+    64 B each. Validated on the VM: TCC_BUBBLE 8,388,608 and TCC_EA0_RDREQ
+    8,388,760 over a 1 GiB copy give 1.0000 GiB."""
+    bubble = counters.get("TCC_BUBBLE_sum")
+    rdreq = counters.get("TCC_EA0_RDREQ_sum")
+    rd32 = counters.get("TCC_EA0_RDREQ_32B_sum")
+    if bubble is None or rdreq is None or rd32 is None:
+        return None
+    return 128 * bubble + 64 * (rdreq - bubble - rd32) + 32 * rd32
+
+
+def bytes_written(counters):
+    """Bytes written: 64 B per 64-byte request, 32 B for the rest."""
+    wrreq = counters.get("TCC_EA0_WRREQ_sum")
+    wr64 = counters.get("TCC_EA0_WRREQ_64B_sum")
+    if wrreq is None or wr64 is None:
+        return None
+    return 64 * wr64 + 32 * (wrreq - wr64)
+
+
 def parse_rocprof_list(text):
     text = text or ""
     present = {name: (name in text) for name in PMC_NAMES}
-    instances = sum(1 for line in text.splitlines() if re.search(r"TCC_EA0_RDREQ\[\d+\]", line))
-    return present, instances
+    instances, detail = parse_rocprof_instances(text)
+    if instances is None:
+        # Older listings print one row per instance instead of a Dimensions line.
+        count = sum(1 for line in text.splitlines()
+                    if re.search(r"TCC_EA0_RDREQ\[\d+\]", line))
+        instances, detail = (count, str(count)) if count else (0, "")
+    return present, instances, detail
+
+
+def parse_rocprof_instances(text):
+    """(instances, detail) from the Dimensions line of the TCC_EA0_RDREQ block.
+
+    rocprofv3 reports the instance count as a shape rather than as one row per
+    instance: "Dimensions : DIMENSION_INSTANCE[0:15] DIMENSION_XCC[0:7]" is 16
+    channels on each of 8 XCDs."""
+    lines = (text or "").splitlines()
+    for i, line in enumerate(lines):
+        m = re.match(r"^Counter_Name\s*:\s*(\S+)\s*$", line)
+        if not m or m.group(1) != "TCC_EA0_RDREQ":
+            continue
+        for follow in lines[i + 1:i + 8]:
+            if re.match(r"^Counter_Name\s*:", follow):
+                break
+            d = re.match(r"^Dimensions\s*:\s*(.+)$", follow)
+            if not d:
+                continue
+            dims = [(name, int(hi) - int(lo) + 1) for name, lo, hi in
+                    re.findall(r"DIMENSION_(\w+)\[(\d+):(\d+)\]", d.group(1))]
+            if not dims:
+                continue
+            total = 1
+            for _, size in dims:
+                total *= size
+            sizes = dict(dims)
+            if "INSTANCE" in sizes and "XCC" in sizes:
+                detail = "{} per XCC x {} XCC = {}".format(
+                    sizes["INSTANCE"], sizes["XCC"], total)
+            else:
+                detail = "{} = {}".format(" x ".join(str(s) for _, s in dims), total)
+            return total, detail
+    return None, ""
 
 
 def _read_csv(path):
@@ -264,8 +371,15 @@ def _column(row, *wanted):
     return None
 
 
-def parse_pmc_dir(path):
-    """Sum every counter of every counter_collection CSV under a rocprofv3 -d directory."""
+def parse_pmc_dir(path, kernel=PMC_KERNEL):
+    """Sum the counters of one rocprofv3 -d directory over `kernel`'s dispatches.
+
+    The CSV carries one row per counter per dispatch, and the copy program
+    dispatches more than the copy: fill_kernel, warmup_kernel and the runtime's
+    own blit kernels are in the same file. Summing all of them gave three times
+    the known 1 GiB of writes, so rows are kept only when their Kernel_Name
+    names the kernel under test. A file with no Kernel_Name column is summed
+    whole, which is the old behaviour and the best that can be done."""
     sums = {}
     path = Path(path)
     if not path.is_dir():
@@ -276,8 +390,11 @@ def parse_pmc_dir(path):
         rows = _read_csv(csv_path)
         if not rows:
             continue
-        name_key = _column(rows[0], "Counter_Name")
-        value_key = _column(rows[0], "Counter_Value")
+        kernel_key = _column(rows[0], "Kernel_Name")
+        if kernel_key and kernel:
+            rows = [r for r in rows if kernel in (r.get(kernel_key) or "")]
+        name_key = _column(rows[0], "Counter_Name") if rows else None
+        value_key = _column(rows[0], "Counter_Value") if rows else None
         if name_key and value_key:
             for row in rows:
                 value = to_float(row.get(value_key))
@@ -286,7 +403,7 @@ def parse_pmc_dir(path):
                 key = (row.get(name_key) or "").strip()
                 sums[key] = sums.get(key, 0.0) + value
             continue
-        for key in rows[0]:
+        for key in (rows[0] if rows else {}):
             if key and key.strip().upper().startswith(("TCC_", "SQ_")):
                 total = sum(to_float(r.get(key)) or 0.0 for r in rows)
                 sums[key.strip()] = sums.get(key.strip(), 0.0) + total
@@ -469,6 +586,12 @@ class Summary:
 
         self.xcc_text, self.xcc_ok = self.read("xcc-map")
         self.xcc = named(parse_kv_lines(self.xcc_text), "xcc_map")
+        # The per-block dumps carry the placement itself; the lines carry only
+        # counts. The offset is read off the 296-block dump and then explains
+        # the counts of every other grid.
+        self.xcc_dump_296 = parse_xcc_dump(self.raw / "xcc-map-296.csv")
+        self.xcc_dump_8 = parse_xcc_dump(self.raw / "xcc-map-8.csv")
+        self.xcc_offset = round_robin_offset(self.xcc_dump_296)
 
         self.fence_text, self.fence_ok = self.read("fence")
         self.fence = parse_fence(self.fence_text)
@@ -476,8 +599,11 @@ class Summary:
         self.chase_text, self.chase_ok = self.read("chase")
         self.chase = named(parse_kv_lines(self.chase_text), "chase")
 
+        # pmc4 is read last on purpose: it carries TCC_EA0_RDREQ_sum measured in
+        # the same run as TCC_BUBBLE_sum, and the read formula subtracts one
+        # from the other, so the pair has to come from one measurement.
         self.pmc = {}
-        for k in (1, 2, 3):
+        for k in (1, 2, 3, 4):
             self.pmc.update(parse_pmc_dir(self.raw / f"pmc{k}"))
         self.ktrace = parse_ktrace_dir(self.raw / "ktrace")
 
@@ -711,14 +837,19 @@ class Summary:
                        "1 block per CU with the 58,368 B dynamic LDS request; "
                        "2 register-limited", ok)
 
+        # Not an INFO row in practice: every in-kernel time number in the
+        # project converts s_memrealtime ticks with this rate, so a rate that
+        # disagrees with the host clock by more than 1% invalidates group H,
+        # the runtime's event timing and the t_b estimate of MAJ-5.
         clock_rows = named(parse_kv_lines(self.clock_text), "wallclock")
         row = clock_rows[0] if clock_rows else None
-        measured, result = "", UNAVAIL
+        measured, ok = "", None
         if row:
             ratio = to_float(row.get("ratio"))
             measured = "rate {} kHz, ratio {}".format(row.get("rate_khz"), row.get("ratio"))
-            result = PASS if ratio is not None and abs(ratio - 1.0) <= 0.01 else INFO
-        self.add("B11", "Wall-clock rate", measured, "INFO; the two agree within 1%", result)
+            ok = ratio is not None and abs(ratio - 1.0) <= 0.01
+        self.add_check("B11", "Wall-clock rate", measured,
+                       "the attribute and the host clock agree within 1%", ok)
 
     def group_c(self):
         compute, memory = parse_partition(self.part_text if self.part_ok else "")
@@ -781,13 +912,28 @@ class Summary:
         flagged = None
         if throttle_ok:
             flagged = bool(re.search(r":\s*(TRUE|ACTIVE|THROTTLED)\b", throttle_text, re.I))
+        # Not every amd-smi has the flag; this one rejects it outright, which is
+        # a gap in the reading rather than a throttled machine.
+        raw_throttle = self.read("amd-smi-metric-throttle")[0]
+        unsupported = not throttle_ok and bool(re.search(
+            r"invalid|unrecognized|not a valid|unknown option", raw_throttle, re.I))
         parts = []
         if temp is not None:
             parts.append(f"{fmt(temp, 0)} {temp_unit or 'C'}")
         if flagged is not None:
             parts.append("throttle flags set" if flagged else "no throttle flags")
-        self.add_check("D4", "Temperature and throttle", ", ".join(parts),
-                       "no throttle flags", (flagged is False) if flagged is not None else None)
+        elif unsupported:
+            parts.append("throttle status not readable: "
+                         "--throttle is not a flag in this amd-smi")
+        if flagged is not None:
+            self.add_check("D4", "Temperature and throttle", ", ".join(parts),
+                           "no throttle flags", flagged is False)
+        elif temp is not None and unsupported:
+            self.add("D4", "Temperature and throttle", ", ".join(parts),
+                     "no throttle flags", INFO)
+        else:
+            self.add_check("D4", "Temperature and throttle", ", ".join(parts),
+                           "no throttle flags", None)
 
         mem_text, mem_ok = self.read_clean("amd-smi-metric-mem-usage")
         used, used_unit = amdsmi_value(mem_text, "USED_VRAM", "VRAM_USED") if mem_ok \
@@ -840,12 +986,21 @@ class Summary:
         self.add_check("E2", "Bandwidth at one wave/SIMD vs N", measured,
                        "knee at N about 4, plateau within 10% of E1", ok)
 
+        # "About half the N of E2", floored at 1 since the knee cannot go below
+        # one load in flight. Without E2 there is nothing to halve, so the row
+        # is UNAVAILABLE rather than a MISMATCH earned by a missing neighbour.
         e3 = named(parse_kv_lines(self.e3_text), "stream_read")
         knee3, peak3, points3 = knee_of(e3)
         measured, ok = "", None
         if points3:
+            target = max(1, knee2 // 2) if knee2 is not None else None
             measured = "knee at N={}, plateau {:.0f} GB/s".format(knee3, peak3)
-            ok = (knee3 is not None and knee2 is not None and knee3 <= knee2)
+            if target is not None:
+                measured += f" (E2 knee {knee2}, so at or below N={target})"
+            else:
+                measured += " (E2 knee not measured, nothing to compare against)"
+            if knee3 is not None and target is not None:
+                ok = knee3 <= target
         self.add_check("E3", "Same at two waves/SIMD", measured,
                        "plateau at about half the N of E2", ok)
 
@@ -859,6 +1014,14 @@ class Summary:
                 ", ".join(f"{int(x)}MiB:{y:.0f}" for x, y in points4),
                 {True: "yes", False: "no", None: "not measured"}[step32],
                 {True: "yes", False: "no", None: "not measured"}[step256])
+            # Without --passes every point reads its buffer once, so the small
+            # sizes finish in about one launch and measure the launch, not the
+            # memory system. With it the loads per thread are constant and the
+            # whole sweep is comparable, so the caveat is dropped.
+            if not any(r.get("passes") for r in e4):
+                measured += ("; sizes under 256 MiB are launch-bound in this run "
+                             "(no --passes), so only the 512 and 1024 MiB points "
+                             "are bandwidth")
         self.add_info("E4", "Bandwidth vs working set", measured,
                       "step above 32 MiB (L2) and above 256 MiB (Infinity Cache)")
 
@@ -889,14 +1052,21 @@ class Summary:
         self.add_check("F1", "XCC_ID readable and in range", measured,
                        "ids in 0..7, all eight present", ok)
 
+        offset = self.xcc_offset
+        rule = self._rule_text()
+
         runs_296 = self.xcc_runs(296)
         measured, ok = "", None
         if runs_296:
             violations = sum(to_int(r.get("rule_mod8_violations")) or 0 for r in runs_296)
             per_xcd = self._per_xcd(runs_296[0])
-            measured = "{} rule violations over {} run(s), per XCD {}".format(
-                violations, len(runs_296), per_xcd)
-            ok = violations == 0 and per_xcd == [37] * 8
+            parts = [f"per XCD {per_xcd}"]
+            if rule:
+                parts.append(rule)
+            parts.append(f"{violations} strict-rule violation(s) over {len(runs_296)} run(s)")
+            measured = ", ".join(parts)
+            ok = (violations == 0 and per_xcd == expected_per_xcd(296, 0)
+                  and offset in (0, None))
         self.add_check("F2", "Rule at the worker grid (296)", measured,
                        "xcd == block mod 8 for every block, 37 per XCD", ok)
 
@@ -906,15 +1076,20 @@ class Summary:
         if alone or concurrent:
             v_alone = sum(to_int(r.get("rule_mod8_violations")) or 0 for r in alone)
             v_conc = sum(to_int(r.get("rule_mod8_violations")) or 0 for r in concurrent)
-            measured = "alone {} violation(s) over {} run(s), concurrent {} over {}".format(
-                v_alone, len(alone), v_conc, len(concurrent))
-            ok = bool(alone) and bool(concurrent) and v_alone == 0 and v_conc == 0
+            parts = ["alone {} violation(s) over {} run(s), concurrent {} over {}".format(
+                v_alone, len(alone), v_conc, len(concurrent))]
+            placement = self._scheduler_placement()
+            if placement:
+                parts.append(placement)
+            measured = ", ".join(parts)
+            ok = (bool(alone) and bool(concurrent) and v_alone == 0 and v_conc == 0
+                  and offset in (0, None))
         self.add_check("F3", "Scheduler grid (8)", measured,
                        "block k on XCD k, alone and concurrent", ok)
 
         parts, ok = [], None
         violations_total, grids_seen = 0, 0
-        per_xcd_37 = None
+        per_xcd_37, consistent = None, True
         for grid in (608, 1000, 37):
             runs = self.xcc_runs(grid)
             if not runs:
@@ -923,12 +1098,18 @@ class Summary:
             v = sum(to_int(r.get("rule_mod8_violations")) or 0 for r in runs)
             violations_total += v
             parts.append(f"grid {grid}: {v} violation(s)")
+            counts = self._per_xcd(runs[0])
+            if offset is not None and counts != expected_per_xcd(grid, offset):
+                consistent = False
             if grid == 37:
-                per_xcd_37 = self._per_xcd(runs[0])
-                parts.append(f"37 per XCD {per_xcd_37}")
+                per_xcd_37 = counts
+                parts.append(f"37 per XCD {counts}")
         if grids_seen:
+            if offset is not None:
+                parts.append("counts {} offset {}".format(
+                    "match" if consistent else "do not match", offset))
             ok = (violations_total == 0 and grids_seen == 3 and
-                  per_xcd_37 == [5, 5, 5, 5, 5, 4, 4, 4])
+                  per_xcd_37 == expected_per_xcd(37, 0) and offset in (0, None))
         self.add_check("F4", "Rule at other grids", ", ".join(parts),
                        "same rule at 608, 1000, 37; at 37: 5,5,5,5,5,4,4,4", ok)
 
@@ -948,6 +1129,28 @@ class Summary:
             ok = per_xcd == [38] * 8
         self.add_check("F6", "Blocks per XCD at 304", measured, "38 per XCD at 304", ok)
 
+    def _rule_text(self):
+        """How the measured placement reads, once the offset is known."""
+        if self.xcc_offset is None:
+            return ""
+        if self.xcc_offset == 0:
+            return "round robin, xcd == block mod 8"
+        return ("round robin with offset {k} (xcd == (block + {k}) mod 8, "
+                "from the 296-block dump)".format(k=self.xcc_offset))
+
+    def _scheduler_placement(self):
+        """Which XCD each of the eight scheduler blocks landed on."""
+        pairs = [(b, x) for b, x in self.xcc_dump_8 if b < 8]
+        source = "grid-8 dump"
+        if not pairs and self.xcc_offset is not None:
+            pairs = [(b, (b + self.xcc_offset) % 8) for b in range(8)]
+            source = "derived from the offset"
+        if not pairs:
+            return ""
+        pairs.sort()
+        return "blocks 0..7 on XCD {} ({})".format(
+            ",".join(str(x) for _, x in pairs), source)
+
     @staticmethod
     def _per_xcd(row):
         value = row.get("per_xcd")
@@ -966,13 +1169,16 @@ class Summary:
         self.add_check("G1", "Agent-scope release", measured,
                        "buffer_wbl2 sc1, no sc0 sc1 in that kernel", ok)
 
+        # Symmetric with G1: an acquire that also carries sc0 is a system-scope
+        # invalidate, which is not what the design relies on.
         acquire = self.fence.get("k_acquire", {})
         measured, ok = "", None
         if acquire:
             measured = "buffer_inv sc1 x{}, sc0 sc1 x{}".format(
                 acquire.get("inv_sc1"), acquire.get("inv_sc0_sc1"))
-            ok = (acquire.get("inv_sc1") or 0) >= 1
-        self.add_check("G2", "Agent-scope acquire", measured, "buffer_inv sc1", ok)
+            ok = (acquire.get("inv_sc1") or 0) >= 1 and acquire.get("inv_sc0_sc1") == 0
+        self.add_check("G2", "Agent-scope acquire", measured,
+                       "buffer_inv sc1, no sc0 sc1 in that kernel", ok)
 
         # The offline compile on hipcc 7.0.51831 settled this as agent scope, so
         # the row is now graded: the machine's hipcc has to agree.
@@ -989,12 +1195,18 @@ class Summary:
         self.add_check("G3", "__threadfence()", measured,
                        "agent scope: buffer_wbl2 sc1 and buffer_inv sc1, no sc0 sc1", ok)
 
+        # The checklist wants both halves: sc1 on the load and the invalidate
+        # after it. Either one alone is not the counter poll the runtime needs,
+        # so this is an AND. load_sc0_sc1, when fence_grep.py reports it, is the
+        # system-scope spelling and is shown but does not satisfy the row.
         atomic = self.fence.get("k_atomic_load", {})
         measured, ok = "", None
         if atomic:
             measured = "load sc1 x{}, buffer_inv sc1 x{}".format(
                 atomic.get("load_sc1"), atomic.get("inv_sc1"))
-            ok = (atomic.get("load_sc1") or 0) >= 1 or (atomic.get("inv_sc1") or 0) >= 1
+            if atomic.get("load_sc0_sc1") is not None:
+                measured += ", load sc0 sc1 x{}".format(atomic.get("load_sc0_sc1"))
+            ok = (atomic.get("load_sc1") or 0) >= 1 and (atomic.get("inv_sc1") or 0) >= 1
         self.add_check("G4", "Agent-scope atomic load", measured,
                        "sc1 on the load, buffer_inv sc1 after", ok)
 
@@ -1052,14 +1264,15 @@ class Summary:
 
     def group_i(self):
         list_text, list_ok = self.read("rocprof-list")
-        present, instances = parse_rocprof_list(list_text if list_ok else "")
+        present, instances, instance_detail = parse_rocprof_list(list_text if list_ok else "")
         measured, ok = "", None
         if list_ok:
             missing = [n for n in PMC_NAMES if not present[n]]
-            measured = "all six present" if not missing else "missing " + ", ".join(missing)
+            measured = ("all {} present".format(len(PMC_NAMES)) if not missing
+                        else "missing " + ", ".join(missing))
             ok = not missing
         self.add_check("I1", "Counter names present", measured,
-                       "the six counter names present", ok)
+                       "the six counter names plus TCC_BUBBLE_sum", ok)
 
         rd = self.pmc.get("TCC_EA0_RDREQ_sum")
         rd32 = self.pmc.get("TCC_EA0_RDREQ_32B_sum")
@@ -1074,24 +1287,28 @@ class Summary:
             ok = bool(values) and all(v > 0 for v in values)
         self.add_check("I2", "Counters readable", measured, "non-zero values, no error", ok)
 
-        measured, ok = "", None
-        if rd is not None and rd32 is not None and wr is not None and wr64 is not None:
-            decomp_reads = 32 * rd32 + 64 * (rd - rd32)
-            decomp_writes = 64 * wr64 + 32 * (wr - wr64)
-            flat_reads = 64 * rd
-            flat_writes = 64 * wr
-            errors = {name: (value - GIB) / GIB * 100.0 for name, value in (
-                ("decomp reads", decomp_reads), ("decomp writes", decomp_writes),
-                ("flat reads", flat_reads), ("flat writes", flat_writes))}
-            measured = ("decomposition reads {:.3f} GiB ({}), writes {:.3f} GiB ({}); "
-                        "flat reads {:.3f} GiB ({}), writes {:.3f} GiB ({})").format(
-                decomp_reads / GIB, pct(errors["decomp reads"]),
-                decomp_writes / GIB, pct(errors["decomp writes"]),
-                flat_reads / GIB, pct(errors["flat reads"]),
-                flat_writes / GIB, pct(errors["flat writes"]))
-            ok = abs(errors["decomp reads"]) <= 5.0 and abs(errors["decomp writes"]) <= 5.0
-        self.add_check("I3", "Bytes-from-requests arithmetic", measured,
-                       "the decomposition within 5%", ok)
+        reads = bytes_read(self.pmc)
+        writes = bytes_written(self.pmc)
+        parts, ok = [], None
+        if reads is not None:
+            parts.append("reads {:.4f} GiB ({})".format(
+                reads / GIB, pct((reads - GIB) / GIB * 100.0)))
+        elif self.pmc:
+            parts.append("reads not computable (TCC_BUBBLE_sum not collected)")
+        if writes is not None:
+            parts.append("writes {:.4f} GiB ({})".format(
+                writes / GIB, pct((writes - GIB) / GIB * 100.0)))
+        if rd is not None:
+            parts.append("flat 64 B reads {:.4f} GiB ({})".format(
+                64 * rd / GIB, pct((64 * rd - GIB) / GIB * 100.0)))
+        if wr is not None:
+            parts.append("flat 64 B writes {:.4f} GiB ({})".format(
+                64 * wr / GIB, pct((64 * wr - GIB) / GIB * 100.0)))
+        if reads is not None and writes is not None:
+            ok = (abs(reads - GIB) / GIB <= 0.05 and abs(writes - GIB) / GIB <= 0.05)
+        self.add_check("I3", "Bytes-from-requests arithmetic", ", ".join(parts),
+                       "128 B per TCC_BUBBLE read and 64 B per write request, "
+                       "both within 5% of 1 GiB", ok)
 
         measured, ok = "", None
         if self.ktrace:
@@ -1105,7 +1322,7 @@ class Summary:
                        "one dispatch row with a duration", ok)
 
         self.add_info("I5", "TCC instance count",
-                      f"{instances} TCC_EA0_RDREQ instances" if list_ok else "",
+                      instance_detail if list_ok and instances else "",
                       "INFO; 128 in SPX (gk)")
 
     def group_j(self):
@@ -1153,8 +1370,10 @@ class Summary:
         self.add_check("J5", "Container with GPU passthrough", measured,
                        "the GPU visible inside the container", ok)
 
-        self.add("J6", "VM creation to first ssh", "record by hand (wall clock)",
-                 "INFO; recorded by hand", UNAVAIL)
+        # Not a command's output: the collection cannot see when the VM was
+        # provisioned, so the row carries what the operator timed.
+        self.add("J6", "VM creation to first ssh", "recorded by hand",
+                 "INFO; recorded by hand", INFO)
 
     def build(self):
         self.group_a()

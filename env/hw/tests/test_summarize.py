@@ -126,11 +126,27 @@ GPU: 0
             MAX_CLK: 1300 MHz
 """
 
-ROCPROF_LIST = "\n".join(
-    ["# listing command: rocprofv3 --list-avail", "Agent 1 (gfx942):", "  Counters:"]
-    + [f"  Name: {name}" for name in summarize.PMC_NAMES]
-    + [f"  Name: TCC_EA0_RDREQ[{i}]" for i in range(128)]
-) + "\n"
+def rocprof_block(name, dimensions, expression=None):
+    """One counter block of a rocprofv3 --list-avail listing."""
+    lines = [f"Counter_Name        :\t{name}",
+             f"Description         :\tsynthetic fixture for {name}",
+             "Block               :\tTCC"]
+    if expression:
+        lines.append(f"Expression          :\t{expression}")
+    lines.append(f"Dimensions          :\t{dimensions}")
+    return "\n".join(lines) + "\n\n"
+
+
+# rocprofv3 reports instances as a shape, not as one row per instance:
+# 16 channels on each of 8 XCDs is the 128 of I5.
+ROCPROF_LIST = (
+    "# listing command: rocprofv3 --list-avail\n"
+    "gpu-agent2:\n\n"
+    + rocprof_block("TCC_EA0_RDREQ", "DIMENSION_INSTANCE[0:15] DIMENSION_XCC[0:7]")
+    + rocprof_block("TCC_EA0_RDREQ_32B", "DIMENSION_INSTANCE[0:15] DIMENSION_XCC[0:7]")
+    + "".join(rocprof_block(name, "DIMENSION_INSTANCE[0:0]",
+                            expression=f"reduce({name[:-4]},sum)")
+              for name in summarize.PMC_NAMES))
 
 PMC_HEADER = ('"Correlation_Id","Dispatch_Id","Agent_Id","Queue_Id","Process_Id",'
               '"Thread_Id","Grid_Size","Kernel_Id","Kernel_Name","Workgroup_Size",'
@@ -155,26 +171,29 @@ def pmc_csv(pairs):
     return "\n".join(lines) + "\n"
 
 
-def xcc_map_text(violations_296=0):
-    specs = [
-        (296, 0, [37] * 8),
-        (8, 0, [1] * 8),
-        (8, 1, [1] * 8),
-        (304, 0, [38] * 8),
-        (608, 0, [76] * 8),
-        (1000, 0, [125] * 8),
-        (37, 0, [5, 5, 5, 5, 5, 4, 4, 4]),
-    ]
+GRID_SPECS = [(296, 0), (8, 0), (8, 1), (304, 0), (608, 0), (1000, 0), (37, 0)]
+
+
+def xcc_map_text(violations_296=0, offset=0):
+    """One line per run. With a non-zero offset the placement is still a round
+    robin over all eight XCDs, but every block breaks the strict mod-8 rule,
+    which is what the machine measured."""
     lines = []
-    for grid, concurrent, per_xcd in specs:
+    for grid, concurrent in GRID_SPECS:
+        per_xcd = summarize.expected_per_xcd(grid, offset)
+        violations = grid if offset else (violations_296 if grid == 296 else 0)
         for run in range(3):
             lines.append(
                 "xcc_map grid={g} run={r} concurrent={c} distinct=8 ids_in_range=1 "
                 "rule_mod8_violations={v} per_xcd={p} stable_vs_run0=1".format(
-                    g=grid, r=run, c=concurrent,
-                    v=violations_296 if grid == 296 else 0,
+                    g=grid, r=run, c=concurrent, v=violations,
                     p=",".join(str(x) for x in per_xcd)))
     return "\n".join(lines) + "\n"
+
+
+def xcc_dump_text(grid, offset=0):
+    """An xcc_map --dump CSV: one "block,xcd" line per block."""
+    return "".join(f"{b},{(b + offset) % 8}\n" for b in range(grid))
 
 
 def stream_read_line(**kv):
@@ -320,6 +339,8 @@ def base_files():
                                    "1            48.900       N/A\n",
 
         "xcc-map.txt": xcc_map_text(),
+        "xcc-map-296.csv": xcc_dump_text(296),
+        "xcc-map-8.csv": xcc_dump_text(8),
         "fence.txt": FENCE_AGENT,
         "chase.txt": CHASE,
         "rocprof-list.txt": ROCPROF_LIST,
@@ -342,11 +363,16 @@ def base_files():
     }
 
 
+# A 1 GiB copy each way, the way the machine reports it: every read is a 128 B
+# TCC_BUBBLE request, so 2^23 of them are 1 GiB, and every write is a 64 B
+# request, so 2^24 of them are 1 GiB. The flat 64 B per read request that
+# measure.py used before the collection lands at half, which is the point of I3.
 PMC_DIRS = {
-    "pmc1": [("TCC_EA0_RDREQ_sum", float(1 << 24)), ("TCC_EA0_RDREQ_32B_sum", 0.0)],
+    "pmc1": [("TCC_EA0_RDREQ_sum", float(1 << 23)), ("TCC_EA0_RDREQ_32B_sum", 0.0)],
     "pmc2": [("TCC_EA0_WRREQ_sum", float(1 << 24)),
              ("TCC_EA0_WRREQ_64B_sum", float(1 << 24))],
     "pmc3": [("TCC_HIT_sum", 100.0), ("TCC_MISS_sum", float(1 << 24))],
+    "pmc4": [("TCC_BUBBLE_sum", float(1 << 23)), ("TCC_EA0_RDREQ_sum", float(1 << 23))],
 }
 
 
@@ -576,17 +602,18 @@ def test_profiler_rows_pass_and_the_arithmetic_is_exact(good):
     rows, _ = good
     r, m = results(rows), measured(rows)
     assert r["I1"] == summarize.PASS
-    assert m["I1"] == "all six present"
+    assert m["I1"] == f"all {len(summarize.PMC_NAMES)} present"
     assert r["I2"] == summarize.PASS
     assert r["I3"] == summarize.PASS
-    # RDREQ = 2^24 requests, none of them 32 B, is exactly 1 GiB read; the same
-    # count of 64 B writes is exactly 1 GiB written.
-    assert "decomposition reads 1.000 GiB (+0.0%)" in m["I3"]
-    assert "writes 1.000 GiB (+0.0%)" in m["I3"]
-    assert "flat reads 1.000 GiB (+0.0%)" in m["I3"]
+    # 2^23 read requests of 128 B and 2^24 write requests of 64 B are 1 GiB each
+    # way; the flat 64 B per read request reports half of that.
+    assert "reads 1.0000 GiB (+0.0%)" in m["I3"]
+    assert "writes 1.0000 GiB (+0.0%)" in m["I3"]
+    assert "flat 64 B reads 0.5000 GiB (-50.0%)" in m["I3"]
+    assert "flat 64 B writes 1.0000 GiB (+0.0%)" in m["I3"]
     assert r["I4"] == summarize.PASS
     assert r["I5"] == summarize.INFO
-    assert m["I5"] == "128 TCC_EA0_RDREQ instances"
+    assert m["I5"] == "16 per XCC x 8 XCC = 128"
 
 
 def test_host_rows(good):
@@ -600,14 +627,16 @@ def test_host_rows(good):
     assert r["J4"] == summarize.INFO
     assert m["J4"] == "last rate 56.7MB/s"
     assert r["J5"] == summarize.PASS
-    assert r["J6"] == summarize.UNAVAIL
+    # Not a command's output; the operator times it and the row carries that.
+    assert r["J6"] == summarize.INFO
+    assert m["J6"] == "recorded by hand"
 
 
-def test_a_good_machine_has_no_mismatch_and_only_J6_unavailable(good):
+def test_a_good_machine_has_no_mismatch_and_nothing_unavailable(good):
     rows, _ = good
     r = results(rows)
     assert [rid for rid, value in r.items() if value == summarize.MISMATCH] == []
-    assert [rid for rid, value in r.items() if value == summarize.UNAVAIL] == ["J6"]
+    assert [rid for rid, value in r.items() if value == summarize.UNAVAIL] == []
 
 
 def test_the_markdown_has_a_header_and_one_line_per_row(good):
@@ -659,9 +688,191 @@ def test_slow_bandwidth_is_a_mismatch(degraded):
 def test_rule_violations_are_a_mismatch(degraded):
     rows, _ = degraded
     assert results(rows)["F2"] == summarize.MISMATCH
-    assert "21 rule violations" in measured(rows)["F2"]
+    assert "21 strict-rule violation(s)" in measured(rows)["F2"]
     assert results(rows)["F1"] == summarize.PASS
     assert results(rows)["F3"] == summarize.PASS
+
+
+def test_the_measured_offset_four_placement(tmp_path):
+    """What the machine actually does: a round robin over all eight XCDs, but
+    starting at 4. Still a MISMATCH against the strict rule the design assumes,
+    and the offset has to be in the text or the row cannot be acted on."""
+    files = base_files()
+    files["xcc-map.txt"] = xcc_map_text(offset=4)
+    files["xcc-map-296.csv"] = xcc_dump_text(296, offset=4)
+    files["xcc-map-8.csv"] = xcc_dump_text(8, offset=4)
+    out = write_machine(tmp_path, files, with_pmc=False, with_ktrace=False)
+    rows, _ = summarize.summarize(out)
+    r, m = results(rows), measured(rows)
+
+    for rid in ("F2", "F3", "F4"):
+        assert r[rid] == summarize.MISMATCH, rid
+    assert "round robin with offset 4 (xcd == (block + 4) mod 8" in m["F2"]
+    assert "888 strict-rule violation(s) over 3 run(s)" in m["F2"]
+    assert "blocks 0..7 on XCD 4,5,6,7,0,1,2,3 (grid-8 dump)" in m["F3"]
+    # 37 blocks at offset 4 is 5,4,4,4,5,5,5,5, not the 5,5,5,5,5,4,4,4 of the
+    # checklist: the counts move with the offset and are still consistent.
+    assert "37 per XCD [5, 4, 4, 4, 5, 5, 5, 5]" in m["F4"]
+    assert "counts match offset 4" in m["F4"]
+    # The placement is still one block per XCD over eight, so these still hold.
+    for rid in ("F1", "F5", "F6"):
+        assert r[rid] == summarize.PASS, rid
+
+
+def test_scheduler_placement_falls_back_to_the_offset_without_a_dump(tmp_path):
+    files = base_files()
+    files["xcc-map.txt"] = xcc_map_text(offset=4)
+    files["xcc-map-296.csv"] = xcc_dump_text(296, offset=4)
+    del files["xcc-map-8.csv"]
+    out = write_machine(tmp_path, files, with_pmc=False, with_ktrace=False)
+    rows, _ = summarize.summarize(out)
+    assert "blocks 0..7 on XCD 4,5,6,7,0,1,2,3 (derived from the offset)" in \
+        measured(rows)["F3"]
+
+
+def test_offset_helpers():
+    assert summarize.round_robin_offset([(0, 4), (1, 5), (7, 3), (8, 4)]) == 4
+    assert summarize.round_robin_offset([(b, b % 8) for b in range(16)]) == 0
+    assert summarize.round_robin_offset([(0, 1), (1, 5)]) is None
+    assert summarize.round_robin_offset([]) is None
+    assert summarize.expected_per_xcd(37, 0) == [5, 5, 5, 5, 5, 4, 4, 4]
+    assert summarize.expected_per_xcd(37, 4) == [5, 4, 4, 4, 5, 5, 5, 5]
+    assert summarize.expected_per_xcd(296, 4) == [37] * 8
+
+
+def test_counters_are_summed_over_the_copy_kernel_only(tmp_path):
+    """The copy program also dispatches fill_kernel and warmup_kernel. Summing
+    every dispatch reported three times the known 1 GiB of writes."""
+    raw = tmp_path / "raw"
+    d = raw / "pmc2" / "pmc_1"
+    d.mkdir(parents=True)
+    rows = [PMC_HEADER]
+    for kernel, value in (("fill_kernel(unsigned int*)", 1 << 25),
+                          ("copy_kernel(float*, float const*)", 1 << 24),
+                          ("warmup_kernel(unsigned int*)", 1 << 20),
+                          ("__amd_rocclr_copyBuffer", 1 << 21)):
+        rows.append('1,1,1,1,1,1,1,1,"{k}",256,0,0,8,16,"TCC_EA0_WRREQ_sum",{v}'
+                    .format(k=kernel, v=float(value)))
+    (d / "x_counter_collection.csv").write_text("\n".join(rows) + "\n")
+    sums = summarize.parse_pmc_dir(raw / "pmc2")
+    assert sums["TCC_EA0_WRREQ_sum"] == float(1 << 24)
+
+
+def test_i3_is_unavailable_without_the_bubble_counter(tmp_path):
+    out = write_machine(tmp_path, base_files(), with_pmc=False)
+    raw = out / "raw"
+    for name, pairs in PMC_DIRS.items():
+        if name == "pmc4":
+            continue
+        d = raw / name / "pmc_1"
+        d.mkdir(parents=True, exist_ok=True)
+        (d / "x_counter_collection.csv").write_text(pmc_csv(pairs))
+    rows, _ = summarize.summarize(out)
+    assert results(rows)["I3"] == summarize.UNAVAIL
+    assert "reads not computable (TCC_BUBBLE_sum not collected)" in measured(rows)["I3"]
+    # The write side and the flat form are still reported.
+    assert "writes 1.0000 GiB (+0.0%)" in measured(rows)["I3"]
+
+
+def test_throttle_flag_missing_is_info_not_a_verdict(tmp_path):
+    """This amd-smi rejects --throttle outright. The temperature was still read,
+    so the row is INFO with the reason rather than a claim of no throttling."""
+    files = base_files()
+    files["amd-smi-metric-throttle.txt"] = (
+        "amdsmi_cli_exceptions.AmdSmiInvalidParameterException: Parameter "
+        "'--throttle' is invalid. Run 'amd-smi metric -h' for more info. "
+        "Error code: -2\n"
+        "UNAVAILABLE: exit 1: amd-smi metric --throttle\n")
+    out = write_machine(tmp_path, files, with_pmc=False, with_ktrace=False)
+    rows, _ = summarize.summarize(out)
+    assert results(rows)["D4"] == summarize.INFO
+    assert "--throttle is not a flag in this amd-smi" in measured(rows)["D4"]
+    assert measured(rows)["D4"].startswith("45 C, ")
+
+
+def test_e4_says_which_points_are_bandwidth(good):
+    rows, _ = good
+    assert "launch-bound" in measured(rows)["E4"]
+    assert "512 and 1024 MiB points are bandwidth" in measured(rows)["E4"]
+
+
+def test_e4_drops_the_caveat_once_passes_normalises_the_sweep(tmp_path):
+    """--passes keeps the loads per thread constant across the sweep, so the
+    small sizes stop being a launch measurement and the caveat is wrong."""
+    files = base_files()
+    files["e4.txt"] = "\n".join(
+        stream_read_line(size_mib=w, gbps=g, tbps=round(g / 1000.0, 4),
+                         passes=1024 // w)
+        for w, g in [(4, 11800.0), (16, 11700.0), (32, 11500.0), (64, 5200.0),
+                     (128, 5100.0), (256, 5050.0), (512, 3950.0),
+                     (1024, 3900.0)]) + "\n"
+    out = write_machine(tmp_path, files, with_pmc=False, with_ktrace=False)
+    rows, _ = summarize.summarize(out)
+    assert results(rows)["E4"] == summarize.INFO
+    assert "launch-bound" not in measured(rows)["E4"]
+    assert "step above 32 MiB: yes" in measured(rows)["E4"]
+
+
+def test_wall_clock_rate_off_by_more_than_one_percent_is_a_mismatch(tmp_path):
+    """Every in-kernel time number converts s_memrealtime ticks with this rate,
+    so a rate that disagrees with the host clock is not a note, it is a fault."""
+    files = base_files()
+    files["wallclock.txt"] = ("wallclock rate_khz=100000 ticks=10000000 "
+                              "host_ns=100000000 ratio=1.0730\n")
+    out = write_machine(tmp_path, files, with_pmc=False, with_ktrace=False)
+    rows, _ = summarize.summarize(out)
+    assert results(rows)["B11"] == summarize.MISMATCH
+    assert "ratio 1.0730" in measured(rows)["B11"]
+
+
+def test_e3_without_e2_is_unavailable_not_a_mismatch(tmp_path):
+    files = base_files()
+    files["e2.txt"] = "UNAVAILABLE: exit 1: stream_read --occupancy one\n"
+    out = write_machine(tmp_path, files, with_pmc=False, with_ktrace=False)
+    rows, _ = summarize.summarize(out)
+    assert results(rows)["E2"] == summarize.UNAVAIL
+    # E3 measured something; it just has no neighbour to be judged against.
+    assert results(rows)["E3"] == summarize.UNAVAIL
+    assert "nothing to compare against" in measured(rows)["E3"]
+
+
+def test_e3_knee_must_be_about_half_of_e2(tmp_path):
+    files = base_files()
+    # E2 knees at 4, so E3 has to reach its plateau by N=2.
+    files["e3.txt"] = unroll_sweep([(1, 2000.0), (2, 2500.0), (4, 3700.0),
+                                    (8, 3720.0), (16, 3730.0), (32, 3740.0)],
+                                   occupancy="grid", grid=608)
+    out = write_machine(tmp_path, files, with_pmc=False, with_ktrace=False)
+    rows, _ = summarize.summarize(out)
+    assert results(rows)["E2"] == summarize.PASS
+    assert results(rows)["E3"] == summarize.MISMATCH
+    assert "E2 knee 4, so at or below N=2" in measured(rows)["E3"]
+
+
+def test_acquire_that_also_carries_sc0_is_a_mismatch(tmp_path):
+    files = base_files()
+    files["fence.txt"] = FENCE_AGENT.replace(
+        "fence kernel=k_acquire wbl2_sc1=0 inv_sc1=1 wbl2_sc0_sc1=0 inv_sc0_sc1=0 load_sc1=0",
+        "fence kernel=k_acquire wbl2_sc1=0 inv_sc1=1 wbl2_sc0_sc1=0 inv_sc0_sc1=2 load_sc1=0")
+    out = write_machine(tmp_path, files, with_pmc=False, with_ktrace=False)
+    rows, _ = summarize.summarize(out)
+    assert results(rows)["G2"] == summarize.MISMATCH
+    assert results(rows)["G1"] == summarize.PASS
+
+
+def test_atomic_load_needs_both_the_load_and_the_invalidate(tmp_path):
+    files = base_files()
+    files["fence.txt"] = FENCE_AGENT.replace(
+        "fence kernel=k_atomic_load wbl2_sc1=0 inv_sc1=1 wbl2_sc0_sc1=0 inv_sc0_sc1=0 load_sc1=1",
+        "fence kernel=k_atomic_load wbl2_sc1=0 inv_sc1=0 wbl2_sc0_sc1=0 "
+        "inv_sc0_sc1=0 load_sc1=1 load_sc0_sc1=3")
+    out = write_machine(tmp_path, files, with_pmc=False, with_ktrace=False)
+    rows, _ = summarize.summarize(out)
+    # The load carries sc1 but nothing invalidates after it, so the counter poll
+    # would read its own stale line.
+    assert results(rows)["G4"] == summarize.MISMATCH
+    # fence_grep.py's newer system-scope counter is shown when it is reported.
+    assert "load sc0 sc1 x3" in measured(rows)["G4"]
 
 
 def test_system_scope_threadfence_is_a_mismatch(degraded):
@@ -698,10 +909,12 @@ def test_an_empty_raw_directory_gives_every_row_unavailable(tmp_path):
     assert summarize.main(["summarize.py", str(out)]) == 0
     rows, _ = summarize.summarize(out)
     assert len(rows) == 62
-    assert {row["result"] for row in rows} == {summarize.UNAVAIL}
+    # J6 is timed by hand rather than captured, so it is the one row a collection
+    # with nothing in it can still answer.
+    assert {row["id"] for row in rows if row["result"] != summarize.UNAVAIL} == {"J6"}
     written = (out / "summary.md").read_text()
     assert "62 checklist rows" in written
-    assert "0 PASS, 0 MISMATCH, 0 INFO, 62 UNAVAILABLE" in written
+    assert "0 PASS, 0 MISMATCH, 1 INFO, 61 UNAVAILABLE" in written
     assert "ROCm unknown, hipcc unknown" in written
 
 
