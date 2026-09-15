@@ -1,0 +1,174 @@
+{
+  "threshold_source": "4 x calibrated floor",
+  "thresholds": {
+    "norm": 0.1811951991236733,
+    "rope": 0.021174033604749967,
+    "gemv": 0.012940280246906176,
+    "scores": 0.01042574426733761,
+    "attention": 0.04004078653205929,
+    "router": 0.014370772811406368,
+    "expert": 0.04396453772147746,
+    "layer": 0.017334900438894192,
+    "logits": 0.16405109773780513,
+    "exact": 0.0
+  },
+  "boundaries": [
+    {
+      "key": "L0.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "max_abs_err": 0.001953125,
+      "rel_err": 0.0026120173628092673,
+      "cos_sim": 0.999996632660527,
+      "n": 512,
+      "threshold": 0.1811951991236733,
+      "floor": 0.045298799780918324,
+      "result": "PASS"
+    },
+    {
+      "key": "L0.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "max_abs_err": 0.03125,
+      "rel_err": 0.001385134158151605,
+      "cos_sim": 0.9999990785142518,
+      "n": 64,
+      "threshold": 0.021174033604749967,
+      "floor": 0.005293508401187492,
+      "result": "PASS"
+    },
+    {
+      "key": "L1.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "max_abs_err": 0.00640869140625,
+      "rel_err": 0.007161075706184219,
+      "cos_sim": 0.9999743957319527,
+      "n": 512,
+      "threshold": 0.1811951991236733,
+      "floor": 0.045298799780918324,
+      "result": "PASS"
+    },
+    {
+      "key": "L1.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "max_abs_err": 0.125,
+      "rel_err": 0.005867725148768542,
+      "cos_sim": 0.9999944655579893,
+      "n": 64,
+      "threshold": 0.021174033604749967,
+      "floor": 0.005293508401187492,
+      "result": "PASS"
+    },
+    {
+      "key": "L2.B2.q",
+      "boundary": "B2",
+      "class": "gemv",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L2.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L2.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L2.B4.q_pe",
+      "boundary": "B4",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L2.B6.attn",
+      "boundary": "B6",
+      "class": "attention",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L2.B8.router_logits",
+      "boundary": "B8",
+      "class": "router",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L2.B9.topk_idx",
+      "boundary": "B9",
+      "class": "exact",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L2.B10.topk_w",
+      "boundary": "B10",
+      "class": "router",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L2.B11.expert_2",
+      "boundary": "B11",
+      "class": "expert",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L2.B11.expert_30",
+      "boundary": "B11",
+      "class": "expert",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L2.B11.expert_40",
+      "boundary": "B11",
+      "class": "expert",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L2.B11.expert_45",
+      "boundary": "B11",
+      "class": "expert",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L2.B11.expert_54",
+      "boundary": "B11",
+      "class": "expert",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L2.B11.expert_55",
+      "boundary": "B11",
+      "class": "expert",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L2.B12.shared",
+      "boundary": "B12",
+      "class": "expert",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L2.B13.layer_out",
+      "boundary": "B13",
+      "class": "layer",
+      "result": "MISSING_REF"
+    }
+  ],
+  "output_ids": {
+    "result": "SKIP",
+    "note": "truncated graph: no head, ids are placeholders"
+  },
+  "route_log": {
+    "steps_compared": 1,
+    "mismatches": [],
+    "result": "PASS"
+  },
+  "n_pass": 5,
+  "n_fail": 0,
+  "n_missing": 16,
+  "overall": "FAIL"
+}

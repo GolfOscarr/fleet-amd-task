@@ -1,0 +1,53 @@
+{
+  "layers": 3,
+  "head": false,
+  "iters": 1,
+  "debug": false,
+  "stop_after": null,
+  "s_max": 1025,
+  "n_prompt": 1024,
+  "ops": 34,
+  "tasks": 188,
+  "env": {
+    "MPK_EVENT_TIMING": null,
+    "USE_NT_WEIGHTS": null,
+    "USE_GANG": "1",
+    "AMDGPU_TARGETS": "gfx942",
+    "MPK_DEBUG_SCORES": null
+  },
+  "boundary_keys": [
+    "L0.B3.c_kv",
+    "L0.B3.k_pe",
+    "L1.B3.c_kv",
+    "L1.B3.k_pe",
+    "L2.B10.topk_w",
+    "L2.B11.expert_2",
+    "L2.B11.expert_30",
+    "L2.B11.expert_40",
+    "L2.B11.expert_45",
+    "L2.B11.expert_54",
+    "L2.B11.expert_55",
+    "L2.B12.shared",
+    "L2.B13.layer_out",
+    "L2.B2.q",
+    "L2.B3.c_kv",
+    "L2.B3.k_pe",
+    "L2.B4.q_pe",
+    "L2.B6.attn",
+    "L2.B8.router_logits",
+    "L2.B9.topk_idx",
+    "L2.kva",
+    "L2.norm2",
+    "L2.ql_nope"
+  ],
+  "output_ids": [
+    0
+  ],
+  "notes": [],
+  "timings_s": {
+    "mpk_wall_s": 0.018871545791625977,
+    "iters": 1,
+    "pack_s": 0.9090631008148193,
+    "build_s": 38.6396758556366
+  }
+}
