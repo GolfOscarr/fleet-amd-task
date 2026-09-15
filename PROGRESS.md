@@ -5,7 +5,16 @@ Time limit: 5 days. Target: gfx942, BF16, 1024-token prompt, 32 greedy tokens.
 
 Last updated: 2026-09-16 · branch `local/hw-collection` (hardware collection on the VM, run 2026-09-15)
 
-**Where we are:** discovery complete (5 doc sets); the technical design is
+**Where we are (2026-09-16):** M0, M1, M2 and M3 reached on the MI300X
+on 2026-09-15 (Hot Aisle, one VM, about $12): gate 1 passed after three
+fixes, layer 1 validated end to end with all 16 boundaries and exact top-k,
+27 layers run, the full model with the head produces the reference's first
+two tokens, 15.6 ms per iteration (the gang model's eight workgroups per
+operator, MAJ-7). Open: the fault at 7 to 9 layers and at 27 layers with
+the head at 32 iterations (`docs/hw-collection/03-lessons-and-ideas.md`
+item 14); the session image (`env/docker/README.md`) not yet pushed. The
+next session starts from `docs/hw-collection/05-next-session.md`.
+Earlier state: discovery complete (5 doc sets); the technical design is
 written and independently reviewed (`docs/design-doc/`, 14 files, one
 counting script); the local harness is complete and independently
 reviewed on `local/harness` (prompt, reference run and capture,

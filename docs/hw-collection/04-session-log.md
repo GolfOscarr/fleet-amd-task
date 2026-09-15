@@ -48,7 +48,13 @@ under `env/hw/20260915/logs/`, every run's report under
 | 16:40 | queues 1,024 to 16,384; `--layers 8 --head --iters 32` | still faults; reverted |
 | 16:43 | `--layers 8 --head --iters 8` and `16` | fault |
 | 16:46 | `--layers 2 --head --iters 32` | runs all 32 |
-| 16:50 | Docker image build started on the VM | `env/docker/Dockerfile` |
+| 16:50 | Docker image build, attempt 1 | failed: the submodule reset had no git metadata (`.git` excluded from the context) |
+| 17:00 | image build, attempt 2 | failed: `rocblas/rocblas.h` missing in the ROCm dev base image |
+| 17:05 | image build, attempt 3 | built, `import mirage` failed on `libz3.so.5.1` (pip build isolation), then `hatchling` missing without isolation |
+| 17:12 | `--layers 27 --iters 32 --event-timing` (sequential) | 15.6 ms per iteration; the whole-model profile |
+| 17:15 | frontier runs with the head, sequential: 8 layers at 2 fails; 4 at 4 and 8 pass; 16 at 2 passes; 7 and 9 at 2 fail; 8 without the head at 2, 16, 32 fails; 8 with the head stopped after the first operator passes, stopped after the last MoE operator fails | the fault depends on the layer count, not on the head or the sequence length |
+| 17:20 | `--layers 27 --debug` (growth curve) | aborted: the snapshot copy shares no tensor with its successor (`register_mugraph` assertion) |
+| 17:25 | image build, attempt 4 (hatchling added) | running at the end of the session; `env/docker/README.md` |
 
 ## Failures and fixes
 

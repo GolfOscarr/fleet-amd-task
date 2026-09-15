@@ -1,8 +1,14 @@
 # 05 - Next session: from a fresh VM to a running graph in ten minutes
 
 Written 2026-09-16 after the first two sessions (`04-session-log.md`). The
-built environment of those sessions is an image on GitHub Container
-Registry, so no session pays for the Fleet build again.
+built environment of those sessions is meant to be an image on GitHub
+Container Registry, so no session pays for the Fleet build again. **As of
+2026-09-16 the image is not pushed**: the first three builds failed for
+reasons now fixed in the tree (`env/docker/README.md`), the fourth was
+running when the session ended. If `gh api /user/packages?package_type=container`
+lists no `fleet-amd-task`, the next session builds it first (about 15
+minutes, `env/docker/README.md`) and otherwise runs `env/setup.sh` (about
+20 minutes) as in the run-book.
 
 ```
 ghcr.io/golfoscarr/fleet-amd-task:20260915     ROCm 7.2 base, both venvs (torch for ROCm 7.2),
