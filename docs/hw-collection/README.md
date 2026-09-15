@@ -9,6 +9,9 @@ first VM was created.
 |---|---|
 | [`01-plan.md`](01-plan.md) | why it runs before the build, what is prepared on the laptop first, the ten groups of measurements and the assumption each verifies, the procedure on the VM, what a VM can hide, the facts about the rented machine |
 | [`02-checklist.md`](02-checklist.md) | the checks, one row each: command, expected value with its source, what it settles; the sign-off list |
+| [`03-lessons-and-ideas.md`](03-lessons-and-ideas.md) | what went wrong on the first sessions and the fix for each; fourteen ideas the measurements suggest, each with the number it rests on |
+| [`04-session-log.md`](04-session-log.md) | the timeline of every run of 2026-09-15, every failure with its cause and fix, what each artifact proves |
+| [`05-next-session.md`](05-next-session.md) | from a fresh VM to a running graph in ten minutes with the pushed image; what to do first |
 
 The script and the six probes are `env/collect_hw.sh` and
 `env/hw/probes/`; each session's record goes to `env/hw/<date>/`, and the

@@ -1,0 +1,97 @@
+# 05 - Next session: from a fresh VM to a running graph in ten minutes
+
+Written 2026-09-16 after the first two sessions (`04-session-log.md`). The
+built environment of those sessions is an image on GitHub Container
+Registry, so no session pays for the Fleet build again.
+
+```
+ghcr.io/golfoscarr/fleet-amd-task:20260915     ROCm 7.2 base, both venvs (torch for ROCm 7.2),
+                                              CK/json/cutlass at the pinned commits, the three
+                                              patches, Fleet built for gfx942, the kernel-test
+                                              launcher and the six probes compiled
+```
+
+Private to the account; `docker login ghcr.io` with a token that has
+`read:packages` (`gh auth token` on the laptop has it).
+
+## Provision
+
+1. `ssh admin.hotaisle.app`, team page, `n`, Enter on the MI300X entry,
+   `y` on the dialog. About 10 s later the VM is on the team page; Enter
+   on it shows `ssh hotaisle@<ip>`. Prefer a 1x MI300X ($2.99 per hour)
+   when listed; the 2x ($5.98) was the only shape on 2026-09-15.
+2. On the laptop: `rsync -az --exclude .venv --exclude .venv-fleet
+   --exclude env/hw/build --exclude env/hw/probes/work --exclude
+   env/offline_gfx942/work --exclude docs/report --exclude .omc
+   --exclude harness/fleet_out --exclude env/logs /path/to/metalOps/
+   hotaisle@<ip>:/home/hotaisle/metalOps/` (the VM has no GitHub
+   credentials; rsync is the transfer).
+
+## On the VM, in this order
+
+```
+# 1. the model (79 s) and the image (a few minutes), in parallel
+python3 -m venv --without-pip /tmp/hfdl && curl -sS https://bootstrap.pypa.io/get-pip.py | /tmp/hfdl/bin/python3 - -q
+/tmp/hfdl/bin/pip install -q huggingface_hub
+mkdir -p ~/metalOps/env/logs
+nohup /tmp/hfdl/bin/python3 -c "from huggingface_hub import snapshot_download; print(snapshot_download('deepseek-ai/DeepSeek-Coder-V2-Lite-Base'))" > ~/metalOps/env/logs/download.log 2>&1 &
+echo <token> | docker login ghcr.io -u GolfOscarr --password-stdin
+docker pull ghcr.io/golfoscarr/fleet-amd-task:20260915
+
+# 2. the container, with the GPU, the model cache and the fresh repo tree mounted
+docker run -it --name fleet --device=/dev/kfd --device=/dev/dri \
+  --group-add video --group-add render --security-opt seccomp=unconfined \
+  -v $HOME/.cache/huggingface:/root/.cache/huggingface \
+  -v $HOME/metalOps:/host/metalOps \
+  ghcr.io/golfoscarr/fleet-amd-task:20260915
+
+# 3. inside: bring the image's tree up to the laptop's (code only; venvs and build stay)
+cd /work/metalOps
+rsync -a --exclude .venv --exclude .venv-fleet --exclude repos --exclude env/hw/build --exclude fleet/tasks/build /host/metalOps/ /work/metalOps/
+# if a patch changed: cd repos/fleet-chiplet-megakernel && git apply ../../fleet/patches/<new>.patch
+source .venv-fleet/bin/activate
+export MIRAGE_HOME=/work/metalOps/repos/fleet-chiplet-megakernel AMDGPU_TARGETS=gfx942 HIP_VISIBLE_DEVICES=0
+SNAP=$(ls -d /root/.cache/huggingface/hub/models--deepseek-ai--DeepSeek-Coder-V2-Lite-Base/snapshots/*)
+
+# 4. prove the machine in two minutes
+bash env/check_day1.sh                                  # 7 PASS lines
+python harness/run_fleet.py --layers 2 --model-dir $SNAP && python harness/compare.py --fleet harness/fleet_out/L2_it1   # M2 again
+```
+
+The reference artifacts (`harness/ref/*.json`, `calibration.json`) are in
+the repo; the tensors (`ref_cache.safetensors`, boundaries) are not, so
+`run_reference.py --device cuda` (under `.venv`, 1 minute, GPU 1 if there
+is one) runs before any `compare.py`.
+
+## What to do first, in order of value
+
+1. **The M4 fault** (`04-session-log.md`, last rows; `03` item 14). Bisect
+   `--layers 2, 4, 8 --head --iters 8`; then the failing one with
+   `MPK_ENABLE_VERBOSE` in the JIT defines (`run_fleet.py --debug` if it
+   plumbs it) to name the faulting task. The suspects are the head tasks
+   against sizes derived from `max_seq_length = 1,024 + K`.
+2. **MAJ-7, the gang parallelism.** Issue one linear as per-tile tasks
+   (37 per XCD) instead of an 8-task gang and time it; if it moves from
+   38 us toward 2 us, convert the rest in `fleet/graph_plan.py`.
+3. **Timing at 27 layers**: `--layers 27 --iters 32 --event-timing`
+   without the head, then `measure.py`, for the per-operator table of
+   the whole model.
+4. **E2, E3, E4 re-run** with the `--passes` probe (`collect_hw.sh` does it
+   in a minute) to settle the two MISMATCH rows of the record.
+5. Growth curve over 27 layers: `run_fleet.py --layers 27` writes
+   `fleet_hidden_per_layer.safetensors` if `--debug` is given; `compare.py`
+   grades it against the reference's per-layer hidden states.
+
+## Before deleting the VM
+
+`rsync` back `env/logs/`, `harness/fleet_out/` and `env/hw/<date>/`
+(absolute destination paths), commit, push; then `docker logout ghcr.io`
+and delete from the TUI (VM page, Delete VM, confirm).
+
+## Rebuilding the image
+
+`docker build -f env/docker/Dockerfile -t ghcr.io/golfoscarr/fleet-amd-task:<date> .`
+from the repo root on a VM (about 20 minutes, no GPU needed), then
+`docker push`. Rebuild when a patch, `env/setup.sh`, the kernel sources or
+a pinned dependency changes; a code-only change is covered by the rsync in
+step 3.
