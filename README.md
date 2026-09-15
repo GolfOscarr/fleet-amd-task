@@ -80,6 +80,7 @@ compiled for `gfx942` offline with the ROCm 7.0 compiler.
 | Documentation | 5 discovery sets (41 files) + the design set (15 files, 1 script) |
 | Local harness | reference run and capture, comparison, weight packing, graph builder, four new kernels and their runtime glue, environment and measurement scripts (`harness/`, `fleet/`, `env/`) |
 | Offline gfx942 compile | the patched megakernel headers parse and our kernels compile and link, no spills; the cross-XCD fences lower as designed ([`env/offline_gfx942/`](env/offline_gfx942/README.md)) |
+| Next agent | how to reach the GPU and run on the VM: [`docs/gpu-bringup/06-agent-guide.md`](docs/gpu-bringup/06-agent-guide.md); the session start: [`05-next-session.md`](docs/gpu-bringup/05-next-session.md) |
 | Session image | Dockerfile and build procedure ready ([`env/docker/README.md`](env/docker/README.md)); not yet pushed, three failed builds documented with their fixes; the next session builds and pushes it first ([`docs/gpu-bringup/05-next-session.md`](docs/gpu-bringup/05-next-session.md)); every run and fix of the first sessions in [`04-session-log.md`](docs/gpu-bringup/04-session-log.md) |
 | Hardware record | the first hour on the MI300X: 62 checks, the placement offset, the bandwidth band confirmed, the latencies ([`env/hw/20260915/`](env/hw/20260915/summary.md), [`docs/gpu-bringup/`](docs/gpu-bringup/README.md)) |
 | Open problems | 4 major open (three narrowed), 13 minor, 30 resolved ([`OPEN-PROBLEMS.md`](OPEN-PROBLEMS.md)) |
