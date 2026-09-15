@@ -160,8 +160,14 @@ Each idea names the number it rests on and what it would take to try.
     suspect is the split-KV partials buffer `[33][16][513]` FP32: a row
     of 513 floats is 2,052 bytes, not a multiple of 16, so rows are
     misaligned whenever the base is, and `mla_attend` and `mla_merge_uv`
-    both touch it. The verbose runtime cannot help: device prints are
-    lost when the kernel faults. The test, next session: pad the partial
+    both touch it. Two more facts narrow it: `mla_attend` clamps its split range to
+    `step + 1`, so it does not over-read the cache tail, and 8 layers
+    without the head fault at 16 and 32 iterations as well, so the
+    sequence length is not the variable for the 8-layer fault; the layer
+    count alone is, through whatever the plan and the packer derive from
+    it (buffer counts, the order and sizes of allocations, the number of
+    tasks and events). The verbose runtime cannot help: device prints
+    are lost when the kernel faults. The test, next session: pad the partial
     row to 516 floats (16-byte rows) in the plan, `numpy_ref.py` and the
     two kernels, or align every allocation to 256 bytes in the packer,
     and re-run `--layers 8 --iters 2`; if it passes, run M4. The only build-time quantity that

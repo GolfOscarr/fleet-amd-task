@@ -1,0 +1,111 @@
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 3.12kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/rocm/dev-ubuntu-24.04:7.2
+#2 DONE 0.0s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 447B done
+#3 DONE 0.0s
+
+#4 [1/8] FROM docker.io/rocm/dev-ubuntu-24.04:7.2@sha256:749f9ee120c739682cc2e1553e62632c2676f98bc49e4d8133f380e0af682bcc
+#4 resolve docker.io/rocm/dev-ubuntu-24.04:7.2@sha256:749f9ee120c739682cc2e1553e62632c2676f98bc49e4d8133f380e0af682bcc 0.0s done
+#4 DONE 0.0s
+
+#5 [internal] load build context
+#5 transferring context: 1.62MB 0.2s done
+#5 DONE 0.2s
+
+#6 [2/8] RUN apt-get update -qq && apt-get install -y -qq --no-install-recommends         python3.12-venv python3-pip git rsync curl ca-certificates build-essential         rocblas-dev hipblas-dev rocprofiler-sdk rocprofiler-sdk-roctx amd-smi-lib     && rm -rf /var/lib/apt/lists/*
+#6 CACHED
+
+#7 [3/8] WORKDIR /work/metalOps
+#7 CACHED
+
+#8 [4/8] COPY . /work/metalOps
+#8 DONE 0.6s
+
+#9 [5/8] RUN git -C repos/fleet-chiplet-megakernel checkout -q -- .     && git -C repos/fleet-chiplet-megakernel clean -q -fdx -e deps/composable_kernel -e deps/json -e deps/cutlass
+#9 DONE 0.8s
+
+#10 [6/8] RUN SKIP_DOWNLOAD=1 bash env/setup.sh
+#10 0.361 == setup.sh 2026-09-15T17:05:34+00:00 on buildkitsandbox; log /work/metalOps/env/logs/setup.20260915-170534.log
+#10 0.361 
+#10 0.361 ---- 1. environment record
+#10 0.383 [rocminfo] worked: rocminfo | head -40
+#10 0.383 [37mROCk module version 6.16.13 is loaded[0m
+#10 0.383 [31mUnable to open /dev/kfd read-write: No such file or directory[0m
+#10 0.383 [31mFailed to get user name to check for video group membership[0m
+#10 0.515 [hipcc] worked: hipcc --version
+#10 0.515 HIP version: 7.2.26015-fc0010cf6a
+#10 0.515 AMD clang version 22.0.0git (https://github.com/RadeonOpenCompute/llvm-project roc-7.2.0 26014 7b800a19466229b8479a78de19143dc33c3ab9b5)
+#10 0.515 Target: x86_64-unknown-linux-gnu
+#10 0.515 Thread model: posix
+#10 0.515 InstalledDir: /opt/rocm-7.2.0/lib/llvm/bin
+#10 0.515 Configuration file: /opt/rocm-7.2.0/lib/llvm/bin/clang++.cfg
+#10 0.521 [rocm version] worked: cat /opt/rocm/.info/version
+#10 0.521 7.2.0
+#10 0.903 [amd-smi version] worked: rocm-smi --version
+#10 0.903 ROCM-SMI version: 4.0.0+fc0010cf6a
+#10 0.903 ROCM-SMI-LIB version: 7.8.0
+#10 1.379 [partition] worked: rocm-smi --showcomputepartition --showmemorypartition
+#10 1.379 WARNING: No AMD GPUs specified
+#10 1.379 WARNING: AMD GPU device(s) is/are in a low-power state. Check power control/runtime_status
+#10 1.379 
+#10 1.379 
+#10 1.379 
+#10 1.379 ============================ ROCm System Management Interface ============================
+#10 1.379 =============================== Current Compute Partition ================================
+#10 1.379 ==========================================================================================
+#10 1.379 ================================ Current Memory Partition ================================
+#10 1.379 ==========================================================================================
+#10 1.379 ================================== End of ROCm SMI Log ===================================
+#10 1.382 Python 3.12.3
+#10 1.728 (no torch/transformers in the system python)
+#10 1.736 ROCm version: 7.2.0 (major.minor 7.2)
+#10 1.736 
+#10 1.736 ---- 2. two venvs: .venv (reference, transformers 4.46.3) and .venv-fleet (Fleet, its own pins)
+#10 2.012 torch index: https://download.pytorch.org/whl/rocm7.2
+#10 6.809 Looking in indexes: https://download.pytorch.org/whl/rocm7.2
+#10 7.122 Collecting torch
+#10 7.433   Downloading torch-2.14.0%2Brocm7.2-cp312-cp312-manylinux_2_28_x86_64.whl (6224.9 MB)
+#10 135.8      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 6.2/6.2 GB 10.1 MB/s  0:02:08
+#10 141.3 Collecting filelock (from torch)
+#10 141.4   Downloading filelock-3.32.3-py3-none-any.whl.metadata (2.0 kB)
+#10 141.5 Collecting typing-extensions>=4.10.0 (from torch)
+#10 141.5   Downloading typing_extensions-4.16.0-py3-none-any.whl.metadata (3.3 kB)
+#10 141.6 Collecting setuptools>=77.0.3 (from torch)
+#10 141.6   Downloading setuptools-78.1.0-py3-none-any.whl.metadata (6.6 kB)
+#10 141.7 Collecting sympy>=1.13.3 (from torch)
+#10 141.7   Downloading sympy-1.14.0-py3-none-any.whl.metadata (12 kB)
+#10 141.8 Collecting networkx>=2.5.1 (from torch)
+#10 141.9   Downloading networkx-3.6.1-py3-none-any.whl.metadata (6.8 kB)
+#10 142.0 Collecting jinja2 (from torch)
+#10 142.0   Downloading jinja2-3.1.6-py3-none-any.whl.metadata (2.9 kB)
+#10 142.1 Collecting fsspec>=0.8.5 (from torch)
+#10 142.1   Downloading fsspec-2026.7.0-py3-none-any.whl.metadata (10 kB)
+#10 142.3 Collecting triton-rocm~=3.8.0 (from torch)
+#10 142.3   Downloading triton_rocm-3.8.0-cp312-cp312-linux_x86_64.whl.metadata (983 bytes)
+#10 142.4 Collecting mpmath<1.4,>=1.1.0 (from sympy>=1.13.3->torch)
+#10 142.4   Downloading mpmath-1.3.0-py3-none-any.whl.metadata (8.6 kB)
+#10 142.6 Collecting MarkupSafe>=2.0 (from jinja2->torch)
+#10 142.6   Downloading markupsafe-3.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.7 kB)
+#10 142.7 Downloading triton_rocm-3.8.0-cp312-cp312-linux_x86_64.whl (361.6 MB)
+#10 145.5    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 361.6/361.6 MB 109.3 MB/s  0:00:02
+#10 145.6 Downloading fsspec-2026.7.0-py3-none-any.whl (206 kB)
+#10 145.6 Downloading networkx-3.6.1-py3-none-any.whl (2.1 MB)
+#10 145.6    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 2.1/2.1 MB 51.2 MB/s  0:00:00
+#10 145.6 Downloading setuptools-78.1.0-py3-none-any.whl (1.3 MB)
+#10 145.7    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.3/1.3 MB 48.5 MB/s  0:00:00
+#10 145.7 Downloading sympy-1.14.0-py3-none-any.whl (6.3 MB)
+#10 145.7    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 6.3/6.3 MB 105.2 MB/s  0:00:00
+#10 145.7 Downloading mpmath-1.3.0-py3-none-any.whl (536 kB)
+#10 145.8    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 536.2/536.2 kB 25.8 MB/s  0:00:00
+#10 145.8 Downloading typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+#10 145.8 Downloading filelock-3.32.3-py3-none-any.whl (98 kB)
+#10 145.8 Downloading jinja2-3.1.6-py3-none-any.whl (134 kB)
+#10 145.8 Downloading markupsafe-3.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (22 kB)
+#10 146.4 Installing collected packages: mpmath, typing-extensions, triton-rocm, sympy, setuptools, networkx, MarkupSafe, fsspec, filelock, jinja2, torch
