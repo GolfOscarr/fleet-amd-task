@@ -76,7 +76,21 @@ instrumentation.
 
 ---
 
-## Q6 — Does HIP agent-scope fence emit `buffer_wbl2` on our ROCm? `open`
+## Q6 — Does HIP agent-scope fence emit `buffer_wbl2` on our ROCm? `resolved` (2026-09-15)
+
+**Resolved: yes, exactly as expected, on the machine's own hipcc.** Probe
+`env/hw/probes/fence_probe.cu` compiled for gfx942 with hipcc 7.2.53211 and
+disassembled (`env/hw/20260915/`): the agent-scope release fence lowers to
+`buffer_wbl2 sc1`, the agent-scope acquire fence to `buffer_inv sc1`,
+`__threadfence()` to both at agent scope, and an agent-scope atomic load to
+an `sc1` load followed by `buffer_inv sc1`. No `sc0 sc1` appears in any of
+the four kernels, so `threadfence_gpu()` and the worker's dependency check
+get agent scope and nothing wider. The cost is a few hundred nanoseconds per
+fence (`../mi300x/99-open-questions.md` Q5). What is left is not a lowering
+question: whether any system-scope site from the printf and assert hostcall
+paths sits on the per-task path of the generated kernel, read off
+`kernel_0.cu` on day 2 (`OPEN-PROBLEMS.md` MAJ-3). The original question
+follows.
 
 Inherited from `../mi300x/99-open-questions.md` Q4, now narrowed by the code
 read (`03-runtime.md`): the runtime issues **no cache-control instruction by
@@ -155,7 +169,41 @@ head. Nothing transfers.
 
 ---
 
-## Q10 — Is scheduler block `k` guaranteed to run on XCD `k`? `open` — **day 1**
+## Q10 — Is scheduler block `k` guaranteed to run on XCD `k`? `resolved, no` — 2026-09-15
+
+**Resolved: the assumption is false on this VM, and the fix is committed.**
+Probe `env/hw/probes/xcc_map.cu`, 21 launches over grids 296, 8, 304, 608,
+1000 and 37, alone and concurrent (`env/hw/20260915/`): placement is
+round-robin at workgroup granularity but with a constant offset,
+
+```
+xcd == (blockIdx.x + 4) mod 8
+```
+
+so scheduler block 0 sits on XCD 4, not XCD 0, and the worker-to-scheduler
+queue would have been a cross-XCD channel with no fence on every one of the
+eight schedulers. The offset was identical on every launch and across
+processes, so this is a stable mapping rather than a race, but 4 is a
+property of this VM — presumably set at boot or by the virtual function —
+and nothing should depend on its value.
+
+**What survives.** The offset shifts which XCD a block lands on, not the
+round robin itself, so eight consecutive blocks still land on eight distinct
+XCDs and the prelaunch gang dispatch rule assumed below is intact. Balance
+is intact too, within the remainder: at a 37-block grid the per-XCD counts
+are 5,4,4,4,5,5,5,5 rather than the 5,5,5,5,5,4,4,4 a zero offset would
+give. What breaks is only the identification of a block id with an XCD id.
+
+**Fix.** `fleet/patches/sched_xcd.patch`, already committed: the local
+scheduler indexes its queue by its own `HW_REG_XCC_ID` rather than by block
+id, which is the change the check below anticipated and is correct for any
+offset. `env/check_day1.sh` check 3 was adjusted to match: the
+`[WORKER_XCD]` lines are accepted at `xcd == (worker_id + c) mod 8` for any
+one constant `c` over the eight printed workers, and the `[SCHED_XCD]` lines
+still require `sched_id == xcd`, which the patch makes true by construction
+because `sched_id` is now the discovered XCD. Confirmation is those lines
+from that check on the machine. This resolves `OPEN-PROBLEMS.md` MIN-25 and
+`../mi300x/99-open-questions.md` Q1. The original question follows.
 
 **Why.** `get_rand_sched_id` returns the worker's `xcd_id` as the scheduler
 queue index, with the comment "scheduler_kernel block k runs on XCD k"

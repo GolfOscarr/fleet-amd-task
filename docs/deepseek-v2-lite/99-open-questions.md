@@ -56,7 +56,29 @@ not use the conventional absorbed form".
 
 ---
 
-## Q3 — Can the latent KV cache actually stay resident in L2? `open`
+## Q3 — Can the latent KV cache actually stay resident in L2? `open, narrowed` (2026-09-15)
+
+**Narrowed: L2 is almost certainly not the tier that holds it, but a tier
+that could hold it does exist.** Two results from `env/hw/20260915/` bear on this.
+First, every task's acquire lowers to `buffer_inv sc1` on this hipcc
+(`../mi300x/99-open-questions.md` Q4), and each operator boundary executes
+one, so L2 lines are invalidated between operators and residency across a
+layer is not something to count on; what survives depends on what that
+invalidate actually touches for plain device memory, which is DQ4 in
+`../design-doc/99-open-questions.md` and still open. Second, pointer-chase
+latency shows a tier between L2 and HBM: 81 ns at 1 MiB, 258 ns at 64 MiB,
+342 ns at 1 GiB (`../mi300x/99-open-questions.md` Q13). The 30.4 MB latent
+cache is smaller than the 64 MiB working set that hit that tier, so it would
+fit, and being memory-side it is the one level the acquire is not expected
+to invalidate (`../design-doc/03-synchronization.md`). The tier's capacity
+is not measured, so "would fit" is an inference from one data point.
+
+So the question is unchanged in form but has moved one level down the
+hierarchy: the win, if there is one, is the memory-side cache rather than
+L2, and the experiment that decides it is the non-temporal weight-load
+comparison (DQ5, `OPEN-PROBLEMS.md` MAJ-6) rather than an L2 hit rate alone.
+The check below is still the right check and still needs the GPU. The
+original question follows.
 
 **Why.** `07-roofline.md` observes that the 30.4 MB latent cache nearly fits the
 32 MB aggregate L2, and that per layer it is only 1.125 MB against one XCD's

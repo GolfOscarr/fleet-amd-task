@@ -3,7 +3,7 @@
 Fleet-style batch-1 decode for DeepSeek-Coder-V2-Lite-Base on one AMD MI300X.
 Time limit: 5 days. Target: gfx942, BF16, 1024-token prompt, 32 greedy tokens.
 
-Last updated: 2026-09-14 · branch `local/gpu-ready` (GPU-readiness pass on top of Stage 3)
+Last updated: 2026-09-16 · branch `local/hw-collection` (hardware collection on the VM, run 2026-09-15)
 
 **Where we are:** discovery complete (5 doc sets); the technical design is
 written and independently reviewed (`docs/design-doc/`, 14 files, one
@@ -166,19 +166,32 @@ Test suite: `.venv/bin/python -m pytest harness/tests fleet/tests -q` (66 tests)
 
 ---
 
-## Stage 4 — GPU bring-up ⬜ blocked on hardware
+## Stage 4 — GPU bring-up ⬜ in progress — hardware collection done (2026-09-15)
+
+The hour of measurements that precedes the build ran on Hot Aisle VM
+`enc1-gpuvm005` (ROCm 7.2.4, hipcc 7.2.53211, two MI300X VF devices, device 0
+used). Record and readings: `env/hw/20260915/`, summarised in
+`docs/hw-collection/README.md`.
 
 **Day 1, in order — each gates the next:**
 
 - [ ] **Does the repo build for gfx942?** `AMDGPU_TARGETS=gfx942 pip install -e .` ← **BLOCKING** (device code: compiled offline 2026-09-14, `env/offline_gfx942/`; left: the cmake and cargo host build and a graph run)
-- [ ] Capture `rocminfo`, `hipcc --version`, ROCm version, partition mode
-- [ ] Assert SPX + NPS1; find `amd-smi` query/set syntax
-- [ ] Confirm `XCC_ID` returns 0–7; map workgroup → XCD
-- [x] Disassemble agent-scope fence: does `buffer_wbl2 sc1` / `buffer_inv sc1` appear? Yes, offline (`env/offline_gfx942/fences.txt`); left: whether a system-scope fence sits on the per-task path of the generated kernel
-- [ ] Verify 38 CUs/XCD detected (repo constants are MI350's 32)
-- [ ] Download model (31 GB)
-- [ ] `rocprofv3 --list-avail` → confirm counter names (`TCC_EA0_*`)
-- [ ] Validate bytes-from-requests against a known-size copy kernel
+- [x] Capture `rocminfo`, `hipcc --version`, ROCm version, partition mode — ROCm 7.2.4, hipcc 7.2.53211, SPX + NPS1, 304 CUs over 8 XCDs, 64 KiB LDS, 4 MiB L2 per XCD, 192 GB HBM, no L3 row (`docs/mi300x` Q9)
+- [x] Assert SPX + NPS1; find `amd-smi` query/set syntax — the query that works is `amd-smi static --partition`; the set syntax was not exercised, the VM was already in the mode we want (`docs/mi300x` Q3)
+- [x] Confirm `XCC_ID` returns 0–7; map workgroup → XCD — all values in 0–7, all eight present; the mapping is `xcd == (blockIdx.x + 4) mod 8`, balanced and stable across launches and processes, which is **not** what the runtime assumed: fixed by `fleet/patches/sched_xcd.patch` (`docs/mi300x` Q1, `docs/fleet` Q10, MIN-25)
+- [x] Disassemble agent-scope fence: does `buffer_wbl2 sc1` / `buffer_inv sc1` appear? Yes, offline (`env/offline_gfx942/fences.txt`) and again on the VM's own hipcc 7.2 with no `sc0 sc1` anywhere in the four probe kernels, at 115–317 ns per fence; left: whether a system-scope fence sits on the per-task path of the generated kernel (`docs/mi300x` Q4, Q5)
+- [ ] Verify 38 CUs/XCD detected (repo constants are MI350's 32) — the hardware half is confirmed, 304 CUs over 8 XCDs; what the runtime detects needs the build
+- [x] Download model (31 GB) — 30 GB in 79 s on the VM
+- [x] `rocprofv3 --list-avail` → confirm counter names (`TCC_EA0_*`) — names confirmed, PMC collection works inside the VF, 128 TCC instances (16 channels x 8 XCC) (`docs/mi300x` Q11)
+- [x] Validate bytes-from-requests against a known-size copy kernel — exact on a 1 GiB copy, and it showed `docs/mi300x/06-profiling.md`'s read formula undercounts by 2x for want of a 128 B term (`docs/mi300x` Q12, MIN-32)
+
+**Also settled by the collection:** one wave per SIMD at the worker kernel's
+LDS footprint with all 304 blocks co-resident (`docs/mi300x` Q6, MAJ-4);
+streaming read 3.943 TB/s with the knee at prefetch depth 4 and BabelStream
+Triad 4,133,844 MB/s, so the 3.66–4.3 TB/s band holds (Q14, MIN-22);
+pointer-chase latency 81 ns in L2, 258 ns at 64 MiB, 342 ns at HBM, so the
+memory-side cache tier is real (Q13, MIN-21, MAJ-6); a 703 ns cross-XCD
+one-way hop, the first number under `t_b` (DQ1, MAJ-5).
 
 **Fallback if the build fails:** minimal own persistent kernel, M2 only, runtime
 documented as blocked. **Decide end of day 1.**
