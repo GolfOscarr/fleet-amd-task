@@ -66,14 +66,16 @@ per-block limit with `hipFuncSetAttribute`. Neither a refused attribute nor a
 failed query is treated as a probe failure when an LDS request is what caused
 it: the line is still printed with `blocks_per_cu=0`, because a block that
 does not fit is a measurement and a grid that is not co-resident deadlocks the
-megakernel. With no LDS request a failed query is a real fault and exits 2. `--dynamic-lds` matters because
-the runtime launches the worker kernel with 58,368 bytes of dynamic LDS
-(`runtime_header.h:41`, `MAX_DYNAMIC_SHARED_MEMORY_SIZE` is 60 KiB minus the
-3 KiB static reservation), which puts the block plus its static reservation
-at 60 KiB of the CU's 64 KiB. Residency is then LDS-limited to one block per
-CU rather than register-limited to two, so the two runs bracket the answer. `--dynamic-lds` exists because the runtime
-launches with 58,368 bytes of dynamic LDS, which may be what limits the block
-count rather than the registers. The clock mode launches a one-thread kernel
+megakernel. With no LDS request a failed query is a real fault and exits 2.
+
+`--dynamic-lds` matters because the runtime launches the worker kernel with
+58,368 bytes of dynamic LDS (`runtime_header.h:41`,
+`MAX_DYNAMIC_SHARED_MEMORY_SIZE` is 60 KiB minus the 3 KiB static
+reservation), which puts the block plus its static reservation at 60 KiB of
+the CU's 64 KiB. Residency is then LDS-limited to one block per CU rather
+than register-limited to two, so the two runs bracket the answer.
+
+The clock mode launches a one-thread kernel
 that spins on `s_memrealtime` for about 100 ms as computed from
 `hipDeviceAttributeWallClockRate`, and compares the ticks it counted with
 what the attribute predicts over the host interval.
@@ -109,9 +111,24 @@ same CU, so `one` is one block per CU and one wave per SIMD; `--grid G` asks
 for `65536/K` bytes where `K = ceil(G/cus)`, which leaves room for exactly K.
 If the runtime refuses 65536 the probe falls back to 40960 and reports it in
 `lds_bytes`. `full` is the kernel's own maximum residency with no dynamic
-LDS. Timing warms up for about one second of launches first, because clocks
-under a hypervisor sit in a low state until load arrives, then times each
-repeat with its own event pair.
+LDS.
+
+`--passes P` repeats the whole grid-stride sweep P times inside one launch and
+counts P times the buffer in the bandwidth. It exists for the working-set
+sweep: the unrolled loop runs only while UNROLL further strides still fit, so
+at full residency a buffer smaller than about a thread's worth of strides
+falls entirely into the scalar tail and runs at one load in flight. Without
+passes the sweep would confound prefetch depth with size, so the collection
+holds `passes` times size constant at 1 GiB. The accumulator is rotated
+between passes, because re-reading the same buffer an even number of times
+would otherwise xor itself back to zero and leave a checksum that proves
+nothing.
+
+Timing warms up for about one second of launches first, because clocks under
+a hypervisor sit in a low state until load arrives. The warm-up is bounded by
+elapsed time rather than by a launch count, so a small working set is not
+silently under-warmed, which is the case where a low clock state matters
+most. Each repeat is then timed with its own event pair.
 
 Feeds E1 to E4.
 
@@ -119,11 +136,14 @@ Feeds E1 to E4.
 stream_read --occupancy full --size 1G --unroll 8 --repeat 3
 stream_read --occupancy one  --size 1G --unroll N      N in 1 2 4 8 16 32
 stream_read --grid 608 --size 1G --unroll N
-stream_read --occupancy full --unroll 8 --size W       W in 4M ... 1024M
+stream_read --occupancy full --unroll 8 --size W --passes P
 ```
 
+For the working-set sweep W runs over 4, 16, 32, 64, 128, 256, 512 and 1024
+MiB with `P = 1024/W` in MiB, so every point reads the same 1 GiB.
+
 Keys, one line per repeat: `stream_read occupancy grid block lds_bytes
-blocks_per_cu_query size_mib unroll ms gbps tbps checksum vgprs`. `gbps` is
+blocks_per_cu_query size_mib unroll ms gbps tbps checksum vgprs passes`. `gbps` is
 decimal GB/s over the buffer read once. `vgprs` is the register footprint of
 the kernel that ran: N `uint4` in flight needs 4N registers for the data
 alone, so a count well below that means the compiler split the batch and the
@@ -177,25 +197,29 @@ executable that proves the four kernels launch and prints `fence_probe
 ran=4`.
 
 `fence_grep.py` reads the assembly, splits it at the four kernel symbols and
-counts the cache-maintenance instructions per kernel. On gfx942 the assembler
-spells the cache-policy bits as separate operands in the fixed order `sc0 sc1
-nt`, so `buffer_wbl2 sc1` (agent scope, what the design relies on) and
-`buffer_wbl2 sc0 sc1` (system scope) are distinct instructions; the counting
-matches whole operand tokens, never substrings, so `sc0` is not a prefix
-match on `sc1` and a line carrying both bits never lands in the agent-scope
-column. `env/offline_gfx942/fences.txt` is the same census over the
+counts the cache-maintenance instructions and the scoped loads per kernel. On
+gfx942 the assembler spells the cache-policy bits as separate operands in the
+fixed order `sc0 sc1`, so `buffer_wbl2 sc1` (agent scope, what the design
+relies on) and `buffer_wbl2 sc0 sc1` (system scope) are distinct
+instructions; the counting matches whole operand tokens, never substrings, so
+`sc0` is not a prefix match on `sc1` and a line carrying both bits never
+lands in the agent-scope column. `env/offline_gfx942/fences.txt` is the same census over the
 megakernel.
 
 Feeds G1 to G4.
 
 ```
 hipcc --offload-arch=gfx942 -S --offload-device-only -O2 -std=c++17 \
-    env/hw/probes/fence_probe.cu -o env/hw/build/fence_probe.s
-python3 env/hw/probes/fence_grep.py env/hw/build/fence_probe.s
+    env/hw/probes/fence_probe.cu -o env/hw/<date>/raw/fence_probe.s
+python3 env/hw/probes/fence_grep.py env/hw/<date>/raw/fence_probe.s
 ```
 
 Keys, one line per kernel: `fence kernel wbl2_sc1 inv_sc1 wbl2_sc0_sc1
-inv_sc0_sc1 load_sc1`.
+inv_sc0_sc1 load_sc1 load_sc0_sc1`. The two load counters are separate for the
+same reason the fence counters are: a `volatile` load lowers to `sc0 sc1` and
+is system scope, so counting it as `load_sc1` would make every kernel look as
+though it carried an agent-scope load. On ROCm 7.0.51831 only `k_atomic_load`
+has a true `sc1` load; the volatile loads of the other three are `sc0 sc1`.
 
 ## chase
 

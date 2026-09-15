@@ -42,32 +42,47 @@ __global__ void fill_kernel(uint4 *buf, size_t n4) {
 // CU, leaving the kernel none to declare statically.
 template <int UNROLL>
 __global__ __launch_bounds__(kBlock) void stream_read_kernel(
-    const uint4 *__restrict__ src, size_t n4, unsigned *sink) {
+    const uint4 *__restrict__ src, size_t n4, int passes, unsigned *sink) {
   const size_t stride = static_cast<size_t>(gridDim.x) * blockDim.x;
-  size_t i = static_cast<size_t>(blockIdx.x) * blockDim.x + threadIdx.x;
+  const size_t start =
+      static_cast<size_t>(blockIdx.x) * blockDim.x + threadIdx.x;
   uint4 acc = make_uint4(0u, 0u, 0u, 0u);
 
-  for (; i + static_cast<size_t>(UNROLL - 1) * stride < n4;
-       i += static_cast<size_t>(UNROLL) * stride) {
-    uint4 v[UNROLL];
+  // Passes hold the loads per thread constant while the working set changes.
+  // The unrolled loop runs only while UNROLL further strides still fit, so at
+  // full residency a buffer smaller than about a thread's worth of strides
+  // falls entirely into the scalar tail and runs at one load in flight. The
+  // working-set sweep would then confound prefetch depth with size; the
+  // caller keeps passes times size constant instead.
+  for (int p = 0; p < passes; ++p) {
+    size_t i = start;
+    for (; i + static_cast<size_t>(UNROLL - 1) * stride < n4;
+         i += static_cast<size_t>(UNROLL) * stride) {
+      uint4 v[UNROLL];
 #pragma unroll
-    for (int u = 0; u < UNROLL; ++u) {
-      v[u] = src[i + static_cast<size_t>(u) * stride];
-    }
+      for (int u = 0; u < UNROLL; ++u) {
+        v[u] = src[i + static_cast<size_t>(u) * stride];
+      }
 #pragma unroll
-    for (int u = 0; u < UNROLL; ++u) {
-      acc.x ^= v[u].x;
-      acc.y ^= v[u].y;
-      acc.z ^= v[u].z;
-      acc.w ^= v[u].w;
+      for (int u = 0; u < UNROLL; ++u) {
+        acc.x ^= v[u].x;
+        acc.y ^= v[u].y;
+        acc.z ^= v[u].z;
+        acc.w ^= v[u].w;
+      }
     }
-  }
-  for (; i < n4; i += stride) {
-    const uint4 v = src[i];
-    acc.x ^= v.x;
-    acc.y ^= v.y;
-    acc.z ^= v.z;
-    acc.w ^= v.w;
+    for (; i < n4; i += stride) {
+      const uint4 v = src[i];
+      acc.x ^= v.x;
+      acc.y ^= v.y;
+      acc.z ^= v.z;
+      acc.w ^= v.w;
+    }
+    // Rotate between passes. Re-reading the same buffer an even number of
+    // times would otherwise xor itself back to zero and leave a checksum that
+    // proves nothing about whether the loads happened.
+    const uint4 t = acc;
+    acc = make_uint4(t.y, t.z, t.w, t.x);
   }
 
   unsigned r = acc.x ^ acc.y ^ acc.z ^ acc.w;
@@ -80,13 +95,13 @@ __global__ __launch_bounds__(kBlock) void stream_read_kernel(
 }
 
 typedef void (*LaunchFn)(int grid, size_t lds, const uint4 *src, size_t n4,
-                         unsigned *sink);
+                         int passes, unsigned *sink);
 
 template <int UNROLL>
 static void launch_variant(int grid, size_t lds, const uint4 *src, size_t n4,
-                           unsigned *sink) {
+                           int passes, unsigned *sink) {
   hipLaunchKernelGGL((stream_read_kernel<UNROLL>), dim3(grid), dim3(kBlock),
-                     lds, nullptr, src, n4, sink);
+                     lds, nullptr, src, n4, passes, sink);
   HIP_CHECK(hipGetLastError());
 }
 
@@ -134,6 +149,7 @@ int main(int argc, char **argv) {
   unsigned long long bytes = 1ull << 30;
   long unroll = 8;
   long repeat = 1;
+  long passes = 1;
 
   for (int i = 1; i < argc; ++i) {
     long v = 0;
@@ -154,14 +170,20 @@ int main(int argc, char **argv) {
       if (!probe_parse_long(argv[++i], &unroll)) {
         PROBE_USAGE("  --unroll takes 1, 2, 4, 8, 16 or 32, got %s\n", argv[i]);
       }
+    } else if (std::strcmp(argv[i], "--passes") == 0 && i + 1 < argc) {
+      if (!probe_parse_long(argv[++i], &passes) || passes < 1) {
+        PROBE_USAGE("  --passes takes a positive count, got %s\n", argv[i]);
+      }
     } else if (std::strcmp(argv[i], "--repeat") == 0 && i + 1 < argc) {
       if (!probe_parse_long(argv[++i], &repeat) || repeat < 1) {
         PROBE_USAGE("  --repeat takes a positive count, got %s\n", argv[i]);
       }
     } else {
       PROBE_USAGE("  stream_read [--occupancy full|one] [--grid G]\n"
-                  "              [--size N[M|G]] [--unroll N] [--repeat R]\n"
-                  "  defaults: --occupancy full --size 1G --unroll 8 --repeat 1\n");
+                  "              [--size N[M|G]] [--unroll N] [--passes P]\n"
+                  "              [--repeat R]\n"
+                  "  defaults: --occupancy full --size 1G --unroll 8\n"
+                  "            --passes 1 --repeat 1\n");
     }
   }
 
@@ -241,28 +263,34 @@ int main(int argc, char **argv) {
   // clocks under a hypervisor can sit in a low state until load arrives.
   HIP_CHECK(hipMemset(d_sink, 0, sizeof(unsigned)));
   HIP_CHECK(hipEventRecord(start, nullptr));
-  kVariants[variant].launch(grid, lds, d_src, n4, d_sink);
+  kVariants[variant].launch(grid, lds, d_src, n4, static_cast<int>(passes),
+                            d_sink);
   HIP_CHECK(hipEventRecord(stop, nullptr));
   HIP_CHECK(hipEventSynchronize(stop));
   float probe_ms = 0.0f;
   HIP_CHECK(hipEventElapsedTime(&probe_ms, start, stop));
 
-  int warmups = probe_ms > 0.0f ? static_cast<int>(1000.0f / probe_ms) : 64;
-  if (warmups < 3) {
-    warmups = 3;
-  }
-  if (warmups > 500) {
-    warmups = 500;
+  // About a second of launches, however many that is. A fixed ceiling would
+  // silently under-warm a small working set, which is the case where clocks
+  // sitting in a low state matter most.
+  int warmups = 3;
+  if (probe_ms > 0.0f) {
+    const int needed = static_cast<int>(1000.0f / probe_ms) + 1;
+    if (needed > warmups) {
+      warmups = needed;
+    }
   }
   for (int i = 0; i < warmups; ++i) {
-    kVariants[variant].launch(grid, lds, d_src, n4, d_sink);
+    kVariants[variant].launch(grid, lds, d_src, n4, static_cast<int>(passes),
+                            d_sink);
   }
   HIP_CHECK(hipDeviceSynchronize());
 
   for (long r = 0; r < repeat; ++r) {
     HIP_CHECK(hipMemset(d_sink, 0, sizeof(unsigned)));
     HIP_CHECK(hipEventRecord(start, nullptr));
-    kVariants[variant].launch(grid, lds, d_src, n4, d_sink);
+    kVariants[variant].launch(grid, lds, d_src, n4, static_cast<int>(passes),
+                            d_sink);
     HIP_CHECK(hipEventRecord(stop, nullptr));
     HIP_CHECK(hipEventSynchronize(stop));
 
@@ -272,15 +300,17 @@ int main(int argc, char **argv) {
     HIP_CHECK(hipMemcpy(&checksum, d_sink, sizeof(checksum),
                         hipMemcpyDeviceToHost));
 
-    // Decimal GB/s: bytes / (ms * 1e-3) / 1e9 == bytes / ms / 1e6.
-    const double gbps = static_cast<double>(buf_bytes) / ms / 1.0e6;
+    // Decimal GB/s over what was actually read: passes times the buffer.
+    // bytes / (ms * 1e-3) / 1e9 == bytes / ms / 1e6.
+    const double gbps =
+        static_cast<double>(buf_bytes) * static_cast<double>(passes) / ms / 1.0e6;
     std::printf("stream_read occupancy=%s grid=%d block=%d lds_bytes=%zu "
                 "blocks_per_cu_query=%d size_mib=%llu unroll=%ld ms=%.6f "
-                "gbps=%.3f tbps=%.4f checksum=%08x vgprs=%d\n",
+                "gbps=%.3f tbps=%.4f checksum=%08x vgprs=%d passes=%ld\n",
                 occ_label, grid, kBlock, lds, blocks_per_cu_query,
                 static_cast<unsigned long long>(buf_bytes >> 20), unroll,
                 static_cast<double>(ms), gbps, gbps / 1000.0, checksum,
-                attr.numRegs);
+                attr.numRegs, passes);
   }
 
   HIP_CHECK(hipEventDestroy(start));

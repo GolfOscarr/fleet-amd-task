@@ -21,9 +21,13 @@ IMAGE="${IMAGE:-rocm/dev-ubuntu-22.04:7.0}"
 PROBES="occupancy stream_read xcc_map fence_probe chase copy_bytes"
 
 mkdir -p "$OUT"
+# Every verdict below is read back out of these files, so a run that dies
+# before it writes them must not be graded against the last run's leftovers.
+rm -f "$OUT"/*.rc "$OUT"/*.log "$OUT"/*.res "$OUT"/fence_probe.s "$OUT"/hipcc.txt
 
 echo "== $IMAGE (amd64; runs under emulation on Apple silicon)"
-docker pull -q --platform linux/amd64 "$IMAGE" >/dev/null
+docker pull -q --platform linux/amd64 "$IMAGE" >/dev/null \
+  || { echo "docker pull failed"; exit 1; }
 
 # One container for every compile: each hipcc start costs about 30 s under
 # emulation, so the round trips are what dominate, not the compiles.
@@ -45,7 +49,7 @@ docker run --rm --platform linux/amd64 -v "$ROOT:/w" -v "$OUT:/out" "$IMAGE" \
       > /out/fence_probe_s.log 2>&1
     echo $? > /out/fence_probe_s.rc
     { hipcc --version | head -2; cat /opt/rocm/.info/version; } > /out/hipcc.txt
-  '
+  ' || { echo "docker run failed"; exit 1; }
 
 echo
 echo "== toolchain"

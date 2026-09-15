@@ -9,14 +9,16 @@ Reads the gfx942 assembly produced by
 splits it at the four kernel symbols, and prints one line per kernel:
 
     fence kernel=k_release wbl2_sc1=1 inv_sc1=0 wbl2_sc0_sc1=0 \
-        inv_sc0_sc1=0 load_sc1=0
+        inv_sc0_sc1=0 load_sc1=0 load_sc0_sc1=1
 
 On gfx942 the assembler spells the cache-policy bits as separate operands in
 the fixed order `sc0 sc1 nt`, so `buffer_wbl2 sc1` (agent scope, what the
 design relies on) and `buffer_wbl2 sc0 sc1` (system scope) are distinct
 instructions and must be counted apart. The counting therefore matches whole
 operand tokens rather than a substring: `sc0` is not a prefix match on `sc1`,
-and a line carrying both bits never lands in the agent-scope column. See
+and a line carrying both bits never lands in the agent-scope column. That
+applies to the loads too: a `volatile` load lowers to `sc0 sc1` and belongs in
+`load_sc0_sc1`, not in `load_sc1`, which counts only agent-scope loads. See
 env/offline_gfx942/fences.txt for the same census over the megakernel.
 """
 
@@ -58,6 +60,7 @@ def main(argv):
                     "wbl2_sc0_sc1": 0,
                     "inv_sc0_sc1": 0,
                     "load_sc1": 0,
+                    "load_sc0_sc1": 0,
                 }
             continue
         if current is None:
@@ -81,7 +84,10 @@ def main(argv):
             elif has_sc1:
                 bucket[stem + "_sc1"] += 1
         elif LOAD_RE.match(mnemonic) and "sc1" in operands:
-            bucket["load_sc1"] += 1
+            if "sc0" in operands:
+                bucket["load_sc0_sc1"] += 1
+            else:
+                bucket["load_sc1"] += 1
 
     if not order:
         sys.stderr.write("fence error: no k_release/k_acquire/k_threadfence/"
@@ -91,10 +97,10 @@ def main(argv):
     for name in order:
         bucket = counts[name]
         print("fence kernel=%s wbl2_sc1=%d inv_sc1=%d wbl2_sc0_sc1=%d "
-              "inv_sc0_sc1=%d load_sc1=%d"
+              "inv_sc0_sc1=%d load_sc1=%d load_sc0_sc1=%d"
               % (name, bucket["wbl2_sc1"], bucket["inv_sc1"],
                  bucket["wbl2_sc0_sc1"], bucket["inv_sc0_sc1"],
-                 bucket["load_sc1"]))
+                 bucket["load_sc1"], bucket["load_sc0_sc1"]))
     return 0
 
 
