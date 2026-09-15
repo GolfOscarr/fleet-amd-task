@@ -113,6 +113,8 @@ docs/
                      and a ledger ranking everything by value
   mla-decode/        the one kernel with no prior art in Fleet: implementation
                      survey and our kernel spec
+  hw-collection/     the first half hour on the GPU: the machine facts the
+                     design assumes, measured and checklisted
   paper/             the Fleet paper
 repos/
   fleet-chiplet-megakernel/   ROCm/fleet-chiplet-megakernel (submodule)
