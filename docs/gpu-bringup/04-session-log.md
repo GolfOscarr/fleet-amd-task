@@ -75,7 +75,7 @@ under `env/hw/20260915/logs/`, every run's report under
 | A laptop dry run deleted the real record | same UTC date directory; the dry-run cleanup removed it | committed immediately after every copy; `collect_hw.sh --out DIR`; nothing under `env/hw/2*/` is deleted |
 | `pkill -f <pattern>` dropped the SSH session twice | the pattern matched the SSH command line itself | kill by pid from `pgrep -f "^python ..."`; never a pattern that appears in the caller's own command |
 | Queued chains waited forever | `while pgrep -f run_fleet.py` matched the waiting shell itself | anchored patterns; or `setsid nohup` and poll a log line |
-| The 27-layer graph with the head faults at 32 iterations | open; see `03-lessons-and-ideas.md` item 13: not the queues, not the clocks, not event timing; needs a deeper graph and a larger configured iteration count with the head | next session: verbose runtime, bisect on `--layers 2..27 --head --iters 8` |
+| The 27-layer graph with the head faults at 32 iterations; 7, 8 and 9 layers fault in every configuration | open; `03-lessons-and-ideas.md` item 13: not the queues, not the clocks, not event timing, not the head, not the sequence length alone; deterministic and dependent on the layer count, a size or index derived from the plan | next session: diff `plan.json` of 8 against 16 layers, then `--layers 8 --stop-after L7.<op>` per operator of layer 7 |
 | Every operator 10 to 100x slower than its bandwidth time | the gang model runs one workgroup per XCD per operator (MAJ-7) | per-tile tasks or multi-workgroup gangs, in the graph builder and the task glue; the next performance step |
 
 ## What each artifact proves
