@@ -1,0 +1,8 @@
+stream_read occupancy=full grid=2432 block=256 lds_bytes=0 blocks_per_cu_query=8 size_mib=4 unroll=8 ms=0.095778 gbps=43.792 tbps=0.0438 checksum=4be40000 vgprs=56
+stream_read occupancy=full grid=2432 block=256 lds_bytes=0 blocks_per_cu_query=8 size_mib=16 unroll=8 ms=0.095857 gbps=175.023 tbps=0.1750 checksum=84700000 vgprs=56
+stream_read occupancy=full grid=2432 block=256 lds_bytes=0 blocks_per_cu_query=8 size_mib=32 unroll=8 ms=0.095938 gbps=349.751 tbps=0.3498 checksum=22600000 vgprs=56
+stream_read occupancy=full grid=2432 block=256 lds_bytes=0 blocks_per_cu_query=8 size_mib=64 unroll=8 ms=0.106955 gbps=627.450 tbps=0.6274 checksum=f7c00000 vgprs=56
+stream_read occupancy=full grid=2432 block=256 lds_bytes=0 blocks_per_cu_query=8 size_mib=128 unroll=8 ms=0.116465 gbps=1152.430 tbps=1.1524 checksum=6d800000 vgprs=56
+stream_read occupancy=full grid=2432 block=256 lds_bytes=0 blocks_per_cu_query=8 size_mib=256 unroll=8 ms=0.121916 gbps=2201.807 tbps=2.2018 checksum=17000000 vgprs=56
+stream_read occupancy=full grid=2432 block=256 lds_bytes=0 blocks_per_cu_query=8 size_mib=512 unroll=8 ms=0.165217 gbps=3249.490 tbps=3.2495 checksum=f6000000 vgprs=56
+stream_read occupancy=full grid=2432 block=256 lds_bytes=0 blocks_per_cu_query=8 size_mib=1024 unroll=8 ms=0.304257 gbps=3529.062 tbps=3.5291 checksum=14000000 vgprs=56
