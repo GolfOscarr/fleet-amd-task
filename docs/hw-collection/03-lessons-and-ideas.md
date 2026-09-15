@@ -145,13 +145,26 @@ Each idea names the number it rests on and what it would take to try.
     32 iterations, 4 layers at 4 and 8, 16 layers at 2 ([25, 429]), 27
     layers at 1 and 2 ([25, 16228]) but not at 32; 8 layers fail at 2, 4,
     8, 16 and 32, deterministically, before the first iteration reports.
-    Without the head, 27 layers run 4 and 32 iterations. A fault that
-    depends on the layer count non-monotonically (8 fails, 16 passes) and
-    on the configured iteration count at 27 layers is a size or index
-    computed from the plan, not a race; the verbose runtime will name the
-    task. Note that a plan of 8 layers with the head has 548 tasks, the
-    same count as the Qwen3 smoke graph, which runs; the coincidence is
-    worth one look at what else is sized from the task count. The only build-time quantity that
+    Without the head, 27 layers run 4 and 32 iterations, and 8 layers
+    fault at 2; 7 and 9 layers with the head fault at 2; 8 layers with
+    the head stopped after the first operator runs, stopped after the
+    last MoE operator faults. So the head is innocent, the layer count
+    matters non-monotonically (2, 3, 4, 16, 27 run; 7, 8, 9 fault), and
+    at 27 layers the fault appears when the sequence length grows from
+    1,026 to 1,056 (`--iters` sets `S_MAX = 1,024 + K`). What changes
+    with the layer count and with `S_MAX` is the total size of the
+    allocations and therefore the base address of every buffer allocated
+    after the weights and the cache: this is the signature of a kernel
+    that reads or writes a buffer with 16-byte vector instructions while
+    nothing guarantees the buffer's base is 16-byte aligned. The first
+    suspect is the split-KV partials buffer `[33][16][513]` FP32: a row
+    of 513 floats is 2,052 bytes, not a multiple of 16, so rows are
+    misaligned whenever the base is, and `mla_attend` and `mla_merge_uv`
+    both touch it. The verbose runtime cannot help: device prints are
+    lost when the kernel faults. The test, next session: pad the partial
+    row to 516 floats (16-byte rows) in the plan, `numpy_ref.py` and the
+    two kernels, or align every allocation to 256 bytes in the packer,
+    and re-run `--layers 8 --iters 2`; if it passes, run M4. The only build-time quantity that
     grows with the iteration count is `max_seq_length = 1,024 + K` and
     the buffers sized from it, and only the head path breaks: the first
     suspects are the `lm_head` gang tiles, the `argmax_partial` slices
