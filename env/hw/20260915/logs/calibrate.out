@@ -1,0 +1,12 @@
+Loading checkpoint shards:   0%|          | 0/4 [00:00<?, ?it/s]Loading checkpoint shards:  25%|██▌       | 1/4 [00:00<00:02,  1.08it/s]Loading checkpoint shards:  50%|█████     | 2/4 [00:01<00:01,  1.04it/s]Loading checkpoint shards:  75%|███████▌  | 3/4 [00:02<00:00,  1.03it/s]Loading checkpoint shards: 100%|██████████| 4/4 [00:03<00:00,  1.18it/s]Loading checkpoint shards: 100%|██████████| 4/4 [00:03<00:00,  1.13it/s]
+attention  floor 1.001e-02  threshold 4.004e-02  (starting 3e-02)
+expert     floor 1.099e-02  threshold 4.396e-02  (starting 3e-02)
+gemv       floor 3.235e-03  threshold 1.294e-02  (starting 2e-02)
+layer      floor 4.334e-03  threshold 1.733e-02  (starting 5e-02)
+logits     floor 4.101e-02  threshold 1.641e-01  (starting 5e-02)
+norm       floor 4.530e-02  threshold 1.812e-01  (starting 1e-02)
+rope       floor 5.294e-03  threshold 2.117e-02  (starting 1e-02)
+router     floor 3.593e-03  threshold 1.437e-02  (starting 2e-02)
+scores     floor 2.606e-03  threshold 1.043e-02  (starting 3e-02)
+exact checks hold in every run
+-> /home/hotaisle/metalOps/harness/ref/calibration.json

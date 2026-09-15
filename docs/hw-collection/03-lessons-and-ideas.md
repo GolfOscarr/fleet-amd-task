@@ -132,8 +132,11 @@ Each idea names the number it rests on and what it would take to try.
     at 32 and 8 layers at 8, 16 and 32 iterations fault with an illegal
     address before any iteration reports, with and without event timing,
     and with the runtime's queues raised from 1,024 to 16,384 entries (so
-    the queues are not the cause). Without the head, 27 layers at 4 and
-    2 layers at 32 iterations run. The only build-time quantity that
+    the queues are not the cause); 2 layers with the head run all 32
+    iterations. Without the head, 27 layers at 4 and 2 layers at 32
+    iterations run. So the fault needs both a deeper graph and a larger
+    configured iteration count, which is the signature of a race or of
+    a size that scales with both, not of a single index. The only build-time quantity that
     grows with the iteration count is `max_seq_length = 1,024 + K` and
     the buffers sized from it, and only the head path breaks: the first
     suspects are the `lm_head` gang tiles, the `argmax_partial` slices

@@ -1,0 +1,43 @@
+# Measurement report
+
+| Quantity | Predicted | Measured |
+|---|---|---|
+| bytes per iteration (read, MiB) | 4709.9 weights + cache; about 4772.0 with activations | - |
+| time per iteration, median (us) | 1148.5-1349.4 + 326 t_b + T_serial | - |
+| time per iteration, P95 (us) |  | - |
+| time per iteration from event timing, median (us) |  | - |
+| time per iteration from host wall clock (us) |  | 2059.6 |
+| achieved read bandwidth (TB/s) | 3.66-4.3 over T_bw | - |
+| launches per generation | 3 | - |
+| L2 hit rate | 16-17% (Fleet's batch-1 figure) | - |
+| tokens per second |  | - |
+
+## Per-operator time (event gaps, mean over iterations after the first)
+
+| Event | Operator | mean us | min us | max us | n |
+|---|---|---|---|---|---|
+| 1 | embed_layer | 155.09 | 8.48 | 196.28 | 30 |
+| 2 | rmsnorm_layer | 14.13 | 13.32 | 14.98 | 31 |
+| 3 | gang_linear_layer | 4.24 | 3.96 | 4.52 | 31 |
+| 4 | mla_prep_layer | 24.55 | 22.60 | 25.56 | 31 |
+| 5 | mla_attend_layer | 210.21 | 206.36 | 213.88 | 31 |
+| 6 | mla_merge_uv_layer | 52.11 | 51.76 | 52.68 | 31 |
+| 7 | gang_linear_with_residual_layer | 38.24 | 37.72 | 38.80 | 31 |
+| 8 | rmsnorm_layer | 13.65 | 13.24 | 13.92 | 31 |
+| 9 | gang_linear_silu_layer | 4.93 | 3.60 | 8.20 | 31 |
+| 10 | gang_linear_with_residual_layer | 36.59 | 34.80 | 38.56 | 31 |
+| 11 | rmsnorm_layer | 50.20 | 49.50 | 50.96 | 31 |
+| 12 | gang_linear_layer | 3.99 | 3.47 | 4.76 | 31 |
+| 13 | mla_prep_layer | 14.29 | 13.60 | 14.96 | 31 |
+| 14 | mla_attend_layer | 210.65 | 206.94 | 213.77 | 31 |
+| 15 | mla_merge_uv_layer | 51.48 | 51.07 | 51.87 | 31 |
+| 16 | gang_linear_with_residual_layer | 36.00 | 35.52 | 36.64 | 31 |
+| 17 | rmsnorm_layer | 13.69 | 13.48 | 13.92 | 31 |
+| 18 | moe_router_layer | 3.66 | 3.46 | 4.02 | 31 |
+| 19 | gang_moe_w13_linear_layer | 23.78 | 23.12 | 25.80 | 31 |
+| 20 | moe_silu_mul_layer | 42.64 | 40.19 | 44.88 | 31 |
+| 21 | gang_moe_w2_linear_layer | 4.98 | 3.56 | 6.36 | 31 |
+| 22 | moe_mul_sum_add_layer | 21.53 | 19.20 | 23.45 | 31 |
+| 23 | event_23 | 3.05 | 2.76 | 3.55 | 31 |
+
+-> harness/fleet_out/L2_it32/metrics.json, harness/fleet_out/L2_it32/report_table.md

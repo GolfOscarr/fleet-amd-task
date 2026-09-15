@@ -1,0 +1,214 @@
+== collect_hw.sh 2026-09-15T15:18:05Z on enc1-gpuvm005
+out:  /home/hotaisle/metalOps/env/hw/20260915
+log:  /home/hotaisle/metalOps/env/hw/20260915/collect.log
+rocm: /opt/rocm
+skip-probes=0 skip-babelstream=0
+HIP_VISIBLE_DEVICES: was <unset>, now 0
+
+---- 0. probe compile (env/hw/build/)
+[run] build-occupancy.txt <- hipcc --offload-arch=gfx942 -O2 -std=c++17 /home/hotaisle/metalOps/env/hw/probes/occupancy.cu -o /home/hotaisle/metalOps/env/hw/build/occupancy
+[build] occupancy: ok
+[run] build-stream_read.txt <- hipcc --offload-arch=gfx942 -O2 -std=c++17 /home/hotaisle/metalOps/env/hw/probes/stream_read.cu -o /home/hotaisle/metalOps/env/hw/build/stream_read
+[build] stream_read: ok
+[run] build-xcc_map.txt <- hipcc --offload-arch=gfx942 -O2 -std=c++17 /home/hotaisle/metalOps/env/hw/probes/xcc_map.cu -o /home/hotaisle/metalOps/env/hw/build/xcc_map
+[build] xcc_map: ok
+[run] build-fence_probe.txt <- hipcc --offload-arch=gfx942 -O2 -std=c++17 /home/hotaisle/metalOps/env/hw/probes/fence_probe.cu -o /home/hotaisle/metalOps/env/hw/build/fence_probe
+[build] fence_probe: ok
+[run] build-chase.txt <- hipcc --offload-arch=gfx942 -O2 -std=c++17 /home/hotaisle/metalOps/env/hw/probes/chase.cu -o /home/hotaisle/metalOps/env/hw/build/chase
+[build] chase: ok
+[run] build-copy_bytes.txt <- hipcc --offload-arch=gfx942 -O2 -std=c++17 /home/hotaisle/metalOps/env/hw/probes/copy_bytes.cu -o /home/hotaisle/metalOps/env/hw/build/copy_bytes
+[build] copy_bytes: ok
+probes built: occupancy stream_read xcc_map fence_probe chase copy_bytes
+
+---- A. identity and software
+[run] rocminfo.txt <- rocminfo
+[run] amd-smi-version.txt <- amd-smi version
+[run] amd-smi-list.txt <- amd-smi list
+[run] amd-smi-static.txt <- amd-smi static
+[run] amd-smi-static-bus.txt <- amd-smi static --bus
+[run] amd-smi-static-driver.txt <- amd-smi static --driver
+[run] amd-smi-static-asic.txt <- amd-smi static --asic
+[run] amd-smi-static-vbios.txt <- amd-smi static --vbios
+[run] hipcc-version.txt <- hipcc --version
+[run] rocm-version.txt <- cat /opt/rocm/.info/version
+[run] dpkg-rocm.txt <- bash -c dpkg -l | grep -i rocm
+[run] rocm-include.txt <- rocm_include_report
+[run] uname.txt <- uname -a
+[run] os-release.txt <- cat /etc/os-release
+[run] amdgpu-version.txt <- cat /sys/module/amdgpu/version
+[run] docker-version.txt <- docker --version
+[run] python-version.txt <- python3 --version
+[run] python-torch.txt <- python3 -c import torch; print(torch.__version__)
+[run] python-torch.txt: UNAVAILABLE (exit 1)
+
+---- B. topology and residency
+[run] kfd-topology.txt <- kfd_topology_report
+[run] occupancy.txt <- /home/hotaisle/metalOps/env/hw/build/occupancy --vgprs 182
+[run] occupancy.txt <- /home/hotaisle/metalOps/env/hw/build/occupancy --vgprs 182 --dynamic-lds 58368
+[run] wallclock.txt <- /home/hotaisle/metalOps/env/hw/build/occupancy --clock
+
+---- C. partition mode (read only; no set is executed)
+[partition] worked: amd-smi static --partition
+[run] amd-smi-set-help.txt <- amd-smi set --help
+
+---- D. clocks, power and memory
+[run] amd-smi-metric-clock.txt <- amd-smi metric --clock
+[run] amd-smi-metric-power.txt <- amd-smi metric --power
+[run] amd-smi-metric-mem-usage.txt <- amd-smi metric --mem-usage
+[run] amd-smi-metric-temp.txt <- amd-smi metric --temperature
+[run] amd-smi-metric-throttle.txt <- amd-smi metric --throttle
+[run] amd-smi-metric-throttle.txt: UNAVAILABLE (exit 1)
+[run] amd-smi-static-limit.txt <- amd-smi static --limit
+[run] amd-smi-static-limit.txt: UNAVAILABLE (exit 1)
+[run] amd-smi-static-vram.txt <- amd-smi static --vram
+[run] amd-smi-process.txt <- amd-smi process
+[run] rocm-smi-a.txt <- rocm-smi -a
+[run] rocminfo-max-clock.txt <- grep Max Clock Freq /home/hotaisle/metalOps/env/hw/20260915/raw/rocminfo.txt
+
+---- E. achievable bandwidth
+[run] e1.txt <- /home/hotaisle/metalOps/env/hw/build/stream_read --occupancy full --size 1G --unroll 8 --repeat 3
+[run] e2.txt <- /home/hotaisle/metalOps/env/hw/build/stream_read --occupancy one --size 1G --unroll 1
+[run] e2.txt <- /home/hotaisle/metalOps/env/hw/build/stream_read --occupancy one --size 1G --unroll 2
+[run] e2.txt <- /home/hotaisle/metalOps/env/hw/build/stream_read --occupancy one --size 1G --unroll 4
+[run] e2.txt <- /home/hotaisle/metalOps/env/hw/build/stream_read --occupancy one --size 1G --unroll 8
+[run] e2.txt <- /home/hotaisle/metalOps/env/hw/build/stream_read --occupancy one --size 1G --unroll 16
+[run] e2.txt <- /home/hotaisle/metalOps/env/hw/build/stream_read --occupancy one --size 1G --unroll 32
+[run] e3.txt <- /home/hotaisle/metalOps/env/hw/build/stream_read --grid 608 --size 1G --unroll 1
+[run] e3.txt <- /home/hotaisle/metalOps/env/hw/build/stream_read --grid 608 --size 1G --unroll 2
+[run] e3.txt <- /home/hotaisle/metalOps/env/hw/build/stream_read --grid 608 --size 1G --unroll 4
+[run] e3.txt <- /home/hotaisle/metalOps/env/hw/build/stream_read --grid 608 --size 1G --unroll 8
+[run] e3.txt <- /home/hotaisle/metalOps/env/hw/build/stream_read --grid 608 --size 1G --unroll 16
+[run] e3.txt <- /home/hotaisle/metalOps/env/hw/build/stream_read --grid 608 --size 1G --unroll 32
+[run] e4.txt <- /home/hotaisle/metalOps/env/hw/build/stream_read --occupancy full --unroll 8 --size 4M
+[run] e4.txt <- /home/hotaisle/metalOps/env/hw/build/stream_read --occupancy full --unroll 8 --size 16M
+[run] e4.txt <- /home/hotaisle/metalOps/env/hw/build/stream_read --occupancy full --unroll 8 --size 32M
+[run] e4.txt <- /home/hotaisle/metalOps/env/hw/build/stream_read --occupancy full --unroll 8 --size 64M
+[run] e4.txt <- /home/hotaisle/metalOps/env/hw/build/stream_read --occupancy full --unroll 8 --size 128M
+[run] e4.txt <- /home/hotaisle/metalOps/env/hw/build/stream_read --occupancy full --unroll 8 --size 256M
+[run] e4.txt <- /home/hotaisle/metalOps/env/hw/build/stream_read --occupancy full --unroll 8 --size 512M
+[run] e4.txt <- /home/hotaisle/metalOps/env/hw/build/stream_read --occupancy full --unroll 8 --size 1024M
+[run] babelstream.txt <- babelstream_run
+[run] babelstream.txt: UNAVAILABLE (exit 1)
+[skip] rocm-bandwidth-test: rocm-bandwidth-test is not on PATH
+
+---- F. workgroup-to-XCD placement
+[run] xcc-map.txt <- /home/hotaisle/metalOps/env/hw/build/xcc_map --grid 296 --runs 3 --dump /home/hotaisle/metalOps/env/hw/20260915/raw/xcc-map-296.csv
+[run] xcc-map.txt <- /home/hotaisle/metalOps/env/hw/build/xcc_map --grid 8 --runs 3
+[run] xcc-map.txt <- /home/hotaisle/metalOps/env/hw/build/xcc_map --grid 8 --runs 3 --concurrent
+[run] xcc-map.txt <- /home/hotaisle/metalOps/env/hw/build/xcc_map --grid 304 --runs 3
+[run] xcc-map.txt <- /home/hotaisle/metalOps/env/hw/build/xcc_map --grid 608 --runs 3
+[run] xcc-map.txt <- /home/hotaisle/metalOps/env/hw/build/xcc_map --grid 1000 --runs 3
+[run] xcc-map.txt <- /home/hotaisle/metalOps/env/hw/build/xcc_map --grid 37 --runs 3
+
+---- G. fence lowering on this machine's hipcc
+[run] fence-asm.txt <- hipcc --offload-arch=gfx942 -S --offload-device-only -O2 -std=c++17 /home/hotaisle/metalOps/env/hw/probes/fence_probe.cu -o /home/hotaisle/metalOps/env/hw/20260915/raw/fence_probe.s
+[run] fence.txt <- python3 /home/hotaisle/metalOps/env/hw/probes/fence_grep.py /home/hotaisle/metalOps/env/hw/20260915/raw/fence_probe.s
+
+---- H. latency, fence cost and the cross-XCD round trip
+[run] chase.txt <- /home/hotaisle/metalOps/env/hw/build/chase --size 1M
+[run] chase.txt <- /home/hotaisle/metalOps/env/hw/build/chase --size 64M
+[run] chase.txt <- /home/hotaisle/metalOps/env/hw/build/chase --size 1G
+[run] chase.txt <- /home/hotaisle/metalOps/env/hw/build/chase --fence release
+[run] chase.txt <- /home/hotaisle/metalOps/env/hw/build/chase --fence acquire
+[run] chase.txt <- /home/hotaisle/metalOps/env/hw/build/chase --fence release --xcds 8
+[run] chase.txt <- /home/hotaisle/metalOps/env/hw/build/chase --fence acquire --xcds 8
+[run] chase.txt <- /home/hotaisle/metalOps/env/hw/build/chase --pingpong
+
+---- I. profiler
+[rocprofv3] worked: rocprofv3 --list-avail
+[run] pmc1-run.txt <- rocprofv3 --pmc TCC_EA0_RDREQ_sum TCC_EA0_RDREQ_32B_sum -d /home/hotaisle/metalOps/env/hw/20260915/raw/pmc1 --output-format csv -- /home/hotaisle/metalOps/env/hw/build/copy_bytes
+[run] pmc2-run.txt <- rocprofv3 --pmc TCC_EA0_WRREQ_sum TCC_EA0_WRREQ_64B_sum -d /home/hotaisle/metalOps/env/hw/20260915/raw/pmc2 --output-format csv -- /home/hotaisle/metalOps/env/hw/build/copy_bytes
+[run] pmc3-run.txt <- rocprofv3 --pmc TCC_HIT_sum TCC_MISS_sum -d /home/hotaisle/metalOps/env/hw/20260915/raw/pmc3 --output-format csv -- /home/hotaisle/metalOps/env/hw/build/copy_bytes
+[run] ktrace-run.txt <- rocprofv3 --kernel-trace -d /home/hotaisle/metalOps/env/hw/20260915/raw/ktrace --output-format csv -- /home/hotaisle/metalOps/env/hw/build/copy_bytes
+[run] copy-bytes.txt <- /home/hotaisle/metalOps/env/hw/build/copy_bytes
+
+---- J. host, disk and network
+[run] lscpu.txt <- lscpu
+[run] nproc.txt <- nproc
+[run] free.txt <- free -g
+[run] df-root.txt <- df -h /
+[run] df-home.txt <- df -h /home/hotaisle
+[run] ulimit.txt <- bash -c ulimit -a
+[run] download-log.txt <- tail -n 30 /home/hotaisle/metalOps/env/logs/download.log
+[run] hf-cache-size.txt <- du -sh /home/hotaisle/.cache/huggingface
+docker image for J5: rocm/dev-ubuntu-24.04:7.2
+[run] docker-pull.txt <- timeout 600 docker pull rocm/dev-ubuntu-24.04:7.2
+[run] docker-gpu.txt <- timeout 600 docker run --rm --device=/dev/kfd --device=/dev/dri --group-add video --group-add render --security-opt seccomp=unconfined rocm/dev-ubuntu-24.04:7.2 rocminfo
+
+---- summary
+# Hardware collection 20260915
+
+Collected on 20260915 on enc1-gpuvm005, ROCm 7.2.4, hipcc 7.2.53211. 62 checklist rows: 31 PASS, 4 MISMATCH, 23 INFO, 4 UNAVAILABLE. Raw captures are in raw/, one file per command, and collect.log holds the run. Every MISMATCH belongs in OPEN-PROBLEMS.md and the owning 99-open-questions.md with its date and command (docs/hw-collection/02-checklist.md, Sign-off).
+
+| # | Check | Measured | Expected | Result |
+|---|---|---|---|---|
+| A1 | GPU name and target | gfx942, AMD Instinct MI300X VF | gfx942, MI300X | PASS |
+| A2 | GPUs and bus ids | 2 GPU agent(s), device 0 BDF 0000:fd:00.0 | 1 or 2; BDF of device 0 recorded | PASS |
+| A3 | ROCm version | 7.2.4 | 7.0 or newer | PASS |
+| A4 | hipcc version | 7.2.53211 | same major as the offline 7.0.51831 | PASS |
+| A5 | Driver version | 6.16.13 (amd-smi 6.16.13) | INFO | INFO |
+| A6 | CK headers in ROCm | ck_tile present, ck present | INFO: absent or a version | INFO |
+| A7 | OS, kernel, Docker, Python | Ubuntu 24.04.4 LTS, 6.8.0-124-generic, docker 29.5.3, python 3.12.3 | INFO; Ubuntu with Docker | INFO |
+| A8 | System torch | absent | INFO; expected absent | INFO |
+| B1 | Compute units | rocminfo 304, kfd 1216/4 = 304 | 304 (kfd 1216 / 4) | PASS |
+| B2 | XCD count | 8 (kfd num_xcc) | 8 | PASS |
+| B3 | SIMDs per CU, wavefront | 4 SIMDs per CU, wavefront 64, kfd 4/64 | 4 SIMDs per CU, wavefront 64 | PASS |
+| B4 | Max waves per CU | 32 per CU, kfd 8 per SIMD | 32 per CU, 8 per SIMD (gk) | PASS |
+| B5 | LDS per workgroup | GROUP segment 64 KB, kfd 64 KB | 64 KiB | PASS |
+| B6 | Workgroup max size | 1024 work-items | 1024 work-items (gk) | PASS |
+| B7 | L2 size | 4096(0x1000) KB | 4 MB per XCD | PASS |
+| B8 | Last-level cache | 262144(0x40000) KB | INFO; 256 MB is the secondary figure | INFO |
+| B9 | HBM size | rocminfo GLOBAL 191.7 GiB, amd-smi 191.7 GiB | 192 GB (about 196,000 MiB) | PASS |
+| B10 | Residency of the worker kernel | register-only 2 block(s) per CU (184 VGPRs), with the 58,368 B request 1 block(s) per CU, 304 co-resident | 1 block per CU with the 58,368 B dynamic LDS request; 2 register-limited | PASS |
+| B11 | Wall-clock rate | rate 100000 kHz, ratio 0.981665 | INFO; the two agree within 1% | INFO |
+| C1 | Compute partition | SPX | SPX | PASS |
+| C2 | Memory partition | NPS1 | NPS1 | PASS |
+| C3 | Query syntax that works | amd-smi static --partition | INFO | INFO |
+| C4 | Guest may set the partition | amd-smi set does not offer --compute-partition | UNAVAILABLE acceptable if C1 and C2 pass | INFO |
+| D1 | Memory clock | current 901 MHz, max 1,300 MHz | INFO; the rated HBM3 clock behind the 5.3 TB/s peak | INFO |
+| D2 | Engine clock | current 138 MHz, max 2,100 MHz, rocminfo 0 MHz, kfd 2100 kHz | INFO; about 2,100 MHz max (gk) | INFO |
+| D3 | Power cap and draw | draw 144 W | INFO; cap at the 750 W class (gk) | INFO |
+| D4 | Temperature and throttle | 46 °C | no throttle flags | UNAVAILABLE |
+| D5 | Memory in use, processes | 0.28 GiB used, 0 process(es) | near 0, no other process | PASS |
+| E1 | Read bandwidth, full, 1 GiB, N=8 | 3 runs, mean 3.943 TB/s, spread 0.32% | 3.66 to 4.3 TB/s; spread under 3% | PASS |
+| E2 | Bandwidth at one wave/SIMD vs N | knee at N=4, plateau 4325 GB/s (N1:2706, N2:2410, N4:4325, N8:4304, N16:3787, N32:4095) | knee at N about 4, plateau within 10% of E1 | PASS |
+| E3 | Same at two waves/SIMD | knee at N=4, plateau 4033 GB/s | plateau at about half the N of E2 | PASS |
+| E4 | Bandwidth vs working set | 4MiB:44, 16MiB:175, 32MiB:350, 64MiB:627, 128MiB:1152, 256MiB:2202, 512MiB:3249, 1024MiB:3529; step above 32 MiB: yes; above 256 MiB: yes | step above 32 MiB (L2) and above 256 MiB (Infinity Cache) | INFO |
+| E5 | BabelStream | - | Dot >= 3,660,781 MB/s, Copy >= 4,177,285 MB/s | UNAVAILABLE |
+| E6 | Host-to-device bandwidth | - | INFO | UNAVAILABLE |
+| F1 | XCC_ID readable and in range | 8 distinct ids, in range: yes | ids in 0..7, all eight present | PASS |
+| F2 | Rule at the worker grid (296) | 888 rule violations over 3 run(s), per XCD [37, 37, 37, 37, 37, 37, 37, 37] | xcd == block mod 8 for every block, 37 per XCD | MISMATCH |
+| F3 | Scheduler grid (8) | alone 24 violation(s) over 3 run(s), concurrent 24 over 3 | block k on XCD k, alone and concurrent | MISMATCH |
+| F4 | Rule at other grids | grid 608: 1824 violation(s), grid 1000: 3000 violation(s), grid 37: 111 violation(s), 37 per XCD [5, 4, 4, 4, 5, 5, 5, 5] | same rule at 608, 1000, 37; at 37: 5,5,5,5,5,4,4,4 | MISMATCH |
+| F5 | Stability across launches | 21 of 21 runs identical to run 0 | identical maps across three launches | PASS |
+| F6 | Blocks per XCD at 304 | per XCD [38, 38, 38, 38, 38, 38, 38, 38] | 38 per XCD at 304 | PASS |
+| G1 | Agent-scope release | buffer_wbl2 sc1 x1, sc0 sc1 x0 | buffer_wbl2 sc1, no sc0 sc1 in that kernel | PASS |
+| G2 | Agent-scope acquire | buffer_inv sc1 x1, sc0 sc1 x0 | buffer_inv sc1 | PASS |
+| G3 | __threadfence() | wbl2 sc1 x1, inv sc1 x1, wbl2 sc0 sc1 x0, inv sc0 sc1 x0: agent | agent scope: buffer_wbl2 sc1 and buffer_inv sc1, no sc0 sc1 | PASS |
+| G4 | Agent-scope atomic load | load sc1 x1, buffer_inv sc1 x1 | sc1 on the load, buffer_inv sc1 after | PASS |
+| H1 | L2 hit latency | 81.3 ns wall, 81.1 ns s_memrealtime | INFO | INFO |
+| H2 | Infinity Cache latency | 258.2 ns wall, 257.6 ns s_memrealtime | INFO; about 218 ns from a secondary source | INFO |
+| H3 | HBM latency | 341.6 ns wall, 340.8 ns s_memrealtime | INFO; 250 ns to 2 us; flag only above 2 us | INFO |
+| H4 | Release fence cost | 115.1 ns (agent 525.2 ns, workgroup 410.1 ns) | INFO; under 1 us | INFO |
+| H5 | Acquire fence cost | 137.4 ns (agent 893.6 ns, workgroup 756.2 ns) | INFO; under 1 us | INFO |
+| H6 | Fence cost, eight XCDs | release -30.1 ns (agent 798.4 ns, workgroup 828.5 ns); acquire 317.3 ns (agent 990.5 ns, workgroup 673.2 ns) | INFO | INFO |
+| H7 | Cross-XCD one-way latency | 703.4 ns one way (XCD 0 to 1, 10000 rounds) | INFO; 116 to 202.5 ns from a secondary source | INFO |
+| I1 | Counter names present | all six present | the six counter names present | PASS |
+| I2 | Counters readable | TCC_EA0_RDREQ_32B_sum 0, TCC_EA0_RDREQ_sum 8,399,658, TCC_EA0_WRREQ_64B_sum 50,365,440, TCC_EA0_WRREQ_sum 50,365,440, TCC_HIT_sum 25,200,086, TCC_MISS_sum 33,581,430 | non-zero values, no error | PASS |
+| I3 | Bytes-from-requests arithmetic | decomposition reads 0.501 GiB (-49.9%), writes 3.002 GiB (+200.2%); flat reads 0.501 GiB (-49.9%), writes 3.002 GiB (+200.2%) | the decomposition within 5% | MISMATCH |
+| I4 | Kernel trace | 1 copy_kernel dispatch(es), first 551,532 ns | one dispatch row with a duration | PASS |
+| I5 | TCC instance count | 0 TCC_EA0_RDREQ instances | INFO; 128 in SPX (gk) | INFO |
+| J1 | CPU model and cores | Intel(R) Xeon(R) Platinum 8470, 26 cores | INFO; 8, 13 or 26 cores | INFO |
+| J2 | RAM | 440 GB total | INFO; 224 GB (1x), 448 GB (2x) | INFO |
+| J3 | Disk free | / 12,288 GiB free, home 12,288 GiB free | over 100 GiB free | PASS |
+| J4 | Download rate | captured, no rate line | INFO; minutes for 31 GB | INFO |
+| J5 | Container with GPU passthrough | gfx942 visible in the container | the GPU visible inside the container | PASS |
+| J6 | VM creation to first ssh | record by hand (wall clock) | INFO; recorded by hand | UNAVAILABLE |
+
+written: /home/hotaisle/metalOps/env/hw/20260915/summary.md (62 rows)
+
+raw files:  /home/hotaisle/metalOps/env/hw/20260915/raw
+summary:    /home/hotaisle/metalOps/env/hw/20260915/summary.md
+log:        /home/hotaisle/metalOps/env/hw/20260915/collect.log
+next: read the summary against docs/hw-collection/02-checklist.md, file every
+      MISMATCH in OPEN-PROBLEMS.md, then commit env/hw/20260915/
