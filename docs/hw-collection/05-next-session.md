@@ -53,7 +53,7 @@ source .venv-fleet/bin/activate
 export MIRAGE_HOME=/work/metalOps/repos/fleet-chiplet-megakernel AMDGPU_TARGETS=gfx942 HIP_VISIBLE_DEVICES=0
 SNAP=$(ls -d /root/.cache/huggingface/hub/models--deepseek-ai--DeepSeek-Coder-V2-Lite-Base/snapshots/*)
 
-# 4. prove the machine in two minutes
+# 4. prove the machine in two minutes (one graph run at a time: the JIT directory is shared)
 bash env/check_day1.sh                                  # 7 PASS lines
 python harness/run_fleet.py --layers 2 --model-dir $SNAP && python harness/compare.py --fleet harness/fleet_out/L2_it1   # M2 again
 ```
@@ -65,17 +65,21 @@ is one) runs before any `compare.py`.
 
 ## What to do first, in order of value
 
-1. **The M4 fault** (`04-session-log.md`, last rows; `03` item 14). Bisect
-   `--layers 2, 4, 8 --head --iters 8`; then the failing one with
-   `MPK_ENABLE_VERBOSE` in the JIT defines (`run_fleet.py --debug` if it
-   plumbs it) to name the faulting task. The suspects are the head tasks
-   against sizes derived from `max_seq_length = 1,024 + K`.
+1. **The M4 fault** (`04-session-log.md`, last rows; `03` item 14). The
+   frontier is known: 7, 8 and 9 layers fault in every configuration,
+   2, 3, 4, 16 and 27 layers run, and 27 layers fault only at the
+   1,056-position sequence length with the head. The variable is what
+   the plan and the packer derive from the layer count. Verbose device
+   prints are lost on a fault, so the tool is the plan itself: diff
+   `plan.json` of `--layers 8` against `--layers 16` for any size, count
+   or offset that is not proportional to the layer count; then stop the
+   8-layer graph after each operator of layer 7 (`--stop-after L7.<op>`)
+   to find the first operator that faults, and read its pointer offsets.
 2. **MAJ-7, the gang parallelism.** Issue one linear as per-tile tasks
    (37 per XCD) instead of an 8-task gang and time it; if it moves from
    38 us toward 2 us, convert the rest in `fleet/graph_plan.py`.
-3. **Timing at 27 layers**: `--layers 27 --iters 32 --event-timing`
-   without the head, then `measure.py`, for the per-operator table of
-   the whole model.
+3. **Timing at 27 layers** is done (`env/hw/20260915/runs/L27_it32`,
+   15.6 ms per iteration, MAJ-7). Repeat it after every change of item 2.
 4. **E2, E3, E4 re-run** with the `--passes` probe (`collect_hw.sh` does it
    in a minute) to settle the two MISMATCH rows of the record.
 5. Growth curve over 27 layers: `run_fleet.py --layers 27 --debug` is
