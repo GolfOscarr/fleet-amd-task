@@ -120,11 +120,16 @@ Each idea names the number it rests on and what it would take to try.
     do not move when the clocks are held up (MAJ-7). One workgroup per
     XCD per operator cannot stream more than about 25 GB/s each; the
     design's band assumed the whole machine streams every operator.
-    Two ways out, both in the graph builder and the task glue rather than
-    in the runtime: issue the linears as per-tile tasks (37 per XCD, the
-    runtime's per-task pointer offsets), and give `mla_attend` more
-    splits and a prefetch loop. Expect an order of magnitude; the
-    boundary cost of idea 1 then becomes the next term.
+    The whole model (`env/hw/20260915/runs/L27_it32`): 15.6 ms per
+    iteration, of which `mla_attend` 5.7 ms, `mla_merge_uv` 1.45 ms,
+    `moe_silu_mul` 1.1 ms, `o_proj` plus `down` 1.0 ms, and about 4 ms
+    outside any operator (boundaries plus the serial `mla_prep`). Two
+    ways out, both in the graph builder and the task glue rather than in
+    the runtime: give `mla_attend` and `mla_merge_uv` a prefetch loop and
+    more splits (they are ours and they are half the time), and issue the
+    stock linears and elementwise ops as per-tile tasks (37 per XCD, the
+    runtime's per-task pointer offsets). Expect an order of magnitude;
+    the 4 ms of boundaries (idea 1) then becomes the next term.
 
 14. **The head faults when the run is configured for many iterations,
     before the first iteration completes.** Facts from the bisection
