@@ -7,7 +7,10 @@ probes) on top of `rocm/dev-ubuntu-24.04:7.2`, so a later session pulls it
 instead of spending 20 minutes in `env/setup.sh`. Target name:
 `ghcr.io/golfoscarr/fleet-amd-task:<date>`, private to the account.
 
-Status on 2026-09-16: **not yet pushed.** Four builds ran on the first VM;
+Status on 2026-09-16, end of day: **pushed** as `ghcr.io/golfoscarr/fleet-amd-task:20260916`
+(25 GB, private; the `image` stage of session A: the 13 steps in 42 minutes, the
+layer export 47 minutes more, the push 3 minutes; `PASS image 3663s`). The history
+before that: four builds ran on the first VM;
 the first three failed for the reasons below, each fixed in the tree; the
 fourth was stopped with the VM. The fifth is the `image` stage of
 `env/session/vm.sh` (`docs/round-2/02-session-plan.md`, minute 2 of

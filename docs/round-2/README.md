@@ -3,7 +3,7 @@
 The second round on the MI300X, planned from the artifacts of the first
 (`docs/gpu-bringup/`): what is prepared on the laptop first, how the two
 sessions on the 1x MI300X VM are spent, the log of what actually ran, and
-the results. Written from 2026-09-16 on; branch `local/round-2`.
+the results. Written from 2026-09-16 on; the preparation on branch `local/round-2` (merged as PR #6), the sessions and the write-up on `gpu/round-2`.
 
 | File | What |
 |---|---|

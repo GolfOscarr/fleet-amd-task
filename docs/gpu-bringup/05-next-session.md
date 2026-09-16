@@ -2,9 +2,11 @@
 
 **Superseded on 2026-09-16 by `docs/round-2/02-session-plan.md`** (the 1x
 MI300X shape, the session scripts of `env/session/`, the queue files and
-the minute-by-minute plan). Kept as the record of what the next session
-looked like right after the first one; the commands below still work by
-hand.
+the minute-by-minute plan). That plan ran on 2026-09-16: the outcome is
+`docs/round-2/07-summary.md`, and the image this file wanted is pushed as
+`ghcr.io/golfoscarr/fleet-amd-task:20260916`. Kept as the record of what the
+next session looked like right after the first one; the commands below still
+work by hand.
 
 Written 2026-09-16 after the first two sessions (`04-session-log.md`). The
 built environment of those sessions is meant to be an image on GitHub

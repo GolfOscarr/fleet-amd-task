@@ -79,8 +79,9 @@ cmd_report() {
   started="$(cat "$VM_STARTED_FILE" 2>/dev/null || echo 0)"
   if [ "$started" != "0" ]; then
     minute=$(( ( $(date +%s) - started ) / 60 ))
-    cost="$(awk -v m="$minute" -v r="$RATE" 'BEGIN { h = m / 60; if (h < 1) h = 1; printf "%.2f", h * r }')"
-    echo "minute $minute since provisioning; about \$$cost billed so far at \$$RATE/h (1-hour minimum)"
+    # per-minute billing (the 1x shape lists a one-minute minimum; 149 minutes cost $7.33 on 2026-09-16)
+    cost="$(awk -v m="$minute" -v r="$RATE" 'BEGIN { printf "%.2f", m / 60 * r }')"
+    echo "minute $minute since provisioning; about \$$cost billed so far at \$$RATE/h (per minute)"
   else
     echo "no provisioning time recorded (env/session/vm.started)"
   fi

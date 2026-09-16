@@ -9,11 +9,13 @@ Last updated: 2026-09-16 · branch `local/gpu-bringup` (the first GPU sessions, 
 on 2026-09-15 (Hot Aisle, one VM, about $12): gate 1 passed after three
 fixes, layer 1 validated end to end with all 16 boundaries and exact top-k,
 27 layers run, the full model with the head produces the reference's first
-two tokens, 15.6 ms per iteration (the gang model's eight workgroups per
-operator, MAJ-7). Open: the fault at 7 to 9 layers and at 27 layers with
-the head at 32 iterations (`docs/gpu-bringup/03-lessons-and-ideas.md`
-item 13); the session image (`env/docker/README.md`) not yet pushed. The
-next round is planned in `docs/round-2/` (preparation on the laptop first,
+two tokens. Round 2 (2026-09-16, one 1x MI300X, 149 minutes): M4 reached,
+the 32 ids equal at 27 layers with the head; the fault of round 1 named (the
+stock fused gate-up kernel reads 16 rows at batch 1) and fixed in the plan;
+9.6 ms per token steady state with E2 and per-tile linears against the 1.15
+to 1.35 ms design band, the rest sitting in the megakernel's per-task
+overhead (MAJ-7); the image pushed. One page: `docs/round-2/07-summary.md`.
+The round was planned in `docs/round-2/` (preparation on the laptop first,
 then two sessions on a 1x MI300X for $27).
 Earlier state: discovery complete (5 doc sets); the technical design is
 written and independently reviewed (`docs/design-doc/`, 14 files, one

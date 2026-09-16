@@ -1,5 +1,12 @@
 # 02 - Session plan: two sessions on a 1x MI300X for $27
 
+**Ran on 2026-09-16.** The rows below are the plan as written before the
+sessions; what happened is `03-session-log.md`, the numbers `04-results.md`,
+the one-page outcome `07-summary.md`. Session B ran inside session A's VM on
+the user's decision at minute 58; B3 was not measured (rocprofv3 on the torch
+wheel); the whole round took 149 minutes and $7.33 instead of the 9 hours
+budgeted.
+
 Rewritten 2026-09-16 after the preparation (`01-preparation.md`, P1 to P8
 and the verification pass). Every row below is one literal command of
 `env/session/laptop.sh`, the text that decides PASS, whether the row runs

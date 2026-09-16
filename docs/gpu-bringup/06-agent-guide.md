@@ -9,7 +9,7 @@ file is about the mechanics of getting there and back.
 
 - Hot Aisle, https://admin.hotaisle.app/. The user's SSH key is on the
   account; the team belongs to the recruiter and is funded in small
-  amounts ($20 to start). Billing is per minute after a one-hour minimum,
+  amounts ($20 to start). Billing is per minute (the 1x shape lists a one-minute minimum; 149 minutes cost $7.33 on 2026-09-16),
   only deletion ends it, and running out of balance deletes the VM with
   everything on it.
 - Shapes seen: 2x MI300X VM at $5.98 per hour (26 cores, 448 GiB, 13 TB
