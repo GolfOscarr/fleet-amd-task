@@ -1,0 +1,1739 @@
+{
+  "threshold_source": "4 x calibrated floor",
+  "thresholds": {
+    "norm": 0.1811951991236733,
+    "rope": 0.021174033604749967,
+    "gemv": 0.012940280246906176,
+    "scores": 0.01042574426733761,
+    "attention": 0.04004078653205929,
+    "router": 0.014370772811406368,
+    "expert": 0.04396453772147746,
+    "layer": 0.017334900438894192,
+    "logits": 0.16405109773780513,
+    "exact": 0.0
+  },
+  "boundaries": [
+    {
+      "key": "L0.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "max_abs_err": 0.001953125,
+      "rel_err": 0.0026120173628092673,
+      "cos_sim": 0.999996632660527,
+      "n": 512,
+      "threshold": 0.1811951991236733,
+      "floor": 0.045298799780918324,
+      "result": "PASS"
+    },
+    {
+      "key": "L0.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "max_abs_err": 0.03125,
+      "rel_err": 0.001385134158151605,
+      "cos_sim": 0.9999990785142518,
+      "n": 64,
+      "threshold": 0.021174033604749967,
+      "floor": 0.005293508401187492,
+      "result": "PASS"
+    },
+    {
+      "key": "L1.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "max_abs_err": 0.006927490234375,
+      "rel_err": 0.007243875690426325,
+      "cos_sim": 0.9999737797183871,
+      "n": 512,
+      "threshold": 0.1811951991236733,
+      "floor": 0.045298799780918324,
+      "result": "PASS"
+    },
+    {
+      "key": "L1.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "max_abs_err": 0.125,
+      "rel_err": 0.005874649415613325,
+      "cos_sim": 0.999994500081001,
+      "n": 64,
+      "threshold": 0.021174033604749967,
+      "floor": 0.005293508401187492,
+      "result": "PASS"
+    },
+    {
+      "key": "L2.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L2.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L3.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L3.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L4.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L4.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L5.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L5.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L6.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L6.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L7.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L7.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L8.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L8.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L9.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L9.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L10.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L10.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L11.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L11.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L12.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L12.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L13.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L13.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L14.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L14.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L15.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L15.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L16.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L16.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L17.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L17.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L18.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L18.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L19.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L19.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L20.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L20.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L21.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L21.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L22.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L22.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L23.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L23.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L24.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L24.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L25.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L25.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L26.B2.q",
+      "boundary": "B2",
+      "class": "gemv",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L26.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L26.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L26.B4.q_pe",
+      "boundary": "B4",
+      "class": "rope",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L26.B6.attn",
+      "boundary": "B6",
+      "class": "attention",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L26.B8.router_logits",
+      "boundary": "B8",
+      "class": "router",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L26.B9.topk_idx",
+      "boundary": "B9",
+      "class": "exact",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L26.B10.topk_w",
+      "boundary": "B10",
+      "class": "router",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L26.B11.expert_10",
+      "boundary": "B11",
+      "class": "expert",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L26.B11.expert_14",
+      "boundary": "B11",
+      "class": "expert",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L26.B11.expert_19",
+      "boundary": "B11",
+      "class": "expert",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L26.B11.expert_29",
+      "boundary": "B11",
+      "class": "expert",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L26.B11.expert_58",
+      "boundary": "B11",
+      "class": "expert",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L26.B11.expert_62",
+      "boundary": "B11",
+      "class": "expert",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L26.B12.shared",
+      "boundary": "B12",
+      "class": "expert",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L26.B13.layer_out",
+      "boundary": "B13",
+      "class": "layer",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "head.B14.norm",
+      "boundary": "B14",
+      "class": "norm",
+      "max_abs_err": 9.34375,
+      "rel_err": 1.0251152224618192,
+      "cos_sim": 0.6288070351428442,
+      "n": 2048,
+      "threshold": 0.1811951991236733,
+      "floor": 0.045298799780918324,
+      "result": "FAIL"
+    },
+    {
+      "key": "head.B15.logits",
+      "boundary": "B15",
+      "class": "logits",
+      "max_abs_err": 19.78125,
+      "rel_err": 0.82955506310085,
+      "cos_sim": 0.7093147310815875,
+      "n": 102400,
+      "threshold": 0.16405109773780513,
+      "floor": 0.04101277443445128,
+      "result": "FAIL"
+    },
+    {
+      "key": "head.B16.token",
+      "boundary": "B16",
+      "class": "exact",
+      "result": "PASS",
+      "detail": "fleet 25 ref 25"
+    }
+  ],
+  "output_ids": {
+    "n_ref": 32,
+    "n_fleet": 32,
+    "compared": 32,
+    "matched_prefix": 32,
+    "first_divergence": null,
+    "all_match": true,
+    "result": "PASS"
+  },
+  "route_log": {
+    "steps_compared": 32,
+    "mismatches": [
+      {
+        "step": 0,
+        "moe_layer_index": 4,
+        "ref": [
+          4,
+          19,
+          30,
+          34,
+          46,
+          49
+        ],
+        "fleet": [
+          2,
+          4,
+          19,
+          30,
+          34,
+          46
+        ]
+      },
+      {
+        "step": 3,
+        "moe_layer_index": 4,
+        "ref": [
+          23,
+          26,
+          35,
+          51,
+          58,
+          60
+        ],
+        "fleet": [
+          19,
+          23,
+          35,
+          51,
+          58,
+          60
+        ]
+      },
+      {
+        "step": 3,
+        "moe_layer_index": 11,
+        "ref": [
+          20,
+          30,
+          43,
+          44,
+          50,
+          55
+        ],
+        "fleet": [
+          0,
+          20,
+          30,
+          44,
+          50,
+          55
+        ]
+      },
+      {
+        "step": 3,
+        "moe_layer_index": 18,
+        "ref": [
+          7,
+          17,
+          21,
+          32,
+          33,
+          52
+        ],
+        "fleet": [
+          4,
+          7,
+          21,
+          32,
+          33,
+          52
+        ]
+      },
+      {
+        "step": 6,
+        "moe_layer_index": 14,
+        "ref": [
+          14,
+          37,
+          43,
+          44,
+          51,
+          55
+        ],
+        "fleet": [
+          37,
+          43,
+          44,
+          49,
+          51,
+          55
+        ]
+      },
+      {
+        "step": 6,
+        "moe_layer_index": 17,
+        "ref": [
+          3,
+          11,
+          14,
+          19,
+          61,
+          62
+        ],
+        "fleet": [
+          3,
+          5,
+          11,
+          14,
+          19,
+          61
+        ]
+      },
+      {
+        "step": 8,
+        "moe_layer_index": 18,
+        "ref": [
+          8,
+          12,
+          28,
+          36,
+          39,
+          43
+        ],
+        "fleet": [
+          8,
+          12,
+          36,
+          39,
+          43,
+          44
+        ]
+      },
+      {
+        "step": 8,
+        "moe_layer_index": 24,
+        "ref": [
+          4,
+          6,
+          13,
+          16,
+          17,
+          31
+        ],
+        "fleet": [
+          3,
+          4,
+          6,
+          13,
+          17,
+          31
+        ]
+      },
+      {
+        "step": 9,
+        "moe_layer_index": 19,
+        "ref": [
+          7,
+          30,
+          36,
+          39,
+          43,
+          47
+        ],
+        "fleet": [
+          5,
+          7,
+          30,
+          36,
+          39,
+          43
+        ]
+      },
+      {
+        "step": 9,
+        "moe_layer_index": 23,
+        "ref": [
+          1,
+          14,
+          17,
+          37,
+          50,
+          63
+        ],
+        "fleet": [
+          1,
+          14,
+          19,
+          37,
+          50,
+          63
+        ]
+      },
+      {
+        "step": 11,
+        "moe_layer_index": 19,
+        "ref": [
+          20,
+          21,
+          23,
+          24,
+          26,
+          55
+        ],
+        "fleet": [
+          20,
+          21,
+          23,
+          24,
+          55,
+          57
+        ]
+      },
+      {
+        "step": 12,
+        "moe_layer_index": 12,
+        "ref": [
+          5,
+          10,
+          18,
+          31,
+          44,
+          54
+        ],
+        "fleet": [
+          10,
+          18,
+          21,
+          31,
+          44,
+          54
+        ]
+      },
+      {
+        "step": 12,
+        "moe_layer_index": 20,
+        "ref": [
+          14,
+          18,
+          21,
+          27,
+          53,
+          62
+        ],
+        "fleet": [
+          14,
+          16,
+          18,
+          27,
+          53,
+          62
+        ]
+      },
+      {
+        "step": 13,
+        "moe_layer_index": 22,
+        "ref": [
+          37,
+          38,
+          49,
+          53,
+          58,
+          61
+        ],
+        "fleet": [
+          23,
+          38,
+          49,
+          53,
+          58,
+          61
+        ]
+      },
+      {
+        "step": 14,
+        "moe_layer_index": 20,
+        "ref": [
+          8,
+          13,
+          32,
+          47,
+          49,
+          57
+        ],
+        "fleet": [
+          8,
+          13,
+          16,
+          32,
+          49,
+          57
+        ]
+      },
+      {
+        "step": 15,
+        "moe_layer_index": 6,
+        "ref": [
+          17,
+          19,
+          26,
+          38,
+          42,
+          50
+        ],
+        "fleet": [
+          19,
+          26,
+          38,
+          41,
+          42,
+          50
+        ]
+      },
+      {
+        "step": 15,
+        "moe_layer_index": 10,
+        "ref": [
+          4,
+          8,
+          16,
+          25,
+          30,
+          62
+        ],
+        "fleet": [
+          4,
+          8,
+          16,
+          30,
+          39,
+          62
+        ]
+      },
+      {
+        "step": 15,
+        "moe_layer_index": 12,
+        "ref": [
+          6,
+          19,
+          22,
+          33,
+          38,
+          57
+        ],
+        "fleet": [
+          6,
+          19,
+          22,
+          33,
+          38,
+          58
+        ]
+      },
+      {
+        "step": 15,
+        "moe_layer_index": 18,
+        "ref": [
+          16,
+          34,
+          46,
+          52,
+          58,
+          63
+        ],
+        "fleet": [
+          16,
+          25,
+          34,
+          46,
+          52,
+          58
+        ]
+      },
+      {
+        "step": 15,
+        "moe_layer_index": 19,
+        "ref": [
+          28,
+          35,
+          43,
+          45,
+          46,
+          49
+        ],
+        "fleet": [
+          28,
+          35,
+          43,
+          45,
+          46,
+          59
+        ]
+      },
+      {
+        "step": 15,
+        "moe_layer_index": 22,
+        "ref": [
+          3,
+          22,
+          24,
+          29,
+          30,
+          44
+        ],
+        "fleet": [
+          22,
+          24,
+          29,
+          30,
+          44,
+          48
+        ]
+      },
+      {
+        "step": 15,
+        "moe_layer_index": 23,
+        "ref": [
+          10,
+          31,
+          35,
+          48,
+          49,
+          55
+        ],
+        "fleet": [
+          31,
+          35,
+          48,
+          49,
+          55,
+          59
+        ]
+      },
+      {
+        "step": 17,
+        "moe_layer_index": 23,
+        "ref": [
+          14,
+          16,
+          30,
+          39,
+          51,
+          56
+        ],
+        "fleet": [
+          14,
+          16,
+          26,
+          39,
+          51,
+          56
+        ]
+      },
+      {
+        "step": 21,
+        "moe_layer_index": 20,
+        "ref": [
+          0,
+          22,
+          32,
+          41,
+          44,
+          57
+        ],
+        "fleet": [
+          0,
+          23,
+          32,
+          41,
+          44,
+          57
+        ]
+      },
+      {
+        "step": 22,
+        "moe_layer_index": 5,
+        "ref": [
+          2,
+          20,
+          29,
+          32,
+          48,
+          53
+        ],
+        "fleet": [
+          2,
+          4,
+          20,
+          29,
+          32,
+          53
+        ]
+      },
+      {
+        "step": 22,
+        "moe_layer_index": 7,
+        "ref": [
+          14,
+          15,
+          24,
+          30,
+          39,
+          58
+        ],
+        "fleet": [
+          4,
+          14,
+          15,
+          24,
+          30,
+          39
+        ]
+      },
+      {
+        "step": 22,
+        "moe_layer_index": 10,
+        "ref": [
+          1,
+          2,
+          9,
+          24,
+          49,
+          59
+        ],
+        "fleet": [
+          2,
+          9,
+          15,
+          27,
+          49,
+          59
+        ]
+      },
+      {
+        "step": 22,
+        "moe_layer_index": 13,
+        "ref": [
+          19,
+          32,
+          37,
+          38,
+          45,
+          47
+        ],
+        "fleet": [
+          10,
+          19,
+          32,
+          37,
+          38,
+          47
+        ]
+      },
+      {
+        "step": 23,
+        "moe_layer_index": 0,
+        "ref": [
+          13,
+          22,
+          35,
+          38,
+          46,
+          60
+        ],
+        "fleet": [
+          1,
+          13,
+          35,
+          38,
+          46,
+          60
+        ]
+      },
+      {
+        "step": 23,
+        "moe_layer_index": 9,
+        "ref": [
+          1,
+          5,
+          20,
+          27,
+          48,
+          62
+        ],
+        "fleet": [
+          1,
+          2,
+          5,
+          20,
+          48,
+          62
+        ]
+      },
+      {
+        "step": 23,
+        "moe_layer_index": 14,
+        "ref": [
+          5,
+          28,
+          40,
+          53,
+          55,
+          56
+        ],
+        "fleet": [
+          5,
+          22,
+          28,
+          40,
+          55,
+          56
+        ]
+      },
+      {
+        "step": 23,
+        "moe_layer_index": 16,
+        "ref": [
+          9,
+          21,
+          44,
+          60,
+          62,
+          63
+        ],
+        "fleet": [
+          9,
+          16,
+          21,
+          44,
+          60,
+          62
+        ]
+      },
+      {
+        "step": 23,
+        "moe_layer_index": 24,
+        "ref": [
+          3,
+          4,
+          9,
+          13,
+          29,
+          42
+        ],
+        "fleet": [
+          0,
+          3,
+          4,
+          9,
+          13,
+          29
+        ]
+      },
+      {
+        "step": 23,
+        "moe_layer_index": 25,
+        "ref": [
+          7,
+          24,
+          42,
+          45,
+          54,
+          61
+        ],
+        "fleet": [
+          7,
+          24,
+          40,
+          45,
+          54,
+          61
+        ]
+      },
+      {
+        "step": 25,
+        "moe_layer_index": 6,
+        "ref": [
+          24,
+          32,
+          33,
+          43,
+          53,
+          62
+        ],
+        "fleet": [
+          1,
+          24,
+          32,
+          33,
+          43,
+          62
+        ]
+      },
+      {
+        "step": 25,
+        "moe_layer_index": 7,
+        "ref": [
+          30,
+          39,
+          47,
+          56,
+          58,
+          63
+        ],
+        "fleet": [
+          30,
+          36,
+          39,
+          47,
+          56,
+          63
+        ]
+      },
+      {
+        "step": 25,
+        "moe_layer_index": 8,
+        "ref": [
+          12,
+          13,
+          22,
+          24,
+          25,
+          32
+        ],
+        "fleet": [
+          12,
+          13,
+          22,
+          24,
+          25,
+          43
+        ]
+      },
+      {
+        "step": 25,
+        "moe_layer_index": 10,
+        "ref": [
+          4,
+          6,
+          24,
+          35,
+          41,
+          55
+        ],
+        "fleet": [
+          4,
+          6,
+          24,
+          26,
+          35,
+          41
+        ]
+      },
+      {
+        "step": 25,
+        "moe_layer_index": 11,
+        "ref": [
+          14,
+          16,
+          17,
+          24,
+          36,
+          43
+        ],
+        "fleet": [
+          12,
+          14,
+          24,
+          36,
+          43,
+          47
+        ]
+      },
+      {
+        "step": 25,
+        "moe_layer_index": 12,
+        "ref": [
+          1,
+          4,
+          10,
+          43,
+          51,
+          58
+        ],
+        "fleet": [
+          1,
+          4,
+          28,
+          43,
+          50,
+          56
+        ]
+      },
+      {
+        "step": 25,
+        "moe_layer_index": 13,
+        "ref": [
+          3,
+          23,
+          32,
+          46,
+          51,
+          58
+        ],
+        "fleet": [
+          3,
+          27,
+          36,
+          45,
+          56,
+          58
+        ]
+      },
+      {
+        "step": 25,
+        "moe_layer_index": 14,
+        "ref": [
+          5,
+          20,
+          30,
+          35,
+          38,
+          51
+        ],
+        "fleet": [
+          20,
+          30,
+          35,
+          38,
+          51,
+          63
+        ]
+      },
+      {
+        "step": 25,
+        "moe_layer_index": 15,
+        "ref": [
+          11,
+          16,
+          27,
+          46,
+          51,
+          60
+        ],
+        "fleet": [
+          9,
+          14,
+          16,
+          40,
+          60,
+          61
+        ]
+      },
+      {
+        "step": 25,
+        "moe_layer_index": 16,
+        "ref": [
+          9,
+          21,
+          42,
+          49,
+          55,
+          59
+        ],
+        "fleet": [
+          2,
+          9,
+          44,
+          49,
+          55,
+          59
+        ]
+      },
+      {
+        "step": 25,
+        "moe_layer_index": 17,
+        "ref": [
+          12,
+          13,
+          17,
+          38,
+          59,
+          62
+        ],
+        "fleet": [
+          23,
+          26,
+          52,
+          56,
+          59,
+          61
+        ]
+      },
+      {
+        "step": 25,
+        "moe_layer_index": 18,
+        "ref": [
+          13,
+          45,
+          53,
+          56,
+          58,
+          60
+        ],
+        "fleet": [
+          34,
+          43,
+          53,
+          56,
+          58,
+          60
+        ]
+      },
+      {
+        "step": 25,
+        "moe_layer_index": 19,
+        "ref": [
+          7,
+          9,
+          29,
+          30,
+          43,
+          59
+        ],
+        "fleet": [
+          5,
+          7,
+          30,
+          39,
+          43,
+          59
+        ]
+      },
+      {
+        "step": 25,
+        "moe_layer_index": 20,
+        "ref": [
+          4,
+          7,
+          19,
+          37,
+          53,
+          54
+        ],
+        "fleet": [
+          4,
+          7,
+          8,
+          19,
+          53,
+          62
+        ]
+      },
+      {
+        "step": 25,
+        "moe_layer_index": 21,
+        "ref": [
+          11,
+          24,
+          35,
+          41,
+          57,
+          63
+        ],
+        "fleet": [
+          11,
+          24,
+          32,
+          41,
+          57,
+          63
+        ]
+      },
+      {
+        "step": 25,
+        "moe_layer_index": 22,
+        "ref": [
+          11,
+          38,
+          39,
+          40,
+          42,
+          60
+        ],
+        "fleet": [
+          11,
+          35,
+          37,
+          38,
+          40,
+          42
+        ]
+      },
+      {
+        "step": 25,
+        "moe_layer_index": 23,
+        "ref": [
+          19,
+          37,
+          44,
+          45,
+          50,
+          63
+        ],
+        "fleet": [
+          1,
+          19,
+          37,
+          45,
+          50,
+          63
+        ]
+      },
+      {
+        "step": 25,
+        "moe_layer_index": 24,
+        "ref": [
+          1,
+          3,
+          25,
+          26,
+          42,
+          63
+        ],
+        "fleet": [
+          1,
+          3,
+          21,
+          26,
+          42,
+          63
+        ]
+      },
+      {
+        "step": 25,
+        "moe_layer_index": 25,
+        "ref": [
+          24,
+          36,
+          45,
+          54,
+          61,
+          63
+        ],
+        "fleet": [
+          24,
+          36,
+          44,
+          45,
+          54,
+          63
+        ]
+      },
+      {
+        "step": 28,
+        "moe_layer_index": 9,
+        "ref": [
+          0,
+          29,
+          30,
+          53,
+          60,
+          63
+        ],
+        "fleet": [
+          18,
+          29,
+          30,
+          53,
+          60,
+          63
+        ]
+      },
+      {
+        "step": 29,
+        "moe_layer_index": 8,
+        "ref": [
+          20,
+          25,
+          38,
+          42,
+          49,
+          61
+        ],
+        "fleet": [
+          20,
+          33,
+          38,
+          42,
+          49,
+          61
+        ]
+      },
+      {
+        "step": 29,
+        "moe_layer_index": 9,
+        "ref": [
+          23,
+          24,
+          32,
+          37,
+          39,
+          63
+        ],
+        "fleet": [
+          24,
+          32,
+          37,
+          39,
+          48,
+          63
+        ]
+      },
+      {
+        "step": 29,
+        "moe_layer_index": 10,
+        "ref": [
+          22,
+          32,
+          39,
+          46,
+          54,
+          56
+        ],
+        "fleet": [
+          22,
+          32,
+          39,
+          46,
+          53,
+          56
+        ]
+      },
+      {
+        "step": 31,
+        "moe_layer_index": 11,
+        "ref": [
+          11,
+          25,
+          44,
+          45,
+          52,
+          53
+        ],
+        "fleet": [
+          11,
+          22,
+          25,
+          44,
+          45,
+          52
+        ]
+      },
+      {
+        "step": 31,
+        "moe_layer_index": 13,
+        "ref": [
+          5,
+          11,
+          20,
+          37,
+          38,
+          41
+        ],
+        "fleet": [
+          5,
+          11,
+          20,
+          35,
+          37,
+          38
+        ]
+      },
+      {
+        "step": 31,
+        "moe_layer_index": 14,
+        "ref": [
+          12,
+          27,
+          32,
+          42,
+          46,
+          59
+        ],
+        "fleet": [
+          12,
+          18,
+          27,
+          32,
+          42,
+          59
+        ]
+      },
+      {
+        "step": 31,
+        "moe_layer_index": 19,
+        "ref": [
+          4,
+          18,
+          21,
+          23,
+          27,
+          62
+        ],
+        "fleet": [
+          4,
+          18,
+          21,
+          23,
+          60,
+          62
+        ]
+      },
+      {
+        "step": 31,
+        "moe_layer_index": 24,
+        "ref": [
+          6,
+          19,
+          27,
+          28,
+          31,
+          50
+        ],
+        "fleet": [
+          6,
+          19,
+          20,
+          27,
+          28,
+          31
+        ]
+      }
+    ],
+    "result": "FAIL"
+  },
+  "n_pass": 6,
+  "n_fail": 3,
+  "n_missing": 64,
+  "overall": "FAIL"
+}

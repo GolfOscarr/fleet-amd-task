@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-# The laptop side of a session (docs/round-2/01-preparation.md, P4; docs/gpu-bringup/06-agent-guide.md).
+# The laptop side of a session (docs/gpu-experiments/02-validation/01-preparation.md, P4; docs/gpu-experiments/01-bringup/06-agent-guide.md).
 #
 #   bash env/session/laptop.sh balance              # team page: balance, rate, runout, VMs
 #   bash env/session/laptop.sh provision            # one VM from the TUI (refuses if one exists); then ip
 #   bash env/session/laptop.sh ip                   # the VM's address, saved to env/session/vm.ip
-#   bash env/session/laptop.sh push                 # rsync the tree to the VM (absolute destination)
+#   FULL=1 bash env/session/laptop.sh push          # the first push of a session: the tree with the Fleet fork
+#   bash env/session/laptop.sh push                 # every later push: the tree without repos/ (the VM keeps its patched fork)
 #   bash env/session/laptop.sh login                # docker login ghcr.io on the VM with the laptop's gh token
 #   bash env/session/laptop.sh start <stage> [args] # vm.sh start <stage> on the VM
 #   bash env/session/laptop.sh status               # vm.sh status on the VM
@@ -29,6 +30,10 @@ EXCLUDES=(--exclude .venv --exclude .venv-fleet --exclude env/hw/build --exclude
           --exclude env/offline_gfx942/work --exclude docs/report --exclude .omc --exclude harness/fleet_out
           --exclude env/logs --exclude '__pycache__' --exclude env/session/vm.ip --exclude env/session/vm.started --exclude '*.safetensors'
           --exclude repos/fleet-chiplet-megakernel/build --exclude repos/fleet-chiplet-megakernel/permanent_output_dir)
+# The Fleet fork is sent once, by the first push of a session (FULL=1): the laptop's copy is the pristine
+# pinned commit and a later push would overwrite the patched sources on the VM (session A, 2026-09-16,
+# 17:49: the JIT lost TASK_MLA_PREP_MI300 until setup re-applied the patches).
+[ "${FULL:-0}" = "1" ] || EXCLUDES+=(--exclude repos)
 
 run() { if [ "$DRY" = "1" ]; then echo "+ $*"; return 0; fi; "$@"; }
 ip() { [ -f "$VM_IP_FILE" ] && cat "$VM_IP_FILE"; }
@@ -74,8 +79,9 @@ cmd_report() {
   started="$(cat "$VM_STARTED_FILE" 2>/dev/null || echo 0)"
   if [ "$started" != "0" ]; then
     minute=$(( ( $(date +%s) - started ) / 60 ))
-    cost="$(awk -v m="$minute" -v r="$RATE" 'BEGIN { h = m / 60; if (h < 1) h = 1; printf "%.2f", h * r }')"
-    echo "minute $minute since provisioning; about \$$cost billed so far at \$$RATE/h (1-hour minimum)"
+    # per-minute billing (the 1x shape lists a one-minute minimum; 149 minutes cost $7.33 on 2026-09-16)
+    cost="$(awk -v m="$minute" -v r="$RATE" 'BEGIN { printf "%.2f", m / 60 * r }')"
+    echo "minute $minute since provisioning; about \$$cost billed so far at \$$RATE/h (per minute)"
   else
     echo "no provisioning time recorded (env/session/vm.started)"
   fi
@@ -118,7 +124,10 @@ cmd_pull() {
   vm "cd $REMOTE_DIR && bash env/session/vm.sh snapshot-logs" || true
   mkdir -p "$ROOT/env/logs/vm"
   run rsync -az -e "ssh ${SSH_OPTS[*]}" "$REMOTE_USER@$i:$REMOTE_DIR/env/logs/" "$ROOT/env/logs/vm/"
-  run rsync -az --exclude build --exclude probes/work --exclude '*.safetensors' --max-size=400k \
+  # only the record: env/hw/tests and the other laptop files under env/hw must not come back from the VM
+  # (a pull on 2026-09-16 reverted a test edit with the VM's older copy)
+  run rsync -az --exclude build --exclude probes --exclude tests --exclude '*.py' --exclude '__pycache__' \
+    --exclude '*.safetensors' --max-size=400k \
     -e "ssh ${SSH_OPTS[*]}" "$REMOTE_USER@$i:$REMOTE_DIR/env/hw/" "$ROOT/env/hw/"
   run rsync -az -e "ssh ${SSH_OPTS[*]}" --include '*.json' --include '*.log' --exclude '*' \
     "$REMOTE_USER@$i:$REMOTE_DIR/harness/ref/" "$ROOT/harness/ref/"
@@ -126,7 +135,7 @@ cmd_pull() {
   run rsync -az -e "ssh ${SSH_OPTS[*]}" "$REMOTE_USER@$i:$REMOTE_DIR/fleet/tasks/results/" "$ROOT/fleet/tasks/results/" 2>/dev/null || true
   [ "$DRY" = "1" ] && return 0
   # commit when the pull brings more than logs (a run, the record, reference files); a logs-only
-  # pull stays staged for the next commit (the user's rule, docs/round-2/02-session-plan.md)
+  # pull stays staged for the next commit (the user's rule, docs/gpu-experiments/02-validation/02-session-plan.md)
   (cd "$ROOT" && git add env/hw harness/ref env/check_day1.log fleet/tasks/results 2>/dev/null
    if git diff --cached --name-only | grep -qv "/logs/"; then
      git commit -q -m "record: pull $(date -u +%Y-%m-%dT%H:%MZ) from the VM (env/hw/$day)" && git log --oneline -1
@@ -143,7 +152,8 @@ cmd_delete() {
   # shellcheck disable=SC2086
   page="$(run $TUI 12)"
   echo "$page" | grep -E "No virtual machines|Hourly Rate" || true
-  if [ "$DRY" != "1" ] && ! echo "$page" | grep -q 'Hourly Rate: \$0.00'; then echo "rate is not \$0.00: check the TUI by hand"; return 1; fi
+  # the page pads the label with several spaces ("Hourly Rate:       $0.00/hour"; a false alarm on 2026-09-16)
+  if [ "$DRY" != "1" ] && ! echo "$page" | grep -qE 'Hourly Rate: +\$0\.00'; then echo "rate is not \$0.00: check the TUI by hand"; return 1; fi
   rm -f "$VM_IP_FILE" "$VM_STARTED_FILE"
 }
 

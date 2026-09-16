@@ -1,0 +1,8 @@
+== L2_it32_at_nt: /home/hotaisle/metalOps/.venv-fleet/bin/python harness/run_fleet.py --layers 2 --iters 32 --event-timing --nt-weights --attend-tasks --model-dir /home/hotaisle/.cache/huggingface/hub/models--deepseek-ai--DeepSeek-Coder-V2-Lite-Base/snapshots/ea9b066cee82f82906fdd58898cb3788b1c5d770
+2026-09-16T19:28:36Z L2_it32_at_nt PASS rc=0 mpk=1 fault=0 fwd=26 wall=35s table=PASS
+== L27_head_it32_tile_at_nt: /home/hotaisle/metalOps/.venv-fleet/bin/python harness/run_fleet.py --layers 27 --head --iters 32 --event-timing --nt-weights --tile-linears --attend-tasks --model-dir /home/hotaisle/.cache/huggingface/hub/models--deepseek-ai--DeepSeek-Coder-V2-Lite-Base/snapshots/ea9b066cee82f82906fdd58898cb3788b1c5d770
+2026-09-16T19:29:24Z L27_head_it32_tile_at_nt PASS rc=0 mpk=1 fault=0 fwd=31 wall=48s table=PASS
+== L27_head_it32_tile_at_nt: /home/hotaisle/metalOps/.venv-fleet/bin/python harness/run_fleet.py --layers 27 --head --iters 32 --nt-weights --tile-linears --attend-tasks --model-dir /home/hotaisle/.cache/huggingface/hub/models--deepseek-ai--DeepSeek-Coder-V2-Lite-Base/snapshots/ea9b066cee82f82906fdd58898cb3788b1c5d770
+2026-09-16T19:30:14Z L27_head_it32_tile_at_nt PASS rc=0 mpk=1 fault=0 fwd=31 wall=48s compare=FAIL
+2026-09-16T19:30:14Z DONE env/session/queue-b5.txt
+2026-09-16T19:30:14Z PASS queue 134s

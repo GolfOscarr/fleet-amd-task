@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fill docs/gpu-bringup/02-checklist.md in from the raw captures of env/collect_hw.sh.
+"""Fill docs/gpu-experiments/01-bringup/02-checklist.md in from the raw captures of env/collect_hw.sh.
 
     python3 env/hw/summarize.py env/hw/<YYYYMMDD>
 
@@ -1403,7 +1403,7 @@ class Summary:
             "{n} checklist rows: {tally}. Raw captures are in raw/, one file per command, "
             "and collect.log holds the run. Every MISMATCH belongs in OPEN-PROBLEMS.md and "
             "the owning 99-open-questions.md with its date and command "
-            "(docs/gpu-bringup/02-checklist.md, Sign-off)."
+            "(docs/gpu-experiments/01-bringup/02-checklist.md, Sign-off)."
         ).format(date=self.out.name, host=host,
                  rocm=getattr(self, "rocm_version", None) or "unknown",
                  hipcc=getattr(self, "hipcc_version", None) or "unknown",

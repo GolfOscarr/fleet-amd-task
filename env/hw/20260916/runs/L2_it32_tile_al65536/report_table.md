@@ -1,0 +1,42 @@
+# Measurement report
+
+| Quantity | Predicted | Measured |
+|---|---|---|
+| bytes per iteration (read, MiB) | 4709.9 weights + cache; about 4772.0 with activations | - |
+| time per iteration, median (us) | 1148.5-1349.4 + 326 t_b + T_serial | - |
+| time per iteration, P95 (us) |  | - |
+| time per iteration from event timing, median (us) |  | - |
+| time per iteration from host wall clock (us) |  | 1595.9 |
+| time per iteration from the kernel trace (us) |  | - |
+| achieved read bandwidth (TB/s) | 3.66-4.3 over T_bw | - |
+| launches per generation | 3 | - |
+| L2 hit rate | 16-17% (Fleet's batch-1 figure) | - |
+| tokens per second |  | - |
+
+## Per-operator time (event gaps, mean over iterations after the first)
+
+| Event | Operator | mean us | min us | max us | n |
+|---|---|---|---|---|---|
+| 1 | embed_layer | 169.03 | 8.48 | 235.16 | 30 |
+| 2 | rmsnorm_layer | 14.25 | 13.39 | 15.19 | 31 |
+| 3 | linear_layer | 3.91 | 3.67 | 4.11 | 31 |
+| 4 | mla_prep_layer | 24.83 | 23.46 | 26.92 | 31 |
+| 5 | mla_attend_layer | 216.27 | 211.42 | 220.66 | 31 |
+| 6 | mla_merge_uv_layer | 45.77 | 45.14 | 46.10 | 31 |
+| 7 | linear_with_residual_layer | 24.60 | 20.97 | 25.76 | 31 |
+| 8 | rmsnorm_layer | 13.24 | 12.61 | 13.82 | 31 |
+| 9 | gang_linear_silu_layer | 4.14 | 3.29 | 4.84 | 31 |
+| 10 | linear_with_residual_layer | 33.88 | 32.76 | 35.35 | 31 |
+| 11 | rmsnorm_layer | 50.25 | 48.88 | 52.12 | 31 |
+| 12 | linear_layer | 3.83 | 3.28 | 4.32 | 31 |
+| 13 | mla_prep_layer | 13.01 | 12.12 | 13.79 | 31 |
+| 14 | mla_attend_layer | 214.55 | 212.01 | 217.76 | 31 |
+| 15 | mla_merge_uv_layer | 45.66 | 45.22 | 46.04 | 31 |
+| 16 | linear_with_residual_layer | 21.84 | 21.37 | 22.52 | 31 |
+| 17 | rmsnorm_layer | 13.03 | 12.26 | 13.92 | 31 |
+| 18 | moe_router_layer | 3.41 | 3.28 | 3.65 | 31 |
+| 19 | gang_moe_w13_linear_layer | 24.67 | 23.28 | 26.52 | 31 |
+| 20 | moe_silu_mul_layer | 40.44 | 38.70 | 42.27 | 31 |
+| 21 | gang_moe_w2_linear_layer | 4.44 | 3.54 | 6.25 | 31 |
+| 22 | moe_mul_sum_add_layer | 21.14 | 18.73 | 22.16 | 31 |
+| 23 | event_23 | 2.94 | 2.80 | 3.47 | 31 |

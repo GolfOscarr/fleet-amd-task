@@ -1,5 +1,5 @@
 """env/session/{common,vm,queue,laptop}.sh against a fake run_fleet.py in a temporary tree
-(docs/round-2/01-preparation.md, P4): the queue's status rows, the record copies, the stop rule,
+(docs/gpu-experiments/02-validation/01-preparation.md, P4): the queue's status rows, the record copies, the stop rule,
 the bisection over the P1 label file, and the DRY modes of vm.sh and laptop.sh."""
 import json
 import os
@@ -33,6 +33,9 @@ if fault_at and args.layers >= 7:
 if faults:
     print("RuntimeError: HIP error: an illegal memory access was encountered")
     print("torch.AcceleratorError")
+    sys.exit(1)
+if args.stop_after and os.environ.get("FAKE_ERROR_AT") == args.stop_after:   # a JIT failure: FAIL without a fault line
+    print("subprocess.CalledProcessError: Command '['/opt/rocm/bin/hipcc', ...]' returned non-zero exit status 1.")
     sys.exit(1)
 for i in range(args.iters):
     print(f"[FWD_PASS] iter={i} time_ms=1.0 num_active_tokens=1")
@@ -124,6 +127,22 @@ def test_bisect_finds_the_first_faulting_label(tree, fault_at, expect_runs):
     rows = (tmp / "logs/queue.status").read_text().splitlines()
     assert rows[-1].endswith(f"BISECT first-fault={fault_at} runs={result.split('runs=')[1]}")
     assert all(" bisect" in row for row in rows[:-1])
+
+
+def test_bisect_stops_on_a_fail_without_a_fault_line(tree):
+    # session A, 2026-09-16: five runs failed in the JIT (no fault line) and the bisection narrowed on
+    # them as if they were the fault; an error row now ends the bisection with an error verdict
+    tmp, env = tree
+    env["FAKE_FAULT_AT"] = "L7.w13"
+    env["FAKE_ERROR_AT"] = "L7.router"       # the first probe of the 16-label list (index 7)
+    r = sh([str(SESSION / "queue.sh"), "bisect", str(SESSION / "queue-fault.txt"), "--",
+            "--layers", "8", "--head", "--iters", "2"], env)
+    assert r.returncode == 0, r.stdout + r.stderr
+    result = (tmp / "logs/bisect.result").read_text().strip()
+    assert result.startswith("BISECT error=L7.router (FAIL without a fault line"), result
+    assert result.endswith("runs=1")
+    rows = (tmp / "logs/queue.status").read_text().splitlines()
+    assert rows[0].split()[2] == "ERROR" and "fault=0" in rows[0], rows[0]
 
 
 def test_bisect_reports_no_fault_when_nothing_faults(tree):
@@ -298,7 +317,7 @@ def test_queue_guards_fail_a_row_before_it_runs(tree):
     assert "FAIL guard: measure needs /nonexistent/rocprofv3" in (tmp / "logs/queue.status").read_text()
 
 
-# ---- the helpers for the VM (docs/round-2/02-session-plan.md, "Helpers") ----------------
+# ---- the helpers for the VM (docs/gpu-experiments/02-validation/02-session-plan.md, "Helpers") ----------------
 
 def test_pf_toggle_sets_both_kernels(tmp_path):
     import shutil

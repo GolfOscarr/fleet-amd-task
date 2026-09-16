@@ -1,5 +1,5 @@
 # shellcheck shell=bash
-# Shared by vm.sh and queue.sh (docs/round-2/01-preparation.md, P4).
+# Shared by vm.sh and queue.sh (docs/gpu-experiments/02-validation/01-preparation.md, P4).
 # Sourced, not run. Every variable can be overridden from the environment,
 # which is how the tests point the scripts at a temporary tree.
 

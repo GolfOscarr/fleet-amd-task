@@ -64,9 +64,9 @@ __device__ __forceinline__ void
   static_assert(NH * TILE <= 2 * NUM_THREADS, "two scores per thread per pass");
   static_assert(D_C % 8 == 0 && D_R % 8 == 0, "16-byte loads");
   // partials row padded up to a multiple of 4 floats: each [split, head] row is then
-  // 16-byte aligned when the buffer base is (docs/round-2 P2). o in [0, D_C), lse at D_C.
+  // 16-byte aligned when the buffer base is (docs/gpu-experiments/02-validation P2). o in [0, D_C), lse at D_C.
   constexpr int P_ROW = ((D_C + 1 + 3) / 4) * 4;
-  // loads in flight per thread (docs/round-2 P6): the streaming knee measured on the MI300X
+  // loads in flight per thread (docs/gpu-experiments/02-validation P6): the streaming knee measured on the MI300X
   // is at 4 (env/hw/20260915, E2); one load at a time made a 36 KB tile cost about 144
   // serialised HBM latencies, the 211 us of runs/L27_it32.
   constexpr int PF = 4;

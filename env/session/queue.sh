@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# The graph-run queue: one run_fleet.py run at a time, each recorded (docs/round-2/01-preparation.md, P4).
+# The graph-run queue: one run_fleet.py run at a time, each recorded (docs/gpu-experiments/02-validation/01-preparation.md, P4).
 #
 #   bash env/session/queue.sh run <queue file>
 #   bash env/session/queue.sh bisect <label file> -- <base run_fleet.py args>
@@ -51,7 +51,7 @@ print(run_fleet.run_name(run_fleet.build_parser().parse_args(sys.argv[1:] + ['--
 }
 
 # the prerequisites of a row, checked before anything runs: prints the reason and returns 1
-# (a FAIL row without a run; docs/round-2/02-session-plan.md, "guards")
+# (a FAIL row without a run; docs/gpu-experiments/02-validation/02-session-plan.md, "guards")
 row_guard() {
   local flags="$1"; shift
   local args=("$@") iters=1 i
@@ -186,6 +186,9 @@ queue_bisect() {
     case "$seen" in
       *" $1="*) RESULT="${seen#* $1=}"; RESULT="${RESULT%% *}";;
       *) run_graph "${base[@]}" --stop-after "$1" || true
+         # a FAIL without a fault line is an error of the run (a JIT failure, a Python exception),
+         # not the fault the bisection looks for: it ends the bisection instead of narrowing on it
+         [ "$RESULT" = "FAIL" ] && [ "${FAULT:-0}" = "0" ] && RESULT=ERROR
          runs=$((runs + 1)); seen="$seen$1=$RESULT "
          row "$QSTATUS" "$NAME $RESULT rc=$RC mpk=$MPK fault=$FAULT fwd=$FWD wall=${WALL}s bisect";;
     esac
@@ -193,11 +196,16 @@ queue_bisect() {
   while [ "$lo" -lt "$hi" ]; do
     mid=$(( (lo + hi) / 2 ))
     probe "${labels[$mid]}"
+    [ "$RESULT" = "ERROR" ] && break
     if [ "$RESULT" = "PASS" ]; then lo=$((mid + 1)); else hi=$mid; fi
   done
-  probe "${labels[$lo]}"
+  [ "$RESULT" = "ERROR" ] || probe "${labels[$lo]}"
   local verdict
-  if [ "$RESULT" = "FAIL" ]; then verdict="first-fault=${labels[$lo]}"; else verdict="no-fault-up-to=${labels[$lo]}"; fi
+  case "$RESULT" in
+    ERROR) verdict="error=${labels[$mid]} (FAIL without a fault line: read env/logs/runs/$NAME.out)";;
+    FAIL) verdict="first-fault=${labels[$lo]}";;
+    *) verdict="no-fault-up-to=${labels[$lo]}";;
+  esac
   echo "BISECT $verdict runs=$runs" | tee "$LOGDIR/bisect.result"
   row "$QSTATUS" "BISECT $verdict runs=$runs"
 }

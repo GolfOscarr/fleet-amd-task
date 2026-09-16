@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # The A4 fallback in one command: set the prefetch depth PF of the two attention kernels
-# (docs/round-2/02-session-plan.md, row A4; 01-preparation.md, P6).
+# (docs/gpu-experiments/02-validation/02-session-plan.md, row A4; 01-preparation.md, P6).
 #
 #   bash env/session/pf.sh 1      # the old kernels: one load in flight
 #   bash env/session/pf.sh 4      # the P6 kernels (the default in the tree)

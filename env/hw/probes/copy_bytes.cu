@@ -1,4 +1,4 @@
-// copy_bytes - group I of docs/gpu-bringup/01-plan.md.
+// copy_bytes - group I of docs/gpu-experiments/01-bringup/01-plan.md.
 //
 // A device-to-device copy of exactly 1 GiB, wrapped by rocprofv3 so the
 // counter arithmetic can be checked against traffic that is known in advance:

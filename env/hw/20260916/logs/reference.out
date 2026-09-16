@@ -1,0 +1,29 @@
+Loading checkpoint shards:   0%|          | 0/4 [00:00<?, ?it/s]Loading checkpoint shards:  25%|██▌       | 1/4 [00:00<00:02,  1.30it/s]Loading checkpoint shards:  50%|█████     | 2/4 [00:01<00:01,  1.24it/s]Loading checkpoint shards:  75%|███████▌  | 3/4 [00:02<00:00,  1.23it/s]Loading checkpoint shards: 100%|██████████| 4/4 [00:02<00:00,  1.41it/s]Loading checkpoint shards: 100%|██████████| 4/4 [00:02<00:00,  1.34it/s]
+/home/hotaisle/metalOps/.venv/lib/python3.12/site-packages/transformers/generation/configuration_utils.py:590: UserWarning: `do_sample` is set to `False`. However, `temperature` is set to `0.3` -- this flag is only used in sample-based generation modes. You should set `do_sample=True` or unset `temperature`.
+  warnings.warn(
+/home/hotaisle/metalOps/.venv/lib/python3.12/site-packages/transformers/generation/configuration_utils.py:595: UserWarning: `do_sample` is set to `False`. However, `top_p` is set to `0.95` -- this flag is only used in sample-based generation modes. You should set `do_sample=True` or unset `top_p`.
+  warnings.warn(
+The `seen_tokens` attribute is deprecated and will be removed in v4.41. Use the `cache_position` model input instead.
+`get_max_cache()` is deprecated for all Cache classes. Use `get_max_cache_shape()` instead. Calling `get_max_cache()` will raise error from v4.48
+wrote 38 boundary tensors, 32 ids -> /home/hotaisle/metalOps/harness/ref
+generate agrees with loop: True
+B5 -> B6 self-check, max abs err per layer: {'L0': 0.0, 'L1': 0.0}
+Loading checkpoint shards:   0%|          | 0/4 [00:00<?, ?it/s]Loading checkpoint shards:  25%|██▌       | 1/4 [00:00<00:02,  1.30it/s]Loading checkpoint shards:  50%|█████     | 2/4 [00:01<00:01,  1.24it/s]Loading checkpoint shards:  75%|███████▌  | 3/4 [00:02<00:00,  1.22it/s]Loading checkpoint shards: 100%|██████████| 4/4 [00:02<00:00,  1.41it/s]Loading checkpoint shards: 100%|██████████| 4/4 [00:02<00:00,  1.34it/s]
+attention  floor 1.001e-02  threshold 4.004e-02  (starting 3e-02)
+expert     floor 1.099e-02  threshold 4.396e-02  (starting 3e-02)
+gemv       floor 3.235e-03  threshold 1.294e-02  (starting 2e-02)
+layer      floor 4.334e-03  threshold 1.733e-02  (starting 5e-02)
+logits     floor 4.101e-02  threshold 1.641e-01  (starting 5e-02)
+norm       floor 4.530e-02  threshold 1.812e-01  (starting 1e-02)
+rope       floor 5.294e-03  threshold 2.117e-02  (starting 1e-02)
+router     floor 3.593e-03  threshold 1.437e-02  (starting 2e-02)
+scores     floor 2.606e-03  threshold 1.043e-02  (starting 3e-02)
+exact checks hold in every run
+-> /home/hotaisle/metalOps/harness/ref/calibration.json
+32 steps x 26 MoE layers, top-6
+mean consecutive-step overlap: 0.2055417700578991
+layers with overlap above one half: 0 of 26
+mean distinct experts per layer over the run: 50.76923076923077
+consecutive steps reuse fewer than half of their experts on average: cross-step affinity would rarely pay; placement by slot order stands
+-> /home/hotaisle/metalOps/harness/results/route_analysis.json
+2026-09-16T17:34:34Z PASS reference 62s

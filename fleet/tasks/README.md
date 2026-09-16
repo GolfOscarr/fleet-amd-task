@@ -178,3 +178,15 @@ parameter tables of the two files against each other).
 - The `kernel_tests` run itself: the launcher and driver above are
   syntax-checked and dry-run here, but no kernel has executed
   (`07-correctness.md`).
+
+## Timing the kernels standalone
+
+The suite binary times a kernel's grid on request (round 2, 2026-09-16):
+
+    KT_TIME=50 fleet/tasks/build/kernel_tests mla_attend <trial dir>      # 50 launches under hipEvents, mean us to stderr
+    KT_TIME=50 KT_COLD=27 fleet/tasks/build/kernel_tests mla_attend <dir>  # the launches rotate over 27 copies of the cache (cold L2)
+
+A trial directory comes from `python fleet/tasks/kernel_tests.py --n 1 --kernel mla_attend --work-dir <dir> --keep`.
+On the MI300X the attention grid (8 x 5 tiles, step 1032) costs 34 us cold or warm and the merge grid 11.5 us,
+against 146 to 215 us and 46 to 61 us inside the megakernel (`docs/gpu-experiments/02-validation/04-results.md`). The `kernels`
+stage of `env/session/vm.sh` does not rebuild an existing binary: delete `fleet/tasks/build/kernel_tests*` first.

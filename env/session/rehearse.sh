@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # The whole of session A and session B in DRY mode, on the laptop, as a transcript
-# (docs/round-2/02-session-plan.md; the appendix docs/round-2/05-rehearsal.md is this output).
+# (docs/gpu-experiments/02-validation/02-session-plan.md; the appendix docs/gpu-experiments/02-validation/05-rehearsal.md is this output).
 #
-#   bash env/session/rehearse.sh [> docs/round-2/05-rehearsal.md]
+#   bash env/session/rehearse.sh [> docs/gpu-experiments/02-validation/05-rehearsal.md]
 #
 # Nothing is provisioned, copied or run: laptop.sh prints its TUI, ssh and rsync commands,
 # vm.sh prints its stage commands and queue.sh prints one run_fleet.py line per queue row.

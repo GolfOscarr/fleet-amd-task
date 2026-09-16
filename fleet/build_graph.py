@@ -62,23 +62,28 @@ def mla_prep_layer(mpk, qkva, w_kv_norm, w_uk, cos, sin, c_kv, k_pe, ql_nope, q_
 
 
 def mla_attend_layer(mpk, ql_nope, q_pe, c_kv, k_pe, partials, softmax_scale, split, n_splits,
-                     scores=None, block_dim=(256, 1, 1)):
+                     scores=None, block_dim=(256, 1, 1), per_tile=False):
     """Gang task, 8 x ceil(n_splits / 8) tiles: split = tile * 8 + bid.x; partials [n_splits, nh, partials_row(d_c)].
+
+    per_tile: one regular task per split instead (grid n_splits, task type mla_attend_tile_mi300):
+    the runtime hands each task its row of partials and its index; no gang dispatch (session B,
+    2026-09-16: the gang path cost 100 to 175 us per attention against 38 us for the grid standalone).
 
     scores: optional second output [nh, s_max] FP32 for boundary B5; only written by the
     MLA_ATTEND_DEBUG_SCORES build (MPK_DEBUG_SCORES=1 at compile time)."""
     assert partials.num_dims == 3 and partials.dim(0) == n_splits
     assert partials.dim(1) == ql_nope.dim(0) and partials.dim(2) == G.partials_row(ql_nope.dim(1))
     assert c_kv.dim(0) == k_pe.dim(0) and -(-c_kv.dim(0) // split) == n_splits
-    tiles_per_xcd = -(-n_splits // XCDS)
+    tiles_per_xcd = 1 if per_tile else -(-n_splits // XCDS)
+    grid = (n_splits, 1, 1) if per_tile else (XCDS, 1, 1)
     tensors = [(ql_nope, (-1, -1, -1), -1), (q_pe, (-1, -1, -1), -1),
                (c_kv, (-1, -1, -1), -1), (k_pe, (-1, -1, -1), -1),
                (partials, (0, -1, -1), -1)]                        # partition by split slot
     if scores is not None:
         assert scores.num_dims == 2 and scores.dim(0) == ql_nope.dim(0) and scores.dim(1) == c_kv.dim(0)
         tensors.append((scores, (-1, -1, -1), -1))
-    _new_task(mpk, (XCDS, 1, 1), block_dim, tensors,
-              "mla_attend_mi300",
+    _new_task(mpk, grid, block_dim, tensors,
+              "mla_attend_tile_mi300" if per_tile else "mla_attend_mi300",
               [G.float_bits(softmax_scale), split, n_splits, tiles_per_xcd, ql_nope.dim(0),
                ql_nope.dim(1), q_pe.dim(1)])
 
@@ -133,7 +138,7 @@ TORCH_DTYPES = {"bf16": "bfloat16", "f32": "float32", "i32": "int32", "i64": "in
 
 def aligned_copy(torch, t, align):
     """A copy of t whose base address is a multiple of align bytes (the M4 fault tooling,
-    docs/round-2 P1: the caching allocator aligns to 512 only). The backing buffer stays alive
+    docs/gpu-experiments/02-validation P1: the caching allocator aligns to 512 only). The backing buffer stays alive
     through the returned view's storage."""
     assert align > 0 and align & (align - 1) == 0, "align must be a power of two"
     n = t.numel() * t.element_size()
@@ -145,9 +150,23 @@ def aligned_copy(torch, t, align):
     return out
 
 
+ROW_SLACK = 16   # rows of backing storage behind every single-row activation (the M4 fault)
+
+
 def new_workspace(torch, t, align=0, device="cuda"):
-    """A zeroed workspace for plan tensor t, aligned to align bytes when align is set."""
-    buf = torch.zeros(t.shape, dtype=getattr(torch, TORCH_DTYPES[t.dtype]), device=device)
+    """A zeroed workspace for plan tensor t, aligned to align bytes when align is set.
+
+    A [1, D] activation is backed by ROW_SLACK rows and the first row is returned: the stock
+    gang_linear_silu_kernel tiles M by 16 with no active-token mask, so at batch 1 it reads
+    16 rows from its input (docs/gpu-experiments/02-validation/04-results.md, the fault of M4). The over-read stays
+    inside this allocation whatever the allocator puts after it; the view's storage keeps the
+    rows alive."""
+    dtype = getattr(torch, TORCH_DTYPES[t.dtype])
+    if len(t.shape) == 2 and t.shape[0] == 1:
+        raw = torch.zeros((ROW_SLACK, t.shape[1]), dtype=dtype, device=device)
+        raw = aligned_copy(torch, raw, align) if align else raw
+        return raw[:1]
+    buf = torch.zeros(t.shape, dtype=dtype, device=device)
     return aligned_copy(torch, buf, align) if align else buf
 
 
@@ -241,13 +260,13 @@ def plan_json(plan):
 
 
 def build(packed, capture, meta, dims=REAL_DIMS, s_max=1056, layers=27, head=True, debug=False,
-          stop_after=None, debug_scores=False, tile_linears=False, num_workers=296, num_schedulers=8,
+          stop_after=None, debug_scores=False, tile_linears=False, attend_tasks=False, num_workers=296, num_schedulers=8,
           profiler_tensor=None, align=0, workspaces=None):
     """On the machine: construct the PersistentKernel, attach, issue, return (mpk, host tensors, plan)."""
     import torch
     import mirage as mi
 
-    plan = G.build_plan(dims, s_max, layers, head, debug, debug_scores, tile_linears)
+    plan = G.build_plan(dims, s_max, layers, head, debug, debug_scores, tile_linears, attend_tasks)
     if stop_after:
         plan.truncate(stop_after)
     assert not plan.chain_violations(), f"the runtime would reject this graph: {plan.chain_violations()}"
@@ -429,8 +448,8 @@ class FakeMPK:
 
 
 def dry_run(dims=REAL_DIMS, s_max=1056, layers=27, head=True, debug=False, stop_after=None,
-            debug_scores=False, tile_linears=False):
-    plan = G.build_plan(dims, s_max, layers, head, debug, debug_scores, tile_linears)
+            debug_scores=False, tile_linears=False, attend_tasks=False):
+    plan = G.build_plan(dims, s_max, layers, head, debug, debug_scores, tile_linears, attend_tasks)
     if stop_after:
         plan.truncate(stop_after)
     assert not plan.chain_violations(), f"the runtime would reject this graph: {plan.chain_violations()}"

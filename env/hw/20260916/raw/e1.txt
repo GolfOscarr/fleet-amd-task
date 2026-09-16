@@ -1,0 +1,3 @@
+stream_read occupancy=full grid=2432 block=256 lds_bytes=0 blocks_per_cu_query=8 size_mib=1024 unroll=8 ms=0.291592 gbps=3682.343 tbps=3.6823 checksum=14000000 vgprs=60 passes=1
+stream_read occupancy=full grid=2432 block=256 lds_bytes=0 blocks_per_cu_query=8 size_mib=1024 unroll=8 ms=0.276638 gbps=3881.397 tbps=3.8814 checksum=14000000 vgprs=60 passes=1
+stream_read occupancy=full grid=2432 block=256 lds_bytes=0 blocks_per_cu_query=8 size_mib=1024 unroll=8 ms=0.275796 gbps=3893.247 tbps=3.8932 checksum=14000000 vgprs=60 passes=1

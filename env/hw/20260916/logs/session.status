@@ -1,0 +1,58 @@
+2026-09-16T17:21:56Z START download 
+2026-09-16T17:22:03Z START image 
+2026-09-16T17:22:06Z START setup 
+2026-09-16T17:22:09Z START hw 
+2026-09-16T17:22:12Z START preflight 
+2026-09-16T17:22:12Z PASS preflight 0s
+2026-09-16T17:22:49Z PASS download 53s
+2026-09-16T17:23:14Z PASS hw 65s
+2026-09-16T17:29:26Z PASS setup 440s
+2026-09-16T17:29:54Z START checks 
+2026-09-16T17:31:05Z PASS checks 71s
+2026-09-16T17:31:47Z START reference 
+2026-09-16T17:32:26Z FAIL reference 39s: see /home/hotaisle/metalOps/env/logs/reference.out
+2026-09-16T17:33:32Z START reference 
+2026-09-16T17:34:34Z PASS reference 62s
+2026-09-16T17:34:56Z START kernels 
+2026-09-16T17:35:24Z PASS kernels 28s
+2026-09-16T17:35:50Z START queue env/session/queue-a.txt
+2026-09-16T17:37:07Z PASS queue 77s
+2026-09-16T17:39:45Z START setup 
+2026-09-16T17:40:55Z PASS setup 70s
+2026-09-16T17:41:18Z START kernels 
+2026-09-16T17:41:41Z PASS kernels 23s
+2026-09-16T17:42:02Z START queue env/session/queue-a.txt
+2026-09-16T17:45:15Z PASS queue 193s
+2026-09-16T17:46:00Z START bisect env/session/queue-fault.txt -- --layers 8 --head --iters 2
+2026-09-16T17:48:27Z PASS bisect 147s
+2026-09-16T17:49:25Z START bisect env/session/queue-fault-all.txt -- --layers 8 --head --iters 2
+2026-09-16T17:51:21Z PASS bisect 116s
+2026-09-16T17:52:56Z START setup 
+2026-09-16T17:54:01Z PASS setup 65s
+2026-09-16T17:54:18Z START bisect env/session/queue-fault-all.txt -- --layers 8 --head --iters 2
+2026-09-16T17:58:07Z PASS bisect 229s
+2026-09-16T17:59:02Z START queue env/session/queue-fix.txt
+2026-09-16T18:01:32Z PASS queue 150s
+2026-09-16T18:03:20Z START queue env/session/queue-a2.txt
+2026-09-16T18:08:26Z PASS queue 306s
+2026-09-16T18:12:51Z START queue env/session/queue-b0.txt
+2026-09-16T18:17:05Z PASS queue 254s
+2026-09-16T18:21:16Z START queue env/session/queue-b2.txt
+2026-09-16T18:23:06Z PASS image 3663s
+2026-09-16T18:24:21Z PASS queue 185s
+2026-09-16T18:25:39Z START queue env/session/queue-fix2.txt
+2026-09-16T18:27:40Z PASS queue 121s
+2026-09-16T18:28:37Z START queue env/session/queue-b3.txt
+2026-09-16T18:30:15Z PASS queue 98s
+2026-09-16T19:13:36Z START queue env/session/queue-b4.txt
+2026-09-16T19:15:49Z PASS queue 133s
+2026-09-16T19:18:14Z START kernels 
+2026-09-16T19:18:31Z PASS kernels 17s
+2026-09-16T19:19:27Z START kernels 
+2026-09-16T19:19:48Z PASS kernels 21s
+2026-09-16T19:26:33Z START setup 
+2026-09-16T19:27:40Z PASS setup 67s
+2026-09-16T19:28:00Z START queue env/session/queue-b5.txt
+2026-09-16T19:30:14Z PASS queue 134s
+2026-09-16T19:40:54Z START kernels 
+2026-09-16T19:41:15Z PASS kernels 21s

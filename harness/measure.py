@@ -95,7 +95,7 @@ def event_per_op(entries, num_events, op_names=None, skip_first_iteration=True):
 # launch_persistent_kernel: prepare_kernel, worker_kernel, scheduler_kernel; persistent_kernel on
 # the single-launch path). init_kernel runs once at compile time. A profiled run_fleet.py run
 # also dispatches the weight packing, the cache copies and rocclr's fill and copy blits, so the
-# counters and the launch count are filtered to these names (docs/round-2/01-preparation.md, P7).
+# counters and the launch count are filtered to these names (docs/gpu-experiments/02-validation/01-preparation.md, P7).
 DEFAULT_KERNEL_FILTER = "prepare_kernel,worker_kernel,scheduler_kernel,persistent_kernel"
 
 

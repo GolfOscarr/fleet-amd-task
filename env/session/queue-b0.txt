@@ -1,0 +1,13 @@
+# B0 at 32 iterations (docs/gpu-experiments/02-validation/02-session-plan.md, A8.4): the two graphs differ by one plain gang
+# linear; the per-iteration difference of wall.json mpk_wall_s is the qkva time as the host clock sees it.
+# At 4 iterations (queue-a2.txt) the launch cost of about 15 ms hid it. No profiler: rocprofv3 aborts on
+# the torch wheel's second HIP runtime (session A, 2026-09-16).
+--layers 2 --stop-after L0.norm1 --iters 32 --align-alloc 65536 continue
+--layers 2 --stop-after L0.qkva --iters 32 --align-alloc 65536 continue
+--layers 2 --stop-after L0.mla_prep --iters 32 --align-alloc 65536 continue
+--layers 2 --stop-after L0.mla_attend --iters 32 --align-alloc 65536 continue
+--layers 2 --stop-after L0.mla_merge_uv --iters 32 --align-alloc 65536 continue
+--layers 2 --stop-after L0.o_proj --iters 32 --align-alloc 65536 continue
+--layers 2 --stop-after L0.norm2 --iters 32 --align-alloc 65536 continue
+--layers 2 --stop-after L0.gate_up --iters 32 --align-alloc 65536 continue
+--layers 2 --stop-after L0.down --iters 32 --align-alloc 65536 continue

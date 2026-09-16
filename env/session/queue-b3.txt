@@ -1,0 +1,3 @@
+# Both levers together on the whole model (session B on the same VM, 2026-09-16): E2 and per-tile linears.
+--layers 27 --head --iters 32 --event-timing --nt-weights --tile-linears table continue
+--layers 27 --head --iters 32 --nt-weights --tile-linears compare continue

@@ -1,0 +1,5 @@
+# More, smaller attention splits (the attention already runs one tile per worker, 40 workgroups; the
+# per-tile time is the lever): 17 positions per split, 61 splits, 8 tiles per XCD, under the merge cap of 64.
+--layers 2 --iters 32 --event-timing --nt-weights --split 17 table continue
+--layers 27 --head --iters 32 --event-timing --nt-weights --tile-linears --split 17 table continue
+--layers 27 --head --iters 32 --nt-weights --tile-linears --split 17 compare continue

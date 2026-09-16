@@ -3,15 +3,16 @@
 
     python harness/run_fleet.py --layers N [--head] [--iters K] [--debug] [--stop-after L1.o_proj]
                                 [--model-dir <snapshot>] [--ref harness/ref] [--out harness/fleet_out/<name>]
-                                [--event-timing] [--nt-weights] [--pad-alloc GB]
+                                [--event-timing] [--nt-weights] [--pad-alloc GB] [--align-alloc BYTES]
+                                [--workspaces-first] [--tile-linears] [--attend-tasks] [--split N]
 
 --align-alloc BYTES re-bases every weight, capture and workspace on an aligned address and
 --workspaces-first allocates the workspaces before the weights (the candidate M4 fault fixes,
-docs/round-2/02-session-plan.md, row A4); both are recorded in fleet_run_meta.json.
+docs/gpu-experiments/02-validation/02-session-plan.md, row A4); both are recorded in fleet_run_meta.json.
 --pad-alloc GB holds a dummy device allocation of that size for the whole run,
 made before the weights are packed, so every later buffer moves to a different
 address without any change to the graph; fleet_run_meta.json records the pad
-and the device address of every tensor (the M4 fault test of docs/round-2).
+and the device address of every tensor (the M4 fault test of docs/gpu-experiments/02-validation).
 
 Positions follow D14/D15: step is set to 1022 after compile() (the seeded
 prepare_next_batch makes it 1023), num_new_tokens 1, qo_indptr [0, 1],
@@ -172,16 +173,20 @@ def build_parser():
     ap.add_argument("--out", default=None)
     ap.add_argument("--event-timing", action="store_true", help="compile with MPK_EVENT_TIMING=1")
     ap.add_argument("--nt-weights", action="store_true", help="USE_NT_WEIGHTS=1 (E2)")
+    ap.add_argument("--attend-tasks", action="store_true",
+                    help="mla_attend as one regular task per split instead of a gang task (session B, 2026-09-16)")
+    ap.add_argument("--split", type=int, default=0,
+                    help="positions per attention split (graph_plan.SPLIT, 32); more, smaller splits give more tiles, 64 at most")
     ap.add_argument("--debug-scores", action="store_true",
                     help="MPK_DEBUG_SCORES=1 build; mla_attend also writes the scores (boundary B5)")
     ap.add_argument("--prompt", default=str(common.PROMPT_IDS))
     ap.add_argument("--pad-alloc", type=float, default=0.0, metavar="GB",
                     help="hold a dummy device allocation of GB gibibytes before packing (address shift)")
     ap.add_argument("--tile-linears", action="store_true",
-                    help="issue qkva, o_proj, down and lm_head as per-tile linear_layer tasks (MAJ-7, docs/round-2 P5)")
+                    help="issue qkva, o_proj, down and lm_head as per-tile linear_layer tasks (MAJ-7, docs/gpu-experiments/02-validation P5)")
     ap.add_argument("--align-alloc", type=int, default=0, metavar="BYTES",
                     help="re-base every weight, capture and workspace on a BYTES-aligned address (power of two; "
-                         "the M4 fault candidates, docs/round-2)")
+                         "the M4 fault candidates, docs/gpu-experiments/02-validation)")
     ap.add_argument("--workspaces-first", action="store_true",
                     help="allocate the workspaces from the plan before the weights are packed (address order)")
     return ap
@@ -193,9 +198,12 @@ def run_name(args):
     tile = "_tile" if args.tile_linears else ""
     al = f"_al{args.align_alloc}" if args.align_alloc else ""
     ws = "_wsfirst" if args.workspaces_first else ""
+    nt = "_nt" if args.nt_weights else ""   # session B, 2026-09-16: the E2 runs overwrote their baselines
+    sp = f"_s{args.split}" if args.split else ""
+    at = "_at" if args.attend_tasks else ""
     return (f"L{args.layers}{'_head' if args.head else ''}_it{args.iters}"
             + (f"_{args.stop_after}" if args.stop_after else "") + ("_scores" if args.debug_scores else "")
-            + tile + al + ws + pad)
+            + tile + at + nt + sp + al + ws + pad)
 
 
 def tensor_addresses(host):
@@ -218,6 +226,10 @@ def main():
         os.environ["MPK_EVENT_TIMING"] = "1"
     if args.nt_weights:
         os.environ["USE_NT_WEIGHTS"] = "1"
+    if args.split:
+        import fleet.graph_plan as _G
+        assert 0 < args.split and -(-1056 // args.split) <= 64, "mla_merge_uv merges at most 64 splits"
+        _G.SPLIT = args.split
     if args.debug_scores:
         os.environ["MPK_DEBUG_SCORES"] = "1"
     os.environ.setdefault("USE_GANG", "1")
@@ -241,7 +253,8 @@ def main():
     if args.workspaces_first:
         # the plan's tensors do not depend on --stop-after (it only cuts calls)
         from fleet import graph_plan as G
-        pre_plan = G.build_plan(dims, s_max, args.layers, args.head, args.debug, args.debug_scores, args.tile_linears)
+        pre_plan = G.build_plan(dims, s_max, args.layers, args.head, args.debug, args.debug_scores, args.tile_linears,
+                                args.attend_tasks)
         workspaces = B.allocate_workspaces(torch, pre_plan, args.align_alloc)
         print(f"workspaces-first: {len(workspaces)} buffers allocated before the weights")
     packed = pack_all(args.model_dir, "cuda", dims, layers=args.layers, head=args.head or None)
@@ -263,6 +276,7 @@ def main():
     mpk, host, plan = B.build(packed, capture, meta, dims=dims, s_max=s_max, layers=args.layers,
                               head=args.head, debug=args.debug, stop_after=args.stop_after,
                               debug_scores=args.debug_scores, tile_linears=args.tile_linears,
+                              attend_tasks=args.attend_tasks,
                               align=args.align_alloc, workspaces=workspaces)
     pj = B.plan_json(plan)
     (out / "plan.json").write_text(json.dumps(pj) + "\n")
@@ -275,6 +289,21 @@ def main():
     meta["tokens"][0, :n_prompt] = torch.tensor(prompt, dtype=torch.int64, device="cuda")
     meta["tokens"][0, n_prompt:] = 0
     torch.cuda.synchronize()
+
+    # the static part of the record, with the addresses, before the run: a faulting run keeps it
+    # (docs/gpu-experiments/02-validation/02-session-plan.md, the fault decision tree reads the addresses of the failing run)
+    meta_out = {
+        "layers": args.layers, "head": args.head, "iters": args.iters, "debug": args.debug,
+        "stop_after": args.stop_after, "s_max": s_max, "n_prompt": n_prompt, "tile_linears": args.tile_linears,
+        "attend_tasks": args.attend_tasks,
+        "ops": len(pj["calls"]), "tasks": sum(c["tasks"] for c in pj["calls"]),
+        "env": {k: os.environ.get(k) for k in ("MPK_EVENT_TIMING", "USE_NT_WEIGHTS", "USE_GANG", "AMDGPU_TARGETS",
+                                                "MPK_DEBUG_SCORES")},
+        "pad_alloc_gb": args.pad_alloc, "pad_addr": int(pad.data_ptr()) if pad is not None else None,
+        "align_alloc": args.align_alloc, "workspaces_first": args.workspaces_first,
+        "addresses": tensor_addresses(host), "completed": False,
+    }
+    (out / "fleet_run_meta.json").write_text(json.dumps(meta_out, indent=2) + "\n")
 
     fwd_log = out / "fwd_pass.log"
     fwd_log.write_text("")
@@ -302,17 +331,8 @@ def main():
         (out / "fleet_route_log.json").write_text(json.dumps(log) + "\n")
     wall = {"mpk_wall_s": t_mpk, "iters": args.iters, "pack_s": t_pack, "build_s": t_build}
     (out / "wall.json").write_text(json.dumps(wall) + "\n")
-    meta_out = {
-        "layers": args.layers, "head": args.head, "iters": args.iters, "debug": args.debug,
-        "stop_after": args.stop_after, "s_max": s_max, "n_prompt": n_prompt, "tile_linears": args.tile_linears,
-        "ops": len(pj["calls"]), "tasks": sum(c["tasks"] for c in pj["calls"]),
-        "env": {k: os.environ.get(k) for k in ("MPK_EVENT_TIMING", "USE_NT_WEIGHTS", "USE_GANG", "AMDGPU_TARGETS",
-                                                "MPK_DEBUG_SCORES")},
-        "boundary_keys": sorted(b.keys()), "output_ids": ids, "notes": notes, "timings_s": wall,
-        "pad_alloc_gb": args.pad_alloc, "pad_addr": int(pad.data_ptr()) if pad is not None else None,
-        "align_alloc": args.align_alloc, "workspaces_first": args.workspaces_first,
-        "addresses": tensor_addresses(host),
-    }
+    meta_out.update({"boundary_keys": sorted(b.keys()), "output_ids": ids, "notes": notes, "timings_s": wall,
+                     "completed": True})
     (out / "fleet_run_meta.json").write_text(json.dumps(meta_out, indent=2) + "\n")
     print(f"ids {ids}; {len(b)} boundary tensors; mpk() {t_mpk * 1e3:.1f} ms for {args.iters} iterations -> {out}")
 

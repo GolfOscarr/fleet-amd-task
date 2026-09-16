@@ -1,0 +1,6 @@
+# Session B run inside session A's VM (the user's choice, 2026-09-16 18:19): B1 is A8.5, B3 is out
+# (rocprofv3 cannot attach to the torch wheel's bundled runtime), so B2, B4 and the E2 lever remain.
+--layers 27 --head --iters 32 --event-timing --tile-linears --align-alloc 65536 table continue   # B2: per-tile linears on the whole model
+--layers 27 --head --iters 32 --tile-linears --align-alloc 65536 compare continue                # B4: every flag on, the 32 ids
+--layers 2 --iters 32 --event-timing --nt-weights --align-alloc 65536 table continue             # B5: the design's E2 (MAJ-6), 2 layers
+--layers 27 --head --iters 32 --event-timing --nt-weights --align-alloc 65536 table continue     # B5: E2 on the whole model

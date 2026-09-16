@@ -1,0 +1,8 @@
+PASS  1 partition: SPX + NPS1
+PASS  2 import mirage
+PASS  3 XCD placement: 8 schedulers on their XCDs, 296 workers, xcd == (worker + 5) mod 8
+PASS  4 fences: buffer_wbl2 sc1 x14, buffer_inv sc1 x4 present (loads sc1 x408: the counter poll must be one of them)
+PASS  5 CK FMHA 576/512 does not instantiate, as its source says (DQ3 resolved negative 2026-09-14): mla_attend is the spec kernel (docs/mla-decode/04-our-kernel-spec.md); log /home/hotaisle/metalOps/env/logs/probe_ck.20260916-173058.log
+PASS  6 rocprofv3 counters: all design names present
+PASS  7 CU count: 304 CUs (8 x 38); workers, schedulers from the runtime: (296, 8)
+2026-09-16T17:31:05Z PASS checks 71s

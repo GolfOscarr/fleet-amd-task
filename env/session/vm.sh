@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# The session stages on the VM (docs/round-2/01-preparation.md, P4; 02-session-plan.md).
+# The session stages on the VM (docs/gpu-experiments/02-validation/01-preparation.md, P4; 02-session-plan.md).
 #
 #   bash env/session/vm.sh <stage> [args]          # run a stage in the foreground
 #   bash env/session/vm.sh start <stage> [args]    # run it detached: env/logs/<stage>.out, a row in env/logs/session.status
@@ -92,6 +92,7 @@ stage_reference() {
   local py="$ROOT/.venv/bin/python"
   [ "$DRY" = "1" ] && py=python
   run "$py" harness/run_reference.py --device cuda || return 1
+  run rm -f harness/ref/calibration.json     # the floor is recorded once per machine; the tracked one is the laptop's copy
   run "$py" harness/calibrate.py --device cuda || return 1
   run "$py" harness/route_analysis.py || return 1
   [ "$DRY" = "1" ] && return 0

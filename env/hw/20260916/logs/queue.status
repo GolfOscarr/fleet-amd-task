@@ -1,0 +1,77 @@
+2026-09-16T17:36:47Z L8_head_it2 FAIL rc=134 mpk=0 fault=0 fwd=0 wall=57s
+2026-09-16T17:36:52Z L8_head_it2_pad1 FAIL rc=134 mpk=0 fault=0 fwd=0 wall=5s
+2026-09-16T17:36:56Z L8_head_it2_pad2 FAIL rc=134 mpk=0 fault=0 fwd=0 wall=4s
+2026-09-16T17:37:01Z L8_head_it2_pad4 FAIL rc=134 mpk=0 fault=0 fwd=0 wall=4s
+2026-09-16T17:37:07Z L16_head_it2_pad1 FAIL rc=134 mpk=0 fault=0 fwd=0 wall=6s
+2026-09-16T17:37:07Z DONE env/session/queue-a.txt
+2026-09-16T17:42:39Z L8_head_it2 FAIL rc=1 mpk=0 fault=1 fwd=0 wall=37s
+2026-09-16T17:43:17Z L8_head_it2_pad1 FAIL rc=1 mpk=0 fault=1 fwd=0 wall=37s
+2026-09-16T17:43:55Z L8_head_it2_pad2 FAIL rc=1 mpk=0 fault=1 fwd=0 wall=38s
+2026-09-16T17:44:33Z L8_head_it2_pad4 FAIL rc=1 mpk=0 fault=1 fwd=0 wall=38s
+2026-09-16T17:45:15Z L16_head_it2_pad1 PASS rc=0 mpk=1 fault=0 fwd=2 wall=42s
+2026-09-16T17:45:15Z DONE env/session/queue-a.txt
+2026-09-16T17:46:37Z L8_head_it2_L7.router FAIL rc=1 mpk=0 fault=1 fwd=0 wall=37s bisect
+2026-09-16T17:47:14Z L8_head_it2_L7.mla_attend FAIL rc=1 mpk=0 fault=1 fwd=0 wall=37s bisect
+2026-09-16T17:47:50Z L8_head_it2_L7.qkva FAIL rc=1 mpk=0 fault=1 fwd=0 wall=36s bisect
+2026-09-16T17:48:27Z L8_head_it2_L7.norm1 FAIL rc=1 mpk=0 fault=1 fwd=0 wall=37s bisect
+2026-09-16T17:48:27Z BISECT first-fault=L7.norm1 runs=4
+2026-09-16T17:49:39Z L8_head_it2_L4.mla_prep FAIL rc=1 mpk=0 fault=0 fwd=0 wall=14s bisect
+2026-09-16T17:49:52Z L8_head_it2_L2.mla_prep FAIL rc=1 mpk=0 fault=0 fwd=0 wall=13s bisect
+2026-09-16T17:50:05Z L8_head_it2_L1.mla_prep FAIL rc=1 mpk=0 fault=0 fwd=0 wall=13s bisect
+2026-09-16T17:50:17Z L8_head_it2_L0.o_proj FAIL rc=1 mpk=0 fault=0 fwd=0 wall=12s bisect
+2026-09-16T17:50:29Z L8_head_it2_L0.mla_prep FAIL rc=1 mpk=0 fault=0 fwd=0 wall=12s bisect
+2026-09-16T17:50:54Z L8_head_it2_L0.norm1 PASS rc=0 mpk=1 fault=0 fwd=1 wall=25s bisect
+2026-09-16T17:51:21Z L8_head_it2_L0.qkva PASS rc=0 mpk=1 fault=0 fwd=0 wall=27s bisect
+2026-09-16T17:51:21Z BISECT first-fault=L0.mla_prep runs=7
+2026-09-16T17:54:55Z L8_head_it2_L4.mla_prep FAIL rc=1 mpk=0 fault=1 fwd=0 wall=37s bisect
+2026-09-16T17:55:30Z L8_head_it2_L2.mla_prep FAIL rc=1 mpk=0 fault=1 fwd=0 wall=35s bisect
+2026-09-16T17:56:03Z L8_head_it2_L1.mla_prep FAIL rc=1 mpk=0 fault=1 fwd=0 wall=32s bisect
+2026-09-16T17:56:33Z L8_head_it2_L0.o_proj PASS rc=0 mpk=1 fault=0 fwd=1 wall=30s bisect
+2026-09-16T17:57:05Z L8_head_it2_L0.down FAIL rc=1 mpk=0 fault=1 fwd=0 wall=32s bisect
+2026-09-16T17:57:37Z L8_head_it2_L0.gate_up FAIL rc=1 mpk=0 fault=1 fwd=0 wall=32s bisect
+2026-09-16T17:58:07Z L8_head_it2_L0.norm2 PASS rc=0 mpk=1 fault=0 fwd=2 wall=30s bisect
+2026-09-16T17:58:07Z BISECT first-fault=L0.gate_up runs=7
+2026-09-16T17:59:40Z L8_head_it2_al65536 PASS rc=0 mpk=1 fault=0 fwd=2 wall=38s
+2026-09-16T18:00:17Z L8_head_it2_wsfirst PASS rc=0 mpk=1 fault=0 fwd=2 wall=37s
+2026-09-16T18:00:54Z L8_head_it2_al65536_wsfirst PASS rc=0 mpk=1 fault=0 fwd=2 wall=37s
+2026-09-16T18:01:32Z L8_head_it2_al2097152_wsfirst PASS rc=0 mpk=1 fault=0 fwd=2 wall=38s
+2026-09-16T18:01:32Z DONE env/session/queue-fix.txt
+2026-09-16T18:03:57Z L8_head_it2_al65536 PASS rc=0 mpk=1 fault=0 fwd=2 wall=37s
+2026-09-16T18:04:47Z L27_head_it32_al65536 PASS rc=0 mpk=1 fault=0 fwd=31 wall=48s compare=FAIL
+2026-09-16T18:05:34Z L27_it1_al65536 PASS rc=0 mpk=1 fault=0 fwd=0 wall=46s compare=FAIL
+2026-09-16T18:06:00Z L2_it4_L0.norm1_al65536 PASS rc=0 mpk=1 fault=0 fwd=3 wall=24s measure=FAIL
+2026-09-16T18:06:29Z L2_it4_L0.qkva_al65536 PASS rc=0 mpk=1 fault=0 fwd=2 wall=27s measure=FAIL
+2026-09-16T18:07:04Z L2_it32_al65536 PASS rc=0 mpk=1 fault=0 fwd=28 wall=35s table=PASS
+2026-09-16T18:07:38Z L2_it32_tile_al65536 PASS rc=0 mpk=1 fault=0 fwd=29 wall=34s table=PASS
+2026-09-16T18:08:26Z L27_head_it32_al65536 PASS rc=0 mpk=1 fault=0 fwd=31 wall=48s table=PASS
+2026-09-16T18:08:26Z DONE env/session/queue-a2.txt
+2026-09-16T18:13:15Z L2_it32_L0.norm1_al65536 PASS rc=0 mpk=1 fault=0 fwd=31 wall=24s
+2026-09-16T18:13:42Z L2_it32_L0.qkva_al65536 PASS rc=0 mpk=1 fault=0 fwd=28 wall=27s
+2026-09-16T18:14:09Z L2_it32_L0.mla_prep_al65536 PASS rc=0 mpk=1 fault=0 fwd=31 wall=27s
+2026-09-16T18:14:37Z L2_it32_L0.mla_attend_al65536 PASS rc=0 mpk=1 fault=0 fwd=30 wall=28s
+2026-09-16T18:15:06Z L2_it32_L0.mla_merge_uv_al65536 PASS rc=0 mpk=1 fault=0 fwd=31 wall=29s
+2026-09-16T18:15:34Z L2_it32_L0.o_proj_al65536 PASS rc=0 mpk=1 fault=0 fwd=29 wall=28s
+2026-09-16T18:16:03Z L2_it32_L0.norm2_al65536 PASS rc=0 mpk=1 fault=0 fwd=32 wall=28s
+2026-09-16T18:16:34Z L2_it32_L0.gate_up_al65536 PASS rc=0 mpk=1 fault=0 fwd=27 wall=31s
+2026-09-16T18:17:05Z L2_it32_L0.down_al65536 PASS rc=0 mpk=1 fault=0 fwd=26 wall=31s
+2026-09-16T18:17:05Z DONE env/session/queue-b0.txt
+2026-09-16T18:22:06Z L27_head_it32_tile_al65536 PASS rc=0 mpk=1 fault=0 fwd=31 wall=49s table=PASS
+2026-09-16T18:22:57Z L27_head_it32_tile_al65536 PASS rc=0 mpk=1 fault=0 fwd=31 wall=49s compare=FAIL
+2026-09-16T18:23:32Z L2_it32_al65536 PASS rc=0 mpk=1 fault=0 fwd=27 wall=35s table=PASS
+2026-09-16T18:24:21Z L27_head_it32_al65536 PASS rc=0 mpk=1 fault=0 fwd=31 wall=48s table=PASS
+2026-09-16T18:24:21Z DONE env/session/queue-b2.txt
+2026-09-16T18:26:16Z L8_head_it2 PASS rc=0 mpk=1 fault=0 fwd=2 wall=37s
+2026-09-16T18:27:05Z L27_head_it32 PASS rc=0 mpk=1 fault=0 fwd=31 wall=47s compare=FAIL
+2026-09-16T18:27:40Z L2_it32 PASS rc=0 mpk=1 fault=0 fwd=26 wall=34s table=PASS
+2026-09-16T18:27:40Z DONE env/session/queue-fix2.txt
+2026-09-16T18:29:25Z L27_head_it32_tile_nt PASS rc=0 mpk=1 fault=0 fwd=31 wall=48s table=PASS
+2026-09-16T18:30:15Z L27_head_it32_tile_nt PASS rc=0 mpk=1 fault=0 fwd=31 wall=48s compare=FAIL
+2026-09-16T18:30:15Z DONE env/session/queue-b3.txt
+2026-09-16T19:14:11Z L2_it32_nt_s17 PASS rc=0 mpk=1 fault=0 fwd=26 wall=35s table=PASS
+2026-09-16T19:14:59Z L27_head_it32_tile_nt_s17 PASS rc=0 mpk=1 fault=0 fwd=31 wall=48s table=PASS
+2026-09-16T19:15:49Z L27_head_it32_tile_nt_s17 PASS rc=0 mpk=1 fault=0 fwd=31 wall=48s compare=FAIL
+2026-09-16T19:15:49Z DONE env/session/queue-b4.txt
+2026-09-16T19:28:36Z L2_it32_at_nt PASS rc=0 mpk=1 fault=0 fwd=26 wall=35s table=PASS
+2026-09-16T19:29:24Z L27_head_it32_tile_at_nt PASS rc=0 mpk=1 fault=0 fwd=31 wall=48s table=PASS
+2026-09-16T19:30:14Z L27_head_it32_tile_at_nt PASS rc=0 mpk=1 fault=0 fwd=31 wall=48s compare=FAIL
+2026-09-16T19:30:14Z DONE env/session/queue-b5.txt

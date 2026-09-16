@@ -1,0 +1,83 @@
+7.2: Pulling from rocm/dev-ubuntu-24.04
+d59af7628af2: Pulling fs layer
+7328e9b306e0: Pulling fs layer
+946ce275618b: Pulling fs layer
+a3629ac5b9f4: Pulling fs layer
+d59af7628af2: Download complete
+7328e9b306e0: Download complete
+a3629ac5b9f4: Download complete
+7328e9b306e0: Pull complete
+a3629ac5b9f4: Pull complete
+946ce275618b: Download complete
+946ce275618b: Pull complete
+d59af7628af2: Pull complete
+Digest: sha256:749f9ee120c739682cc2e1553e62632c2676f98bc49e4d8133f380e0af682bcc
+Status: Downloaded newer image for rocm/dev-ubuntu-24.04:7.2
+docker.io/rocm/dev-ubuntu-24.04:7.2
+built ghcr.io/golfoscarr/fleet-amd-task:20260916
+The push refers to repository [ghcr.io/golfoscarr/fleet-amd-task]
+fdc2600d42e2: Waiting
+f243a6f89ab4: Waiting
+481bc15b9fb7: Waiting
+d19f150623c0: Waiting
+946ce275618b: Waiting
+a3629ac5b9f4: Waiting
+616282f7826c: Waiting
+d59af7628af2: Waiting
+1f5ff8ce9f7a: Waiting
+4f4fb700ef54: Waiting
+8169d9ebf8a6: Waiting
+7328e9b306e0: Waiting
+1f5ff8ce9f7a: Waiting
+4f4fb700ef54: Waiting
+8169d9ebf8a6: Waiting
+7328e9b306e0: Waiting
+fdc2600d42e2: Waiting
+f243a6f89ab4: Waiting
+481bc15b9fb7: Waiting
+d19f150623c0: Waiting
+946ce275618b: Waiting
+a3629ac5b9f4: Waiting
+616282f7826c: Waiting
+d59af7628af2: Waiting
+7328e9b306e0: Waiting
+fdc2600d42e2: Waiting
+f243a6f89ab4: Waiting
+481bc15b9fb7: Waiting
+d19f150623c0: Waiting
+946ce275618b: Waiting
+a3629ac5b9f4: Waiting
+616282f7826c: Waiting
+d59af7628af2: Waiting
+1f5ff8ce9f7a: Waiting
+4f4fb700ef54: Waiting
+8169d9ebf8a6: Waiting
+a3629ac5b9f4: Waiting
+616282f7826c: Waiting
+d59af7628af2: Waiting
+1f5ff8ce9f7a: Waiting
+4f4fb700ef54: Waiting
+8169d9ebf8a6: Waiting
+7328e9b306e0: Waiting
+fdc2600d42e2: Waiting
+f243a6f89ab4: Waiting
+481bc15b9fb7: Waiting
+d19f150623c0: Waiting
+946ce275618b: Waiting
+946ce275618b: Waiting
+7328e9b306e0: Pushed
+4f4fb700ef54: Pushed
+a3629ac5b9f4: Pushed
+481bc15b9fb7: Pushed
+d19f150623c0: Pushed
+616282f7826c: Pushed
+d59af7628af2: Pushed
+f243a6f89ab4: Pushed
+fdc2600d42e2: Pushed
+946ce275618b: Pushed
+8169d9ebf8a6: Pushed
+1f5ff8ce9f7a: Pushed
+20260916: digest: sha256:8228c4a757e5aeadc53943af04c61409bfd609ace1d7b8d339a50a7d6bd61d89 size: 856
+Removing login credentials for ghcr.io
+pushed ghcr.io/golfoscarr/fleet-amd-task:20260916
+2026-09-16T18:23:06Z PASS image 3663s
