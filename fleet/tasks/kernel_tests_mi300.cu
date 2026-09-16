@@ -407,19 +407,33 @@ void run_mla_attend(std::string const &dir) {
   // (session B, 2026-09-16: 145 to 215 us per tile in the graph, which this separates from the runtime)
   if (char const *kt = std::getenv("KT_TIME")) {
     int n = std::atoi(kt);
+    // KT_COLD=K: rotate over K copies of the cache (K x 1.2 MB: past the 4 MB L2 of an XCD for K >= 4,
+    // past the 256 MB infinity cache for K >= 220), so a launch reads its cache the way the graph does
+    // (every layer's cache once per iteration) instead of re-reading one warm copy
+    int cold = std::getenv("KT_COLD") ? std::atoi(std::getenv("KT_COLD")) : 1;
+    size_t ckv_bytes = (size_t)S_MAX * D_C * 2, kpe_bytes = (size_t)S_MAX * D_R * 2;
+    std::vector<void *> ckv(cold), kpe(cold);
+    for (int k = 0; k < cold; k++) {
+      HIP_CHECK(hipMalloc(&ckv[k], ckv_bytes)); HIP_CHECK(hipMalloc(&kpe[k], kpe_bytes));
+      HIP_CHECK(hipMemcpy(ckv[k], b.get("c_kv"), ckv_bytes, hipMemcpyDeviceToDevice));
+      HIP_CHECK(hipMemcpy(kpe[k], b.get("k_pe"), kpe_bytes, hipMemcpyDeviceToDevice));
+    }
+    HIP_CHECK(hipDeviceSynchronize());
     hipEvent_t t0, t1;
     hipEventCreate(&t0); hipEventCreate(&t1);
     hipEventRecord(t0, 0);
     for (int i = 0; i < n; i++) {
       hipLaunchKernelGGL(k_mla_attend, dim3(XCDS, tiles_per_xcd), dim3(256), SMEM_BYTES, 0,
-                         b.get("ql_nope"), b.get("q_pe"), b.get("c_kv"), b.get("k_pe"),
+                         b.get("ql_nope"), b.get("q_pe"), ckv[i % cold], kpe[i % cold],
                          b.get("partials"), m.meta, float_from_bits(param(p, "softmax_scale_bits")),
                          split, n_splits, tiles_per_xcd, offset_rows,
                          debug ? b.get("scores") : nullptr);
     }
     hipEventRecord(t1, 0); hipEventSynchronize(t1);
     float ms = 0; hipEventElapsedTime(&ms, t0, t1);
-    std::fprintf(stderr, "TIME mla_attend launches=%d grid=%dx%d mean_us=%.2f\n", n, XCDS, tiles_per_xcd, ms * 1000.0f / n);
+    std::fprintf(stderr, "TIME mla_attend launches=%d grid=%dx%d cache_copies=%d mean_us=%.2f\n",
+                 n, XCDS, tiles_per_xcd, cold, ms * 1000.0f / n);
+    for (int k = 0; k < cold; k++) { hipFree(ckv[k]); hipFree(kpe[k]); }
   }
   b.store_outputs();
 }

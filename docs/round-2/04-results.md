@@ -53,16 +53,20 @@ alone column was not run: the tile run carries the P6 kernels too.
 Standalone (the suite binary, `KT_TIME=50`, the graph's grid of 8 x 5 tiles at step
 1032 with all 33 splits live) the attention grid takes 38.4 us and the merge grid
 11.5 us, against 145 to 215 us and 46 to 61 us inside the megakernel. The kernels
-are not the floor as measured warm. Off the gang path (`--attend-tasks`, one
-regular task per split, `runs/L27_head_it32_tile_at_nt`) the attention costs the
-same 146 to 149 us, so the dispatch path is not the difference either. What
-separates 38 from 146 us is what the loop does not do: the graph reads every
-layer's 1 MB cache once per iteration, cold, while the standalone loop re-reads
-one layer's cache 50 times from the 256 MB infinity cache. The next measurement
-is the standalone grid over 27 distinct caches (cold L2), which tells whether the
-kernel's cold-read latency chain is the 146 us; the prefetch depth (P6) and the
-rows per tile (`--split 17`) did not move it, so the chain, if it is one, is not
-the column loop.
+are not the floor. Off the gang path (`--attend-tasks`, one regular task per
+split, `runs/L27_head_it32_tile_at_nt`) the attention costs the same 146 to
+149 us, so the dispatch path is not the difference. Cold is not either: with the
+timing loop rotating over 4, 27, 64 or 256 copies of the cache (`KT_COLD`, up to
+300 MB, past the infinity cache) the grid takes 33.7 to 34.0 us, against 37.8 us
+warm. The kernel is a 34 us kernel. The prefetch depth (P6) and the rows per
+tile (`--split 17`) did not move the in-graph number, and neither did the task
+type. What remains is what the megakernel does around a task and that the
+standalone launch does not: the dependency wait and the counter atomics, the
+cache fences at task completion (`buffer_wbl2 sc1` x14, `buffer_inv sc1` x4 in
+the worker), and the worker's register budget (the union of every task, 234
+VGPRs, one workgroup per CU) against the standalone kernel's 124. For the
+attention that overhead is paid 33 times per operator; the residual linears,
+the norms and the merge show the same kind of floor at their smaller sizes.
 
 | Operator | Event | Baseline us (2026-09-15) | P6 kernels (`runs/L2_it32_al65536`) | `--tile-linears` alone | Both (`runs/L2_it32_tile_al65536`) | Bandwidth floor us |
 |---|---|---|---|---|---|---|
@@ -93,7 +97,7 @@ the column loop.
 
 | Item | State | Next |
 |---|---|---|
-| MAJ-7, the per-operator floor | the attention costs 146 to 215 us in the graph and 38 us in a warm standalone loop; neither the gang path (`--attend-tasks` gives the same 146), the prefetch depth (P6) nor the rows per tile (`--split 17`) move it | a cold-cache standalone timing (27 distinct caches) to separate HBM latency from the kernel; then the kernel's phase structure (the score pass, the softmax syncs, the partial write) under rocprofv3 on a standalone binary; the design band (1.15 to 1.35 ms) needs the attention near its warm time |
+| MAJ-7, the per-operator floor | the attention costs 146 to 215 us in the graph and 34 us standalone, warm or cold; neither the dispatch path (`--attend-tasks`), the prefetch depth (P6) nor the rows per tile (`--split 17`) move the in-graph number | measure the megakernel's per-task overhead directly: a graph of N empty tasks, then the fences and the counter atomics one at a time (the worker's `buffer_wbl2 sc1` sites); the worker's VGPR budget against the standalone kernel's; the design band (1.15 to 1.35 ms) needs the attention near its 34 us |
 | E2 (`--nt-weights`) | the largest lever measured: 15.0 to 13.0 ms; `mla_attend` 215 to 150 us | keep on; understand why non-temporal weight loads change an attention kernel that reads the cache, not the weights (the runtime toggles the loads of every task) |
 | B3, the counters | rocprofv3 cannot attach to the torch wheel's bundled runtime | a wheel built against the system ROCm, or the counters from a standalone binary (`copy_bytes` of round 1) |
 | the route log at 32 steps | 60 of 832 top-k sets differ, ids equal | a tolerance rule for ties within the router floor |
