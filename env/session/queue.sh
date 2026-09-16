@@ -22,13 +22,16 @@
 # One row of env/logs/queue.status per run:
 #   <utc> <name> PASS|FAIL rc=<n> mpk=<n> fault=<n> fwd=<n> wall=<s>s [compare=PASS|FAIL] [measure=PASS|FAIL]
 # and STOP <name> when a FAIL without 'continue' ends the queue.
-# Overrides for the tests: RUN_FLEET, COMPARE, MEASURE, PROFILER, PY, SNAP, FLEET_OUT, RECORD, LOGDIR.
+# Guards, before a row runs: --iters at most 32; --debug only with --iters 1; compare (and any
+# untruncated run) needs harness/ref/ref_cache.safetensors; measure needs the profiler on PATH.
+# Overrides for the tests: RUN_FLEET, COMPARE, MEASURE, PROFILER, PY, SNAP, FLEET_OUT, RECORD, LOGDIR, REF_DIR.
 set -uo pipefail
 # shellcheck disable=SC1091
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 cd "$ROOT"
 
 PY="${PY:-python}"
+REF_DIR="${REF_DIR:-$ROOT/harness/ref}"
 RUN_FLEET="${RUN_FLEET:-$PY harness/run_fleet.py}"
 COMPARE="${COMPARE:-$PY harness/compare.py}"
 MEASURE="${MEASURE:-$PY harness/measure.py}"
@@ -45,6 +48,29 @@ name_of() {
   # shellcheck disable=SC2086
   "$PY" -c "import sys; sys.path.insert(0, 'harness'); import run_fleet
 print(run_fleet.run_name(run_fleet.build_parser().parse_args(sys.argv[1:] + ['--model-dir', 'x'])))" "$@"
+}
+
+# the prerequisites of a row, checked before anything runs: prints the reason and returns 1
+# (a FAIL row without a run; docs/round-2/02-session-plan.md, "guards")
+row_guard() {
+  local flags="$1"; shift
+  local args=("$@") iters=1 i
+  for ((i = 0; i < ${#args[@]}; i++)); do
+    case "${args[$i]}" in
+      --iters) iters="${args[$((i + 1))]}";;
+      --iters=*) iters="${args[$i]#--iters=}";;
+    esac
+  done
+  if [ "$iters" -gt 32 ] 2>/dev/null; then echo "guard: --iters $iters is above 32 (the RoPE tables hold 1,056 positions)"; return 1; fi
+  if [[ " ${args[*]} " == *" --debug "* ]] && [ "$iters" != "1" ]; then
+    echo "guard: --debug is the growth curve at step 0; it needs --iters 1 (got $iters)"; return 1; fi
+  if [[ "$flags" == *compare* ]] && [ ! -f "$REF_DIR/ref_cache.safetensors" ]; then
+    echo "guard: compare needs $REF_DIR/ref_cache.safetensors (run the reference stage first)"; return 1; fi
+  if [[ " ${args[*]} " != *" --stop-after "* ]] && [ ! -f "$REF_DIR/ref_cache.safetensors" ] && [ "$DRY" != "1" ]; then
+    echo "guard: run_fleet.py loads $REF_DIR/ref_cache.safetensors (run the reference stage first)"; return 1; fi
+  if [[ "$flags" == *measure* ]] && [ "$DRY" != "1" ] && ! command -v "${PROFILER%% *}" >/dev/null 2>&1; then
+    echo "guard: measure needs $PROFILER on PATH"; return 1; fi
+  return 0
 }
 
 # run one graph: sets NAME, RESULT, RC, MPK, FAULT, FWD, WALL
@@ -131,7 +157,13 @@ queue_run() {
     for w in "${words[@]}"; do
       case "$w" in compare|table|measure|continue) flags="$flags $w";; *) args+=("$w");; esac
     done
-    local extra=""
+    local extra="" why
+    if ! why="$(row_guard "$flags" "${args[@]}")"; then
+      NAME="$(name_of "${args[@]}" 2>/dev/null || echo "${args[*]}")"
+      row "$QSTATUS" "$NAME FAIL $why"
+      if [[ "$flags" != *continue* ]]; then row "$QSTATUS" "STOP $NAME"; return 1; fi
+      continue
+    fi
     if run_graph "${args[@]}"; then :; fi
     [[ "$flags" == *compare* ]] && extra="$extra compare=$(do_compare "$NAME")"
     [[ "$flags" == *table* ]] && [ "$RESULT" = "PASS" ] && extra="$extra table=$(do_table "$NAME")"

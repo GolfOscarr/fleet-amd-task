@@ -63,7 +63,10 @@ def tree(tmp_path):
         "FLEET_OUT": str(tmp_path / "fleet_out"), "RECORD": str(tmp_path / "record"),
         "LOGDIR": str(tmp_path / "logs"), "SNAP": str(tmp_path / "snap"),
         "FAKE_LABELS": str(SESSION / "queue-fault.txt"),
+        "REF_DIR": str(tmp_path / "ref"),
     })
+    (tmp_path / "ref").mkdir()
+    (tmp_path / "ref/ref_cache.safetensors").write_bytes(b"0")      # the reference stage has run
     env.pop("FAKE_FAULT_AT", None)
     return tmp_path, env
 
@@ -184,7 +187,7 @@ def test_laptop_dry_mode(tree, tmp_path):
 def test_queue_files_parse_as_run_fleet_arguments():
     sys.path.insert(0, str(ROOT / "harness"))
     import run_fleet
-    for f in ("queue-a.txt", "queue-a2.txt", "queue-b.txt"):
+    for f in ("queue-a.txt", "queue-a2.txt", "queue-b.txt", "queue-fix.txt"):
         rows = [l.split("#")[0].split() for l in (SESSION / f).read_text().splitlines()]
         rows = [r for r in rows if r]
         assert rows, f
@@ -272,3 +275,23 @@ def test_queue_measure_row_end_to_end_with_a_fake_profiler(tree):
         "ktrace_1_kernel_trace.csv", "pmc1_1_counter_collection.csv", "pmc2_1_counter_collection.csv",
         "pmc3_1_counter_collection.csv", "pmc4_1_counter_collection.csv"]
     assert (rec / "report_table.md").read_text().count("3 megakernel of 4 dispatches") == 1
+
+
+def test_queue_guards_fail_a_row_before_it_runs(tree):
+    tmp, env = tree
+    q = tmp / "queue.txt"
+    q.write_text("--layers 2 --iters 64 continue\n--layers 27 --debug --iters 4 continue\n"
+                 "--layers 2 --iters 1 compare\n")
+    (tmp / "ref/ref_cache.safetensors").unlink()                      # no reference tensors
+    r = sh([str(SESSION / "queue.sh"), "run", str(q)], env)
+    assert r.returncode == 1
+    rows = (tmp / "logs/queue.status").read_text().splitlines()
+    assert "FAIL guard: --iters 64 is above 32" in rows[0]
+    assert "FAIL guard: --debug is the growth curve" in rows[1]
+    assert "FAIL guard: compare needs" in rows[2] and rows[3].endswith("STOP L2_it1")
+    assert not (tmp / "fleet_out").exists()                            # nothing ran
+    (tmp / "ref/ref_cache.safetensors").write_bytes(b"0")
+    env["PROFILER"] = "/nonexistent/rocprofv3"
+    q.write_text("--layers 2 --iters 1 measure\n")
+    r = sh([str(SESSION / "queue.sh"), "run", str(q)], env)
+    assert "FAIL guard: measure needs /nonexistent/rocprofv3" in (tmp / "logs/queue.status").read_text()
