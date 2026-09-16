@@ -47,7 +47,7 @@ quotes a status line or a file in the record.
 | 18:22:57 | B4 | (same queue) | `L27_head_it32_tile_al65536 PASS compare=FAIL`: `output_ids PASS`, `route_log FAIL` as in A8.2 | every flag on, the 32 ids equal |
 | 18:23:32, 18:24:21 | B5 (E2) | (same queue) `--nt-weights` | 2 layers 1,497.3 us per iteration; 27 layers with the head 12,977.8 us; `mla_attend` 145 to 150 us instead of 215, `w13` 20 to 22 instead of 24 to 26 | the runs were named like their baselines and renamed `_nt` on the VM before the pull; `run_name` carries the suffix now |
 | 18:23:06 | A9 | image | `PASS image 3663s`; `pushed ghcr.io/golfoscarr/fleet-amd-task:20260916` | session B of a later round can start from it |
-| 18:27 | fix | `start queue queue-fix2.txt` (the plan-side fix, no flag) | | |
+| 18:26 to 18:27 | fix | `start queue queue-fix2.txt` (the plan-side fix, no flag: `build_graph.new_workspace` backs every single-row activation with 16 rows, commit ce3a317) | `L8_head_it2 PASS fwd=2` (faulted at 17:42 without the fix); `L27_head_it32 PASS fwd=31`, `output_ids PASS`; `L2_it32 table=PASS` 1,676.6 us per iteration | the M4 fault is fixed at its cause; no flag needed from here on |
 
 ### Decisions (the DECIDE rows)
 
