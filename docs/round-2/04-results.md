@@ -49,6 +49,13 @@ linears sit on a 25 to 35 us floor whatever their size (`o_proj` 8 MB, `down`
 memory system delivers, so the event gaps do not measure them. The `--tile-linears`
 alone column was not run: the tile run carries the P6 kernels too.
 
+Standalone (the suite binary, `KT_TIME=50`, the graph's grid of 8 x 5 tiles at step
+1032 with all 33 splits live) the attention grid takes 38.4 us and the merge grid
+11.5 us, against 145 to 215 us and 46 to 61 us inside the megakernel. The kernels
+are not the floor; the gang dispatch of the runtime is, by 100 to 175 us per
+attention operator (27 per iteration) and 35 to 50 us per merge. The residual
+gang linears' 25 to 35 us floor is the same mechanism at a smaller size.
+
 | Operator | Event | Baseline us (2026-09-15) | P6 kernels (`runs/L2_it32_al65536`) | `--tile-linears` alone | Both (`runs/L2_it32_tile_al65536`) | Bandwidth floor us |
 |---|---|---|---|---|---|---|
 | `qkva` (gang linear, 15 MB) | 3 | 4.1 | 4.3 | - | 3.9 (per-tile `linear_layer`, 96 tasks) | 3.5 |
@@ -78,4 +85,7 @@ alone column was not run: the tile run carries the P6 kernels too.
 
 | Item | State | Next |
 |---|---|---|
-| | | |
+| MAJ-7, the per-operator floor | measured: the gang path costs 100 to 175 us per attention operator and 25 to 50 us per gang linear or merge on top of the kernels (38 us and 11.5 us standalone) | move the attention and the merge off the gang path (one regular task per tile, the runtime's per-task partitions), then the residual linears; the design band (1.15 to 1.35 ms) needs the operators at their kernel time |
+| E2 (`--nt-weights`) | the largest lever measured: 15.0 to 13.0 ms; `mla_attend` 215 to 150 us | keep on; understand why non-temporal weight loads change an attention kernel that reads the cache, not the weights (the runtime toggles the loads of every task) |
+| B3, the counters | rocprofv3 cannot attach to the torch wheel's bundled runtime | a wheel built against the system ROCm, or the counters from a standalone binary (`copy_bytes` of round 1) |
+| the route log at 32 steps | 60 of 832 top-k sets differ, ids equal | a tolerance rule for ties within the router floor |

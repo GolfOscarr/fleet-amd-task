@@ -403,6 +403,24 @@ void run_mla_attend(std::string const &dir) {
                      split, n_splits, tiles_per_xcd, offset_rows,
                      debug ? b.get("scores") : nullptr);
   finish_launch();
+  // KT_TIME=N: N more launches under hipEvents, the standalone time of the grid of tiles
+  // (session B, 2026-09-16: 145 to 215 us per tile in the graph, which this separates from the runtime)
+  if (char const *kt = std::getenv("KT_TIME")) {
+    int n = std::atoi(kt);
+    hipEvent_t t0, t1;
+    hipEventCreate(&t0); hipEventCreate(&t1);
+    hipEventRecord(t0, 0);
+    for (int i = 0; i < n; i++) {
+      hipLaunchKernelGGL(k_mla_attend, dim3(XCDS, tiles_per_xcd), dim3(256), SMEM_BYTES, 0,
+                         b.get("ql_nope"), b.get("q_pe"), b.get("c_kv"), b.get("k_pe"),
+                         b.get("partials"), m.meta, float_from_bits(param(p, "softmax_scale_bits")),
+                         split, n_splits, tiles_per_xcd, offset_rows,
+                         debug ? b.get("scores") : nullptr);
+    }
+    hipEventRecord(t1, 0); hipEventSynchronize(t1);
+    float ms = 0; hipEventElapsedTime(&ms, t0, t1);
+    std::fprintf(stderr, "TIME mla_attend launches=%d grid=%dx%d mean_us=%.2f\n", n, XCDS, tiles_per_xcd, ms * 1000.0f / n);
+  }
   b.store_outputs();
 }
 
@@ -418,6 +436,19 @@ void run_mla_merge_uv(std::string const &dir) {
   hipLaunchKernelGGL(k_mla_merge_uv, dim3(XCDS, HEADS_PER_XCD), dim3(256), SMEM_BYTES, 0,
                      b.get("partials"), b.get("w_uv"), b.get("attn"), m.meta, split, n_splits);
   finish_launch();
+  if (char const *kt = std::getenv("KT_TIME")) {
+    int n = std::atoi(kt);
+    hipEvent_t t0, t1;
+    hipEventCreate(&t0); hipEventCreate(&t1);
+    hipEventRecord(t0, 0);
+    for (int i = 0; i < n; i++) {
+  hipLaunchKernelGGL(k_mla_merge_uv, dim3(XCDS, HEADS_PER_XCD), dim3(256), SMEM_BYTES, 0,
+                     b.get("partials"), b.get("w_uv"), b.get("attn"), m.meta, split, n_splits);
+    }
+    hipEventRecord(t1, 0); hipEventSynchronize(t1);
+    float ms = 0; hipEventElapsedTime(&ms, t0, t1);
+    std::fprintf(stderr, "TIME mla_merge_uv launches=%d mean_us=%.2f\n", n, ms * 1000.0f / n);
+  }
   b.store_outputs();
 }
 
