@@ -3,7 +3,8 @@
 
     python harness/run_fleet.py --layers N [--head] [--iters K] [--debug] [--stop-after L1.o_proj]
                                 [--model-dir <snapshot>] [--ref harness/ref] [--out harness/fleet_out/<name>]
-                                [--event-timing] [--nt-weights] [--pad-alloc GB]
+                                [--event-timing] [--nt-weights] [--pad-alloc GB] [--align-alloc BYTES]
+                                [--workspaces-first] [--tile-linears] [--attend-tasks] [--split N]
 
 --align-alloc BYTES re-bases every weight, capture and workspace on an aligned address and
 --workspaces-first allocates the workspaces before the weights (the candidate M4 fault fixes,

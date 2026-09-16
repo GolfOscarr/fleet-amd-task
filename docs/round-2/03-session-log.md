@@ -122,3 +122,6 @@ quotes a status line or a file in the record.
 | `env/logs/bisect.result` (in `logs/`) | the first faulting label |
 | `fleet/tasks/results/kernel_tests.json` | the kernel suites |
 | `harness/ref/*.json` | the reference ids, route log, calibration |
+| `env/session/queue-fault-all.txt`, `queue-b0.txt`, `queue-b2.txt` to `queue-b5.txt`, `queue-fix2.txt` | the queue files written on the day, one per experiment (the table in `02`) |
+| `env/hw/20260916/kernel_tests/` | the kernel suites' results, twice |
+| `fleet/tasks/kernel_tests_mi300.cu` (`KT_TIME`, `KT_COLD`) | the standalone timings of 19:19 and 19:41 |

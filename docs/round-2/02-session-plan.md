@@ -149,7 +149,12 @@ the 1.15 to 1.35 ms band of the design.
 | `env/session/queue-fault.txt` | the 16 labels of layer 7 and the head, in plan order (the bisection's input, not a queue) | A6 |
 | `env/session/queue-fix.txt` | the four pre-baked fixes | A7 |
 | `env/session/queue-a2.txt` | the fixed graph, M4, the growth curve, B0, the two 2-layer timings, the 27-layer baseline | A8 |
-| `env/session/queue-b.txt` | B1 to B5 | session B |
+| `env/session/queue-b.txt` | B1 to B5 | session B (as planned; the rows actually run are below) |
+| `env/session/queue-fault-all.txt` | every label of the 8-layer graph (the layer-7 list faulted at its first label) | A6, the wide bisection |
+| `env/session/queue-b0.txt` | the stop-after ladder of layer 0 at 32 iterations | A8.4, B0 from the host clock |
+| `env/session/queue-b2.txt` | B2, B4, the E2 lever on 2 and 27 layers | session B in the same VM |
+| `env/session/queue-fix2.txt` | the plan-side fault fix without any flag | after B5 |
+| `env/session/queue-b3.txt`, `queue-b4.txt`, `queue-b5.txt` | E2 and per-tile linears together; 61 splits; the attention as regular tasks | B5 |
 
 One `run_fleet.py` argument line per row with the optional trailing words
 `compare`, `table`, `measure`, `continue`. The guards of `queue.sh` fail a
@@ -169,6 +174,9 @@ profiler. `05-rehearsal.md` shows every row expanded.
 | `bash env/session/pf.sh 1` | row A4's fallback: prefetch depth 1 in both attention kernels (then `L push`, `L start kernels`); `pf.sh 4` restores |
 | `python3 env/session/queue_flag.py <queue> <flags> --in-place` | row A8: the winning fix flag into every run row of `queue-a2.txt` and `queue-b.txt` (idempotent, keywords and comments kept) |
 | `python3 env/session/addr_diff.py <A>/fleet_run_meta.json <B>/fleet_run_meta.json` | row A5.2: which tensors moved between two runs, by how much, and whether a 4 GiB boundary was crossed |
+| `bash env/session/grab.sh` (added on the day) | polls the provisioning list every 18 s and provisions the first 1x MI300X; the log is `env/logs/grab.log` |
+| `KT_TIME=N [KT_COLD=K] fleet/tasks/build/kernel_tests mla_attend <trial dir>` (added on the day) | the standalone time of the attention or merge grid, warm or over K copies of the cache (`fleet/tasks/README.md`) |
+| `run_fleet.py --split N`, `--attend-tasks` (added on the day) | positions per attention split (61 splits at 17); the attention as one regular task per split |
 
 ## Failure playbook (round 1, one line each)
 

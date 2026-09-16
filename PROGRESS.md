@@ -160,7 +160,7 @@ Test suite: `.venv/bin/python -m pytest harness/tests fleet/tests -q` (66 tests)
 - [x] **L13** `fleet/patches/gfx942.patch` (include guard, 16x16x16 warp GEMM on gfx942, `[FWD_PASS]` every iteration); applies cleanly
 - [x] **L10** `harness/run_fleet.py` (build, compile, meta tensors, run, boundary dumps by last writer) · **L11** `harness/measure.py` (`[FWD_PASS]`, event timing, rocprofv3 CSVs, the report table)
 - [x] **L8** `harness/calibrate.py` (script; the floor itself needs the GPU) · **L14** `harness/route_analysis.py`
-- [ ] Calibrate BF16 noise floor and log expert routing on the machine: `run_reference.py`, then `calibrate.py` and `route_analysis.py` (MIN-2, MIN-6)
+- [x] Calibrate BF16 noise floor and log expert routing on the machine: `run_reference.py`, then `calibrate.py` and `route_analysis.py` (MIN-2, MIN-6) — floors router 3.59e-3, layer 4.33e-3, route overlap 0.21, on both VMs (2026-09-15, 2026-09-16)
 - [x] Independent review of the branch against the Fleet source, the HF modeling file and the design docs: 1 blocker (`AMDGPU_TARGETS` unset, so the megakernel compiled for gfx950), 3 major (layer-1 B3 normalized with layer 0's weight; the B5 debug-scores path unreachable; B10 compared element-wise against an unordered `topk`), 5 minor; all fixed in separate commits, MIN-30 and MIN-31 closed by source inspection
 - [x] `fleet/tasks/kernel_tests.py` + `kernel_tests_mi300.cu` (07-correctness.md harness table): a standalone HIP launcher that runs each new kernel in isolation on random inputs against `numpy_ref.py`, plus 1 split versus 33 splits; `--dry-run` exercises the plumbing here (12 tests, including a Python-to-C++ contract test parsed from the launcher), the launcher compiles and links for gfx942 offline in both variants; the run itself is day 2
 
@@ -178,7 +178,7 @@ Test suite: `.venv/bin/python -m pytest harness/tests fleet/tests -q` (66 tests)
 
 ---
 
-## Stage 4 — GPU bring-up ⬜ in progress — hardware collection done (2026-09-15)
+## Stage 4 — GPU bring-up ✅ complete — hardware collection 2026-09-15, round 2 on the 1x MI300X 2026-09-16 (`docs/round-2/`)
 
 The hour of measurements that precedes the build ran on Hot Aisle VM
 `enc1-gpuvm005` (ROCm 7.2.4, hipcc 7.2.53211, two MI300X VF devices, device 0
@@ -210,7 +210,7 @@ documented as blocked. **Decide end of day 1.**
 
 ---
 
-## Stage 5 — Implementation 🟡 M2 reached on the machine (2026-09-15)
+## Stage 5 — Implementation ✅ M4 reached on the machine (2026-09-16); M2 since 2026-09-15
 
 - [x] Weight loader: pack experts into W13 `[64, 2816, 2048]`, precision as a parameter — `fleet/pack_weights.py`, 272 tensors, 31.42 GB, checks pass on the VM
 - [x] Prefill → latent KV cache conversion (excluded from timed window) — captured by `run_reference.py`, consumed by `run_fleet.py`
@@ -220,22 +220,22 @@ documented as blocked. **Decide end of day 1.**
 - [x] DeepSeek-V2 model builder — `fleet/graph_plan.py` and `fleet/build_graph.py` (the graph is built in our harness, not in `python/mirage/mpk/models/`)
 - [x] Chiplet-parallel `lm_head` + argmax reduce — runs (a 2-layer graph with the head produces a token); correct only with all 27 layers, see M4
 - [x] Wire layer 1 task graph → **M2** — PASS
-- [ ] Extend to N layers → **M3** — 27 layers run without the head; growth curve pending
+- [x] Extend to N layers → **M3** — 27 layers run 32 iterations; the growth curve over 27 layers measured (`env/hw/20260916/runs/L27_it1_al65536`): 3.7e-3 to 6.4e-3 at layers 0 to 4, a jump to 2.97e-2 at layer 5 from a step-0 routing tie (expert 49 against 2), then a monotone decay to 7.1e-3; FAIL by the 4x-floor rule at layers 5 to 7, explained (`docs/round-2/04-results.md`)
 - [x] End-to-end decode → **M4** — 32 ids equal at 27 layers with the head (2026-09-16)
 
 ---
 
-## Stage 6 — Measurement & submission ⬜ not started
+## Stage 6 — Measurement & submission 🟡 measured in round 2 (2026-09-16), the counters missing
 
-- [ ] Correctness evidence at every completed boundary (expert indices exact, 32 token IDs exact)
-- [ ] GPU launches per token
-- [ ] Median + P95 latency (state N; 32 tokens is too few — loop the decode)
-- [ ] Memory traffic, achieved bandwidth, L2 hit rate
-- [ ] Occupancy + VGPR/LDS per task
+- [x] Correctness evidence at every completed boundary — layers 0 and 1 at every boundary against the reference; the 32 token ids exact at 27 layers with the head; the expert indices exact at step 0 except one tie, 60 of 832 (step, layer) sets differ by one expert near a tie over 32 steps (`docs/round-2/04-results.md`)
+- [x] GPU launches per token — one `mpk()` call runs the 32 iterations (the persistent kernel); the profiler count was not taken (rocprofv3 cannot attach to the torch wheel)
+- [x] Median + P95 latency — N = 32 iterations, the runtime's event clock: 9,575 median / 9,644 P95 us per token with E2 and per-tile linears, 12,268 / 12,338 with the gang linears (`docs/round-2/04-results.md`, the three-clock table)
+- [ ] Memory traffic, achieved bandwidth, L2 hit rate — not measured: rocprofv3 aborts on the torch wheel's bundled runtime; 0.52 TB/s from the design's byte count and the measured time; the counters need a standalone binary (`docs/round-2/06-lessons.md`, item 7)
+- [x] Occupancy + VGPR/LDS per task — from the offline compile: the worker's union 234 VGPRs, no spills, one workgroup per CU; `mla_attend` 124, `mla_merge_uv` 75 standalone (`docs/round-2/01-preparation.md`, P6)
 - [x] TPOT + tokens/s — on the 1x MI300X, steady state on the runtime's event clock: 12.3 ms per token with the gang linears, 9.6 ms with E2 (`--nt-weights`) and per-tile linears (104 tokens/s); the host means over 32 iterations are 15.0 and 10.3 ms (launch and first iteration included); the design band is 1.15 to 1.35 ms (`docs/round-2/04-results.md`)
-- [ ] Fleet-native ops vs remaining fallbacks
-- [ ] Build/run instructions, setup scripts, profiling commands
-- [ ] Known failures + recommended next steps (incl. FP8 with arithmetic)
+- [x] Fleet-native ops vs remaining fallbacks — the stock gang and per-tile linears, norms, embed, argmax; ours: `mla_prep`, `mla_attend`, `mla_merge_uv`, `moe_router`, `copy` (`fleet/tasks/README.md`); no host fallback in the timed window
+- [x] Build/run instructions, setup scripts, profiling commands — `env/setup.sh`, `env/session/` (the VM stages, the queue, the laptop driver), `docs/gpu-bringup/06-agent-guide.md`, `docs/round-2/02-session-plan.md`
+- [x] Known failures + recommended next steps — `OPEN-PROBLEMS.md`, `docs/round-2/06-lessons.md` (eight items in the order of the expected gain); FP8 with arithmetic in `docs/acceleration/`
 
 ---
 
@@ -262,10 +262,10 @@ Fleet sources.
 | Risk | Impact | Mitigation |
 |---|---|---|
 | Repo won't build for gfx942 | Strategy change | Device code compiles offline (2026-09-14); the host build is decided day 1; minimal-runtime fallback |
-| MLA task is the whole budget | Miss M3/M4 | ✅ prior art read, spec drafted; M2 is the required bar |
+| MLA task is the whole budget | Miss M3/M4 | ✅ M4 reached 2026-09-16; the MLA kernels validated and 34 us standalone |
 | Megakernel occupancy = 1 wave/SIMD | Was feared fatal | ✅ resolved — `VMCNT`=63 allows enough in-flight loads; becomes a prefetch-depth requirement (MIN-22 to confirm) |
-| Attention uses 32 of 296 workers | 13–17% of budget if the model is right | `P_split` is one constant to sweep (MIN-23) |
-| Our tasks smaller than anything Fleet measured | Dispatch overhead dominates | Measure task vs dispatch time early |
+| Attention uses 32 of 296 workers | 13–17% of budget if the model is right | measured: 33 splits run as 40 workgroups, one tile per worker; 61 splits (`--split 17`) change nothing, the cost is per tile (`docs/round-2/06-lessons.md`) |
+| Our tasks smaller than anything Fleet measured | Dispatch overhead dominates | ✅ measured 2026-09-16: the attention kernel is 34 us standalone and 146 to 215 us in the graph; the megakernel's per-task overhead is the floor (MAJ-7, `docs/round-2/06-lessons.md` item 1) |
 | Top-6 experts over 8 XCDs leaves 2 idle | 25% of machine during 99 MB phase | Candidate: fold shared experts in as experts 64-65 (8 active on 8 XCDs); compare vs N-split |
 | 5 days, BF16 first | FP8 not reached | Document with arithmetic; precision as a loader parameter |
 

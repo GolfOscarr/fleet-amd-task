@@ -117,9 +117,9 @@ row in `env/logs/session.status`; the graph runs come from queue files
 (`env/session/queue-*.txt`) through `queue.sh`, one at a time; `laptop.sh
 wait` and `report`, `vm.sh check`, `preflight`, `kill` and `gdb`, `pf.sh`,
 `queue_flag.py` and `addr_diff.py` are the helpers (the table in the plan).
-The plan that uses them is `docs/round-2/02-session-plan.md`. The shape itself:
+The plan that uses them is `docs/round-2/02-session-plan.md`; what it looked like when it ran is `docs/round-2/03-session-log.md`. Three rules from that day: the first push of a session is `FULL=1 laptop.sh push` and every later push leaves `repos/` alone (the laptop's fork is pristine, the VM's is patched); `laptop.sh pull` brings back the record only; when the list shows no 1x unit, `env/session/grab.sh` polls it and provisions the moment one appears. The shape itself:
 
-1. Provision; note the time and the balance.
+1. Provision (or `grab.sh`); note the time and the balance. Billing is per minute.
 2. rsync the tree; start the model download and the image build;
    `collect_hw.sh` if the machine or the ROCm version is new (a minute);
    otherwise skip.
@@ -131,8 +131,9 @@ The plan that uses them is `docs/round-2/02-session-plan.md`. The shape itself:
 6. Every 30 minutes and before anything risky: rsync the record and the
    logs back, commit, push. The record directory is `env/hw/<UTC date>/`;
    never run the laptop dry run of `collect_hw.sh` against it (`--out`).
-7. `docker logout ghcr.io` if the registry was used; delete the VM; verify
-   the rate is $0.00.
+7. `docker logout ghcr.io` if the registry was used; check that nothing runs
+   (`pgrep`, `amd-smi process`) and that the image push ended; ask the user;
+   delete the VM; verify the rate is $0.00 on a fresh page read.
 
 ## What the user expects
 

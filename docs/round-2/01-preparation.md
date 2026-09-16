@@ -285,6 +285,11 @@ they are session B's per-tile work if A7 pays.
 
 ### P6. Prefetch and more splits in `mla_attend` and `mla_merge_uv` (3 hours, second) - done 2026-09-16 (prefetch; splits deferred)
 
+**Outcome on the machine (the sessions, same day):** the premise was wrong. The
+P6 kernels pass their suites and measure 215 us in the graph against 211 before;
+the kernel costs 34 us standalone, warm or cold; 61 splits change nothing; the
+time is the megakernel's per-task overhead (`04-results.md`, `06-lessons.md`).
+
 `mla_attend` is 5.7 ms of the 15.6 ms and `mla_merge_uv` 1.45 ms. Both are
 ours. Two changes prepared here and validated only on the VM: a prefetch
 depth of 4 in the split loop of `mla_attend` (the knee measured in
