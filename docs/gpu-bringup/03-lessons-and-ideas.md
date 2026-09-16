@@ -17,7 +17,7 @@ Each idea names the number it rests on and what it would take to try.
 | `cmake` is not on the image | BabelStream could not configure | `pip install cmake` into a throwaway venv; `collect_hw.sh` does it when `cmake` is absent |
 | `amd-smi metric --throttle` is not a flag on amd-smi 25.x | D4 lost the throttle column | temperature is read; D4 is INFO with the reason |
 | `rocm-bandwidth-test` is not installed | E6 (host-to-device bandwidth) is UNAVAILABLE | a small HIP `hipMemcpy` timing probe would replace it; the 31.4 GB weight upload of session 2 is the number it sizes |
-| Only the 2x MI300X VM was available, at $5.98 per hour | the second GPU is idle | see idea 7 below |
+| Only the 2x MI300X VM was available, at $5.98 per hour | the second GPU is idle | see idea 7 below; round 2 runs on the 1x at $2.99 (`docs/round-2/02-session-plan.md`) |
 | `TCC_EA0_RDREQ` counts 128-byte requests too | the read formula of `06-profiling.md` and `measure.py` undercounted reads by 2x | `TCC_BUBBLE` term added (validated exact on the 1 GiB copy); `measure.py` updated |
 | The profiler sums include every dispatch | fill, warm-up and blit kernels tripled the write count | the summarizer keeps `copy_kernel` rows only; `measure.py` will need the same discipline for the megakernel (one dispatch per generation, so it is simpler there) |
 | Workgroup k lands on XCD (k + c) mod 8 with c not 0 | the runtime's scheduler read the queue of another XCD | `fleet/patches/sched_xcd.patch`; the offset is per launch, not per boot: the probe saw c = 4, the worker kernel of the smoke graph c = 5 and its scheduler kernel c = 6 in the same process, so nothing may assume a value, the register is the only source; the day-1 check accepts any constant per kernel |
@@ -85,12 +85,14 @@ Each idea names the number it rests on and what it would take to try.
    hops, if the merge task is on the same XCD. Low priority, but it
    removes the "fences are expensive" assumption from the design.
 
-7. **Use the second GPU.** The 2x VM was the only shape available. The
-   reference run, calibration and route analysis need a GPU for about 40
-   minutes; they can run on GPU 1 while the Fleet build and the first
-   graph runs use GPU 0. `HIP_VISIBLE_DEVICES=1` for `run_reference.py`
-   and `calibrate.py`; nothing else changes. Saves about 40 minutes of a
-   $5.98 hour per session.
+7. **Use the second GPU, when there is one.** The 2x VM was the only
+   shape available on 2026-09-15. The reference run, calibration and
+   route analysis need a GPU for a few minutes; on a 2x they can run on
+   GPU 1 (`HIP_VISIBLE_DEVICES=1` for `run_reference.py` and
+   `calibrate.py`) while the Fleet build and the first graph runs use
+   GPU 0. Round 2 is on the 1x shape at half the price, where the
+   `reference` and `kernels` stages of `env/session/vm.sh` run before the
+   queue instead; the 4 minutes they cost are cheaper than the second GPU.
 
 8. **Placement offset is a per-launch fact; read it, never assume it.**
    Everything that maps work to XCDs must go through `HW_REG_XCC_ID`
@@ -132,6 +134,19 @@ Each idea names the number it rests on and what it would take to try.
     stock linears and elementwise ops as per-tile tasks (37 per XCD, the
     runtime's per-task pointer offsets). Expect an order of magnitude;
     the 4 ms of boundaries (idea 1) then becomes the next term.
+    Re-read on 2026-09-16 while preparing round 2 (`docs/round-2`): the
+    per-operator table does not say every gang operator is slow. The
+    plain gang linear `qkva` (15 MB) shows 4.4 us, 3.4 TB/s, and the
+    silu-fused `gate_up` (92 MB) 4.8 us, which no memory system delivers,
+    so either those rows sit at the bandwidth floor or the event gap
+    hands part of an operator to its successor. What carries the time is
+    the residual variant (`o_proj` 8 MB and `down` 46 MB both about 37
+    us: a floor, not a rate), `moe_silu_mul` (42 us for an elementwise
+    op), the norms (14 to 50 us for a 2,048-vector) and our three kernels.
+    Session B first validates the attribution with two stop-after runs
+    timed from the kernel trace (B0 in `02-session-plan.md`), then
+    optimizes in that order. The per-tile flag of P5 tests the residual
+    variant directly.
 
 13. **A graph of 7, 8 or 9 layers faults; 27 layers fault at the full
     sequence length with the head; the fault does not need the head.** Facts from the bisection

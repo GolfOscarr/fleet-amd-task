@@ -9,9 +9,12 @@ instead of spending 20 minutes in `env/setup.sh`. Target name:
 
 Status on 2026-09-16: **not yet pushed.** Four builds ran on the first VM;
 the first three failed for the reasons below, each fixed in the tree; the
-fourth was still building when this was written. Whether it landed is in
-`docs/gpu-bringup/04-session-log.md` and the GHCR package list
-(`gh api /user/packages?package_type=container`).
+fourth was stopped with the VM. The fifth is the `image` stage of
+`env/session/vm.sh` (`docs/round-2/02-session-plan.md`, minute 2 of
+session A): it starts at minute zero next to `setup.sh`, needs no GPU,
+pushes when `laptop.sh login` has put the laptop's token on the VM and
+otherwise keeps the image local, and writes `PASS image` or the first error
+line into `env/logs/session.status`.
 
 ## Why the builds failed
 

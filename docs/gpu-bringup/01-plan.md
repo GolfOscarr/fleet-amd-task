@@ -327,9 +327,9 @@ minimum either way.
   counters but the collection returns zeros or an error, group I records
   the fallback and `measure.py` reports bandwidth from time and computed
   bytes only.
-- A 2x VM exposes two GPUs. Every probe and every later run pins
-  `HIP_VISIBLE_DEVICES=0`; group A records which bus id that is, and the
-  second GPU is idle and noted as such.
+- A 2x VM exposes two GPUs, a 1x (round 2) one. Every probe and every
+  later run pins `HIP_VISIBLE_DEVICES=0`; group A records which bus id
+  that is, and on a 2x the second GPU is idle and noted as such.
 - Clocks under a hypervisor can sit at a lower state until load arrives.
   The bandwidth probes warm up for one second before timing.
 - `rocminfo` may list only L1 and L2 cache rows. A missing L3 row is not

@@ -13,10 +13,12 @@ file is about the mechanics of getting there and back.
   only deletion ends it, and running out of balance deletes the VM with
   everything on it.
 - Shapes seen: 2x MI300X VM at $5.98 per hour (26 cores, 448 GiB, 13 TB
-  NVMe, the only one listed on 2026-09-15); 1x at $2.99 exists but was not
-  available. The second GPU of a 2x is usable for the reference run, the
-  calibration, the kernel tests and the probes, never for a second graph
-  run (see "one graph run at a time").
+  NVMe, the only one listed on 2026-09-15); the 1x at $2.99 is the shape
+  of round 2 (`docs/round-2/02-session-plan.md`). On a 1x everything runs
+  on GPU 0 in sequence: the reference run, the calibration, the kernel
+  tests and the probes queue behind the graph runs (about 4 minutes in
+  total). On a 2x the second GPU can take them, never a second graph run
+  (see "one graph run at a time").
 - The balance and the runout time are on the team page. Check them at the
   start and before any long upload. The first session cost $12.56 for
   about 4.5 hours.
@@ -97,7 +99,8 @@ ssh hotaisle@<ip> 'cd ~/metalOps && source .venv-fleet/bin/activate && \
   compiles every graph into one `permanent_output_dir` under the Fleet
   tree, and concurrent runs overwrite each other's generated kernel. The
   reference run, the calibration, the kernel tests and the probes do not
-  use it and can share the other GPU.
+  use it; on a 2x they can share the other GPU, on a 1x they run before
+  the queue.
 - `--iters` is at most 32 (the RoPE tables are 1,056 rows); the op labels
   for `--stop-after` are in `fleet/graph_plan.py`.
 - Logs live in `env/logs/` on the VM (gitignored there); the ones worth
@@ -106,13 +109,22 @@ ssh hotaisle@<ip> 'cd ~/metalOps && source .venv-fleet/bin/activate && \
 
 ## The session shape that worked
 
+Since round 2 every step below is a command of `env/session/laptop.sh`
+(provision, ip, push, login, start, status, pull, delete) and a stage of
+`env/session/vm.sh` (download, image, setup, hw, checks, reference,
+kernels, queue, bisect), each detached with its own log and a PASS or FAIL
+row in `env/logs/session.status`; the graph runs come from queue files
+(`env/session/queue-*.txt`) through `queue.sh`, one at a time. The plan
+that uses them is `docs/round-2/02-session-plan.md`. The shape itself:
+
 1. Provision; note the time and the balance.
-2. rsync the tree; start the model download; `collect_hw.sh` if the
-   machine or the ROCm version is new (a minute); otherwise skip.
+2. rsync the tree; start the model download and the image build;
+   `collect_hw.sh` if the machine or the ROCm version is new (a minute);
+   otherwise skip.
 3. Build or pull the environment (`env/docker/README.md`, or
    `env/setup.sh` with `SKIP_DOWNLOAD=1`); `check_day1.sh`.
-4. Reference run and calibration on GPU 1 while the first graph runs on
-   GPU 0.
+4. Reference run, calibration and kernel tests: on a 2x on GPU 1 while
+   the first graph runs on GPU 0; on a 1x before the queue.
 5. The work of the session, one graph run at a time, each with its log.
 6. Every 30 minutes and before anything risky: rsync the record and the
    logs back, commit, push. The record directory is `env/hw/<UTC date>/`;

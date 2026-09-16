@@ -334,7 +334,7 @@ writes are 1 GiB within 1e-4 in both the directory and the list form. Four
 tests. What P7 cannot do here: the megakernel filter matches no dispatch of
 a probe run, so its first real use is session B's B3 row.
 
-### P8. Documents for the 1x shape and this round (1 hour)
+### P8. Documents for the 1x shape and this round (1 hour) - done 2026-09-16
 
 - `docs/gpu-bringup/06-agent-guide.md` (the second GPU in three places),
   `05-next-session.md` (the reference run on GPU 1; the whole file is
@@ -345,6 +345,21 @@ a probe run, so its first real use is session B's B3 row.
 - `PROGRESS.md`, `README.md`, `OPEN-PROBLEMS.md`: pointers to this section.
 - `03-session-log.md` and `04-results.md` in this section are created at
   the start of the session and filled as it runs.
+
+Done: the four second-GPU passages corrected (`06-agent-guide.md`, which
+now also names the session scripts as the way every step is run;
+`05-next-session.md`, marked superseded at the top; `03` idea 7 and its
+lessons row; `01-plan.md`); `env/docker/README.md` points the fifth build
+at the `image` stage; the `gpu-bringup` index marks 05 superseded. One
+substantive addition found while reading the profile for P5, written into
+`OPEN-PROBLEMS.md` MAJ-7, `03` idea 12 and the session plan: the plain
+gang linear `qkva` shows 4.4 us for 15 MB (3.4 TB/s) and `gate_up` 4.8 us
+for 92 MB, which no memory system delivers, so those rows are at the floor
+or the event gaps mis-attribute; the time sits in the residual gang
+variant (about 37 us whether 8 MB or 46 MB), `moe_silu_mul`, the norms and
+our three kernels. Session B therefore opens with B0, two stop-after runs
+timed from the kernel trace whose difference is one plain gang linear
+(`queue-b.txt`, first two rows), before anything is optimized.
 
 ### P9. Closed or not worth doing here (checked 2026-09-16)
 

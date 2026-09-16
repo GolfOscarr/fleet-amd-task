@@ -1,4 +1,7 @@
 # Session B (docs/round-2/02-session-plan.md, rows B1 to B5). Flags that passed in session A are added by hand.
+# B0: attribution check (docs/round-2/02-session-plan.md): the two runs below differ by one plain gang linear
+--layers 2 --stop-after L0.norm1 --iters 4 measure continue
+--layers 2 --stop-after L0.qkva --iters 4 measure continue
 --layers 2 --iters 32 --event-timing table           # B1: the 2-layer timing with the P6 attention kernels
 --layers 27 --head --iters 32 --event-timing table   # B2: median and P95 per iteration
 --layers 27 --head --iters 32 measure                # B3: kernel trace and the four PMC pairs, then measure.py

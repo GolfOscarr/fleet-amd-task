@@ -68,6 +68,7 @@ about minute 8) and from `setup.sh` otherwise (minute 25 as in A).
 | Minute | Stage | PASS line |
 |---|---|---|
 | 8 or 25 | `checks`, `reference`, `kernels` (the kernel tests now include the P6 kernels, 100 trials each) | three PASS rows |
+| 12 or 29 | B0: attribution check, two runs of the 2-layer graph stopped after `L0.norm1` and after `L0.qkva`, timed from the kernel trace (`measure`); their difference is the cost of one plain gang linear (15 MB) with no successor to absorb it | the difference near 4 us confirms the table; near 40 us says the event gaps shift time to the successor and every per-operator number is re-read before anything is optimized |
 | 15 or 32 | B1: 2-layer timing with the P6 attention (`mla_attend` under 60 us from 211, `mla_merge_uv` under 20 us from 64) | `report_table.md` |
 | 30 | B2: 27-layer, 32-iteration event timing with every flag that passed | the per-iteration median and P95 in `report_table.md` |
 | 45 | B3: the `measure` rows: kernel trace and the four PMC pairs over the same graph | bytes per iteration, achieved bandwidth, launches per generation |

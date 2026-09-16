@@ -28,3 +28,4 @@ reaching the VM are unchanged from `docs/gpu-bringup/06-agent-guide.md`.
 | 2026-09-16 | P5 done: `--tile-linears` switches qkva/o_proj/down/lm_head to per-tile linear tasks; six tests |
 | 2026-09-16 | P2 done: partials row padded to 516 (16-byte-aligned rows) across the plan, kernels and launcher; offline compile clean |
 | 2026-09-16 | P7 done: `measure.py` filters counters and launches to the megakernel, merges PMC runs per file (the concatenation double count fixed), trace-derived per-iteration time |
+| 2026-09-16 | P8 done: the 1x-shape corrections in `docs/gpu-bringup`, 05 superseded, the docker README, the MAJ-7 re-reading and the B0 attribution check |
