@@ -35,6 +35,8 @@ nothing is estimated.
 | Baseline, this host, gang, P6 kernels, `--align-alloc 65536` | A8.6, `runs/L27_head_it32_al65536` (with the head) | 15,019.5 (host clock, mean of 32) | - | - | 0.96 |
 | `--tile-linears` | B2, `runs/L27_head_it32_tile_al65536` (2 layers in A8.5: 1,735.8 to 1,595.9) | 14,384.2 (host clock) | - | - | 0.92 |
 | `--nt-weights` (E2) | B5, `runs/L27_head_it32_nt_al65536` (2 layers: 1,497.3) | 12,977.8 (host clock) | - | - | 0.83; `mla_attend` 215 to 150 us, `w13` 26 to 22 us |
+| E2 and per-tile linears, no flag (the plan fix in place) | `runs/L27_head_it32_tile_nt` | 12,401.6 (host clock) | - | - | 0.83; 32 ids equal |
+| the same with 61 splits (`--split 17`) | `runs/L27_head_it32_tile_nt_s17` | 12,634.9 (host clock) | - | - | 0.84; `mla_attend` 149 us as with 33 splits: the per-tile cost is fixed, not per row; 32 ids equal |
 | Design band | `09-expected-performance.md` | 1,148 to 1,349 + 326 t_b | | | |
 
 ## Per-operator time (event gaps, mean over iterations; the 2-layer graph, 32 iterations)
