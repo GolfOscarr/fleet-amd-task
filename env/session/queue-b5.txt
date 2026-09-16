@@ -1,0 +1,5 @@
+# The attention off the gang path: one regular task per split (--attend-tasks, task type
+# mla_attend_tile_mi300; session B, 2026-09-16). Standalone the grid costs 38 us; in the gang path 145 to 215.
+--layers 2 --iters 32 --event-timing --nt-weights --attend-tasks table continue
+--layers 27 --head --iters 32 --event-timing --nt-weights --tile-linears --attend-tasks table continue
+--layers 27 --head --iters 32 --nt-weights --tile-linears --attend-tasks compare continue

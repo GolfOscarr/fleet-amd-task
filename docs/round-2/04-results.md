@@ -37,6 +37,7 @@ nothing is estimated.
 | `--nt-weights` (E2) | B5, `runs/L27_head_it32_nt_al65536` (2 layers: 1,497.3) | 12,977.8 (host clock) | - | - | 0.83; `mla_attend` 215 to 150 us, `w13` 26 to 22 us |
 | E2 and per-tile linears, no flag (the plan fix in place) | `runs/L27_head_it32_tile_nt` | 12,401.6 (host clock) | - | - | 0.83; 32 ids equal |
 | the same with 61 splits (`--split 17`) | `runs/L27_head_it32_tile_nt_s17` | 12,634.9 (host clock) | - | - | 0.84; `mla_attend` 149 us as with 33 splits: the per-tile cost is fixed, not per row; 32 ids equal |
+| the attention as regular tasks (`--attend-tasks`, one task per split) | `runs/L27_head_it32_tile_at_nt` | 12,664.7 (host clock) | - | - | 0.84; `mla_attend` 149 us as on the gang path; 32 ids equal |
 | Design band | `09-expected-performance.md` | 1,148 to 1,349 + 326 t_b | | | |
 
 ## Per-operator time (event gaps, mean over iterations; the 2-layer graph, 32 iterations)
@@ -52,9 +53,16 @@ alone column was not run: the tile run carries the P6 kernels too.
 Standalone (the suite binary, `KT_TIME=50`, the graph's grid of 8 x 5 tiles at step
 1032 with all 33 splits live) the attention grid takes 38.4 us and the merge grid
 11.5 us, against 145 to 215 us and 46 to 61 us inside the megakernel. The kernels
-are not the floor; the gang dispatch of the runtime is, by 100 to 175 us per
-attention operator (27 per iteration) and 35 to 50 us per merge. The residual
-gang linears' 25 to 35 us floor is the same mechanism at a smaller size.
+are not the floor as measured warm. Off the gang path (`--attend-tasks`, one
+regular task per split, `runs/L27_head_it32_tile_at_nt`) the attention costs the
+same 146 to 149 us, so the dispatch path is not the difference either. What
+separates 38 from 146 us is what the loop does not do: the graph reads every
+layer's 1 MB cache once per iteration, cold, while the standalone loop re-reads
+one layer's cache 50 times from the 256 MB infinity cache. The next measurement
+is the standalone grid over 27 distinct caches (cold L2), which tells whether the
+kernel's cold-read latency chain is the 146 us; the prefetch depth (P6) and the
+rows per tile (`--split 17`) did not move it, so the chain, if it is one, is not
+the column loop.
 
 | Operator | Event | Baseline us (2026-09-15) | P6 kernels (`runs/L2_it32_al65536`) | `--tile-linears` alone | Both (`runs/L2_it32_tile_al65536`) | Bandwidth floor us |
 |---|---|---|---|---|---|---|
@@ -85,7 +93,7 @@ gang linears' 25 to 35 us floor is the same mechanism at a smaller size.
 
 | Item | State | Next |
 |---|---|---|
-| MAJ-7, the per-operator floor | measured: the gang path costs 100 to 175 us per attention operator and 25 to 50 us per gang linear or merge on top of the kernels (38 us and 11.5 us standalone) | move the attention and the merge off the gang path (one regular task per tile, the runtime's per-task partitions), then the residual linears; the design band (1.15 to 1.35 ms) needs the operators at their kernel time |
+| MAJ-7, the per-operator floor | the attention costs 146 to 215 us in the graph and 38 us in a warm standalone loop; neither the gang path (`--attend-tasks` gives the same 146), the prefetch depth (P6) nor the rows per tile (`--split 17`) move it | a cold-cache standalone timing (27 distinct caches) to separate HBM latency from the kernel; then the kernel's phase structure (the score pass, the softmax syncs, the partial write) under rocprofv3 on a standalone binary; the design band (1.15 to 1.35 ms) needs the attention near its warm time |
 | E2 (`--nt-weights`) | the largest lever measured: 15.0 to 13.0 ms; `mla_attend` 215 to 150 us | keep on; understand why non-temporal weight loads change an attention kernel that reads the cache, not the weights (the runtime toggles the loads of every task) |
 | B3, the counters | rocprofv3 cannot attach to the torch wheel's bundled runtime | a wheel built against the system ROCm, or the counters from a standalone binary (`copy_bytes` of round 1) |
 | the route log at 32 steps | 60 of 832 top-k sets differ, ids equal | a tolerance rule for ties within the router floor |

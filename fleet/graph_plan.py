@@ -166,7 +166,8 @@ def grid_for_linear(size):
 
 
 def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head: bool = True,
-               debug: bool = False, debug_scores: bool = False, tile_linears: bool = False) -> Plan:
+               debug: bool = False, debug_scores: bool = False, tile_linears: bool = False,
+               attend_tasks: bool = False) -> Plan:
     """debug_scores: the mla_attend kernel also writes the scaled pre-softmax scores
     [NH, s_max] FP32 (boundary B5); needs the MLA_ATTEND_DEBUG_SCORES build (MPK_DEBUG_SCORES=1).
     tile_linears: issue the four dense linears (qkva, o_proj, down, lm_head) as per-tile
@@ -246,7 +247,8 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
              qkva="qkva", w_kv_norm=f"w_kv_norm_{l}", w_uk=f"W_uk_{l}", cos="cos", sin="sin",
              c_kv=f"c_kv_{l}", k_pe=f"k_pe_{l}", ql_nope="ql_nope", q_pe="q_pe",
              block_dim=(256, 1, 1))
-        p.op("mla_attend_layer", XCDS, splits_per_xcd, status="new", label=f"L{l}.mla_attend",
+        p.op("mla_attend_layer", n_splits if attend_tasks else XCDS, 1 if attend_tasks else splits_per_xcd,
+             status="new", label=f"L{l}.mla_attend", per_tile=attend_tasks,
              ql_nope="ql_nope", q_pe="q_pe", c_kv=f"c_kv_{l}", k_pe=f"k_pe_{l}",
              partials="partials", softmax_scale=SOFTMAX_SCALE, split=SPLIT, n_splits=n_splits,
              **({"scores": "scores"} if debug_scores else {}))
