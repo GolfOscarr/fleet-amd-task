@@ -251,8 +251,7 @@ documented as blocked. **Decide end of day 1.**
 | `docs/design-doc/99-open-questions.md` | 10 open (3 restate `docs/fleet` Q3, Q4, Q11) | **DQ1 per-boundary latency** |
 | **total** | **46 open / 11 resolved** | |
 
-`OPEN-PROBLEMS.md` holds the consolidated, deduplicated view: **6 major /
-20 minor open / 20 resolved**, plus 9 documentation defects found in AMD and
+`OPEN-PROBLEMS.md` holds the consolidated, deduplicated view: **5 major open / 15 minor open / 31 resolved**, plus 9 documentation defects found in AMD and
 Fleet sources.
 
 ---

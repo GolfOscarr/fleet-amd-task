@@ -46,7 +46,7 @@ launch, the first iteration and the timing readback, which is why it sits 0.5 to
 | `--nt-weights` (E2) | `L27_head_it32_nt_al65536` (B5) | 10,230 | 10,295 | 10,234 (timing on) | 12,978 | 0.83 |
 | E2 and per-tile linears, no flag (the plan fix in place) | `L27_head_it32_tile_nt` (B5) | 9,575 | 9,644 | 9,742 (timing off) | 10,308 | 0.78 |
 | the same with 61 splits (`--split 17`) | `L27_head_it32_tile_nt_s17` (B5) | 9,837 | 9,854 | 9,852 (timing off) | 10,422 | 0.80 |
-| the attention as regular tasks (`--attend-tasks`) | `L27_head_it32_tile_at_nt` (B5) | 9,858 | 9,922 | 9,890 (timing off) | 10,456 | 0.80 |
+| the attention as regular tasks (`--attend-tasks`: task type `mla_attend_tile_mi300`, one task per split; the runtime partitions `partials` by split and hands the task its index in `task_metadata.expert_offset`, the field the MoE tasks use for `bid.x`) | `L27_head_it32_tile_at_nt` (B5) | 9,858 | 9,922 | 9,890 (timing off) | 10,456 | 0.80 |
 | Design band | `docs/design-doc/09-expected-performance.md` | 1,148 to 1,349 + 326 t_b | | | | 0.09 to 0.11 |
 
 Every row's ids equal the reference's 32 (the `compare` runs of A8.2, B4 and
