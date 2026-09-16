@@ -45,3 +45,13 @@
 2026-09-16T18:07:38Z L2_it32_tile_al65536 PASS rc=0 mpk=1 fault=0 fwd=29 wall=34s table=PASS
 2026-09-16T18:08:26Z L27_head_it32_al65536 PASS rc=0 mpk=1 fault=0 fwd=31 wall=48s table=PASS
 2026-09-16T18:08:26Z DONE env/session/queue-a2.txt
+2026-09-16T18:13:15Z L2_it32_L0.norm1_al65536 PASS rc=0 mpk=1 fault=0 fwd=31 wall=24s
+2026-09-16T18:13:42Z L2_it32_L0.qkva_al65536 PASS rc=0 mpk=1 fault=0 fwd=28 wall=27s
+2026-09-16T18:14:09Z L2_it32_L0.mla_prep_al65536 PASS rc=0 mpk=1 fault=0 fwd=31 wall=27s
+2026-09-16T18:14:37Z L2_it32_L0.mla_attend_al65536 PASS rc=0 mpk=1 fault=0 fwd=30 wall=28s
+2026-09-16T18:15:06Z L2_it32_L0.mla_merge_uv_al65536 PASS rc=0 mpk=1 fault=0 fwd=31 wall=29s
+2026-09-16T18:15:34Z L2_it32_L0.o_proj_al65536 PASS rc=0 mpk=1 fault=0 fwd=29 wall=28s
+2026-09-16T18:16:03Z L2_it32_L0.norm2_al65536 PASS rc=0 mpk=1 fault=0 fwd=32 wall=28s
+2026-09-16T18:16:34Z L2_it32_L0.gate_up_al65536 PASS rc=0 mpk=1 fault=0 fwd=27 wall=31s
+2026-09-16T18:17:05Z L2_it32_L0.down_al65536 PASS rc=0 mpk=1 fault=0 fwd=26 wall=31s
+2026-09-16T18:17:05Z DONE env/session/queue-b0.txt
