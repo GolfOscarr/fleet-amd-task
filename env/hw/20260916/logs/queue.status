@@ -40,3 +40,8 @@
 2026-09-16T18:04:47Z L27_head_it32_al65536 PASS rc=0 mpk=1 fault=0 fwd=31 wall=48s compare=FAIL
 2026-09-16T18:05:34Z L27_it1_al65536 PASS rc=0 mpk=1 fault=0 fwd=0 wall=46s compare=FAIL
 2026-09-16T18:06:00Z L2_it4_L0.norm1_al65536 PASS rc=0 mpk=1 fault=0 fwd=3 wall=24s measure=FAIL
+2026-09-16T18:06:29Z L2_it4_L0.qkva_al65536 PASS rc=0 mpk=1 fault=0 fwd=2 wall=27s measure=FAIL
+2026-09-16T18:07:04Z L2_it32_al65536 PASS rc=0 mpk=1 fault=0 fwd=28 wall=35s table=PASS
+2026-09-16T18:07:38Z L2_it32_tile_al65536 PASS rc=0 mpk=1 fault=0 fwd=29 wall=34s table=PASS
+2026-09-16T18:08:26Z L27_head_it32_al65536 PASS rc=0 mpk=1 fault=0 fwd=31 wall=48s table=PASS
+2026-09-16T18:08:26Z DONE env/session/queue-a2.txt

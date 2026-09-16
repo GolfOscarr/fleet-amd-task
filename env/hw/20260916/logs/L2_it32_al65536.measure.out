@@ -1,0 +1,44 @@
+# Measurement report
+
+| Quantity | Predicted | Measured |
+|---|---|---|
+| bytes per iteration (read, MiB) | 4709.9 weights + cache; about 4772.0 with activations | - |
+| time per iteration, median (us) | 1148.5-1349.4 + 326 t_b + T_serial | - |
+| time per iteration, P95 (us) |  | - |
+| time per iteration from event timing, median (us) |  | - |
+| time per iteration from host wall clock (us) |  | 1735.8 |
+| time per iteration from the kernel trace (us) |  | - |
+| achieved read bandwidth (TB/s) | 3.66-4.3 over T_bw | - |
+| launches per generation | 3 | - |
+| L2 hit rate | 16-17% (Fleet's batch-1 figure) | - |
+| tokens per second |  | - |
+
+## Per-operator time (event gaps, mean over iterations after the first)
+
+| Event | Operator | mean us | min us | max us | n |
+|---|---|---|---|---|---|
+| 1 | embed_layer | 151.07 | 9.24 | 183.84 | 30 |
+| 2 | rmsnorm_layer | 14.73 | 13.60 | 16.27 | 31 |
+| 3 | gang_linear_layer | 4.26 | 3.92 | 4.60 | 31 |
+| 4 | mla_prep_layer | 22.26 | 20.60 | 24.12 | 31 |
+| 5 | mla_attend_layer | 215.04 | 210.84 | 218.76 | 31 |
+| 6 | mla_merge_uv_layer | 61.25 | 59.13 | 63.69 | 31 |
+| 7 | gang_linear_with_residual_layer | 28.58 | 24.72 | 30.12 | 31 |
+| 8 | rmsnorm_layer | 14.06 | 13.32 | 17.40 | 31 |
+| 9 | gang_linear_silu_layer | 4.71 | 3.79 | 7.28 | 31 |
+| 10 | gang_linear_with_residual_layer | 34.15 | 32.55 | 35.83 | 31 |
+| 11 | rmsnorm_layer | 50.57 | 49.38 | 51.04 | 31 |
+| 12 | gang_linear_layer | 4.54 | 3.65 | 5.05 | 31 |
+| 13 | mla_prep_layer | 13.81 | 12.83 | 14.72 | 31 |
+| 14 | mla_attend_layer | 214.88 | 211.85 | 218.57 | 31 |
+| 15 | mla_merge_uv_layer | 62.11 | 55.66 | 63.87 | 31 |
+| 16 | gang_linear_with_residual_layer | 25.94 | 25.01 | 26.92 | 31 |
+| 17 | rmsnorm_layer | 13.60 | 13.40 | 13.80 | 31 |
+| 18 | moe_router_layer | 3.80 | 3.63 | 4.27 | 31 |
+| 19 | gang_moe_w13_linear_layer | 23.85 | 23.02 | 26.14 | 31 |
+| 20 | moe_silu_mul_layer | 42.17 | 39.86 | 42.96 | 31 |
+| 21 | gang_moe_w2_linear_layer | 5.31 | 3.56 | 6.68 | 31 |
+| 22 | moe_mul_sum_add_layer | 21.18 | 19.52 | 22.68 | 31 |
+| 23 | event_23 | 3.17 | 2.89 | 4.32 | 31 |
+
+-> /home/hotaisle/metalOps/harness/fleet_out/L2_it32_al65536/metrics.json, /home/hotaisle/metalOps/harness/fleet_out/L2_it32_al65536/report_table.md
