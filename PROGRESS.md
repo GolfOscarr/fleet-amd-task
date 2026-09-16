@@ -42,7 +42,7 @@ library builds and a graph runs on the machine.
 - [x] **M1** One validated operator through the Fleet path — 2026-09-15 (`env/hw/20260915/runs/L1_it1_L0.qkva`)
 - [x] **M2** Layer 1 (MoE) validated end-to-end ← **required milestone** — 2026-09-15: all 16 boundaries PASS, top-k indices exact, route log PASS (`env/hw/20260915/runs/L2_it1`, B5 in `L2_it1_L1.mla_attend_scores`)
 - [x] **M3** N consecutive persistent layers — the 27-layer graph without the head runs 32 iterations (1,822 tasks, 15.6 ms per iteration, `env/hw/20260915/runs/L27_it32`); with the head it produces the reference's first two tokens; layers 0 and 1 validated boundary by boundary, the growth curve of the rest pending
-- [ ] **M4** End-to-end 32-token decode — the 27-layer graph with the head produces the reference's tokens at 1 and 2 iterations ([25], then [25, 16228]); at 32 iterations it faults with an illegal memory access (2026-09-15), with and without event timing and with larger runtime queues; the fault does not need the head: 7, 8 and 9 layers fault at 2 iterations with or without it, 2, 3, 4, 16 and 27 layers run, and 27 layers fault only at the 1,056-position sequence length; deterministic, before the first iteration reports; every quantity the plan derives is linear in the layer count (checked from the dry-run plans, 2026-09-16), so the addresses are the variable; the partials row is padded to 516 floats (P2) but that is not the cause (the buffer base is 512-byte aligned at every layer count). Round 2 (`docs/round-2/02-session-plan.md`, rows A5 to A7): the fault reproduced, the address shift with `--pad-alloc`, the bisection over layer 7, then the pre-baked fixes `--align-alloc` and `--workspaces-first`
+- [x] **M4** End-to-end 32-token decode — reached 2026-09-16 (`env/hw/20260916/runs/L27_head_it32_al65536`, then `runs/L27_head_it32` without any flag): the 27-layer graph with the head runs 32 iterations and the 32 ids equal the reference's. The fault of 2026-09-15 was the stock `gang_linear_silu_kernel` (the dense layer's fused gate-up, `L0.gate_up` by bisection) reading 16 rows of its `[1, 2048]` input at batch 1 (a CK tile GEMM with no active-token mask), 60 KB past a 4 KB buffer; whether that memory was mapped depended on the layout, which is why 8 layers faulted, 16 ran and a uniform shift changed nothing. Fixed in the plan: every single-row activation is backed by 16 rows (`fleet/build_graph.py`, `ROW_SLACK`); `--align-alloc 65536` was the first flag that passed. The story in `docs/round-2/03-session-log.md` and `04-results.md`
 - [ ] **M5** FP8 (stretch)
 
 ---
@@ -219,7 +219,7 @@ documented as blocked. **Decide end of day 1.**
 - [x] Chiplet-parallel `lm_head` + argmax reduce — runs (a 2-layer graph with the head produces a token); correct only with all 27 layers, see M4
 - [x] Wire layer 1 task graph → **M2** — PASS
 - [ ] Extend to N layers → **M3** — 27 layers run without the head; growth curve pending
-- [ ] End-to-end decode → **M4** — faults with the head at 27 layers and 32 iterations; bisection in progress
+- [x] End-to-end decode → **M4** — 32 ids equal at 27 layers with the head (2026-09-16)
 
 ---
 
@@ -230,7 +230,7 @@ documented as blocked. **Decide end of day 1.**
 - [ ] Median + P95 latency (state N; 32 tokens is too few — loop the decode)
 - [ ] Memory traffic, achieved bandwidth, L2 hit rate
 - [ ] Occupancy + VGPR/LDS per task
-- [ ] TPOT + tokens/s if M4 reached
+- [x] TPOT + tokens/s — 15.0 ms per token on the 1x MI300X with the gang linears, 12.4 ms with E2 (`--nt-weights`) and per-tile linears (`docs/round-2/04-results.md`); the design band is 1.15 to 1.35 ms
 - [ ] Fleet-native ops vs remaining fallbacks
 - [ ] Build/run instructions, setup scripts, profiling commands
 - [ ] Known failures + recommended next steps (incl. FP8 with arithmetic)

@@ -13,7 +13,7 @@ quotes a status line or a file in the record.
 | Date | 2026-09-16 (UTC) |
 | VM | `enc1-gpuvm015`, 1x MI300X, 8 cores, 224 GiB, 13 TB disk; the shape lists a 1-minute minimum and bills per minute |
 | ROCm, hipcc | 7.2.4, hipcc 7.2; rocprofv3 1.1.0; rocgdb present |
-| Balance at provision, at deletion | $27.56 before; $25.12 at minute 51 (billed per minute, no 1-hour minimum); at deletion: see the end row |
+| Balance at provision, at deletion | $27.56 before; $25.12 at minute 51; $20.63 at minute 142; $20.23 after the deletion at 19:50 (149 minutes, $7.33, billed per minute) |
 | Record | `env/hw/20260916/`, branch `gpu/round-2` |
 | Image | pushed: `ghcr.io/golfoscarr/fleet-amd-task:20260916`, 25 GB; `PASS image 3663s` at 18:23 (the 13 build steps 42 min, the export of layers 2,824 s of it, the push 3 min) |
 
@@ -52,6 +52,8 @@ quotes a status line or a file in the record.
 | 19:19 | B5 | `KT_TIME=50 fleet/tasks/build/kernel_tests mla_attend /tmp/kt/mla_attend/000` (the suite binary with an event-timed loop, 50 launches of the graph's grid of 8 x 5 tiles, step 1032, 33 splits live) | `TIME mla_attend launches=50 grid=8x5 mean_us=38.44`; `TIME mla_merge_uv launches=50 mean_us=11.53` | standalone the attention grid costs 38 us and the merge 11.5 us; in the megakernel 145 to 215 and 46 to 61: the difference is the runtime's gang path, not the kernels |
 | 19:27 to 19:30 | B5 | `start setup` (the regenerated `new_tasks.patch`: a regular task type `mla_attend_tile_mi300`, one task per split, `--attend-tasks`); `start queue queue-b5.txt` | `PASS setup 67s`; `L2_it32_at_nt table=PASS` 1,508.9 us, `mla_attend` 146.0 us; `L27_head_it32_tile_at_nt table=PASS` 12,664.7 us, `mla_attend` 149.4 us; `compare`: `output_ids PASS` | correct, no gain: off the gang path the attention costs the same 146 to 149 us; the 38 us standalone number is a warm-cache loop over one layer's cache, the graph reads each layer's cache cold; the difference is not the dispatch path |
 | 19:41 | B5 | `KT_TIME=54 KT_COLD=<K> fleet/tasks/build/kernel_tests mla_attend ...` (the loop rotates over K copies of the cache) | `cache_copies=1 mean_us=37.80`; `4: 33.71`; `27: 33.79`; `64: 33.76`; `256: 33.99` (300 MB, past the infinity cache) | the kernel costs 34 us cold as well as warm; the 146 to 215 us in the graph is neither the dispatch path, nor the cache, nor the rows per tile, nor the prefetch depth: something the megakernel does around every task, and for the attention 33 times per operator |
+| 19:47 | end | the user's two checks: `pgrep` (no `run_fleet`, `kernel_tests`, `rocprof`, `hipcc`, `docker`), `amd-smi process` (none), the last queue `DONE`; the image `PASS image 3663s`, `pushed`, and on GHCR (`gh api`: `fleet-amd-task`, tag `20260916`, 18:23) | both clean | `git push -u origin gpu/round-2` at fe79b10 |
+| 19:49 | end | `laptop.sh delete --yes` (after the user's yes) | the page: `No virtual machines`, `Hourly Rate: $0.00/hour`; the script's own check printed a false alarm (fix 9); a fresh `balance`: `$20.23`, `$0.00/hour` at 19:50 | session A and B over, 149 minutes of VM time |
 | 19:14 to 19:15 | B5 | `start queue queue-b4.txt` (`--split 17`) | `L2_it32_nt_s17 table=PASS` 1,511.2 us, `mla_attend` 145.2 us; `L27_head_it32_tile_nt_s17 table=PASS` 12,634.9 us, `mla_attend` 149.1 us; `compare`: `output_ids PASS` | the per-tile time does not move with the rows per tile (26 to 17): a fixed cost per tile, not the row loop; the prefetch depth did not move it either |
 | 18:26 to 18:27 | fix | `start queue queue-fix2.txt` (the plan-side fix, no flag: `build_graph.new_workspace` backs every single-row activation with 16 rows, commit ce3a317) | `L8_head_it2 PASS fwd=2` (faulted at 17:42 without the fix); `L27_head_it32 PASS fwd=31`, `output_ids PASS`; `L2_it32 table=PASS` 1,676.6 us per iteration | the M4 fault is fixed at its cause; no flag needed from here on |
 
@@ -79,21 +81,22 @@ quotes a status line or a file in the record.
 | 6. a faulting run had no `fleet_run_meta.json` | the record was written after the forward loop | written with the addresses before the loop, completed after (`run_fleet.py`, commit d393dc8) |
 | 7. `L pull` reverted a test edit | the pull rsynced the whole `env/hw/` tree from the VM, `tests/` included | the pull brings back the record only (`laptop.sh`, commit 8e6ba55) |
 | 8. `L provision` failed with `available VM matching requested specs not found` | one unit, taken between the list read and the request | `env/session/grab.sh` polls the list and provisions at once (authorized by the user) |
+| 9. `delete --yes` printed `rate is not $0.00` although the page read `$0.00/hour` | the check's pattern had one space after the label; the page pads it with several | `grep -qE 'Hourly Rate: +\$0\.00'` (`laptop.sh`); the address files were removed by hand this time |
 
 ## Session B
 
 | | |
 |---|---|
-| Date | |
-| VM, ROCm | |
-| Balance at provision, at deletion | |
-| Started from | the image / `setup.sh` |
+| Date | 2026-09-16, inside session A's VM from minute 59 (the user's choice at 18:19) |
+| VM, ROCm | the same `enc1-gpuvm015`, ROCm 7.2.4 |
+| Balance at provision, at deletion | (session A's) |
+| Started from | the running tree; no second provisioning, no setup |
 
 ### Timeline
 
 | UTC | Row | Command | Status line or result | Note |
 |---|---|---|---|---|
-| | | | | |
+| 18:22 to 19:41 | B2, B4, B5 | see the session A timeline from 18:19: the rows are interleaved there | | |
 
 ### Decisions
 

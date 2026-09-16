@@ -151,7 +151,8 @@ cmd_delete() {
   # shellcheck disable=SC2086
   page="$(run $TUI 12)"
   echo "$page" | grep -E "No virtual machines|Hourly Rate" || true
-  if [ "$DRY" != "1" ] && ! echo "$page" | grep -q 'Hourly Rate: \$0.00'; then echo "rate is not \$0.00: check the TUI by hand"; return 1; fi
+  # the page pads the label with several spaces ("Hourly Rate:       $0.00/hour"; a false alarm on 2026-09-16)
+  if [ "$DRY" != "1" ] && ! echo "$page" | grep -qE 'Hourly Rate: +\$0\.00'; then echo "rate is not \$0.00: check the TUI by hand"; return 1; fi
   rm -f "$VM_IP_FILE" "$VM_STARTED_FILE"
 }
 

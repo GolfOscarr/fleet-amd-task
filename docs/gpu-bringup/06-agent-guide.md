@@ -56,7 +56,7 @@ away from a second VM.
 ```
 rsync -az --exclude .venv --exclude .venv-fleet --exclude env/hw/build --exclude env/hw/probes/work \
   --exclude env/offline_gfx942/work --exclude docs/report --exclude .omc --exclude harness/fleet_out \
-  --exclude env/logs --exclude '__pycache__' /Users/hyeonseop/Desktop/metalOps/ hotaisle@<ip>:/home/hotaisle/metalOps/
+  --exclude env/logs --exclude '__pycache__' <repo>/ hotaisle@<ip>:/home/hotaisle/metalOps/
 ```
 
   and results come back the same way, always with an absolute destination
