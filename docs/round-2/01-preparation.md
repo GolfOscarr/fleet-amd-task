@@ -132,7 +132,7 @@ Saves on the VM: nothing directly; removes one hypothesis from the fault
 work and makes every partials row a 16-byte multiple for the later prefetch
 work in `mla_attend` (P6).
 
-### P3. Growth curve: re-wire the debug snapshot (1 hour)
+### P3. Growth curve: re-wire the debug snapshot (1 hour) - done 2026-09-16
 
 The runtime accepts a graph only if every operator reads a tensor the
 previous operator wrote (`repos/fleet-chiplet-megakernel/src/kernel/runtime.cc`, `register_mugraph`,
@@ -154,6 +154,17 @@ over every plan variant (with and without the head, debug, stop-after).
 
 Saves on the VM: one aborted run and the growth curve over 27 layers
 (M3's remaining evidence) in a single run.
+
+Done: `OUTPUT_ARGS` and `Plan.chain_violations()` in `fleet/graph_plan.py`
+(the mapping `run_fleet.py` used for the boundary dump now lives there);
+`dry_run()` and `build()` in `fleet/build_graph.py` assert an empty
+violation list, so a broken graph fails here before the runtime sees it.
+Before the fix the dry run reported exactly the three boundaries the VM
+choked on (`L0.snapshot` to `L1.norm1`, and so on to `head.norm`); after
+it, `norm1` of layer l reads `dbg_x_res_{l-1}` and the head's norm reads
+the last snapshot when `--debug` is set, and nothing changes without it.
+Three tests in `fleet/tests/test_graph_plan.py` (eight plan variants
+clean, the wiring, the broken wiring caught).
 
 ### P4. Session scripts (2 hours) - done 2026-09-16
 

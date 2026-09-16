@@ -38,23 +38,18 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import common  # noqa: E402
 
-# which argument names are outputs, per plan method (the rest are inputs)
-OUTPUTS = {
-    "embed_layer": ["output"], "rmsnorm_layer": ["output"], "gang_linear_layer": ["output"],
-    "gang_linear_with_residual_layer": ["output"], "gang_linear_silu_layer": ["output"],
-    "mla_prep_layer": ["c_kv", "k_pe", "ql_nope", "q_pe"], "mla_attend_layer": ["partials", "scores"],
-    "mla_merge_uv_layer": ["output"], "moe_router_layer": ["topk_w", "routing", "mask", "logits", "route_log"],
-    "gang_moe_w13_linear_layer": ["output"], "moe_silu_mul_layer": ["output"],
-    "gang_moe_w2_linear_layer": ["output"], "moe_mul_sum_add_layer": ["output"],
-    "argmax_partial_layer": ["output"], "argmax_reduce_layer": ["output"], "copy_layer": ["output"],
-}
+def _outputs():
+    # which argument names are outputs, per plan method (the rest are inputs); lazy: fleet.* imports torch
+    from fleet.graph_plan import OUTPUT_ARGS
+    return OUTPUT_ARGS
 
 
 def last_writers(calls):
     """tensor name -> the label of the last operator that wrote it, in plan order."""
     w = {}
+    outputs = _outputs()
     for c in calls:
-        for k in OUTPUTS[c["method"]]:
+        for k in outputs[c["method"]]:
             if k not in c["args"]:            # optional outputs (scores)
                 continue
             v = c["args"][k]

@@ -57,6 +57,31 @@ class Call:
     label: str = ""               # "L{l}.<op>", "head.<op>", "prologue.embed": for --stop-after and dumps
 
 
+# Which argument names of each plan method are outputs (the rest are inputs). The
+# runtime accepts a graph only if every operator reads at least one tensor the
+# previous operator wrote (src/kernel/runtime.cc, register_mugraph: the consumer's
+# inputs against the producer's outputs, assert(num_shared_tensors >= 1)).
+OUTPUT_ARGS = {
+    "embed_layer": ["output"], "rmsnorm_layer": ["output"], "gang_linear_layer": ["output"],
+    "gang_linear_with_residual_layer": ["output"], "gang_linear_silu_layer": ["output"],
+    "mla_prep_layer": ["c_kv", "k_pe", "ql_nope", "q_pe"], "mla_attend_layer": ["partials", "scores"],
+    "mla_merge_uv_layer": ["output"], "moe_router_layer": ["topk_w", "routing", "mask", "logits", "route_log"],
+    "gang_moe_w13_linear_layer": ["output"], "moe_silu_mul_layer": ["output"],
+    "gang_moe_w2_linear_layer": ["output"], "moe_mul_sum_add_layer": ["output"],
+    "argmax_partial_layer": ["output"], "argmax_reduce_layer": ["output"], "copy_layer": ["output"],
+}
+
+
+def _tensor_args(call, names):
+    out = set()
+    for k in names:
+        v = call.args.get(k)
+        if v is None:
+            continue
+        out.update(v if isinstance(v, (tuple, list)) else [v])
+    return out
+
+
 @dataclass
 class Plan:
     dims: Dims
@@ -85,6 +110,17 @@ class Plan:
         """Keep the calls up to and including the labelled operator (07-correctness.md, M1 protocol)."""
         self.calls = self.calls[: self.index_of(stop_label) + 1]
         return self
+
+    def chain_violations(self):
+        """Consecutive operators that share no tensor from producer outputs to consumer inputs:
+        the runtime rejects such a graph at registration. Empty for a valid plan."""
+        bad = []
+        for prev, cur in zip(self.calls, self.calls[1:]):
+            outs = _tensor_args(prev, OUTPUT_ARGS[prev.method])
+            ins = _tensor_args(cur, [k for k in cur.args if k not in OUTPUT_ARGS[cur.method]])
+            if not (outs & ins):
+                bad.append((prev.label, cur.label))
+        return bad
 
     @property
     def n_ops(self):
@@ -168,7 +204,10 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
         p.t(f"c_kv_{l}", (s_max, d.D_C), kind="input", source=f"capture:c_kv_{l}")
         p.t(f"k_pe_{l}", (s_max, d.D_R), kind="input", source=f"capture:k_pe_{l}")
 
-        p.op("rmsnorm_layer", 1, label=f"L{l}.norm1", input="x_res", weight=f"w_norm1_{l}", output="h",
+        # with the debug snapshots, the operator after a snapshot must read the copy (same values):
+        # the runtime's chain rule, see OUTPUT_ARGS; the residual adds still read x_res
+        x_in = f"dbg_x_res_{l - 1}" if debug and l > 0 else "x_res"
+        p.op("rmsnorm_layer", 1, label=f"L{l}.norm1", input=x_in, weight=f"w_norm1_{l}", output="h",
              grid_dim=(1, 1, 1), block_dim=(256, 1, 1))
         p.op("gang_linear_layer", XCDS, gang_tiles(d.Q_OUT + d.KVA_OUT, TILE_N_QKVA), label=f"L{l}.qkva",
              input="h", weight=f"W_qkva_{l}", output="qkva", tile_n=TILE_N_QKVA,
@@ -230,8 +269,8 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
         p.t("amax_v", (1, ARGMAX_SLICES))
         p.t("amax_i", (1, ARGMAX_SLICES), "i64")
         p.t("tok_out", (1, 1), "i64", "input", "meta:output_tokens")
-        p.op("rmsnorm_layer", 1, label="head.norm", input="x_res", weight="w_final_norm", output="h",
-             grid_dim=(1, 1, 1), block_dim=(256, 1, 1))
+        p.op("rmsnorm_layer", 1, label="head.norm", input=f"dbg_x_res_{layers - 1}" if debug else "x_res",
+             weight="w_final_norm", output="h", grid_dim=(1, 1, 1), block_dim=(256, 1, 1))
         p.op("gang_linear_layer", XCDS, gang_tiles(d.V, TILE_N_LM), label="head.lm_head",
              input="h", weight="W_lm", output="logits", tile_n=TILE_N_LM, output_stride=d.V)
         p.op("argmax_partial_layer", ARGMAX_SLICES, label="head.argmax_partial", input="logits", output=("amax_v", "amax_i"),

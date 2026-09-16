@@ -132,3 +132,35 @@ def test_constraints_are_enforced():
     bad = Dims(**{**REAL_DIMS.__dict__, "I_MOE": 1400})
     with pytest.raises(AssertionError):
         B.dry_run(dims=bad)
+
+
+# ---- the runtime's chain rule (docs/round-2/01-preparation.md, P3) ----------------
+
+@pytest.mark.parametrize("layers,head,debug,stop_after", [
+    (27, True, False, None), (27, True, True, None), (27, False, True, None), (2, False, True, None),
+    (8, True, False, "L7.combine"), (2, True, True, "L1.mla_prep"), (1, False, True, None),
+    (3, True, False, "head.argmax_reduce"),
+])
+def test_every_operator_reads_what_its_predecessor_wrote(layers, head, debug, stop_after):
+    plan, _ = B.dry_run(layers=layers, head=head, debug=debug, stop_after=stop_after)
+    assert plan.chain_violations() == []
+
+
+def test_debug_snapshot_feeds_the_next_norm():
+    plan, calls = B.dry_run(layers=3, head=True, debug=True)
+    by_label = {c.label: c for c in plan.calls}
+    assert by_label["L0.norm1"].args["input"] == "x_res"
+    assert by_label["L1.norm1"].args["input"] == "dbg_x_res_0"
+    assert by_label["L2.norm1"].args["input"] == "dbg_x_res_1"
+    assert by_label["head.norm"].args["input"] == "dbg_x_res_2"
+    assert by_label["L1.o_proj"].args["residual"] == "x_res"        # the residual path is untouched
+    plan, _ = B.dry_run(layers=3, head=True, debug=False)
+    assert all(c.args["input"] == "x_res" for c in plan.calls if c.label.endswith("norm1") or c.label == "head.norm")
+
+
+def test_chain_rule_catches_the_broken_snapshot_wiring():
+    plan = G.build_plan(layers=3, head=True, debug=True)
+    for c in plan.calls:
+        if c.label in ("L1.norm1", "head.norm"):
+            c.args["input"] = "x_res"                                  # the wiring that failed on 2026-09-15
+    assert plan.chain_violations() == [("L0.snapshot", "L1.norm1"), ("L2.snapshot", "head.norm")]

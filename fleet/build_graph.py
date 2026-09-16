@@ -216,6 +216,7 @@ def build(packed, capture, meta, dims=REAL_DIMS, s_max=1056, layers=27, head=Tru
     plan = G.build_plan(dims, s_max, layers, head, debug, debug_scores)
     if stop_after:
         plan.truncate(stop_after)
+    assert not plan.chain_violations(), f"the runtime would reject this graph: {plan.chain_violations()}"
     mpk = mi.PersistentKernel(
         mode="online", world_size=1, mpi_rank=0, num_workers=num_workers,
         num_local_schedulers=num_schedulers, num_remote_schedulers=0,
@@ -379,6 +380,7 @@ def dry_run(dims=REAL_DIMS, s_max=1056, layers=27, head=True, debug=False, stop_
     plan = G.build_plan(dims, s_max, layers, head, debug, debug_scores)
     if stop_after:
         plan.truncate(stop_after)
+    assert not plan.chain_violations(), f"the runtime would reject this graph: {plan.chain_violations()}"
     mpk = FakeMPK()
     dt = {t.name: FakeDTensor(t.name, t.shape) for t in plan.tensors.values()}
     issue_calls(mpk, plan, dt)
