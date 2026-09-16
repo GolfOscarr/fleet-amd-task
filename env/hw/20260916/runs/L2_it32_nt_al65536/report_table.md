@@ -40,5 +40,3 @@
 | 21 | gang_moe_w2_linear_layer | 5.62 | 3.56 | 6.56 | 31 |
 | 22 | moe_mul_sum_add_layer | 20.34 | 19.00 | 22.28 | 31 |
 | 23 | event_23 | 3.11 | 3.00 | 3.45 | 31 |
-
--> /home/hotaisle/metalOps/harness/fleet_out/L2_it32_al65536/metrics.json, /home/hotaisle/metalOps/harness/fleet_out/L2_it32_al65536/report_table.md

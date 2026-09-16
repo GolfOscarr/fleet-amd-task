@@ -55,3 +55,8 @@
 2026-09-16T18:16:34Z L2_it32_L0.gate_up_al65536 PASS rc=0 mpk=1 fault=0 fwd=27 wall=31s
 2026-09-16T18:17:05Z L2_it32_L0.down_al65536 PASS rc=0 mpk=1 fault=0 fwd=26 wall=31s
 2026-09-16T18:17:05Z DONE env/session/queue-b0.txt
+2026-09-16T18:22:06Z L27_head_it32_tile_al65536 PASS rc=0 mpk=1 fault=0 fwd=31 wall=49s table=PASS
+2026-09-16T18:22:57Z L27_head_it32_tile_al65536 PASS rc=0 mpk=1 fault=0 fwd=31 wall=49s compare=FAIL
+2026-09-16T18:23:32Z L2_it32_al65536 PASS rc=0 mpk=1 fault=0 fwd=27 wall=35s table=PASS
+2026-09-16T18:24:21Z L27_head_it32_al65536 PASS rc=0 mpk=1 fault=0 fwd=31 wall=48s table=PASS
+2026-09-16T18:24:21Z DONE env/session/queue-b2.txt

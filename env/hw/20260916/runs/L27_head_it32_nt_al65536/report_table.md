@@ -345,5 +345,3 @@
 | 326 | argmax_reduce_layer | 87.18 | 0.02 | 110.60 | 31 |
 | 327 | event_327 | 6.54 | 6.21 | 7.32 | 31 |
 | 328 | event_328 | 5.15 | 4.93 | 5.35 | 31 |
-
--> /home/hotaisle/metalOps/harness/fleet_out/L27_head_it32_al65536/metrics.json, /home/hotaisle/metalOps/harness/fleet_out/L27_head_it32_al65536/report_table.md
