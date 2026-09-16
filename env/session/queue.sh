@@ -30,7 +30,7 @@ set -uo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 cd "$ROOT" || exit 1
 
-PY="${PY:-python}"
+PY="${PY:-$(command -v python || command -v python3)}"   # the venv's python on the VM; python3 elsewhere
 REF_DIR="${REF_DIR:-$ROOT/harness/ref}"
 RUN_FLEET="${RUN_FLEET:-$PY harness/run_fleet.py}"
 COMPARE="${COMPARE:-$PY harness/compare.py}"
@@ -96,7 +96,7 @@ run_graph() {
 
 do_compare() {
   local name="$1" log="$LOGDIR/runs/$1.compare.out"
-  if [ "$DRY" = "1" ]; then echo "+ $COMPARE --fleet $FLEET_OUT/$name"; echo PASS; return 0; fi
+  if [ "$DRY" = "1" ]; then echo "+ $COMPARE --fleet $FLEET_OUT/$name" >&2; echo PASS; return 0; fi
   # shellcheck disable=SC2086
   if $COMPARE --fleet "$FLEET_OUT/$name" > "$log" 2>&1; then echo PASS; else echo FAIL; fi
   cp "$FLEET_OUT/$name"/correctness_report.* "$RECORD/runs/$name/" 2>/dev/null || true
