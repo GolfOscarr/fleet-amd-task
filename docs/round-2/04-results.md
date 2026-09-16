@@ -27,18 +27,41 @@ nothing is estimated.
 | The fix that passed | `--align-alloc 65536` (the first row); `--workspaces-first` and the combinations pass as well; the fix at the cause is in the plan since ce3a317 (`ROW_SLACK = 16` in `build_graph.new_workspace`), verified without any flag | A7 row; `queue-fix2.txt` |
 | Why (the offset that overflowed or the buffer that moved) | the silu gang kernel over-reads its input. `gang_linear_silu_kernel` (`gang_linear_mi300.cuh`, line 359) builds its own CK tile GEMM with `MPerBlock = 16` and loops `LoopM` M-tiles with no `num_active_tokens` mask, so at batch 1 it reads 16 rows of A, 64 KB, from a 4 KB `[1, 2048]` buffer; the plain and the residual gang kernels go through the shared masked path and read one row. Whether the 60 KB past the buffer are mapped depends on the layout: in the failing run the input `h` sits at `0x7116cb3f7600`, the highest activation of the tensor set with 35 KB to the end of its 2 MiB segment and nothing recorded above it; in the passing 16-layer run the same input has 93 KB of slack; with `--align-alloc 65536` every buffer is over-allocated and `h` has 256 KB. The 92 MB weight and the output are read and written in bounds. A uniform shift keeps the slack, so the pads changed nothing | `fleet_run_meta.json` `addresses` of `runs/L8_head_it2_L0.gate_up`, `runs/L16_head_it2_pad1`, `runs/L8_head_it2_al65536`; the kernel source |
 
-## Time per iteration, 27 layers, 32 iterations
+## Time per iteration, 27 layers with the head, 32 iterations
 
-| Variant | Command difference | Median us | P95 us | Trace us | Against baseline |
-|---|---|---|---|---|---|
-| Baseline, 2x host, gang, old kernels | `runs/L27_it32` (2026-09-15) | 15,572 | - | - | 1.00 |
-| Baseline, this host, gang, P6 kernels, `--align-alloc 65536` | A8.6, `runs/L27_head_it32_al65536` (with the head) | 15,019.5 (host clock, mean of 32) | - | - | 0.96 |
-| `--tile-linears` | B2, `runs/L27_head_it32_tile_al65536` (2 layers in A8.5: 1,735.8 to 1,595.9) | 14,384.2 (host clock) | - | - | 0.92 |
-| `--nt-weights` (E2) | B5, `runs/L27_head_it32_nt_al65536` (2 layers: 1,497.3) | 12,977.8 (host clock) | - | - | 0.83; `mla_attend` 215 to 150 us, `w13` 26 to 22 us |
-| E2 and per-tile linears, no flag (the plan fix in place) | `runs/L27_head_it32_tile_nt` | 12,401.6 (host clock) | - | - | 0.83; 32 ids equal |
-| the same with 61 splits (`--split 17`) | `runs/L27_head_it32_tile_nt_s17` | 12,634.9 (host clock) | - | - | 0.84; `mla_attend` 149 us as with 33 splits: the per-tile cost is fixed, not per row; 32 ids equal |
-| the attention as regular tasks (`--attend-tasks`, one task per split) | `runs/L27_head_it32_tile_at_nt` | 12,664.7 (host clock) | - | - | 0.84; `mla_attend` 149 us as on the gang path; 32 ids equal |
-| Design band | `09-expected-performance.md` | 1,148 to 1,349 + 326 t_b | | | |
+Three clocks, all from the record (`env/hw/20260916/runs/<name>/`). The event
+clock is the runtime's own 100 MHz timestamp of the first event of each
+iteration (`event_timing.json`, 31 intervals, timing build); the `FWD_PASS` line
+is the megakernel's report of each iteration (`run.out`, iterations 2 to 32;
+the file belongs to the last run of that name, a timing build or a plain one as
+marked); the host mean is `wall.json` over the 32 iterations and includes the
+launch, the first iteration and the timing readback, which is why it sits 0.5 to
+3 ms above the others. The variants are compared on the event clock.
+
+| Variant | Run | Event median us | Event P95 us | `FWD_PASS` median us | Host mean us | Against the baseline (event) |
+|---|---|---|---|---|---|---|
+| Baseline of round 1, 2x host, gang, old kernels, no head | `env/hw/20260915/runs/L27_it32` | 15,572 (host mean) | - | - | 15,572 | - |
+| Baseline of this host: gang linears, P6 kernels, `--align-alloc 65536` | `L27_head_it32_al65536` (A8.6) | 12,268 | 12,338 | 12,268 (timing on) | 15,020 | 1.00 |
+| `--tile-linears` | `L27_head_it32_tile_al65536` (B2) | 11,514 | 11,619 | 11,502 (timing off) | 12,025 | 0.94 |
+| `--nt-weights` (E2) | `L27_head_it32_nt_al65536` (B5) | 10,230 | 10,295 | 10,234 (timing on) | 12,978 | 0.83 |
+| E2 and per-tile linears, no flag (the plan fix in place) | `L27_head_it32_tile_nt` (B5) | 9,575 | 9,644 | 9,742 (timing off) | 10,308 | 0.78 |
+| the same with 61 splits (`--split 17`) | `L27_head_it32_tile_nt_s17` (B5) | 9,837 | 9,854 | 9,852 (timing off) | 10,422 | 0.80 |
+| the attention as regular tasks (`--attend-tasks`) | `L27_head_it32_tile_at_nt` (B5) | 9,858 | 9,922 | 9,890 (timing off) | 10,456 | 0.80 |
+| Design band | `docs/design-doc/09-expected-performance.md` | 1,148 to 1,349 + 326 t_b | | | | 0.09 to 0.11 |
+
+Every row's ids equal the reference's 32 (the `compare` runs of A8.2, B4 and
+the three B5 variants). The best steady state of the day is 9.6 ms per token on
+the event clock, 9.7 ms by the megakernel's own report without instrumentation,
+against the 1.15 to 1.35 ms of the design: 7 to 8 times off, all of it in the
+per-operator floors of the next section.
+
+The 2-layer graph, on the event clock (median us): gang P6 kernels 1,048, per-tile
+1,018, E2 889, E2 with 61 splits 875, E2 with regular
+attention tasks 891; the plan fix without any flag 1,051. Its `FWD_PASS`
+lines are erratic (medians of 1.4 to 4.0 ms with P95 above 7 ms) and are not
+used; the host means (1,497 to 1,736 us) carry about 20 ms of launch cost
+spread over 32 iterations, which is also what the B0 ladder of A8.4 measured as
+"670 us for a graph with one operator".
 
 ## Per-operator time (event gaps, mean over iterations; the 2-layer graph, 32 iterations)
 
@@ -80,18 +103,18 @@ the norms and the merge show the same kind of floor at their smaller sizes.
 | `down` (residual gang, 46 MB) | 10 | 34.6 | 34.2 | - | 33.9 | 11 |
 | `moe_silu_mul` | 20 | 40.2 | 42.2 | - | 40.4 | under 1 |
 | `moe_mul_sum_add` | 22 | 21.5 | 21.2 | - | 21.1 | under 1 |
-| B0 attribution: `qkva` alone from the host clock | A8.4 | 4.4 (event gap) | +7.3 (the 32-iteration ladder, `runs/L2_it32_L0.qkva_al65536` minus `..._L0.norm1_al65536`); the ladder's other steps swing by -85 to +265 us, so its resolution is about 100 us; a graph with `norm1` alone costs 670 us per iteration | | | the persistent kernel is one dispatch, so a kernel trace would give the same host-side number |
+| B0 attribution: `qkva` alone from the host clock | A8.4 | 4.4 (event gap) | +7.3 (the 32-iteration ladder, `runs/L2_it32_L0.qkva_al65536` minus `..._L0.norm1_al65536`); the ladder's other steps swing by -85 to +265 us, so its resolution is about 100 us; the 670 us of the one-operator graph is the launch cost over 32 iterations, not an iteration floor | | | the persistent kernel is one dispatch, so a kernel trace would give the same host-side number; not settled |
 
 ## Traffic and bandwidth (B3, the megakernel's dispatches only)
 
 | Quantity | Predicted | Measured | Where |
 |---|---|---|---|
-| bytes read per iteration (MiB) | 4,710 weights and cache; about 4,772 with activations | - | `metrics.json` traffic |
+| bytes read per iteration (MiB) | 4,710 weights and cache; about 4,772 with activations | not measured (B3 needs the counters; see the launches row) | `metrics.json` traffic |
 | bytes written per iteration (MiB) | | - | |
-| achieved read bandwidth (TB/s) | 3.66 to 4.3 | - | |
+| achieved read bandwidth (TB/s) | 3.66 to 4.3 | 0.52 from bytes and time: 4,772 MiB in 9.57 ms (the best event-clock median) | the traffic column is the design's count, not a measurement |
 | L2 hit rate | 16 to 17% (Fleet's batch-1 figure) | - | |
-| launches per generation | 3 | - | `3 megakernel of N dispatches` |
-| tokens per second | | - | |
+| launches per generation | 3 | not measured: rocprofv3 aborts on the torch wheel (fix 5 of `03`); from the harness, one `mpk()` call runs the 32 iterations | `3 megakernel of N dispatches` |
+| tokens per second | | 104 on the event clock (9.6 ms per token), 103 by `FWD_PASS` without instrumentation | `L27_head_it32_tile_nt` |
 
 ## What remains open after round 2
 

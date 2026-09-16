@@ -230,7 +230,7 @@ documented as blocked. **Decide end of day 1.**
 - [ ] Median + P95 latency (state N; 32 tokens is too few — loop the decode)
 - [ ] Memory traffic, achieved bandwidth, L2 hit rate
 - [ ] Occupancy + VGPR/LDS per task
-- [x] TPOT + tokens/s — 15.0 ms per token on the 1x MI300X with the gang linears, 12.4 ms with E2 (`--nt-weights`) and per-tile linears (`docs/round-2/04-results.md`); the design band is 1.15 to 1.35 ms
+- [x] TPOT + tokens/s — on the 1x MI300X, steady state on the runtime's event clock: 12.3 ms per token with the gang linears, 9.6 ms with E2 (`--nt-weights`) and per-tile linears (104 tokens/s); the host means over 32 iterations are 15.0 and 10.3 ms (launch and first iteration included); the design band is 1.15 to 1.35 ms (`docs/round-2/04-results.md`)
 - [ ] Fleet-native ops vs remaining fallbacks
 - [ ] Build/run instructions, setup scripts, profiling commands
 - [ ] Known failures + recommended next steps (incl. FP8 with arithmetic)
