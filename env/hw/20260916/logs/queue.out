@@ -1,1 +1,10 @@
 == L8_head_it2_al65536: /home/hotaisle/metalOps/.venv-fleet/bin/python harness/run_fleet.py --layers 8 --head --iters 2 --align-alloc 65536 --model-dir /home/hotaisle/.cache/huggingface/hub/models--deepseek-ai--DeepSeek-Coder-V2-Lite-Base/snapshots/ea9b066cee82f82906fdd58898cb3788b1c5d770
+2026-09-16T17:59:40Z L8_head_it2_al65536 PASS rc=0 mpk=1 fault=0 fwd=2 wall=38s
+== L8_head_it2_wsfirst: /home/hotaisle/metalOps/.venv-fleet/bin/python harness/run_fleet.py --layers 8 --head --iters 2 --workspaces-first --model-dir /home/hotaisle/.cache/huggingface/hub/models--deepseek-ai--DeepSeek-Coder-V2-Lite-Base/snapshots/ea9b066cee82f82906fdd58898cb3788b1c5d770
+2026-09-16T18:00:17Z L8_head_it2_wsfirst PASS rc=0 mpk=1 fault=0 fwd=2 wall=37s
+== L8_head_it2_al65536_wsfirst: /home/hotaisle/metalOps/.venv-fleet/bin/python harness/run_fleet.py --layers 8 --head --iters 2 --align-alloc 65536 --workspaces-first --model-dir /home/hotaisle/.cache/huggingface/hub/models--deepseek-ai--DeepSeek-Coder-V2-Lite-Base/snapshots/ea9b066cee82f82906fdd58898cb3788b1c5d770
+2026-09-16T18:00:54Z L8_head_it2_al65536_wsfirst PASS rc=0 mpk=1 fault=0 fwd=2 wall=37s
+== L8_head_it2_al2097152_wsfirst: /home/hotaisle/metalOps/.venv-fleet/bin/python harness/run_fleet.py --layers 8 --head --iters 2 --align-alloc 2097152 --workspaces-first --model-dir /home/hotaisle/.cache/huggingface/hub/models--deepseek-ai--DeepSeek-Coder-V2-Lite-Base/snapshots/ea9b066cee82f82906fdd58898cb3788b1c5d770
+2026-09-16T18:01:32Z L8_head_it2_al2097152_wsfirst PASS rc=0 mpk=1 fault=0 fwd=2 wall=38s
+2026-09-16T18:01:32Z DONE env/session/queue-fix.txt
+2026-09-16T18:01:32Z PASS queue 150s

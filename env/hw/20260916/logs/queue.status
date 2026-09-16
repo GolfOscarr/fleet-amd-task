@@ -31,3 +31,8 @@
 2026-09-16T17:57:37Z L8_head_it2_L0.gate_up FAIL rc=1 mpk=0 fault=1 fwd=0 wall=32s bisect
 2026-09-16T17:58:07Z L8_head_it2_L0.norm2 PASS rc=0 mpk=1 fault=0 fwd=2 wall=30s bisect
 2026-09-16T17:58:07Z BISECT first-fault=L0.gate_up runs=7
+2026-09-16T17:59:40Z L8_head_it2_al65536 PASS rc=0 mpk=1 fault=0 fwd=2 wall=38s
+2026-09-16T18:00:17Z L8_head_it2_wsfirst PASS rc=0 mpk=1 fault=0 fwd=2 wall=37s
+2026-09-16T18:00:54Z L8_head_it2_al65536_wsfirst PASS rc=0 mpk=1 fault=0 fwd=2 wall=37s
+2026-09-16T18:01:32Z L8_head_it2_al2097152_wsfirst PASS rc=0 mpk=1 fault=0 fwd=2 wall=38s
+2026-09-16T18:01:32Z DONE env/session/queue-fix.txt
