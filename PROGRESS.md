@@ -3,7 +3,7 @@
 Fleet-style batch-1 decode for DeepSeek-Coder-V2-Lite-Base on one AMD MI300X.
 Time limit: 5 days. Target: gfx942, BF16, 1024-token prompt, 32 greedy tokens.
 
-Last updated: 2026-09-16 · branch `local/gpu-bringup` (the first GPU sessions, 2026-09-15: hardware record, gate 1, M1 to M3)
+Last updated: 2026-09-16 · branch `gpu/round-2` (round 2 on the 1x MI300X: M4, the fault's cause, the timings; `docs/gpu/02-validation/`); round 1 was `local/gpu-bringup` (2026-09-15: hardware record, gate 1, M1 to M3; `docs/gpu/01-bringup/`)
 
 **Where we are (2026-09-16):** M0, M1, M2 and M3 reached on the MI300X
 on 2026-09-15 (Hot Aisle, one VM, about $12): gate 1 passed after three
