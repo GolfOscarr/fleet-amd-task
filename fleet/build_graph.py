@@ -145,9 +145,23 @@ def aligned_copy(torch, t, align):
     return out
 
 
+ROW_SLACK = 16   # rows of backing storage behind every single-row activation (the M4 fault)
+
+
 def new_workspace(torch, t, align=0, device="cuda"):
-    """A zeroed workspace for plan tensor t, aligned to align bytes when align is set."""
-    buf = torch.zeros(t.shape, dtype=getattr(torch, TORCH_DTYPES[t.dtype]), device=device)
+    """A zeroed workspace for plan tensor t, aligned to align bytes when align is set.
+
+    A [1, D] activation is backed by ROW_SLACK rows and the first row is returned: the stock
+    gang_linear_silu_kernel tiles M by 16 with no active-token mask, so at batch 1 it reads
+    16 rows from its input (docs/round-2/04-results.md, the fault of M4). The over-read stays
+    inside this allocation whatever the allocator puts after it; the view's storage keeps the
+    rows alive."""
+    dtype = getattr(torch, TORCH_DTYPES[t.dtype])
+    if len(t.shape) == 2 and t.shape[0] == 1:
+        raw = torch.zeros((ROW_SLACK, t.shape[1]), dtype=dtype, device=device)
+        raw = aligned_copy(torch, raw, align) if align else raw
+        return raw[:1]
+    buf = torch.zeros(t.shape, dtype=dtype, device=device)
     return aligned_copy(torch, buf, align) if align else buf
 
 

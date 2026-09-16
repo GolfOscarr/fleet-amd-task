@@ -1,0 +1,5 @@
+# The plan-side fix of the M4 fault (build_graph.new_workspace backs every [1, D] activation with
+# 16 rows): the faulting graphs without any flag, then the whole model, then a timing without the flag.
+--layers 8 --head --iters 2 continue                          # faulted before the fix
+--layers 27 --head --iters 32 compare continue                # M4 without --align-alloc
+--layers 2 --iters 32 --event-timing table continue           # the 2-layer timing without the flag

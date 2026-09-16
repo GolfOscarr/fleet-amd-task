@@ -267,6 +267,24 @@ def test_aligned_copy_rebases_and_preserves_values():
         B.aligned_copy(torch, t, 3000)
 
 
+def test_single_row_workspaces_are_backed_by_sixteen_rows():
+    # the M4 fault (session A, 2026-09-16): gang_linear_silu_kernel reads 16 rows of its
+    # [1, D] input; the rows behind the returned row must belong to the same allocation
+    plan, _ = B.dry_run(REAL_DIMS, 1026, 1, False)
+    rows = [t for t in plan.tensors.values() if t.kind != "input" and len(t.shape) == 2 and t.shape[0] == 1]
+    assert rows, "the plan has single-row activations"
+    for t in rows:
+        for align in (0, 65536):
+            w = B.new_workspace(torch, t, align, device="cpu")
+            assert tuple(w.shape) == t.shape
+            backing = w.untyped_storage().nbytes() - (w.storage_offset() * w.element_size())
+            assert backing >= B.ROW_SLACK * t.shape[1] * w.element_size(), t.name
+            if align:
+                assert w.data_ptr() % align == 0
+    ws = B.allocate_workspaces(torch, plan, device="cpu")
+    assert all(tuple(ws[t.name].shape) == t.shape for t in rows)
+
+
 def test_allocate_workspaces_and_make_tensors_reuse_them():
     plan, _ = B.dry_run(REAL_DIMS, 1026, 1, False)
     ws = B.allocate_workspaces(torch, plan, align=4096, device="cpu")
