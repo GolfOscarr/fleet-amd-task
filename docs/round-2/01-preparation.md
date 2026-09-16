@@ -155,7 +155,7 @@ over every plan variant (with and without the head, debug, stop-after).
 Saves on the VM: one aborted run and the growth curve over 27 layers
 (M3's remaining evidence) in a single run.
 
-### P4. Session scripts (2 hours)
+### P4. Session scripts (2 hours) - done 2026-09-16
 
 Three files under `env/session/`:
 
@@ -200,6 +200,24 @@ Saves on the VM: the hand-typed ssh commands of the first session (the
 two dropped sessions, the self-matching wait, the nested rsync) and the
 serial waits between stages; the image build starts at minute zero
 without anyone watching it.
+
+Done: `env/session/common.sh`, `vm.sh`, `queue.sh`, `laptop.sh`; the
+queue files `queue-a.txt` (A1, A2), `queue-a2.txt` (A4 to A7 and the
+baseline), `queue-b.txt` (B1 to B5) and the label file `queue-fault.txt`;
+eleven tests in `env/hw/tests/test_session_scripts.py` (the queue on a
+fake `run_fleet.py`: status rows, record copies, the stop rule; the
+bisection for three fault positions, five runs each; the DRY modes of
+every stage, the profiler rows and the laptop commands; every queue row
+parses as `run_fleet.py` arguments). Two details that differ from the
+sketch above: a fourth row keyword `table` runs `measure.py` on the
+result alone (the per-operator table of an `--event-timing` run without
+the profiler), and `laptop.sh login` pipes the laptop's `gh auth token`
+into `docker login` on the VM so the `image` stage can push; the stage
+builds and keeps the image local when no login exists. `laptop.sh delete`
+needs `--yes`, since deletions are the user's call. The laptop's bash is
+3.2, so the scripts use no associative arrays. Known limit for P7:
+`measure.py` sums the PMC rows of every dispatch of the profiled run,
+including the weight packing; P7 filters to the persistent kernel.
 
 ### P5. Per-tile linears behind a flag (2 hours)
 
