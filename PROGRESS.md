@@ -13,7 +13,8 @@ two tokens, 15.6 ms per iteration (the gang model's eight workgroups per
 operator, MAJ-7). Open: the fault at 7 to 9 layers and at 27 layers with
 the head at 32 iterations (`docs/gpu-bringup/03-lessons-and-ideas.md`
 item 13); the session image (`env/docker/README.md`) not yet pushed. The
-next session starts from `docs/gpu-bringup/05-next-session.md`.
+next round is planned in `docs/round-2/` (preparation on the laptop first,
+then two sessions on a 1x MI300X for $27).
 Earlier state: discovery complete (5 doc sets); the technical design is
 written and independently reviewed (`docs/design-doc/`, 14 files, one
 counting script); the local harness is complete and independently
