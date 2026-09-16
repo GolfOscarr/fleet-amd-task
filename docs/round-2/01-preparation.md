@@ -230,7 +230,7 @@ needs `--yes`, since deletions are the user's call. The laptop's bash is
 `measure.py` sums the PMC rows of every dispatch of the profiled run,
 including the weight packing; P7 filters to the persistent kernel.
 
-### P5. Per-tile linears behind a flag (2 hours)
+### P5. Per-tile linears behind a flag (2 hours) - done 2026-09-16
 
 MAJ-7's largest lever. The stock runtime has a non-gang `linear_layer`
 (`persistent_kernel.py`) that issues one task per weight tile; it exists
@@ -251,6 +251,22 @@ On the VM: the same 2-layer, 32-iteration event-timing run with and
 without the flag; the target is `o_proj` moving from 38 us toward the
 2 us its 8 MB of weights need at 4 TB/s. If it does, the second session
 extends it to the MoE linears and the elementwise ops.
+
+Done: `grid_for_linear()` and the `tile_linears` argument in
+`fleet/graph_plan.py` switch `qkva`, `o_proj`, `down` and `lm_head` from
+the 8-task gang to the stock `linear_layer` / `linear_with_residual_layer`,
+which split the output columns across 96, 64, 64 and 400 tasks over all
+296 workers (the demo's tested grid heuristic, `size // 256` for the large
+`lm_head`). Both are real methods on the runtime, so only the dry-run
+`FakeMPK` needed the two wrappers (with the stock shape asserts). Threaded
+through `run_fleet.py` as `--tile-linears` (run-name suffix `_tile`,
+recorded in `fleet_run_meta.json`) and `build_graph.py`; the
+`queue-a2.txt` A7 row is enabled. Six tests: the flag flips exactly those
+four ops and multiplies the task count, leaves the gang plan untouched
+when off, the grids divide the output sizes, and the chain rule still
+holds. Scope: `gate_up` is silu-fused (gang-only; a non-gang split would
+add a boundary) and the MoE linears are expert-routed, so both stay gang;
+they are session B's per-tile work if A7 pays.
 
 ### P6. Prefetch and more splits in `mla_attend` and `mla_merge_uv` (3 hours, second)
 

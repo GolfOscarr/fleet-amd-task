@@ -64,6 +64,7 @@ class Call:
 OUTPUT_ARGS = {
     "embed_layer": ["output"], "rmsnorm_layer": ["output"], "gang_linear_layer": ["output"],
     "gang_linear_with_residual_layer": ["output"], "gang_linear_silu_layer": ["output"],
+    "linear_layer": ["output"], "linear_with_residual_layer": ["output"],
     "mla_prep_layer": ["c_kv", "k_pe", "ql_nope", "q_pe"], "mla_attend_layer": ["partials", "scores"],
     "mla_merge_uv_layer": ["output"], "moe_router_layer": ["topk_w", "routing", "mask", "logits", "route_log"],
     "gang_moe_w13_linear_layer": ["output"], "moe_silu_mul_layer": ["output"],
@@ -143,10 +144,27 @@ def gang_tiles(n_out, tile_n):
     return chunk // tile_n
 
 
+def grid_for_linear(size):
+    """Tasks for the stock non-gang linear (persistent_kernel.py linear_layer), which splits
+    the output columns across grid_dim[0] tasks over all 296 workers instead of the gang path's
+    8 (one per XCD). The heuristic is the demo's tested one (demo/qwen3/demo_30B_A3B.py,
+    grid_for_rmsnorm_linear_layer), including its size//256 workaround for a large lm_head."""
+    if size / 96 > 400:
+        assert size % 256 == 0, f"per-tile linear size {size} must be a multiple of 256"
+        return size // 256
+    if size % 96 == 0:
+        return 96
+    assert size % 64 == 0, f"per-tile linear size {size} must be a multiple of 96 or 64"
+    return 64
+
+
 def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head: bool = True,
-               debug: bool = False, debug_scores: bool = False) -> Plan:
+               debug: bool = False, debug_scores: bool = False, tile_linears: bool = False) -> Plan:
     """debug_scores: the mla_attend kernel also writes the scaled pre-softmax scores
-    [NH, s_max] FP32 (boundary B5); needs the MLA_ATTEND_DEBUG_SCORES build (MPK_DEBUG_SCORES=1)."""
+    [NH, s_max] FP32 (boundary B5); needs the MLA_ATTEND_DEBUG_SCORES build (MPK_DEBUG_SCORES=1).
+    tile_linears: issue the four dense linears (qkva, o_proj, down, lm_head) as per-tile
+    linear_layer tasks over all workers instead of 8-task gangs (MAJ-7; docs/round-2 P5). The
+    silu-fused gate_up and the MoE linears stay gang (no drop-in non-gang equivalent)."""
     d = dims
     assert 1 <= layers <= d.L
     assert d.H % 256 == 0                   # K of every CK linear (silent truncation otherwise)
@@ -209,9 +227,14 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
         x_in = f"dbg_x_res_{l - 1}" if debug and l > 0 else "x_res"
         p.op("rmsnorm_layer", 1, label=f"L{l}.norm1", input=x_in, weight=f"w_norm1_{l}", output="h",
              grid_dim=(1, 1, 1), block_dim=(256, 1, 1))
-        p.op("gang_linear_layer", XCDS, gang_tiles(d.Q_OUT + d.KVA_OUT, TILE_N_QKVA), label=f"L{l}.qkva",
-             input="h", weight=f"W_qkva_{l}", output="qkva", tile_n=TILE_N_QKVA,
-             output_stride=d.Q_OUT + d.KVA_OUT)
+        if tile_linears:
+            g = grid_for_linear(d.Q_OUT + d.KVA_OUT)
+            p.op("linear_layer", g, label=f"L{l}.qkva", input="h", weight=f"W_qkva_{l}",
+                 output="qkva", grid_dim=(g, 1, 1), block_dim=(256, 1, 1))
+        else:
+            p.op("gang_linear_layer", XCDS, gang_tiles(d.Q_OUT + d.KVA_OUT, TILE_N_QKVA), label=f"L{l}.qkva",
+                 input="h", weight=f"W_qkva_{l}", output="qkva", tile_n=TILE_N_QKVA,
+                 output_stride=d.Q_OUT + d.KVA_OUT)
         p.op("mla_prep_layer", 1, status="new", label=f"L{l}.mla_prep",
              qkva="qkva", w_kv_norm=f"w_kv_norm_{l}", w_uk=f"W_uk_{l}", cos="cos", sin="sin",
              c_kv=f"c_kv_{l}", k_pe=f"k_pe_{l}", ql_nope="ql_nope", q_pe="q_pe",
@@ -222,9 +245,14 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
              **({"scores": "scores"} if debug_scores else {}))
         p.op("mla_merge_uv_layer", XCDS, d.NH // XCDS, status="new", label=f"L{l}.mla_merge_uv",
              partials="partials", w_uv=f"W_uv_{l}", output="attn", split=SPLIT, n_splits=n_splits)
-        p.op("gang_linear_with_residual_layer", XCDS, gang_tiles(d.H, TILE_N_O), label=f"L{l}.o_proj",
-             input="attn", weight=f"W_o_{l}", residual="x_res", output="x_res",
-             tile_n=TILE_N_O, output_stride=d.H)
+        if tile_linears:
+            g = grid_for_linear(d.H)
+            p.op("linear_with_residual_layer", g, label=f"L{l}.o_proj", input="attn", weight=f"W_o_{l}",
+                 residual="x_res", output="x_res", grid_dim=(g, 1, 1), block_dim=(256, 1, 1))
+        else:
+            p.op("gang_linear_with_residual_layer", XCDS, gang_tiles(d.H, TILE_N_O), label=f"L{l}.o_proj",
+                 input="attn", weight=f"W_o_{l}", residual="x_res", output="x_res",
+                 tile_n=TILE_N_O, output_stride=d.H)
         p.op("rmsnorm_layer", 1, label=f"L{l}.norm2", input="x_res", weight=f"w_norm2_{l}", output="h",
              grid_dim=(1, 1, 1), block_dim=(256, 1, 1))
         if l == 0:
@@ -235,9 +263,14 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
             p.op("gang_linear_silu_layer", XCDS, n_weight_tiles // 2, label=f"L{l}.gate_up",
                  input="h", weight="W_gu_shuffled", output="act", tile_n=TILE_N_SILU,
                  output_stride=d.I_DENSE_PAD)
-            p.op("gang_linear_with_residual_layer", XCDS, gang_tiles(d.H, TILE_N_O), label=f"L{l}.down",
-                 input="act", weight="W_down_pad", residual="x_res", output="x_res",
-                 tile_n=TILE_N_O, output_stride=d.H)
+            if tile_linears:
+                g = grid_for_linear(d.H)
+                p.op("linear_with_residual_layer", g, label=f"L{l}.down", input="act", weight="W_down_pad",
+                     residual="x_res", output="x_res", grid_dim=(g, 1, 1), block_dim=(256, 1, 1))
+            else:
+                p.op("gang_linear_with_residual_layer", XCDS, gang_tiles(d.H, TILE_N_O), label=f"L{l}.down",
+                     input="act", weight="W_down_pad", residual="x_res", output="x_res",
+                     tile_n=TILE_N_O, output_stride=d.H)
         else:
             p.t(f"W_gate_{l}", (d.E, d.H), kind="input", source=f"W_gate_{l}")
             p.t(f"W13_{l}", (d.E_TOTAL, 2 * d.I_MOE, d.H), kind="input", source=f"W13_{l}")
@@ -271,8 +304,13 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
         p.t("tok_out", (1, 1), "i64", "input", "meta:output_tokens")
         p.op("rmsnorm_layer", 1, label="head.norm", input=f"dbg_x_res_{layers - 1}" if debug else "x_res",
              weight="w_final_norm", output="h", grid_dim=(1, 1, 1), block_dim=(256, 1, 1))
-        p.op("gang_linear_layer", XCDS, gang_tiles(d.V, TILE_N_LM), label="head.lm_head",
-             input="h", weight="W_lm", output="logits", tile_n=TILE_N_LM, output_stride=d.V)
+        if tile_linears:
+            g = grid_for_linear(d.V)
+            p.op("linear_layer", g, label="head.lm_head", input="h", weight="W_lm",
+                 output="logits", grid_dim=(g, 1, 1), block_dim=(256, 1, 1))
+        else:
+            p.op("gang_linear_layer", XCDS, gang_tiles(d.V, TILE_N_LM), label="head.lm_head",
+                 input="h", weight="W_lm", output="logits", tile_n=TILE_N_LM, output_stride=d.V)
         p.op("argmax_partial_layer", ARGMAX_SLICES, label="head.argmax_partial", input="logits", output=("amax_v", "amax_i"),
              grid_dim=(ARGMAX_SLICES, 1, 1), block_dim=(256, 1, 1))
         p.op("argmax_reduce_layer", 1, status="variant", note="writes tokens[step + 1]", label="head.argmax_reduce",

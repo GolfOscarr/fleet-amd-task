@@ -208,12 +208,13 @@ def plan_json(plan):
 
 
 def build(packed, capture, meta, dims=REAL_DIMS, s_max=1056, layers=27, head=True, debug=False,
-          stop_after=None, debug_scores=False, num_workers=296, num_schedulers=8, profiler_tensor=None):
+          stop_after=None, debug_scores=False, tile_linears=False, num_workers=296, num_schedulers=8,
+          profiler_tensor=None):
     """On the machine: construct the PersistentKernel, attach, issue, return (mpk, host tensors, plan)."""
     import torch
     import mirage as mi
 
-    plan = G.build_plan(dims, s_max, layers, head, debug, debug_scores)
+    plan = G.build_plan(dims, s_max, layers, head, debug, debug_scores, tile_linears)
     if stop_after:
         plan.truncate(stop_after)
     assert not plan.chain_violations(), f"the runtime would reject this graph: {plan.chain_violations()}"
@@ -328,6 +329,25 @@ class FakeMPK:
                   output_stride=output_stride)
         self.register_task(None, "gang_linear_silu_mi300", [output_stride, tile_n, 1, 1, n_tiles, n_tiles, wgm])
 
+    def linear_layer(self, input, weight, output, grid_dim, block_dim):
+        # the stock non-gang linear (persistent_kernel.py:2045): grid_dim[0] tasks split
+        # the output columns; the runtime reads the output stride from the tensor
+        assert input.num_dims == 2 and weight.num_dims == 2 and output.num_dims == 2
+        assert weight.dim(1) == input.dim(1), (weight.dim(1), input.dim(1))    # reduction
+        assert weight.dim(0) == output.dim(1), (weight.dim(0), output.dim(1))  # output size
+        assert output.dim(1) % grid_dim[0] == 0, (output.dim(1), grid_dim[0])
+        self._rec("linear_layer", input=input, weight=weight, output=output, grid_dim=list(grid_dim))
+        self.register_task(None, "linear", [])
+
+    def linear_with_residual_layer(self, input, weight, residual, output, grid_dim, block_dim):
+        assert input.num_dims == 2 and weight.num_dims == 2 and output.num_dims == 2 and residual.num_dims == 2
+        assert weight.dim(1) == input.dim(1), (weight.dim(1), input.dim(1))
+        assert weight.dim(0) == output.dim(1) == residual.dim(1), (weight.dim(0), output.dim(1), residual.dim(1))
+        assert output.dim(1) % grid_dim[0] == 0, (output.dim(1), grid_dim[0])
+        self._rec("linear_with_residual_layer", input=input, weight=weight, residual=residual,
+                  output=output, grid_dim=list(grid_dim))
+        self.register_task(None, "linear_with_residual", [])
+
     def _gang_moe(self, method, input, weight, moe_routing_indices, moe_mask, output, k_mult):
         assert weight.num_dims == 3 and moe_routing_indices.num_dims == 2 and moe_mask.num_dims == 1
         assert output.num_dims == 3
@@ -376,8 +396,8 @@ class FakeMPK:
 
 
 def dry_run(dims=REAL_DIMS, s_max=1056, layers=27, head=True, debug=False, stop_after=None,
-            debug_scores=False):
-    plan = G.build_plan(dims, s_max, layers, head, debug, debug_scores)
+            debug_scores=False, tile_linears=False):
+    plan = G.build_plan(dims, s_max, layers, head, debug, debug_scores, tile_linears)
     if stop_after:
         plan.truncate(stop_after)
     assert not plan.chain_violations(), f"the runtime would reject this graph: {plan.chain_violations()}"
@@ -396,12 +416,13 @@ def main():
     ap.add_argument("--s-max", type=int, default=1056)
     ap.add_argument("--stop-after", default=None, help="operator label, e.g. L1.o_proj")
     ap.add_argument("--debug-scores", action="store_true")
+    ap.add_argument("--tile-linears", action="store_true")
     ap.add_argument("--out", default=None)
     args = ap.parse_args()
     if not args.dry_run:
         sys.exit("the real build is driven from harness/run_fleet.py on the machine; use --dry-run here")
     plan, calls = dry_run(REAL_DIMS, args.s_max, args.layers, not args.no_head, args.debug, args.stop_after,
-                          args.debug_scores)
+                          args.debug_scores, args.tile_linears)
     s = G.summary(plan)
     print(json.dumps({k: v for k, v in s.items()}, indent=None))
     print(f"{len(calls)} calls recorded; task types: {sorted(set(c['task_type'] for c in calls))}")

@@ -3,5 +3,5 @@
 --layers 27 --head --iters 32 compare                # A5: M4, 32 ids against harness/ref/ref_output_ids.json
 --layers 27 --debug compare                          # A6: the growth curve over 27 layers (needs P3)
 --layers 2 --iters 32 --event-timing table           # A7: the 2-layer timing, gang linears
-# --layers 2 --iters 32 --event-timing --tile-linears table    # A7: the same with per-tile linears (uncomment after P5)
+--layers 2 --iters 32 --event-timing --tile-linears table         # A7: the same with per-tile linears (P5)
 --layers 27 --head --iters 32 --event-timing table   # the 27-layer baseline of this machine (15.6 ms on 2026-09-15)

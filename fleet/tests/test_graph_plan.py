@@ -164,3 +164,47 @@ def test_chain_rule_catches_the_broken_snapshot_wiring():
         if c.label in ("L1.norm1", "head.norm"):
             c.args["input"] = "x_res"                                  # the wiring that failed on 2026-09-15
     assert plan.chain_violations() == [("L0.snapshot", "L1.norm1"), ("L2.snapshot", "head.norm")]
+
+
+# ---- per-tile linears (docs/round-2/01-preparation.md, P5) ------------------------
+
+def test_tile_linears_flips_the_four_dense_linears():
+    from fleet.graph_plan import grid_for_linear, REAL_DIMS as D
+    plan, _ = B.dry_run(layers=2, head=True, tile_linears=True)
+    by = {c.label: c for c in plan.calls}
+    # qkva, o_proj (both layers), down (layer 0), lm_head become the stock non-gang linears
+    assert by["L0.qkva"].method == "linear_layer" and by["L1.qkva"].method == "linear_layer"
+    assert by["L0.o_proj"].method == "linear_with_residual_layer"
+    assert by["L1.o_proj"].method == "linear_with_residual_layer"
+    assert by["L0.down"].method == "linear_with_residual_layer"
+    assert by["head.lm_head"].method == "linear_layer"
+    # each spreads over many tasks instead of the gang's 8, with the demo's grid heuristic
+    assert by["L0.qkva"].tasks == grid_for_linear(D.Q_OUT + D.KVA_OUT) == 96
+    assert by["L0.o_proj"].tasks == grid_for_linear(D.H) == 64
+    assert by["head.lm_head"].tasks == grid_for_linear(D.V) == 400
+    assert by["L0.qkva"].args["grid_dim"] == (96, 1, 1)
+    # the silu-fused gate_up and the MoE linears stay gang
+    assert by["L0.gate_up"].method == "gang_linear_silu_layer"
+    assert by["L1.w13"].method == "gang_moe_w13_linear_layer"
+
+
+def test_tile_linears_default_off_leaves_the_gang_plan():
+    plan_gang, _ = B.dry_run(layers=2, head=True)
+    plan_tile, _ = B.dry_run(layers=2, head=True, tile_linears=True)
+    gang = {c.label: c.method for c in plan_gang.calls}
+    assert gang["L0.qkva"] == "gang_linear_layer" and gang["head.lm_head"] == "gang_linear_layer"
+    assert gang["L0.o_proj"] == "gang_linear_with_residual_layer"
+    # the two plans differ only in those linear methods and their task counts
+    assert plan_gang.n_ops == plan_tile.n_ops and plan_tile.n_tasks > plan_gang.n_tasks
+
+
+def test_tile_linears_output_sizes_divide_the_grid():
+    from fleet.graph_plan import grid_for_linear, REAL_DIMS as D
+    for size in (D.Q_OUT + D.KVA_OUT, D.H, D.V):
+        assert size % grid_for_linear(size) == 0
+
+
+@pytest.mark.parametrize("head,debug", [(True, False), (True, True), (False, False)])
+def test_tile_linears_keeps_the_chain_rule(head, debug):
+    plan, _ = B.dry_run(layers=27, head=head, debug=debug, tile_linears=True)
+    assert plan.chain_violations() == []

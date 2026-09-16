@@ -192,6 +192,8 @@ def test_pad_alloc_argument_and_run_name():
     assert run_fleet.run_name(a) == "L8_it1_L7.o_proj_pad0.5"
     a = p.parse_args(["--layers", "27", "--head", "--iters", "32", "--model-dir", "x"])
     assert a.pad_alloc == 0.0 and run_fleet.run_name(a) == "L27_head_it32"     # unchanged without the flag
+    a = p.parse_args(["--layers", "2", "--iters", "32", "--tile-linears", "--model-dir", "x"])
+    assert a.tile_linears and run_fleet.run_name(a) == "L2_it32_tile"
 
 
 def test_tensor_addresses_records_every_host_tensor():

@@ -174,14 +174,17 @@ def build_parser():
     ap.add_argument("--prompt", default=str(common.PROMPT_IDS))
     ap.add_argument("--pad-alloc", type=float, default=0.0, metavar="GB",
                     help="hold a dummy device allocation of GB gibibytes before packing (address shift)")
+    ap.add_argument("--tile-linears", action="store_true",
+                    help="issue qkva, o_proj, down and lm_head as per-tile linear_layer tasks (MAJ-7, docs/round-2 P5)")
     return ap
 
 
 def run_name(args):
     """The run directory name under harness/fleet_out, from the arguments."""
     pad = f"_pad{args.pad_alloc:g}" if args.pad_alloc else ""
+    tile = "_tile" if args.tile_linears else ""
     return (f"L{args.layers}{'_head' if args.head else ''}_it{args.iters}"
-            + (f"_{args.stop_after}" if args.stop_after else "") + ("_scores" if args.debug_scores else "") + pad)
+            + (f"_{args.stop_after}" if args.stop_after else "") + ("_scores" if args.debug_scores else "") + tile + pad)
 
 
 def tensor_addresses(host):
@@ -234,7 +237,7 @@ def main():
     t1 = time.time()
     mpk, host, plan = B.build(packed, capture, meta, dims=dims, s_max=s_max, layers=args.layers,
                               head=args.head, debug=args.debug, stop_after=args.stop_after,
-                              debug_scores=args.debug_scores)
+                              debug_scores=args.debug_scores, tile_linears=args.tile_linears)
     pj = B.plan_json(plan)
     (out / "plan.json").write_text(json.dumps(pj) + "\n")
     mpk.compile(output_dir=str(out / "build"))
@@ -275,7 +278,7 @@ def main():
     (out / "wall.json").write_text(json.dumps(wall) + "\n")
     meta_out = {
         "layers": args.layers, "head": args.head, "iters": args.iters, "debug": args.debug,
-        "stop_after": args.stop_after, "s_max": s_max, "n_prompt": n_prompt,
+        "stop_after": args.stop_after, "s_max": s_max, "n_prompt": n_prompt, "tile_linears": args.tile_linears,
         "ops": len(pj["calls"]), "tasks": sum(c["tasks"] for c in pj["calls"]),
         "env": {k: os.environ.get(k) for k in ("MPK_EVENT_TIMING", "USE_NT_WEIGHTS", "USE_GANG", "AMDGPU_TARGETS",
                                                 "MPK_DEBUG_SCORES")},
