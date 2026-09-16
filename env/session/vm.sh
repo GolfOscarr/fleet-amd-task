@@ -92,6 +92,7 @@ stage_reference() {
   local py="$ROOT/.venv/bin/python"
   [ "$DRY" = "1" ] && py=python
   run "$py" harness/run_reference.py --device cuda || return 1
+  run rm -f harness/ref/calibration.json     # the floor is recorded once per machine; the tracked one is the laptop's copy
   run "$py" harness/calibrate.py --device cuda || return 1
   run "$py" harness/route_analysis.py || return 1
   [ "$DRY" = "1" ] && return 0
