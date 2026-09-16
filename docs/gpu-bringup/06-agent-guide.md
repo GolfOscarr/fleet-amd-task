@@ -114,8 +114,10 @@ Since round 2 every step below is a command of `env/session/laptop.sh`
 `env/session/vm.sh` (download, image, setup, hw, checks, reference,
 kernels, queue, bisect), each detached with its own log and a PASS or FAIL
 row in `env/logs/session.status`; the graph runs come from queue files
-(`env/session/queue-*.txt`) through `queue.sh`, one at a time. The plan
-that uses them is `docs/round-2/02-session-plan.md`. The shape itself:
+(`env/session/queue-*.txt`) through `queue.sh`, one at a time; `laptop.sh
+wait` and `report`, `vm.sh check`, `preflight`, `kill` and `gdb`, `pf.sh`,
+`queue_flag.py` and `addr_diff.py` are the helpers (the table in the plan).
+The plan that uses them is `docs/round-2/02-session-plan.md`. The shape itself:
 
 1. Provision; note the time and the balance.
 2. rsync the tree; start the model download and the image build;

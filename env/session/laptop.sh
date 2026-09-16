@@ -10,6 +10,8 @@
 #   bash env/session/laptop.sh status               # vm.sh status on the VM
 #   bash env/session/laptop.sh ssh <command...>     # a command on the VM, stdin closed
 #   bash env/session/laptop.sh pull                 # logs and record back (absolute paths), then a commit
+#   bash env/session/laptop.sh wait <stage> [min]   # poll vm.sh check every 30 s until the stage's PASS/FAIL row (default 60 min)
+#   bash env/session/laptop.sh report [--balance]   # the status message of the reporting protocol: minute, cost, status rows, optionally the balance
 #   bash env/session/laptop.sh delete --yes         # delete the VM from the TUI and verify the rate is $0.00
 #
 # DRY=1 prints the commands. Never run two of these at once against the TUI.
@@ -17,13 +19,15 @@ set -uo pipefail
 ROOT="${ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 TUI="${TUI:-python3 $ROOT/env/hotaisle/tui.py}"
 VM_IP_FILE="${VM_IP_FILE:-$ROOT/env/session/vm.ip}"
+VM_STARTED_FILE="${VM_STARTED_FILE:-${VM_IP_FILE%.ip}.started}"     # epoch seconds of the provisioning
+RATE="${RATE:-2.99}"
 REMOTE_USER="${REMOTE_USER:-hotaisle}"
 REMOTE_DIR="${REMOTE_DIR:-/home/hotaisle/metalOps}"
 DRY="${DRY:-0}"
 SSH_OPTS=(-o StrictHostKeyChecking=accept-new -o ConnectTimeout=20)
 EXCLUDES=(--exclude .venv --exclude .venv-fleet --exclude env/hw/build --exclude env/hw/probes/work
           --exclude env/offline_gfx942/work --exclude docs/report --exclude .omc --exclude harness/fleet_out
-          --exclude env/logs --exclude '__pycache__' --exclude env/session/vm.ip --exclude '*.safetensors'
+          --exclude env/logs --exclude '__pycache__' --exclude env/session/vm.ip --exclude env/session/vm.started --exclude '*.safetensors'
           --exclude repos/fleet-chiplet-megakernel/build --exclude repos/fleet-chiplet-megakernel/permanent_output_dir)
 
 run() { if [ "$DRY" = "1" ]; then echo "+ $*"; return 0; fi; "$@"; }
@@ -45,8 +49,39 @@ cmd_provision() {
   fi
   # shellcheck disable=SC2086
   run $TUI 8 n WAIT5 ENTER WAIT8 y WAIT25 | tail -20
+  date +%s > "$VM_STARTED_FILE"
   sleep 15
   cmd_ip
+}
+
+cmd_wait() {
+  local stage="${1:-}" mins="${2:-60}" t0 line; t0=$(date +%s)
+  [ -n "$stage" ] || { echo "usage: laptop.sh wait <stage> [minutes]"; return 2; }
+  if [ "$DRY" = "1" ]; then vm "cd $REMOTE_DIR && bash env/session/vm.sh check $stage"; echo "(polled every 30 s for up to $mins min)"; return 0; fi
+  while :; do
+    line="$(vm "cd $REMOTE_DIR && bash env/session/vm.sh check $stage" 2>&1 | tail -1)"
+    case "$line" in
+      RUNNING*) ;;
+      *) echo "$line"; [[ "$line" == *" PASS "* ]] && return 0; return 1;;
+    esac
+    [ $(( $(date +%s) - t0 )) -gt $(( mins * 60 )) ] && { echo "TIMEOUT $stage after $mins min"; return 3; }
+    sleep 30
+  done
+}
+
+cmd_report() {
+  local started minute cost
+  started="$(cat "$VM_STARTED_FILE" 2>/dev/null || echo 0)"
+  if [ "$started" != "0" ]; then
+    minute=$(( ( $(date +%s) - started ) / 60 ))
+    cost="$(awk -v m="$minute" -v r="$RATE" 'BEGIN { h = m / 60; if (h < 1) h = 1; printf "%.2f", h * r }')"
+    echo "minute $minute since provisioning; about \$$cost billed so far at \$$RATE/h (1-hour minimum)"
+  else
+    echo "no provisioning time recorded (env/session/vm.started)"
+  fi
+  echo "== status (last rows)"
+  vm "cd $REMOTE_DIR && tail -6 env/logs/session.status 2>/dev/null; echo '--'; tail -8 env/logs/queue.status 2>/dev/null; echo '--'; cat env/logs/bisect.result 2>/dev/null" 2>&1
+  if [ "${1:-}" = "--balance" ]; then echo "== balance"; cmd_balance; fi
 }
 
 cmd_ip() {
@@ -109,7 +144,7 @@ cmd_delete() {
   page="$(run $TUI 12)"
   echo "$page" | grep -E "No virtual machines|Hourly Rate" || true
   if [ "$DRY" != "1" ] && ! echo "$page" | grep -q 'Hourly Rate: \$0.00'; then echo "rate is not \$0.00: check the TUI by hand"; return 1; fi
-  rm -f "$VM_IP_FILE"
+  rm -f "$VM_IP_FILE" "$VM_STARTED_FILE"
 }
 
 case "${1:-}" in
@@ -122,6 +157,8 @@ case "${1:-}" in
   status) cmd_status;;
   ssh) shift; cmd_ssh "$@";;
   pull) cmd_pull;;
+  wait) shift; cmd_wait "$@";;
+  report) shift; cmd_report "$@";;
   delete) shift; cmd_delete "$@";;
-  *) sed -n 2,16p "$0"; exit 2;;
+  *) sed -n 2,18p "$0"; exit 2;;
 esac

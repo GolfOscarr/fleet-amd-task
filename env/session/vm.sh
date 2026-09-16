@@ -5,6 +5,11 @@
 #   bash env/session/vm.sh start <stage> [args]    # run it detached: env/logs/<stage>.out, a row in env/logs/session.status
 #   bash env/session/vm.sh status                  # the status files and the last lines of the running stage logs
 #   bash env/session/vm.sh snapshot-logs           # copy env/logs/*.out and the status files into the record (before a pull)
+#   bash env/session/vm.sh check <stage>           # one line: the PASS/FAIL row of the stage's last start, or RUNNING / NOT STARTED
+#   bash env/session/vm.sh wait <stage> [minutes]  # block until that row appears (default 60 minutes), print it and the log tail
+#   bash env/session/vm.sh preflight               # ten seconds: GPU visible, disk, docker, hipcc, rocprofv3, the venvs, the model, the reference
+#   bash env/session/vm.sh kill <pattern>|--all    # stop running graph runs by anchored pid (never pkill -f)
+#   bash env/session/vm.sh gdb <label> [args]      # the A7b recipe: compile with line tables, run the truncated graph under rocgdb, save the backtrace
 #
 # Stages, in session order:
 #   download    the model into the Hugging Face cache (79 s on 2026-09-15)
@@ -119,6 +124,92 @@ stage_kernels() {
 stage_queue() { fleet_env; bash env/session/queue.sh run "$@"; }
 stage_bisect() { fleet_env; bash env/session/queue.sh bisect "$@"; }
 
+# the PASS/FAIL row written after the stage's last START row, or RUNNING / NOT STARTED
+stage_row() {
+  local stage="$1"
+  [ -f "$STATUS" ] || { echo "NOT STARTED $stage"; return 1; }
+  local started; started="$(awk -v s="$stage" '$2 == "START" && $3 == s {n = NR} END {print n + 0}' "$STATUS")"
+  [ "$started" != "0" ] || { echo "NOT STARTED $stage"; return 1; }
+  local line; line="$(awk -v s="$stage" -v n="$started" 'NR > n && ($2 == "PASS" || $2 == "FAIL") && $3 == s' "$STATUS" | tail -1)"
+  [ -n "$line" ] || { echo "RUNNING $stage (since $(sed -n "${started}p" "$STATUS" | cut -d' ' -f1))"; return 1; }
+  echo "$line"
+  [[ "$line" == *" PASS "* ]]
+}
+
+stage_wait() {
+  local stage="$1" mins="${2:-60}" t0; t0=$(date +%s)
+  while :; do
+    local line; line="$(stage_row "$stage")"; local rc=$?
+    case "$line" in
+      "NOT STARTED"*) echo "$line"; return 2;;
+      RUNNING*) ;;
+      *) echo "$line"; tail -5 "$LOGDIR/$stage.out" 2>/dev/null; return $rc;;
+    esac
+    if [ $(( $(date +%s) - t0 )) -gt $(( mins * 60 )) ]; then
+      echo "TIMEOUT $stage after $mins min"; tail -5 "$LOGDIR/$stage.out" 2>/dev/null; return 3
+    fi
+    sleep 20
+  done
+}
+
+stage_preflight() {
+  local bad=0 free
+  p() { echo "  $*"; }
+  if [ "$DRY" = "1" ]; then echo "+ amd-smi list; df -BG /; command -v docker hipcc rocprofv3 rocgdb"; return 0; fi
+  local gpus; gpus="$(amd-smi list 2>/dev/null | grep -c "GPU:" || true)"
+  [ "${gpus:-0}" -ge 1 ] && p "PASS gpu: $gpus device(s) (amd-smi list)" || { p "FAIL gpu: none visible (amd-smi list)"; bad=1; }
+  free="$(df -BG --output=avail / 2>/dev/null | tail -1 | tr -dc '0-9')"
+  [ "${free:-0}" -ge 100 ] && p "PASS disk: ${free} GB free on /" || { p "FAIL disk: ${free:-?} GB free on / (100 needed: model 30, image 30, build 10)"; bad=1; }
+  local c
+  for c in docker hipcc rocprofv3 rocgdb python3 rsync; do
+    command -v "$c" >/dev/null 2>&1 && p "PASS $c: $(command -v "$c")" || p "INFO $c: not on PATH"
+  done
+  [ -x "$ROOT/.venv-fleet/bin/python" ] && p "PASS venv: .venv-fleet present" || p "INFO venv: .venv-fleet absent (setup stage builds it)"
+  [ -x "$ROOT/.venv/bin/python" ] && p "PASS venv: .venv present" || p "INFO venv: .venv absent (setup stage builds it)"
+  local d; d="$(snap_dir)"
+  [ -n "$d" ] && p "PASS model: $d" || p "INFO model: not downloaded yet (download stage)"
+  [ -f "$ROOT/harness/ref/ref_cache.safetensors" ] && p "PASS reference: tensors present" || p "INFO reference: tensors absent (reference stage)"
+  [ -n "$(cat /opt/rocm/.info/version 2>/dev/null)" ] && p "PASS rocm: $(cat /opt/rocm/.info/version)" || p "INFO rocm: /opt/rocm/.info/version missing"
+  p "record: $RECORD"
+  return $bad
+}
+
+stage_kill() {
+  local pat="${1:-}"
+  [ -n "$pat" ] || { echo "usage: vm.sh kill <pattern>|--all"; return 2; }
+  local pids
+  # anchored on the python command, so this shell's own command line never matches
+  pids="$(pgrep -f "^python harness/run_fleet.py" || true)"
+  [ -n "$pids" ] || { echo "no graph run is running"; return 0; }
+  local pid killed=""
+  for pid in $pids; do
+    local cmd; cmd="$(tr '\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null)"
+    if [ "$pat" = "--all" ] || [[ "$cmd" == *"$pat"* ]]; then
+      run kill "$pid" && killed="$killed $pid"; echo "killed $pid: $cmd"
+    fi
+  done
+  [ -n "$killed" ] && row "$QSTATUS" "KILLED$killed ($pat)"
+  return 0
+}
+
+stage_gdb() {
+  local label="${1:-}"; shift || true
+  [ -n "$label" ] || { echo "usage: vm.sh gdb <label> [run_fleet args, default: --layers 8 --head --iters 2]"; return 2; }
+  local args=("$@"); [ ${#args[@]} -gt 0 ] || args=(--layers 8 --head --iters 2)
+  fleet_env
+  export MPK_EXTRA_HIPCC_FLAGS="-gline-tables-only"      # the gfx942.patch hook (P1)
+  local out="$LOGDIR/gdb_$label.out" snap; snap="$(snap_dir)"
+  [ "$DRY" = "1" ] || command -v rocgdb >/dev/null 2>&1 || { echo "rocgdb not on PATH (apt: rocm-gdb)"; return 1; }
+  echo "rocgdb on ${args[*]} --stop-after $label -> $out"
+  if [ "$DRY" = "1" ]; then
+    echo "+ rocgdb --batch -ex run -ex bt -ex 'info threads' --args python harness/run_fleet.py ${args[*]} --stop-after $label --model-dir $snap > $out"; return 0
+  fi
+  rocgdb --batch -ex run -ex bt -ex "info threads" --args python harness/run_fleet.py "${args[@]}" \
+      --stop-after "$label" --model-dir "$snap" > "$out" 2>&1 || true
+  grep -n -A12 "^#0 \|Thread .* received signal\|Memory access fault" "$out" | head -60
+  mkdir -p "$RECORD/logs" && cp "$out" "$RECORD/logs/"
+}
+
 snapshot_logs() {
   mkdir -p "$RECORD/logs"
   local f
@@ -150,12 +241,16 @@ main() {
         if ! grep -qE " (PASS|FAIL) $s( |$)" "$STATUS"; then echo "== running: $s"; tail -3 "$LOGDIR/$s.out" 2>/dev/null; fi
       done;;
     snapshot-logs) snapshot_logs;;
-    download|image|setup|hw|checks|reference|kernels|queue|bisect)
+    check) stage_row "${1:-}";;
+    wait) stage_wait "${1:-}" "${2:-60}";;
+    kill) stage_kill "${1:-}";;
+    gdb) stage_gdb "$@";;
+    preflight|download|image|setup|hw|checks|reference|kernels|queue|bisect)
       local t0; t0=$(date +%s)
       grep -q " START $cmd" "$STATUS" 2>/dev/null || row "$STATUS" "START $cmd $*"
       if "stage_$cmd" "$@"; then row "$STATUS" "PASS $cmd $(( $(date +%s) - t0 ))s"
       else row "$STATUS" "FAIL $cmd $(( $(date +%s) - t0 ))s: see $LOGDIR/$cmd.out"; return 1; fi;;
-    *) sed -n 2,24p "$0"; return 2;;
+    *) sed -n 2,30p "$0"; return 2;;
   esac
 }
 

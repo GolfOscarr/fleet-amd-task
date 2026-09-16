@@ -150,6 +150,19 @@ row before it runs when `--iters` is above 32, `--debug` has more than one
 iteration, a compare has no reference tensors, or a measure has no
 profiler. `05-rehearsal.md` shows every row expanded.
 
+## Helpers (so nothing is typed by hand on the clock)
+
+| Command | Use |
+|---|---|
+| `L wait <stage> [min]` | polls `vm.sh check` every 30 s until the stage's PASS or FAIL row of its last start; the way to wait for `setup`, `kernels`, a queue |
+| `L report [--balance]` | the status message of the protocol: minute since provisioning, cost so far, the last status rows, the bisection result, optionally the balance |
+| `L ssh "cd /home/hotaisle/metalOps && bash env/session/vm.sh preflight"` | ten seconds at minute 2: GPU visible, disk, docker, hipcc, rocprofv3, rocgdb, the venvs, the model, the reference |
+| `L ssh "... vm.sh kill <pattern>\|--all"` | stops a hung graph run by anchored pid (never `pkill -f`) and writes a `KILLED` row |
+| `L ssh "... vm.sh gdb <label>"` | row A7b: compiles with line tables (`MPK_EXTRA_HIPCC_FLAGS`), runs the truncated graph under rocgdb, saves the backtrace to `env/logs/gdb_<label>.out` and the record |
+| `bash env/session/pf.sh 1` | row A4's fallback: prefetch depth 1 in both attention kernels (then `L push`, `L start kernels`); `pf.sh 4` restores |
+| `python3 env/session/queue_flag.py <queue> <flags> --in-place` | row A8: the winning fix flag into every run row of `queue-a2.txt` and `queue-b.txt` (idempotent, keywords and comments kept) |
+| `python3 env/session/addr_diff.py <A>/fleet_run_meta.json <B>/fleet_run_meta.json` | row A5.2: which tensors moved between two runs, by how much, and whether a 4 GiB boundary was crossed |
+
 ## Failure playbook (round 1, one line each)
 
 | If you see | Do |

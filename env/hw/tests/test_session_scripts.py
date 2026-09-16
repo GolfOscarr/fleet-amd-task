@@ -296,3 +296,116 @@ def test_queue_guards_fail_a_row_before_it_runs(tree):
     q.write_text("--layers 2 --iters 1 measure\n")
     r = sh([str(SESSION / "queue.sh"), "run", str(q)], env)
     assert "FAIL guard: measure needs /nonexistent/rocprofv3" in (tmp / "logs/queue.status").read_text()
+
+
+# ---- the helpers for the VM (docs/round-2/02-session-plan.md, "Helpers") ----------------
+
+def test_pf_toggle_sets_both_kernels(tmp_path):
+    import shutil
+    d = tmp_path / "fleet/tasks/mi300"; d.mkdir(parents=True)
+    for f in ("mla_attend_mi300.cuh", "mla_merge_uv_mi300.cuh"):
+        shutil.copy(ROOT / "fleet/tasks/mi300" / f, d / f)
+    env = dict(os.environ, ROOT=str(tmp_path))
+    r = sh([str(SESSION / "pf.sh"), "1"], env)
+    assert r.returncode == 0 and r.stdout.count("PF = 1;") == 2, r.stdout + r.stderr
+    for f in d.iterdir():
+        assert "  constexpr int PF = 1;" in f.read_text() and "PF = 4;" not in f.read_text()
+    r = sh([str(SESSION / "pf.sh")], env)
+    assert r.returncode == 0 and r.stdout.count("PF = 1;") == 2
+    r = sh([str(SESSION / "pf.sh"), "4"], env)
+    assert r.returncode == 0 and all("  constexpr int PF = 4;" in f.read_text() for f in d.iterdir())
+    assert sh([str(SESSION / "pf.sh"), "3"], env).returncode == 2
+    # the tree itself is at 4 and untouched
+    assert "  constexpr int PF = 4;" in (ROOT / "fleet/tasks/mi300/mla_attend_mi300.cuh").read_text()
+
+
+def test_queue_flag_adds_flags_before_keywords_and_comments(tmp_path):
+    q = tmp_path / "q.txt"
+    q.write_text("# head\n--layers 8 --head --iters 2                # A8.1\n--layers 27 --head --iters 32 compare\n\n"
+                 "--layers 2 --iters 32 --event-timing --tile-linears table   # already\n")
+    r = subprocess.run([PY, str(SESSION / "queue_flag.py"), str(q), "--align-alloc", "65536", "--tile-linears"],
+                       capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr
+    lines = r.stdout.splitlines()
+    assert lines[0] == "# head" and lines[3] == ""
+    assert lines[1].startswith("--layers 8 --head --iters 2 --align-alloc 65536 --tile-linears") and lines[1].rstrip().endswith("# A8.1")
+    assert lines[2] == "--layers 27 --head --iters 32 --align-alloc 65536 --tile-linears compare"
+    assert lines[4].startswith("--layers 2 --iters 32 --event-timing --tile-linears --align-alloc 65536 table") and lines[4].count("--tile-linears") == 1
+    r = subprocess.run([PY, str(SESSION / "queue_flag.py"), str(q), "--align-alloc", "65536", "--in-place"],
+                       capture_output=True, text=True)
+    assert r.returncode == 0 and q.read_text().count("--align-alloc 65536") == 3
+    again = subprocess.run([PY, str(SESSION / "queue_flag.py"), str(q), "--align-alloc", "65536"], capture_output=True, text=True)
+    assert again.stdout == q.read_text()                                   # idempotent
+    # every row still parses for run_fleet.py
+    sys.path.insert(0, str(ROOT / "harness")); import run_fleet
+    for row in q.read_text().splitlines():
+        words = [w for w in row.split("#")[0].split() if w not in ("compare", "table", "measure", "continue")]
+        if words:
+            run_fleet.build_parser().parse_args(words + ["--model-dir", "x"])
+
+
+def test_addr_diff_reports_moved_tensors_and_the_4gib_crossing(tmp_path):
+    a = {"layers": 8, "head": True, "iters": 2, "pad_alloc_gb": 0, "pad_addr": None, "align_alloc": 0,
+         "workspaces_first": False, "output_ids": [0, 0],
+         "addresses": {"W_embed": 0x7f00fff00000, "x_res": 0x7f00fffff000, "partials": 0x7f0100000000}}
+    b = dict(a, pad_alloc_gb=1, pad_addr=0x7e0000000000, output_ids=[25, 16228],
+             addresses={"W_embed": 0x7f0100100000, "x_res": 0x7f00fffff000, "partials": 0x7f0140000000, "extra": 1})
+    (tmp_path / "a.json").write_text(json.dumps(a)); (tmp_path / "b.json").write_text(json.dumps(b))
+    r = subprocess.run([PY, str(SESSION / "addr_diff.py"), str(tmp_path / "a.json"), str(tmp_path / "b.json")],
+                       capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr
+    out = r.stdout
+    assert "A: layers 8 head True iters 2 pad 0 GiB" in out and "B: layers 8 head True iters 2 pad 1 GiB" in out
+    assert "W_embed" in out and "partials" in out and "x_res" not in out.split("tensor")[1]   # unchanged: hidden
+    assert "extra" in out and "only one run" in out
+    assert "2 of 3 tensors moved; 1 crossed a 4 GiB (bit 32) boundary" in out
+    r = subprocess.run([PY, str(SESSION / "addr_diff.py"), str(tmp_path / "a.json"), str(tmp_path / "b.json"), "--all"],
+                       capture_output=True, text=True)
+    assert "x_res" in r.stdout
+
+
+def test_vm_check_and_wait_follow_the_last_start(tree):
+    tmp, env = tree
+    status = tmp / "logs/session.status"
+    status.parent.mkdir(exist_ok=True)
+    V = str(SESSION / "vm.sh")
+    assert sh([V, "check", "setup"], env).stdout.startswith("NOT STARTED setup")
+    status.write_text("2026-09-16T10:00:00Z START setup\n")
+    r = sh([V, "check", "setup"], env)
+    assert r.returncode == 1 and r.stdout.startswith("RUNNING setup (since 2026-09-16T10:00:00Z)")
+    status.write_text(status.read_text() + "2026-09-16T10:20:00Z FAIL setup 1200s: see x\n")
+    r = sh([V, "check", "setup"], env)
+    assert r.returncode == 1 and " FAIL setup " in r.stdout
+    # restarted: the earlier FAIL row no longer counts
+    status.write_text(status.read_text() + "2026-09-16T10:21:00Z START setup\n")
+    assert sh([V, "check", "setup"], env).stdout.startswith("RUNNING setup (since 2026-09-16T10:21:00Z)")
+    status.write_text(status.read_text() + "2026-09-16T10:40:00Z PASS setup 1140s\n")
+    r = sh([V, "check", "setup"], env)
+    assert r.returncode == 0 and " PASS setup 1140s" in r.stdout
+    r = sh([V, "wait", "setup", "1"], env)                                   # returns at once: the row is there
+    assert r.returncode == 0 and " PASS setup 1140s" in r.stdout
+    assert sh([V, "wait", "nothing", "1"], env).returncode == 2
+    # a queue stage is keyed by the word 'queue' whatever the file
+    status.write_text(status.read_text() + "2026-09-16T11:00:00Z START queue env/session/queue-a.txt\n2026-09-16T11:30:00Z PASS queue 1800s\n")
+    assert sh([V, "check", "queue"], env).returncode == 0
+
+
+def test_vm_preflight_kill_gdb_and_laptop_wait_report_in_dry_mode(tree, tmp_path):
+    tmp, env = tree
+    env["DRY"] = "1"
+    V = str(SESSION / "vm.sh")
+    r = sh([V, "preflight"], env)
+    assert r.returncode == 0 and "+ amd-smi list" in r.stdout and "PASS preflight" in (tmp / "logs/session.status").read_text()
+    r = sh([V, "kill", "--all"], env)
+    assert r.returncode == 0 and "no graph run is running" in r.stdout
+    r = sh([V, "gdb", "L7.w13"], env)
+    assert r.returncode == 0 and "+ rocgdb --batch -ex run -ex bt" in r.stdout and "--stop-after L7.w13" in r.stdout
+    env["VM_IP_FILE"] = str(tmp_path / "vm.ip"); env["TUI"] = "echo TUI"
+    (tmp_path / "vm.ip").write_text("0.0.0.0\n")
+    r = sh([str(SESSION / "laptop.sh"), "wait", "setup", "5"], env)
+    assert r.returncode == 0 and "vm.sh check setup" in r.stdout and "polled every 30 s" in r.stdout
+    r = sh([str(SESSION / "laptop.sh"), "report"], env)
+    assert "no provisioning time recorded" in r.stdout
+    (tmp_path / "vm.started").write_text(str(int(__import__("time").time()) - 90 * 60))
+    r = sh([str(SESSION / "laptop.sh"), "report"], env)
+    assert "minute 90 since provisioning" in r.stdout and "about $4.49 billed" in r.stdout   # 1.5 h at 2.99
