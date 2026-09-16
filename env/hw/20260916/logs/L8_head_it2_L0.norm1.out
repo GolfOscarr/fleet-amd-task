@@ -172,7 +172,36 @@ In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/pyt
 /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/host/host_tensor.hpp:21:34: warning: unknown warning group '-Wlifetime-safety-intra-tu-suggestions', ignored [-Wunknown-warning-option]
    21 | #pragma clang diagnostic ignored "-Wlifetime-safety-intra-tu-suggestions"
       |                                  ^
-15 warnings generated when compiling for gfx942.
+In file included from ./permanent_output_dir/test.cu:6:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/persistent_kernel.cuh:37:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/task_header.cuh:28:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/silu_mul_linear_mi300.cuh:19:
+/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/linear_ck_mi300.cuh:77:13: warning: class template argument deduction for alias templates is a C++20 extension [-Wc++20-extensions]
+   77 |             ck_tile::WarpGemmMfmaBf16Bf16F32M16N16K32TransposedCDistribution{},
+      |             ^
+/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/linear_ck_mi300.cuh:77:13: warning: class template argument deduction for alias templates is a C++20 extension [-Wc++20-extensions]
+/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/ops/gemm/block/block_universal_gemm_as_bs_cr.hpp:42:57: note: in instantiation of function template specialization 'kernel::BlockGemmSmallM16Policy::GetWarpGemmMWarpNWarp<ck_tile::GemmPipelineProblemBase<__bf16, __bf16, float, ck_tile::TileGemmShape<ck_tile::sequence<16, 64, 256>, ck_tile::sequence<1, 4>, ck_tile::sequence<16, 16, 256>>, ck_tile::TileGemmUniversalTraits<true, false, true, false, ck_tile::tensor_layout::gemm::RowMajor, ck_tile::tensor_layout::gemm::ColumnMajor, ck_tile::tensor_layout::gemm::RowMajor>>>' requested here
+   42 |         static constexpr auto config = Policy::template GetWarpGemmMWarpNWarp<Problem>();
+      |                                                         ^
+/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/ops/gemm/block/block_universal_gemm_as_bs_cr.hpp:92:53: note: in instantiation of template class 'ck_tile::BlockUniversalGemmAsBsCr<ck_tile::GemmPipelineProblemBase<__bf16, __bf16, float, ck_tile::TileGemmShape<ck_tile::sequence<16, 64, 256>, ck_tile::sequence<1, 4>, ck_tile::sequence<16, 16, 256>>, ck_tile::TileGemmUniversalTraits<true, false, true, false, ck_tile::tensor_layout::gemm::RowMajor, ck_tile::tensor_layout::gemm::ColumnMajor, ck_tile::tensor_layout::gemm::RowMajor>>, kernel::BlockGemmSmallM16Policy>::GemmTraits_<ck_tile::GemmPipelineProblemBase<__bf16, __bf16, float, ck_tile::TileGemmShape<ck_tile::sequence<16, 64, 256>, ck_tile::sequence<1, 4>, ck_tile::sequence<16, 16, 256>>, ck_tile::TileGemmUniversalTraits<true, false, true, false, ck_tile::tensor_layout::gemm::RowMajor, ck_tile::tensor_layout::gemm::ColumnMajor, ck_tile::tensor_layout::gemm::RowMajor>>, kernel::BlockGemmSmallM16Policy>' requested here
+   92 |     using ADataType       = remove_cvref_t<typename Traits::ADataType>;
+      |                                                     ^
+/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/linear_ck_mi300.cuh:267:20: note: in instantiation of template class 'ck_tile::BlockUniversalGemmAsBsCr<ck_tile::GemmPipelineProblemBase<__bf16, __bf16, float, ck_tile::TileGemmShape<ck_tile::sequence<16, 64, 256>, ck_tile::sequence<1, 4>, ck_tile::sequence<16, 16, 256>>, ck_tile::TileGemmUniversalTraits<true, false, true, false, ck_tile::tensor_layout::gemm::RowMajor, ck_tile::tensor_layout::gemm::ColumnMajor, ck_tile::tensor_layout::gemm::RowMajor>>, kernel::BlockGemmSmallM16Policy>' requested here
+  267 |             return ck_tile::BlockUniversalGemmAsBsCr<Problem, BlockGemmSmallM16Policy>{};
+      |                    ^
+/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/ops/gemm/pipeline/gemm_pipeline_agmem_bgmem_creg_v2.hpp:61:64: note: in instantiation of function template specialization 'kernel::GemmPipelineSmallTilePolicy<16, 64, 256>::GetBlockGemm<ck_tile::GemmPipelineProblemBase<__bf16, __bf16, float, ck_tile::TileGemmShape<ck_tile::sequence<16, 64, 256>, ck_tile::sequence<1, 4>, ck_tile::sequence<16, 16, 256>>, ck_tile::TileGemmUniversalTraits<true, false, true, false, ck_tile::tensor_layout::gemm::RowMajor, ck_tile::tensor_layout::gemm::ColumnMajor, ck_tile::tensor_layout::gemm::RowMajor>>>' requested here
+   61 |     using BlockGemm = remove_cvref_t<decltype(Policy::template GetBlockGemm<Problem>())>;
+      |                                                                ^
+/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/linear_ck_mi300.cuh:858:22: note: in instantiation of template class 'ck_tile::GemmPipelineAGmemBGmemCRegV2<ck_tile::GemmPipelineProblemBase<__bf16, __bf16, float, ck_tile::TileGemmShape<ck_tile::sequence<16, 64, 256>, ck_tile::sequence<1, 4>, ck_tile::sequence<16, 16, 256>>, ck_tile::TileGemmUniversalTraits<true, false, true, false, ck_tile::tensor_layout::gemm::RowMajor, ck_tile::tensor_layout::gemm::ColumnMajor, ck_tile::tensor_layout::gemm::RowMajor>>, kernel::GemmPipelineSmallTilePolicy<16, 64, 256>>' requested here
+  858 |             Pipeline pipeline;
+      |                      ^
+/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/linear_ck_mi300.cuh:77:13: warning: class template argument deduction for alias templates is a C++20 extension [-Wc++20-extensions]
+   77 |             ck_tile::WarpGemmMfmaBf16Bf16F32M16N16K32TransposedCDistribution{},
+      |             ^
+/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/silu_mul_linear_mi300.cuh:84:43: note: in instantiation of function template specialization 'kernel::BlockGemmSmallM16Policy::GetWarpGemmMWarpNWarp<ck_tile::GemmPipelineProblemBase<__bf16, __bf16, float, ck_tile::TileGemmShape<ck_tile::sequence<16, 64, 128>, ck_tile::sequence<1, 4>, ck_tile::sequence<16, 16, 128>>, ck_tile::TileGemmUniversalTraits<true, false, true, false, ck_tile::tensor_layout::gemm::RowMajor, ck_tile::tensor_layout::gemm::ColumnMajor, ck_tile::tensor_layout::gemm::RowMajor>>>' requested here
+   84 |         BlockGemmSmallM16Policy::template GetWarpGemmMWarpNWarp<Problem>().template at<0>())>;
+      |                                           ^
+18 warnings generated when compiling for gfx942.
 In file included from ./permanent_output_dir/test.cu:6:
 In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/persistent_kernel.cuh:37:
 In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/task_header.cuh:28:
@@ -347,62 +376,60 @@ In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/pyt
 /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/host/host_tensor.hpp:21:34: warning: unknown warning group '-Wlifetime-safety-intra-tu-suggestions', ignored [-Wunknown-warning-option]
    21 | #pragma clang diagnostic ignored "-Wlifetime-safety-intra-tu-suggestions"
       |                                  ^
-15 warnings generated when compiling for host.
+In file included from ./permanent_output_dir/test.cu:6:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/persistent_kernel.cuh:37:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/task_header.cuh:28:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/silu_mul_linear_mi300.cuh:19:
+/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/linear_ck_mi300.cuh:77:13: warning: class template argument deduction for alias templates is a C++20 extension [-Wc++20-extensions]
+   77 |             ck_tile::WarpGemmMfmaBf16Bf16F32M16N16K32TransposedCDistribution{},
+      |             ^
+/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/linear_ck_mi300.cuh:77:13: warning: class template argument deduction for alias templates is a C++20 extension [-Wc++20-extensions]
+/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/ops/gemm/block/block_universal_gemm_as_bs_cr.hpp:42:57: note: in instantiation of function template specialization 'kernel::BlockGemmSmallM16Policy::GetWarpGemmMWarpNWarp<ck_tile::GemmPipelineProblemBase<__bf16, __bf16, float, ck_tile::TileGemmShape<ck_tile::sequence<16, 64, 256>, ck_tile::sequence<1, 4>, ck_tile::sequence<16, 16, 256>>, ck_tile::TileGemmUniversalTraits<true, false, true, false, ck_tile::tensor_layout::gemm::RowMajor, ck_tile::tensor_layout::gemm::ColumnMajor, ck_tile::tensor_layout::gemm::RowMajor>>>' requested here
+   42 |         static constexpr auto config = Policy::template GetWarpGemmMWarpNWarp<Problem>();
+      |                                                         ^
+/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/ops/gemm/block/block_universal_gemm_as_bs_cr.hpp:92:53: note: in instantiation of template class 'ck_tile::BlockUniversalGemmAsBsCr<ck_tile::GemmPipelineProblemBase<__bf16, __bf16, float, ck_tile::TileGemmShape<ck_tile::sequence<16, 64, 256>, ck_tile::sequence<1, 4>, ck_tile::sequence<16, 16, 256>>, ck_tile::TileGemmUniversalTraits<true, false, true, false, ck_tile::tensor_layout::gemm::RowMajor, ck_tile::tensor_layout::gemm::ColumnMajor, ck_tile::tensor_layout::gemm::RowMajor>>, kernel::BlockGemmSmallM16Policy>::GemmTraits_<ck_tile::GemmPipelineProblemBase<__bf16, __bf16, float, ck_tile::TileGemmShape<ck_tile::sequence<16, 64, 256>, ck_tile::sequence<1, 4>, ck_tile::sequence<16, 16, 256>>, ck_tile::TileGemmUniversalTraits<true, false, true, false, ck_tile::tensor_layout::gemm::RowMajor, ck_tile::tensor_layout::gemm::ColumnMajor, ck_tile::tensor_layout::gemm::RowMajor>>, kernel::BlockGemmSmallM16Policy>' requested here
+   92 |     using ADataType       = remove_cvref_t<typename Traits::ADataType>;
+      |                                                     ^
+/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/linear_ck_mi300.cuh:267:20: note: in instantiation of template class 'ck_tile::BlockUniversalGemmAsBsCr<ck_tile::GemmPipelineProblemBase<__bf16, __bf16, float, ck_tile::TileGemmShape<ck_tile::sequence<16, 64, 256>, ck_tile::sequence<1, 4>, ck_tile::sequence<16, 16, 256>>, ck_tile::TileGemmUniversalTraits<true, false, true, false, ck_tile::tensor_layout::gemm::RowMajor, ck_tile::tensor_layout::gemm::ColumnMajor, ck_tile::tensor_layout::gemm::RowMajor>>, kernel::BlockGemmSmallM16Policy>' requested here
+  267 |             return ck_tile::BlockUniversalGemmAsBsCr<Problem, BlockGemmSmallM16Policy>{};
+      |                    ^
+/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/ops/gemm/pipeline/gemm_pipeline_agmem_bgmem_creg_v2.hpp:61:64: note: in instantiation of function template specialization 'kernel::GemmPipelineSmallTilePolicy<16, 64, 256>::GetBlockGemm<ck_tile::GemmPipelineProblemBase<__bf16, __bf16, float, ck_tile::TileGemmShape<ck_tile::sequence<16, 64, 256>, ck_tile::sequence<1, 4>, ck_tile::sequence<16, 16, 256>>, ck_tile::TileGemmUniversalTraits<true, false, true, false, ck_tile::tensor_layout::gemm::RowMajor, ck_tile::tensor_layout::gemm::ColumnMajor, ck_tile::tensor_layout::gemm::RowMajor>>>' requested here
+   61 |     using BlockGemm = remove_cvref_t<decltype(Policy::template GetBlockGemm<Problem>())>;
+      |                                                                ^
+/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/linear_ck_mi300.cuh:858:22: note: in instantiation of template class 'ck_tile::GemmPipelineAGmemBGmemCRegV2<ck_tile::GemmPipelineProblemBase<__bf16, __bf16, float, ck_tile::TileGemmShape<ck_tile::sequence<16, 64, 256>, ck_tile::sequence<1, 4>, ck_tile::sequence<16, 16, 256>>, ck_tile::TileGemmUniversalTraits<true, false, true, false, ck_tile::tensor_layout::gemm::RowMajor, ck_tile::tensor_layout::gemm::ColumnMajor, ck_tile::tensor_layout::gemm::RowMajor>>, kernel::GemmPipelineSmallTilePolicy<16, 64, 256>>' requested here
+  858 |             Pipeline pipeline;
+      |                      ^
+/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/linear_ck_mi300.cuh:77:13: warning: class template argument deduction for alias templates is a C++20 extension [-Wc++20-extensions]
+   77 |             ck_tile::WarpGemmMfmaBf16Bf16F32M16N16K32TransposedCDistribution{},
+      |             ^
+/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/silu_mul_linear_mi300.cuh:84:43: note: in instantiation of function template specialization 'kernel::BlockGemmSmallM16Policy::GetWarpGemmMWarpNWarp<ck_tile::GemmPipelineProblemBase<__bf16, __bf16, float, ck_tile::TileGemmShape<ck_tile::sequence<16, 64, 128>, ck_tile::sequence<1, 4>, ck_tile::sequence<16, 16, 128>>, ck_tile::TileGemmUniversalTraits<true, false, true, false, ck_tile::tensor_layout::gemm::RowMajor, ck_tile::tensor_layout::gemm::ColumnMajor, ck_tile::tensor_layout::gemm::RowMajor>>>' requested here
+   84 |         BlockGemmSmallM16Policy::template GetWarpGemmMWarpNWarp<Problem>().template at<0>())>;
+      |                                           ^
+18 warnings generated when compiling for host.
 Compiling megakernel using the following command line:
 ['/opt/rocm/bin/hipcc', '-x', 'hip', './permanent_output_dir/test.cu', '-O3', '-I/usr/include/python3.12', '-I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include', '-I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/hip_compat', '-I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel', '-I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/rocblas/include', '-I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/cutlass/include', '-I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/cutlass/tools/util/include', '-I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include', '-I/opt/rocm/include', '-I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include', '-DCK_TILE_FMHA_FWD_FAST_EXP2=1', '-DMAX_WORKER_PER_SCHEDULER=38', '-DMIRAGE_USE_CUTLASS_KERNEL=0', '--offload-arch=gfx942', '-L/opt/rocm/lib', '-L/opt/rocm/lib', '-lamdhip64', '-lrocblas', '-lhipblas', '-shared', '-std=c++17', '-fPIC', '-D__HIP_PLATFORM_AMD__=1', '-DMIRAGE_AMD_MI300', '-DMIRAGE_BACKEND_USE_ROCM', '-DMPK_TARGET_CC=94', '-DMPK_MAX_NUM_BATCHED_REQUESTS=1', '-DMPK_MAX_NUM_BATCHED_TOKENS=1', '-DMPK_MAX_NUM_PAGES=1', '-DMPK_PAGE_SIZE=1026', '-DMPK_MAX_SEQ_LENGTH=1026', '-o', './permanent_output_dir/test.cpython-38-x86_64-linux-gnu.so', '-DMODE_ONLINE', '-DMPK_PROFILING_NUM_ITERS=0', '-DMPK_ENABLE_GANG_TASKS']
 Finished megakernel compilation...
+
+ids [0, 0]; 2 boundary tensors; mpk() 18.6 ms for 2 iterations -> /home/hotaisle/metalOps/harness/fleet_out/L8_head_it2_L0.norm1
 First tasks: 1
-Number of all events: 92
-Number of all tasks: 498
-Number of triggered events: 90
-Number of executed tasks: 496
-[WORKER_XCD] worker_id=3 block=3 xcd=0
+Number of all events: 4
+Number of all tasks: 4
+Number of triggered events: 2
+Number of executed tasks: 2
 [WORKER_XCD] worker_id=4 block=4 xcd=1
+[WORKER_XCD] worker_id=3 block=3 xcd=0
 [WORKER_XCD] worker_id=5 block=5 xcd=2
-[WORKER_XCD] worker_id=2 block=2 xcd=7
 [WORKER_XCD] worker_id=6 block=6 xcd=3
-[WORKER_XCD] worker_id=7 block=7 xcd=4
-[WORKER_XCD] worker_id=1 block=1 xcd=6
 [WORKER_XCD] worker_id=0 block=0 xcd=5
-[SCHED_XCD] sched_id=2 xcd=2 workers_on_xcd=37 block=4
-[SCHED_XCD] sched_id=3 xcd=3 workers_on_xcd=37 block=5
-[SCHED_XCD] sched_id=1 xcd=1 workers_on_xcd=37 block=3
-[SCHED_XCD] sched_id=0 xcd=0 workers_on_xcd=37 block=2
-[SCHED_XCD] sched_id=6 xcd=6 workers_on_xcd=37 block=0
-[SCHED_XCD] sched_id=5 xcd=5 workers_on_xcd=37 block=7
-[SCHED_XCD] sched_id=7 xcd=7 workers_on_xcd=37 block=1
-[SCHED_XCD] sched_id=4 xcd=4 workers_on_xcd=37 block=6
-Traceback (most recent call last):
-  File "/home/hotaisle/metalOps/harness/run_fleet.py", line 321, in <module>
-    main()
-  File "/home/hotaisle/metalOps/harness/run_fleet.py", line 284, in main
-    torch.cuda.synchronize()
-  File "/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/torch/cuda/__init__.py", line 1280, in synchronize
-    with torch.cuda.device(device):
-         ^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/torch/cuda/__init__.py", line 713, in __init__
-    self.idx = _get_device_index(device, optional=True)
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/torch/cuda/_utils.py", line 634, in _get_device_index
-    return _torch_get_device_index(device, optional, allow_cpu)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/torch/_utils.py", line 917, in _get_device_index
-    device_idx = _get_current_device_index()
-                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/torch/_utils.py", line 854, in _get_current_device_index
-    return _get_device_attr(lambda m: m.current_device())
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/torch/_utils.py", line 839, in _get_device_attr
-    return get_member(torch.cuda)
-           ^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/torch/_utils.py", line 854, in <lambda>
-    return _get_device_attr(lambda m: m.current_device())
-                                      ^^^^^^^^^^^^^^^^^^
-  File "/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/torch/cuda/__init__.py", line 1268, in current_device
-    return torch._C._cuda_getDevice()
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^
-torch.AcceleratorError: CUDA error: an illegal memory access was encountered
-Search for `hipErrorIllegalAddress' in https://rocm.docs.amd.com/projects/HIP/en/latest/index.html for more information.
-CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
-For debugging consider passing AMD_SERIALIZE_KERNEL=3
-Device-side assertion tracking was not enabled by user.
+[WORKER_XCD] worker_id=7 block=7 xcd=4
+[WORKER_XCD] worker_id=2 block=2 xcd=7
+[WORKER_XCD] worker_id=1 block=1 xcd=6
+[SCHED_XCD] sched_id=3 xcd=1 workers_on_xcd=37 block=3
+[SCHED_XCD] sched_id=7 xcd=5 workers_on_xcd=37 block=7
+[SCHED_XCD] sched_id=4 xcd=2 workers_on_xcd=37 block=4
+[SCHED_XCD] sched_id=1 xcd=7 workers_on_xcd=37 block=1
+[SCHED_XCD] sched_id=5 xcd=3 workers_on_xcd=37 block=5
+[SCHED_XCD] sched_id=6 xcd=4 workers_on_xcd=37 block=6
+[SCHED_XCD] sched_id=0 xcd=6 workers_on_xcd=37 block=0
+[SCHED_XCD] sched_id=2 xcd=0 workers_on_xcd=37 block=2
+[FWD_PASS] iter=1 time_ms=0.024 num_active_tokens=1

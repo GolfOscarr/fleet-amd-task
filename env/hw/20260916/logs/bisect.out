@@ -1,1 +1,17 @@
-== L8_head_it2_L7.router: /home/hotaisle/metalOps/.venv-fleet/bin/python harness/run_fleet.py --layers 8 --head --iters 2 --stop-after L7.router --model-dir /home/hotaisle/.cache/huggingface/hub/models--deepseek-ai--DeepSeek-Coder-V2-Lite-Base/snapshots/ea9b066cee82f82906fdd58898cb3788b1c5d770
+== L8_head_it2_L4.mla_prep: /home/hotaisle/metalOps/.venv-fleet/bin/python harness/run_fleet.py --layers 8 --head --iters 2 --stop-after L4.mla_prep --model-dir /home/hotaisle/.cache/huggingface/hub/models--deepseek-ai--DeepSeek-Coder-V2-Lite-Base/snapshots/ea9b066cee82f82906fdd58898cb3788b1c5d770
+2026-09-16T17:54:55Z L8_head_it2_L4.mla_prep FAIL rc=1 mpk=0 fault=1 fwd=0 wall=37s bisect
+== L8_head_it2_L2.mla_prep: /home/hotaisle/metalOps/.venv-fleet/bin/python harness/run_fleet.py --layers 8 --head --iters 2 --stop-after L2.mla_prep --model-dir /home/hotaisle/.cache/huggingface/hub/models--deepseek-ai--DeepSeek-Coder-V2-Lite-Base/snapshots/ea9b066cee82f82906fdd58898cb3788b1c5d770
+2026-09-16T17:55:30Z L8_head_it2_L2.mla_prep FAIL rc=1 mpk=0 fault=1 fwd=0 wall=35s bisect
+== L8_head_it2_L1.mla_prep: /home/hotaisle/metalOps/.venv-fleet/bin/python harness/run_fleet.py --layers 8 --head --iters 2 --stop-after L1.mla_prep --model-dir /home/hotaisle/.cache/huggingface/hub/models--deepseek-ai--DeepSeek-Coder-V2-Lite-Base/snapshots/ea9b066cee82f82906fdd58898cb3788b1c5d770
+2026-09-16T17:56:03Z L8_head_it2_L1.mla_prep FAIL rc=1 mpk=0 fault=1 fwd=0 wall=32s bisect
+== L8_head_it2_L0.o_proj: /home/hotaisle/metalOps/.venv-fleet/bin/python harness/run_fleet.py --layers 8 --head --iters 2 --stop-after L0.o_proj --model-dir /home/hotaisle/.cache/huggingface/hub/models--deepseek-ai--DeepSeek-Coder-V2-Lite-Base/snapshots/ea9b066cee82f82906fdd58898cb3788b1c5d770
+2026-09-16T17:56:33Z L8_head_it2_L0.o_proj PASS rc=0 mpk=1 fault=0 fwd=1 wall=30s bisect
+== L8_head_it2_L0.down: /home/hotaisle/metalOps/.venv-fleet/bin/python harness/run_fleet.py --layers 8 --head --iters 2 --stop-after L0.down --model-dir /home/hotaisle/.cache/huggingface/hub/models--deepseek-ai--DeepSeek-Coder-V2-Lite-Base/snapshots/ea9b066cee82f82906fdd58898cb3788b1c5d770
+2026-09-16T17:57:05Z L8_head_it2_L0.down FAIL rc=1 mpk=0 fault=1 fwd=0 wall=32s bisect
+== L8_head_it2_L0.gate_up: /home/hotaisle/metalOps/.venv-fleet/bin/python harness/run_fleet.py --layers 8 --head --iters 2 --stop-after L0.gate_up --model-dir /home/hotaisle/.cache/huggingface/hub/models--deepseek-ai--DeepSeek-Coder-V2-Lite-Base/snapshots/ea9b066cee82f82906fdd58898cb3788b1c5d770
+2026-09-16T17:57:37Z L8_head_it2_L0.gate_up FAIL rc=1 mpk=0 fault=1 fwd=0 wall=32s bisect
+== L8_head_it2_L0.norm2: /home/hotaisle/metalOps/.venv-fleet/bin/python harness/run_fleet.py --layers 8 --head --iters 2 --stop-after L0.norm2 --model-dir /home/hotaisle/.cache/huggingface/hub/models--deepseek-ai--DeepSeek-Coder-V2-Lite-Base/snapshots/ea9b066cee82f82906fdd58898cb3788b1c5d770
+2026-09-16T17:58:07Z L8_head_it2_L0.norm2 PASS rc=0 mpk=1 fault=0 fwd=2 wall=30s bisect
+BISECT first-fault=L0.gate_up runs=7
+2026-09-16T17:58:07Z BISECT first-fault=L0.gate_up runs=7
+2026-09-16T17:58:07Z PASS bisect 229s

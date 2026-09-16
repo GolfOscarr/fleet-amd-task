@@ -10,3 +10,24 @@
 2026-09-16T17:44:33Z L8_head_it2_pad4 FAIL rc=1 mpk=0 fault=1 fwd=0 wall=38s
 2026-09-16T17:45:15Z L16_head_it2_pad1 PASS rc=0 mpk=1 fault=0 fwd=2 wall=42s
 2026-09-16T17:45:15Z DONE env/session/queue-a.txt
+2026-09-16T17:46:37Z L8_head_it2_L7.router FAIL rc=1 mpk=0 fault=1 fwd=0 wall=37s bisect
+2026-09-16T17:47:14Z L8_head_it2_L7.mla_attend FAIL rc=1 mpk=0 fault=1 fwd=0 wall=37s bisect
+2026-09-16T17:47:50Z L8_head_it2_L7.qkva FAIL rc=1 mpk=0 fault=1 fwd=0 wall=36s bisect
+2026-09-16T17:48:27Z L8_head_it2_L7.norm1 FAIL rc=1 mpk=0 fault=1 fwd=0 wall=37s bisect
+2026-09-16T17:48:27Z BISECT first-fault=L7.norm1 runs=4
+2026-09-16T17:49:39Z L8_head_it2_L4.mla_prep FAIL rc=1 mpk=0 fault=0 fwd=0 wall=14s bisect
+2026-09-16T17:49:52Z L8_head_it2_L2.mla_prep FAIL rc=1 mpk=0 fault=0 fwd=0 wall=13s bisect
+2026-09-16T17:50:05Z L8_head_it2_L1.mla_prep FAIL rc=1 mpk=0 fault=0 fwd=0 wall=13s bisect
+2026-09-16T17:50:17Z L8_head_it2_L0.o_proj FAIL rc=1 mpk=0 fault=0 fwd=0 wall=12s bisect
+2026-09-16T17:50:29Z L8_head_it2_L0.mla_prep FAIL rc=1 mpk=0 fault=0 fwd=0 wall=12s bisect
+2026-09-16T17:50:54Z L8_head_it2_L0.norm1 PASS rc=0 mpk=1 fault=0 fwd=1 wall=25s bisect
+2026-09-16T17:51:21Z L8_head_it2_L0.qkva PASS rc=0 mpk=1 fault=0 fwd=0 wall=27s bisect
+2026-09-16T17:51:21Z BISECT first-fault=L0.mla_prep runs=7
+2026-09-16T17:54:55Z L8_head_it2_L4.mla_prep FAIL rc=1 mpk=0 fault=1 fwd=0 wall=37s bisect
+2026-09-16T17:55:30Z L8_head_it2_L2.mla_prep FAIL rc=1 mpk=0 fault=1 fwd=0 wall=35s bisect
+2026-09-16T17:56:03Z L8_head_it2_L1.mla_prep FAIL rc=1 mpk=0 fault=1 fwd=0 wall=32s bisect
+2026-09-16T17:56:33Z L8_head_it2_L0.o_proj PASS rc=0 mpk=1 fault=0 fwd=1 wall=30s bisect
+2026-09-16T17:57:05Z L8_head_it2_L0.down FAIL rc=1 mpk=0 fault=1 fwd=0 wall=32s bisect
+2026-09-16T17:57:37Z L8_head_it2_L0.gate_up FAIL rc=1 mpk=0 fault=1 fwd=0 wall=32s bisect
+2026-09-16T17:58:07Z L8_head_it2_L0.norm2 PASS rc=0 mpk=1 fault=0 fwd=2 wall=30s bisect
+2026-09-16T17:58:07Z BISECT first-fault=L0.gate_up runs=7

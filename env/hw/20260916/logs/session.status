@@ -24,3 +24,11 @@
 2026-09-16T17:42:02Z START queue env/session/queue-a.txt
 2026-09-16T17:45:15Z PASS queue 193s
 2026-09-16T17:46:00Z START bisect env/session/queue-fault.txt -- --layers 8 --head --iters 2
+2026-09-16T17:48:27Z PASS bisect 147s
+2026-09-16T17:49:25Z START bisect env/session/queue-fault-all.txt -- --layers 8 --head --iters 2
+2026-09-16T17:51:21Z PASS bisect 116s
+2026-09-16T17:52:56Z START setup 
+2026-09-16T17:54:01Z PASS setup 65s
+2026-09-16T17:54:18Z START bisect env/session/queue-fault-all.txt -- --layers 8 --head --iters 2
+2026-09-16T17:58:07Z PASS bisect 229s
+2026-09-16T17:59:02Z START queue env/session/queue-fix.txt
