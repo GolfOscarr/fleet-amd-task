@@ -1,6 +1,7 @@
 """env/session/{common,vm,queue,laptop}.sh against a fake run_fleet.py in a temporary tree
 (docs/round-2/01-preparation.md, P4): the queue's status rows, the record copies, the stop rule,
 the bisection over the P1 label file, and the DRY modes of vm.sh and laptop.sh."""
+import json
 import os
 import subprocess
 import sys
@@ -36,6 +37,7 @@ if faults:
 for i in range(args.iters):
     print(f"[FWD_PASS] iter={i} time_ms=1.0 num_active_tokens=1")
 (out / "fleet_run_meta.json").write_text(json.dumps({"layers": args.layers}))
+(out / "wall.json").write_text(json.dumps({"mpk_wall_s": 0.001 * args.iters, "iters": args.iters}))
 print(f"ids [25]; 3 boundary tensors; mpk() 12.0 ms for {args.iters} iterations -> {out}")
 '''
 
@@ -190,3 +192,83 @@ def test_queue_files_parse_as_run_fleet_arguments():
             args = [w for w in r if w not in ("compare", "table", "measure", "continue")]
             a = run_fleet.build_parser().parse_args(args + ["--model-dir", "x"])
             assert 1 <= a.iters <= 32, (f, r)
+
+
+def test_record_dir_is_pinned_for_the_session(tree):
+    """common.sh writes env/logs/record.dir on the first call and reuses it afterwards, so a
+    session that crosses UTC midnight keeps one record directory (RECORD in the env overrides)."""
+    tmp, env = tree
+    env.pop("RECORD")
+    env["LOGDIR"] = str(tmp / "logs")
+    r = sh(["-c", f"source {SESSION / 'common.sh'}; echo $RECORD"], env)
+    first = r.stdout.strip()
+    assert first.startswith(str(ROOT / "env/hw/20")) and (tmp / "logs/record.dir").read_text().strip() == first
+    (tmp / "logs/record.dir").write_text(str(ROOT / "env/hw/29991231") + "\n")
+    r = sh(["-c", f"source {SESSION / 'common.sh'}; echo $RECORD"], env)
+    assert r.stdout.strip() == str(ROOT / "env/hw/29991231")
+    env["RECORD"] = str(tmp / "explicit")
+    r = sh(["-c", f"source {SESSION / 'common.sh'}; echo $RECORD"], env)
+    assert r.stdout.strip() == str(tmp / "explicit")
+
+
+FAKE_PROFILER = r'''
+import os, sys, subprocess
+from pathlib import Path
+# rocprofv3 look-alike: [--kernel-trace | --pmc A B] --output-format csv -d DIR -- cmd...
+args = sys.argv[1:]
+mode = "trace" if "--kernel-trace" in args else "pmc"
+counters = []
+if mode == "pmc":
+    i = args.index("--pmc") + 1
+    while not args[i].startswith("-"):
+        counters.append(args[i]); i += 1
+d = Path(args[args.index("-d") + 1]) / "fakehost"
+cmd = args[args.index("--") + 1:]
+subprocess.run(cmd, check=True)
+d.mkdir(parents=True, exist_ok=True)
+names = ["__amd_rocclr_copyBuffer", "prepare_kernel(mirage::runtime::RuntimeConfig)",
+         "worker_kernel(mirage::runtime::RuntimeConfig)", "scheduler_kernel(mirage::runtime::RuntimeConfig)"]
+if mode == "trace":
+    rows = ["Kernel_Name,Start_Timestamp,End_Timestamp"]
+    for k, n in enumerate(names):
+        rows.append(f'"{n}",{1000 * k},{1000 * k + (4000000 if "worker" in n else 500)}')
+    (d / "1_kernel_trace.csv").write_text("\n".join(rows) + "\n")
+else:
+    rows = ["Dispatch_Id,Kernel_Name,Counter_Name,Counter_Value"]
+    for k, n in enumerate(names):
+        for c in counters:
+            v = 99999 if n.startswith("__amd") else 4096   # the blit must be filtered out; the three megakernel dispatches count
+            rows.append(f'{k},"{n}",{c},{v}')
+    (d / "1_counter_collection.csv").write_text("\n".join(rows) + "\n")
+'''
+
+
+def test_queue_measure_row_end_to_end_with_a_fake_profiler(tree):
+    """The non-DRY measure path: five profiled runs through a rocprofv3 look-alike, the real
+    measure.py on the directory of runs, the metrics filtered to the megakernel, and the
+    per-run CSVs copied into the record."""
+    tmp, env = tree
+    (tmp / "rocprofv3_fake.py").write_text(FAKE_PROFILER)
+    env["PROFILER"] = f"{PY} {tmp / 'rocprofv3_fake.py'}"
+    env["MEASURE"] = f"{PY} {ROOT / 'harness/measure.py'}"
+    q = tmp / "queue.txt"
+    q.write_text("--layers 2 --iters 4 measure\n")
+    r = sh([str(SESSION / "queue.sh"), "run", str(q)], env)
+    assert r.returncode == 0, r.stdout + r.stderr
+    rows = (tmp / "logs/queue.status").read_text().splitlines()
+    assert " L2_it4 PASS " in rows[0] and rows[0].endswith("measure=PASS"), rows
+    rec = tmp / "record/runs/L2_it4"
+    m = json.loads((rec / "metrics.json").read_text())
+    assert m["launches"]["dispatches"] == 4 and m["launches"]["megakernel_dispatches"] == 3
+    assert abs(m["launches"]["per_iteration_us_from_trace"] - (4000 + 0.5 + 0.5) / 4) < 1e-9
+    # every counter is 4096 on each of the three megakernel dispatches, 99999 on the blit (excluded);
+    # with BUBBLE = RDREQ = RDREQ_32B = 12288 the validated decomposition gives 128 - 64 + 32 = 96 B
+    # per request, over 4 iterations
+    assert m["counters"]["TCC_BUBBLE_sum"] == 3 * 4096 and m["counters"]["TCC_HIT_sum"] == 3 * 4096
+    sys.path.insert(0, str(ROOT / "harness")); import measure
+    assert measure.bytes_read(m["counters"]) == 3 * 4096 * 96
+    assert abs(m["traffic"]["read_MiB_per_iteration"] - 3 * 4096 * 96 / 2**20 / 4) < 1e-12
+    assert sorted(p.name for p in (rec / "prof").iterdir()) == [
+        "ktrace_1_kernel_trace.csv", "pmc1_1_counter_collection.csv", "pmc2_1_counter_collection.csv",
+        "pmc3_1_counter_collection.csv", "pmc4_1_counter_collection.csv"]
+    assert (rec / "report_table.md").read_text().count("3 megakernel of 4 dispatches") == 1

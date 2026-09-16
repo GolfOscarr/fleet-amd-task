@@ -63,7 +63,7 @@ def mla_prep_layer(mpk, qkva, w_kv_norm, w_uk, cos, sin, c_kv, k_pe, ql_nope, q_
 
 def mla_attend_layer(mpk, ql_nope, q_pe, c_kv, k_pe, partials, softmax_scale, split, n_splits,
                      scores=None, block_dim=(256, 1, 1)):
-    """Gang task, 8 x ceil(n_splits / 8) tiles: split = tile * 8 + bid.x; partials [n_splits, nh, d_c + 1].
+    """Gang task, 8 x ceil(n_splits / 8) tiles: split = tile * 8 + bid.x; partials [n_splits, nh, partials_row(d_c)].
 
     scores: optional second output [nh, s_max] FP32 for boundary B5; only written by the
     MLA_ATTEND_DEBUG_SCORES build (MPK_DEBUG_SCORES=1 at compile time)."""

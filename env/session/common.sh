@@ -6,7 +6,14 @@
 ROOT="${ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 FLEET="${FLEET:-$ROOT/repos/fleet-chiplet-megakernel}"
 LOGDIR="${LOGDIR:-$ROOT/env/logs}"
-RECORD="${RECORD:-$ROOT/env/hw/$(date -u +%Y%m%d)}"     # never deleted by anything here
+# The record directory is pinned on the first call of a session (env/logs/record.dir), so a
+# session that crosses UTC midnight keeps one directory; RECORD in the environment overrides.
+_record_file="${LOGDIR:-$ROOT/env/logs}/record.dir"
+if [ -z "${RECORD:-}" ]; then
+  if [ -f "$_record_file" ]; then RECORD="$(cat "$_record_file")"
+  else RECORD="$ROOT/env/hw/$(date -u +%Y%m%d)"; mkdir -p "$(dirname "$_record_file")"; echo "$RECORD" > "$_record_file"; fi
+fi
+# RECORD is never deleted by anything here.
 FLEET_OUT="${FLEET_OUT:-$ROOT/harness/fleet_out}"
 STATUS="${STATUS:-$LOGDIR/session.status}"
 QSTATUS="${QSTATUS:-$LOGDIR/queue.status}"

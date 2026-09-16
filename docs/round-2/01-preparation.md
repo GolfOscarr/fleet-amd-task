@@ -230,7 +230,7 @@ without anyone watching it.
 Done: `env/session/common.sh`, `vm.sh`, `queue.sh`, `laptop.sh`; the
 queue files `queue-a.txt` (A1, A2), `queue-a2.txt` (A4 to A7 and the
 baseline), `queue-b.txt` (B1 to B5) and the label file `queue-fault.txt`;
-eleven tests in `env/hw/tests/test_session_scripts.py` (the queue on a
+the tests in `env/hw/tests/test_session_scripts.py` (the queue on a
 fake `run_fleet.py`: status rows, record copies, the stop rule; the
 bisection for three fault positions, five runs each; the DRY modes of
 every stage, the profiler rows and the laptop commands; every queue row
