@@ -4,7 +4,8 @@
 #   bash env/session/laptop.sh balance              # team page: balance, rate, runout, VMs
 #   bash env/session/laptop.sh provision            # one VM from the TUI (refuses if one exists); then ip
 #   bash env/session/laptop.sh ip                   # the VM's address, saved to env/session/vm.ip
-#   bash env/session/laptop.sh push                 # rsync the tree to the VM (absolute destination)
+#   FULL=1 bash env/session/laptop.sh push          # the first push of a session: the tree with the Fleet fork
+#   bash env/session/laptop.sh push                 # every later push: the tree without repos/ (the VM keeps its patched fork)
 #   bash env/session/laptop.sh login                # docker login ghcr.io on the VM with the laptop's gh token
 #   bash env/session/laptop.sh start <stage> [args] # vm.sh start <stage> on the VM
 #   bash env/session/laptop.sh status               # vm.sh status on the VM
@@ -29,6 +30,10 @@ EXCLUDES=(--exclude .venv --exclude .venv-fleet --exclude env/hw/build --exclude
           --exclude env/offline_gfx942/work --exclude docs/report --exclude .omc --exclude harness/fleet_out
           --exclude env/logs --exclude '__pycache__' --exclude env/session/vm.ip --exclude env/session/vm.started --exclude '*.safetensors'
           --exclude repos/fleet-chiplet-megakernel/build --exclude repos/fleet-chiplet-megakernel/permanent_output_dir)
+# The Fleet fork is sent once, by the first push of a session (FULL=1): the laptop's copy is the pristine
+# pinned commit and a later push would overwrite the patched sources on the VM (session A, 2026-09-16,
+# 17:49: the JIT lost TASK_MLA_PREP_MI300 until setup re-applied the patches).
+[ "${FULL:-0}" = "1" ] || EXCLUDES+=(--exclude repos)
 
 run() { if [ "$DRY" = "1" ]; then echo "+ $*"; return 0; fi; "$@"; }
 ip() { [ -f "$VM_IP_FILE" ] && cat "$VM_IP_FILE"; }

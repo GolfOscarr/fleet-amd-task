@@ -276,6 +276,20 @@ def main():
     meta["tokens"][0, n_prompt:] = 0
     torch.cuda.synchronize()
 
+    # the static part of the record, with the addresses, before the run: a faulting run keeps it
+    # (docs/round-2/02-session-plan.md, the fault decision tree reads the addresses of the failing run)
+    meta_out = {
+        "layers": args.layers, "head": args.head, "iters": args.iters, "debug": args.debug,
+        "stop_after": args.stop_after, "s_max": s_max, "n_prompt": n_prompt, "tile_linears": args.tile_linears,
+        "ops": len(pj["calls"]), "tasks": sum(c["tasks"] for c in pj["calls"]),
+        "env": {k: os.environ.get(k) for k in ("MPK_EVENT_TIMING", "USE_NT_WEIGHTS", "USE_GANG", "AMDGPU_TARGETS",
+                                                "MPK_DEBUG_SCORES")},
+        "pad_alloc_gb": args.pad_alloc, "pad_addr": int(pad.data_ptr()) if pad is not None else None,
+        "align_alloc": args.align_alloc, "workspaces_first": args.workspaces_first,
+        "addresses": tensor_addresses(host), "completed": False,
+    }
+    (out / "fleet_run_meta.json").write_text(json.dumps(meta_out, indent=2) + "\n")
+
     fwd_log = out / "fwd_pass.log"
     fwd_log.write_text("")
     t2 = time.time()
@@ -302,17 +316,8 @@ def main():
         (out / "fleet_route_log.json").write_text(json.dumps(log) + "\n")
     wall = {"mpk_wall_s": t_mpk, "iters": args.iters, "pack_s": t_pack, "build_s": t_build}
     (out / "wall.json").write_text(json.dumps(wall) + "\n")
-    meta_out = {
-        "layers": args.layers, "head": args.head, "iters": args.iters, "debug": args.debug,
-        "stop_after": args.stop_after, "s_max": s_max, "n_prompt": n_prompt, "tile_linears": args.tile_linears,
-        "ops": len(pj["calls"]), "tasks": sum(c["tasks"] for c in pj["calls"]),
-        "env": {k: os.environ.get(k) for k in ("MPK_EVENT_TIMING", "USE_NT_WEIGHTS", "USE_GANG", "AMDGPU_TARGETS",
-                                                "MPK_DEBUG_SCORES")},
-        "boundary_keys": sorted(b.keys()), "output_ids": ids, "notes": notes, "timings_s": wall,
-        "pad_alloc_gb": args.pad_alloc, "pad_addr": int(pad.data_ptr()) if pad is not None else None,
-        "align_alloc": args.align_alloc, "workspaces_first": args.workspaces_first,
-        "addresses": tensor_addresses(host),
-    }
+    meta_out.update({"boundary_keys": sorted(b.keys()), "output_ids": ids, "notes": notes, "timings_s": wall,
+                     "completed": True})
     (out / "fleet_run_meta.json").write_text(json.dumps(meta_out, indent=2) + "\n")
     print(f"ids {ids}; {len(b)} boundary tensors; mpk() {t_mpk * 1e3:.1f} ms for {args.iters} iterations -> {out}")
 
