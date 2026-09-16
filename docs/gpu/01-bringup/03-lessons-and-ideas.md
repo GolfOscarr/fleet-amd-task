@@ -17,7 +17,7 @@ Each idea names the number it rests on and what it would take to try.
 | `cmake` is not on the image | BabelStream could not configure | `pip install cmake` into a throwaway venv; `collect_hw.sh` does it when `cmake` is absent |
 | `amd-smi metric --throttle` is not a flag on amd-smi 25.x | D4 lost the throttle column | temperature is read; D4 is INFO with the reason |
 | `rocm-bandwidth-test` is not installed | E6 (host-to-device bandwidth) is UNAVAILABLE | a small HIP `hipMemcpy` timing probe would replace it; the 31.4 GB weight upload of session 2 is the number it sizes |
-| Only the 2x MI300X VM was available, at $5.98 per hour | the second GPU is idle | see idea 7 below; round 2 runs on the 1x at $2.99 (`docs/round-2/02-session-plan.md`) |
+| Only the 2x MI300X VM was available, at $5.98 per hour | the second GPU is idle | see idea 7 below; round 2 runs on the 1x at $2.99 (`docs/gpu/02-validation/02-session-plan.md`) |
 | `TCC_EA0_RDREQ` counts 128-byte requests too | the read formula of `06-profiling.md` and `measure.py` undercounted reads by 2x | `TCC_BUBBLE` term added (validated exact on the 1 GiB copy); `measure.py` updated |
 | The profiler sums include every dispatch | fill, warm-up and blit kernels tripled the write count | the summarizer keeps `copy_kernel` rows only; `measure.py` will need the same discipline for the megakernel (one dispatch per generation, so it is simpler there) |
 | Workgroup k lands on XCD (k + c) mod 8 with c not 0 | the runtime's scheduler read the queue of another XCD | `fleet/patches/sched_xcd.patch`; the offset is per launch, not per boot: the probe saw c = 4, the worker kernel of the smoke graph c = 5 and its scheduler kernel c = 6 in the same process, so nothing may assume a value, the register is the only source; the day-1 check accepts any constant per kernel |
@@ -134,7 +134,7 @@ Each idea names the number it rests on and what it would take to try.
     stock linears and elementwise ops as per-tile tasks (37 per XCD, the
     runtime's per-task pointer offsets). Expect an order of magnitude;
     the 4 ms of boundaries (idea 1) then becomes the next term.
-    Re-read on 2026-09-16 while preparing round 2 (`docs/round-2`): the
+    Re-read on 2026-09-16 while preparing round 2 (`docs/gpu/02-validation`): the
     per-operator table does not say every gang operator is slow. The
     plain gang linear `qkva` (15 MB) shows 4.4 us, 3.4 TB/s, and the
     silu-fused `gate_up` (92 MB) 4.8 us, which no memory system delivers,
@@ -194,7 +194,7 @@ Each idea names the number it rests on and what it would take to try.
     and `argmax_reduce`'s `tokens + step + 1` against those sizes. Next
     session: `--layers 2 --head` at 8, 16 and 32 iterations, then the
     runtime's verbose mode to name the faulting task.
-    Update 2026-09-16 (round-2 preparation, `docs/round-2/01-preparation.md`):
+    Update 2026-09-16 (the round 2 preparation, `docs/gpu/02-validation/01-preparation.md`):
     the plans of every layer count were generated without a GPU and every
     quantity is linear in the layer count, so nothing in the plan is
     special at 7 to 9 layers and the addresses are the variable; the

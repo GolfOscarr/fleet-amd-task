@@ -3,8 +3,8 @@
 Six HIP programs that measure the machine assumptions the design rests on,
 plus the helper that reads the fence assembly. They are written and compiled
 for gfx942 before the VM exists, so no paid minute is spent on a compile
-error. `docs/gpu-bringup/01-plan.md` says why each group is collected and
-`docs/gpu-bringup/02-checklist.md` gives the row each command line fills.
+error. `docs/gpu/01-bringup/01-plan.md` says why each group is collected and
+`docs/gpu/01-bringup/02-checklist.md` gives the row each command line fills.
 
 Every probe behaves the same way at the edges. The GPU is device 0 as HIP
 sees it, so the caller selects it with `HIP_VISIBLE_DEVICES`. Every HIP call

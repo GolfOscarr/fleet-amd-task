@@ -1,4 +1,4 @@
-// occupancy - group B of docs/gpu-bringup/01-plan.md.
+// occupancy - group B of docs/gpu/01-bringup/01-plan.md.
 //
 // B10: how many 256-thread blocks of a given register footprint are resident
 // per CU. The megakernel launches 296 worker blocks plus 8 scheduler blocks

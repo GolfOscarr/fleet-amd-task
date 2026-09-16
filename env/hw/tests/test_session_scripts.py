@@ -1,5 +1,5 @@
 """env/session/{common,vm,queue,laptop}.sh against a fake run_fleet.py in a temporary tree
-(docs/round-2/01-preparation.md, P4): the queue's status rows, the record copies, the stop rule,
+(docs/gpu/02-validation/01-preparation.md, P4): the queue's status rows, the record copies, the stop rule,
 the bisection over the P1 label file, and the DRY modes of vm.sh and laptop.sh."""
 import json
 import os
@@ -317,7 +317,7 @@ def test_queue_guards_fail_a_row_before_it_runs(tree):
     assert "FAIL guard: measure needs /nonexistent/rocprofv3" in (tmp / "logs/queue.status").read_text()
 
 
-# ---- the helpers for the VM (docs/round-2/02-session-plan.md, "Helpers") ----------------
+# ---- the helpers for the VM (docs/gpu/02-validation/02-session-plan.md, "Helpers") ----------------
 
 def test_pf_toggle_sets_both_kernels(tmp_path):
     import shutil

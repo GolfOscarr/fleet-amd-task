@@ -1,4 +1,4 @@
-// chase - group H of docs/gpu-bringup/01-plan.md.
+// chase - group H of docs/gpu/01-bringup/01-plan.md.
 //
 // Three measurements that the synchronization argument of the design turns
 // on, all reported in nanoseconds:

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Which tensors moved between two runs, from the address record of fleet_run_meta.json
-(docs/round-2/02-session-plan.md, row A5.2 and the fault decision tree; the record comes
+(docs/gpu/02-validation/02-session-plan.md, row A5.2 and the fault decision tree; the record comes
 from run_fleet.py --pad-alloc / --align-alloc / --workspaces-first, P1).
 
     python3 env/session/addr_diff.py <run A>/fleet_run_meta.json <run B>/fleet_run_meta.json [--all]

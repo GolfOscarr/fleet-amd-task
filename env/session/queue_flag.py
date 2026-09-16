@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Add flags to every run row of a queue file (docs/round-2/02-session-plan.md, row A8: the
+"""Add flags to every run row of a queue file (docs/gpu/02-validation/02-session-plan.md, row A8: the
 winning fix flag goes into queue-a2.txt and queue-b.txt before they run).
 
     python3 env/session/queue_flag.py env/session/queue-a2.txt --align-alloc 65536 [--in-place]

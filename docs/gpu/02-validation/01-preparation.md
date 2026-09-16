@@ -1,7 +1,7 @@
 # 01 - Preparation: everything that runs on the laptop before the VM
 
 Written 2026-09-16 from the artifacts of the first sessions
-(`docs/gpu-bringup/`). The rule of this round: no minute of VM time goes to
+(`docs/gpu/01-bringup/`). The rule of this round: no minute of VM time goes to
 work that can be done here. Each item below has a deliverable, a check that
 runs on the laptop, a time box, and what it saves on the VM. Items are
 ordered by what they unblock; P1 to P4 decide whether the first session
@@ -18,11 +18,11 @@ behind the graph runs on GPU 0, so the session script (P4) serialises them.
 | Fact | Where | What it forces |
 |---|---|---|
 | M0 to M3 reached; 27 layers run 32 iterations at 15.6 ms per iteration without the head | `env/hw/20260915/runs/L27_it32` | the performance work has a baseline command |
-| 7, 8, 9 layers fault deterministically before the first iteration; 2, 3, 4, 16, 27 run; 27 with the head faults only at 32 iterations | `docs/gpu-bringup/03-lessons-and-ideas.md` item 13 | M4 is blocked on one fault |
+| 7, 8, 9 layers fault deterministically before the first iteration; 2, 3, 4, 16, 27 run; 27 with the head faults only at 32 iterations | `docs/gpu/01-bringup/03-lessons-and-ideas.md` item 13 | M4 is blocked on one fault |
 | The gang model runs one workgroup per XCD per operator; `mla_attend` 211 us, `moe_silu_mul` 42 us, a norm 14 to 50 us | `OPEN-PROBLEMS.md` MAJ-7 | the performance lever is task granularity, not clocks |
 | The image build failed four times; the fixes are in the tree and untested | `env/docker/README.md` | the fifth build is a session item that needs no GPU |
 | `run_fleet.py --debug` aborts at registration | `03` lessons table | the growth curve needs a plan change |
-| Two sessions cost $12.56 on the 2x shape, 4.5 hours | `docs/gpu-bringup/04-session-log.md` | $27 on the 1x shape is about 9 hours |
+| Two sessions cost $12.56 on the 2x shape, 4.5 hours | `docs/gpu/01-bringup/04-session-log.md` | $27 on the 1x shape is about 9 hours |
 
 ## The fault, from the plans (done here, 2026-09-16)
 
@@ -375,7 +375,7 @@ a probe run, so its first real use is session B's B3 row.
 
 ### P8. Documents for the 1x shape and this round (1 hour) - done 2026-09-16
 
-- `docs/gpu-bringup/06-agent-guide.md` (the second GPU in three places),
+- `docs/gpu/01-bringup/06-agent-guide.md` (the second GPU in three places),
   `05-next-session.md` (the reference run on GPU 1; the whole file is
   superseded by `02-session-plan.md` and says so at the top),
   `03-lessons-and-ideas.md` idea 7, `01-plan.md` line 331: one sentence
@@ -389,7 +389,7 @@ Done: the four second-GPU passages corrected (`06-agent-guide.md`, which
 now also names the session scripts as the way every step is run;
 `05-next-session.md`, marked superseded at the top; `03` idea 7 and its
 lessons row; `01-plan.md`); `env/docker/README.md` points the fifth build
-at the `image` stage; the `gpu-bringup` index marks 05 superseded. One
+at the `image` stage; the `gpu/01-bringup` index marks 05 superseded. One
 substantive addition found while reading the profile for P5, written into
 `OPEN-PROBLEMS.md` MAJ-7, `03` idea 12 and the session plan: the plain
 gang linear `qkva` shows 4.4 us for 15 MB (3.4 TB/s) and `gate_up` 4.8 us

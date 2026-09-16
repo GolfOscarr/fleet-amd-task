@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Hardware collection on the MI300X box, before env/setup.sh runs
-# (docs/gpu-bringup/01-plan.md, docs/gpu-bringup/02-checklist.md).
+# (docs/gpu/01-bringup/01-plan.md, docs/gpu/01-bringup/02-checklist.md).
 #
 #   bash env/collect_hw.sh                       # everything
 #   bash env/collect_hw.sh --skip-probes         # no probe compile and no probe run
@@ -561,5 +561,5 @@ echo
 echo "raw files:  $RAW"
 echo "summary:    $OUT/summary.md"
 echo "log:        $LOG"
-echo "next: read the summary against docs/gpu-bringup/02-checklist.md, file every"
+echo "next: read the summary against docs/gpu/01-bringup/02-checklist.md, file every"
 echo "      MISMATCH in OPEN-PROBLEMS.md, then commit env/hw/$(basename "$OUT")/"

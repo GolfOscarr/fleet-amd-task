@@ -1,4 +1,4 @@
-# B0 at 32 iterations (docs/round-2/02-session-plan.md, A8.4): the two graphs differ by one plain gang
+# B0 at 32 iterations (docs/gpu/02-validation/02-session-plan.md, A8.4): the two graphs differ by one plain gang
 # linear; the per-iteration difference of wall.json mpk_wall_s is the qkva time as the host clock sees it.
 # At 4 iterations (queue-a2.txt) the launch cost of about 15 ms hid it. No profiler: rocprofv3 aborts on
 # the torch wheel's second HIP runtime (session A, 2026-09-16).

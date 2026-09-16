@@ -1,4 +1,4 @@
-# The M4 fault bisection (docs/round-2/01-preparation.md, P1; 02-session-plan.md, A3).
+# The M4 fault bisection (docs/gpu/02-validation/01-preparation.md, P1; 02-session-plan.md, A3).
 # Base command: python harness/run_fleet.py --layers 8 --head --iters 2 --model-dir $SNAP
 # Known on 2026-09-15: stopped after the first operator (L0.norm1) the graph runs;
 # stopped after L7.combine it faults. So the first faulting operator is one of

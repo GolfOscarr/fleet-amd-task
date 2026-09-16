@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# The graph-run queue: one run_fleet.py run at a time, each recorded (docs/round-2/01-preparation.md, P4).
+# The graph-run queue: one run_fleet.py run at a time, each recorded (docs/gpu/02-validation/01-preparation.md, P4).
 #
 #   bash env/session/queue.sh run <queue file>
 #   bash env/session/queue.sh bisect <label file> -- <base run_fleet.py args>
@@ -51,7 +51,7 @@ print(run_fleet.run_name(run_fleet.build_parser().parse_args(sys.argv[1:] + ['--
 }
 
 # the prerequisites of a row, checked before anything runs: prints the reason and returns 1
-# (a FAIL row without a run; docs/round-2/02-session-plan.md, "guards")
+# (a FAIL row without a run; docs/gpu/02-validation/02-session-plan.md, "guards")
 row_guard() {
   local flags="$1"; shift
   local args=("$@") iters=1 i

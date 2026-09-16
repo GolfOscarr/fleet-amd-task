@@ -14,8 +14,8 @@ the 32 ids equal at 27 layers with the head; the fault of round 1 named (the
 stock fused gate-up kernel reads 16 rows at batch 1) and fixed in the plan;
 9.6 ms per token steady state with E2 and per-tile linears against the 1.15
 to 1.35 ms design band, the rest sitting in the megakernel's per-task
-overhead (MAJ-7); the image pushed. One page: `docs/round-2/07-summary.md`.
-The round was planned in `docs/round-2/` (preparation on the laptop first,
+overhead (MAJ-7); the image pushed. One page: `docs/gpu/02-validation/07-summary.md`.
+The round was planned in `docs/gpu/02-validation/` (preparation on the laptop first,
 then two sessions on a 1x MI300X for $27).
 Earlier state: discovery complete (5 doc sets); the technical design is
 written and independently reviewed (`docs/design-doc/`, 14 files, one
@@ -44,7 +44,7 @@ library builds and a graph runs on the machine.
 - [x] **M1** One validated operator through the Fleet path — 2026-09-15 (`env/hw/20260915/runs/L1_it1_L0.qkva`)
 - [x] **M2** Layer 1 (MoE) validated end-to-end ← **required milestone** — 2026-09-15: all 16 boundaries PASS, top-k indices exact, route log PASS (`env/hw/20260915/runs/L2_it1`, B5 in `L2_it1_L1.mla_attend_scores`)
 - [x] **M3** N consecutive persistent layers — the 27-layer graph without the head runs 32 iterations (1,822 tasks, 15.6 ms per iteration, `env/hw/20260915/runs/L27_it32`); with the head it produces the reference's first two tokens; layers 0 and 1 validated boundary by boundary, the growth curve of the rest pending
-- [x] **M4** End-to-end 32-token decode — reached 2026-09-16 (`env/hw/20260916/runs/L27_head_it32_al65536`, then `runs/L27_head_it32` without any flag): the 27-layer graph with the head runs 32 iterations and the 32 ids equal the reference's. The fault of 2026-09-15 was the stock `gang_linear_silu_kernel` (the dense layer's fused gate-up, `L0.gate_up` by bisection) reading 16 rows of its `[1, 2048]` input at batch 1 (a CK tile GEMM with no active-token mask), 60 KB past a 4 KB buffer; whether that memory was mapped depended on the layout, which is why 8 layers faulted, 16 ran and a uniform shift changed nothing. Fixed in the plan: every single-row activation is backed by 16 rows (`fleet/build_graph.py`, `ROW_SLACK`); `--align-alloc 65536` was the first flag that passed. The story in `docs/round-2/03-session-log.md` and `04-results.md`
+- [x] **M4** End-to-end 32-token decode — reached 2026-09-16 (`env/hw/20260916/runs/L27_head_it32_al65536`, then `runs/L27_head_it32` without any flag): the 27-layer graph with the head runs 32 iterations and the 32 ids equal the reference's. The fault of 2026-09-15 was the stock `gang_linear_silu_kernel` (the dense layer's fused gate-up, `L0.gate_up` by bisection) reading 16 rows of its `[1, 2048]` input at batch 1 (a CK tile GEMM with no active-token mask), 60 KB past a 4 KB buffer; whether that memory was mapped depended on the layout, which is why 8 layers faulted, 16 ran and a uniform shift changed nothing. Fixed in the plan: every single-row activation is backed by 16 rows (`fleet/build_graph.py`, `ROW_SLACK`); `--align-alloc 65536` was the first flag that passed. The story in `docs/gpu/02-validation/03-session-log.md` and `04-results.md`
 - [ ] **M5** FP8 (stretch)
 
 ---
@@ -178,12 +178,12 @@ Test suite: `.venv/bin/python -m pytest harness/tests fleet/tests -q` (66 tests)
 
 ---
 
-## Stage 4 — GPU bring-up ✅ complete — hardware collection 2026-09-15, round 2 on the 1x MI300X 2026-09-16 (`docs/round-2/`)
+## Stage 4 — GPU bring-up ✅ complete — hardware collection 2026-09-15, round 2 on the 1x MI300X 2026-09-16 (`docs/gpu/02-validation/`)
 
 The hour of measurements that precedes the build ran on Hot Aisle VM
 `enc1-gpuvm005` (ROCm 7.2.4, hipcc 7.2.53211, two MI300X VF devices, device 0
 used). Record and readings: `env/hw/20260915/`, summarised in
-`docs/gpu-bringup/README.md`.
+`docs/gpu/01-bringup/README.md`.
 
 **Day 1, in order — each gates the next:**
 
@@ -220,22 +220,22 @@ documented as blocked. **Decide end of day 1.**
 - [x] DeepSeek-V2 model builder — `fleet/graph_plan.py` and `fleet/build_graph.py` (the graph is built in our harness, not in `python/mirage/mpk/models/`)
 - [x] Chiplet-parallel `lm_head` + argmax reduce — runs (a 2-layer graph with the head produces a token); correct only with all 27 layers, see M4
 - [x] Wire layer 1 task graph → **M2** — PASS
-- [x] Extend to N layers → **M3** — 27 layers run 32 iterations; the growth curve over 27 layers measured (`env/hw/20260916/runs/L27_it1_al65536`): 3.7e-3 to 6.4e-3 at layers 0 to 4, a jump to 2.97e-2 at layer 5 from a step-0 routing tie (expert 49 against 2), then a monotone decay to 7.1e-3; FAIL by the 4x-floor rule at layers 5 to 7, explained (`docs/round-2/04-results.md`)
+- [x] Extend to N layers → **M3** — 27 layers run 32 iterations; the growth curve over 27 layers measured (`env/hw/20260916/runs/L27_it1_al65536`): 3.7e-3 to 6.4e-3 at layers 0 to 4, a jump to 2.97e-2 at layer 5 from a step-0 routing tie (expert 49 against 2), then a monotone decay to 7.1e-3; FAIL by the 4x-floor rule at layers 5 to 7, explained (`docs/gpu/02-validation/04-results.md`)
 - [x] End-to-end decode → **M4** — 32 ids equal at 27 layers with the head (2026-09-16)
 
 ---
 
 ## Stage 6 — Measurement & submission 🟡 measured in round 2 (2026-09-16), the counters missing
 
-- [x] Correctness evidence at every completed boundary — layers 0 and 1 at every boundary against the reference; the 32 token ids exact at 27 layers with the head; the expert indices exact at step 0 except one tie, 60 of 832 (step, layer) sets differ by one expert near a tie over 32 steps (`docs/round-2/04-results.md`)
+- [x] Correctness evidence at every completed boundary — layers 0 and 1 at every boundary against the reference; the 32 token ids exact at 27 layers with the head; the expert indices exact at step 0 except one tie, 60 of 832 (step, layer) sets differ by one expert near a tie over 32 steps (`docs/gpu/02-validation/04-results.md`)
 - [x] GPU launches per token — one `mpk()` call runs the 32 iterations (the persistent kernel); the profiler count was not taken (rocprofv3 cannot attach to the torch wheel)
-- [x] Median + P95 latency — N = 32 iterations, the runtime's event clock: 9,575 median / 9,644 P95 us per token with E2 and per-tile linears, 12,268 / 12,338 with the gang linears (`docs/round-2/04-results.md`, the three-clock table)
-- [ ] Memory traffic, achieved bandwidth, L2 hit rate — not measured: rocprofv3 aborts on the torch wheel's bundled runtime; 0.52 TB/s from the design's byte count and the measured time; the counters need a standalone binary (`docs/round-2/06-lessons.md`, item 7)
-- [x] Occupancy + VGPR/LDS per task — from the offline compile: the worker's union 234 VGPRs, no spills, one workgroup per CU; `mla_attend` 124, `mla_merge_uv` 75 standalone (`docs/round-2/01-preparation.md`, P6)
-- [x] TPOT + tokens/s — on the 1x MI300X, steady state on the runtime's event clock: 12.3 ms per token with the gang linears, 9.6 ms with E2 (`--nt-weights`) and per-tile linears (104 tokens/s); the host means over 32 iterations are 15.0 and 10.3 ms (launch and first iteration included); the design band is 1.15 to 1.35 ms (`docs/round-2/04-results.md`)
+- [x] Median + P95 latency — N = 32 iterations, the runtime's event clock: 9,575 median / 9,644 P95 us per token with E2 and per-tile linears, 12,268 / 12,338 with the gang linears (`docs/gpu/02-validation/04-results.md`, the three-clock table)
+- [ ] Memory traffic, achieved bandwidth, L2 hit rate — not measured: rocprofv3 aborts on the torch wheel's bundled runtime; 0.52 TB/s from the design's byte count and the measured time; the counters need a standalone binary (`docs/gpu/02-validation/06-lessons.md`, item 7)
+- [x] Occupancy + VGPR/LDS per task — from the offline compile: the worker's union 234 VGPRs, no spills, one workgroup per CU; `mla_attend` 124, `mla_merge_uv` 75 standalone (`docs/gpu/02-validation/01-preparation.md`, P6)
+- [x] TPOT + tokens/s — on the 1x MI300X, steady state on the runtime's event clock: 12.3 ms per token with the gang linears, 9.6 ms with E2 (`--nt-weights`) and per-tile linears (104 tokens/s); the host means over 32 iterations are 15.0 and 10.3 ms (launch and first iteration included); the design band is 1.15 to 1.35 ms (`docs/gpu/02-validation/04-results.md`)
 - [x] Fleet-native ops vs remaining fallbacks — the stock gang and per-tile linears, norms, embed, argmax; ours: `mla_prep`, `mla_attend`, `mla_merge_uv`, `moe_router`, `copy` (`fleet/tasks/README.md`); no host fallback in the timed window
-- [x] Build/run instructions, setup scripts, profiling commands — `env/setup.sh`, `env/session/` (the VM stages, the queue, the laptop driver), `docs/gpu-bringup/06-agent-guide.md`, `docs/round-2/02-session-plan.md`
-- [x] Known failures + recommended next steps — `OPEN-PROBLEMS.md`, `docs/round-2/06-lessons.md` (eight items in the order of the expected gain); FP8 with arithmetic in `docs/acceleration/`
+- [x] Build/run instructions, setup scripts, profiling commands — `env/setup.sh`, `env/session/` (the VM stages, the queue, the laptop driver), `docs/gpu/01-bringup/06-agent-guide.md`, `docs/gpu/02-validation/02-session-plan.md`
+- [x] Known failures + recommended next steps — `OPEN-PROBLEMS.md`, `docs/gpu/02-validation/06-lessons.md` (eight items in the order of the expected gain); FP8 with arithmetic in `docs/acceleration/`
 
 ---
 
@@ -263,8 +263,8 @@ Fleet sources.
 | Repo won't build for gfx942 | Strategy change | Device code compiles offline (2026-09-14); the host build is decided day 1; minimal-runtime fallback |
 | MLA task is the whole budget | Miss M3/M4 | ✅ M4 reached 2026-09-16; the MLA kernels validated and 34 us standalone |
 | Megakernel occupancy = 1 wave/SIMD | Was feared fatal | ✅ resolved — `VMCNT`=63 allows enough in-flight loads; becomes a prefetch-depth requirement (MIN-22 to confirm) |
-| Attention uses 32 of 296 workers | 13–17% of budget if the model is right | measured: 33 splits run as 40 workgroups, one tile per worker; 61 splits (`--split 17`) change nothing, the cost is per tile (`docs/round-2/06-lessons.md`) |
-| Our tasks smaller than anything Fleet measured | Dispatch overhead dominates | ✅ measured 2026-09-16: the attention kernel is 34 us standalone and 146 to 215 us in the graph; the megakernel's per-task overhead is the floor (MAJ-7, `docs/round-2/06-lessons.md` item 1) |
+| Attention uses 32 of 296 workers | 13–17% of budget if the model is right | measured: 33 splits run as 40 workgroups, one tile per worker; 61 splits (`--split 17`) change nothing, the cost is per tile (`docs/gpu/02-validation/06-lessons.md`) |
+| Our tasks smaller than anything Fleet measured | Dispatch overhead dominates | ✅ measured 2026-09-16: the attention kernel is 34 us standalone and 146 to 215 us in the graph; the megakernel's per-task overhead is the floor (MAJ-7, `docs/gpu/02-validation/06-lessons.md` item 1) |
 | Top-6 experts over 8 XCDs leaves 2 idle | 25% of machine during 99 MB phase | Candidate: fold shared experts in as experts 64-65 (8 active on 8 XCDs); compare vs N-split |
 | 5 days, BF16 first | FP8 not reached | Document with arithmetic; precision as a loader parameter |
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# The session stages on the VM (docs/round-2/01-preparation.md, P4; 02-session-plan.md).
+# The session stages on the VM (docs/gpu/02-validation/01-preparation.md, P4; 02-session-plan.md).
 #
 #   bash env/session/vm.sh <stage> [args]          # run a stage in the foreground
 #   bash env/session/vm.sh start <stage> [args]    # run it detached: env/logs/<stage>.out, a row in env/logs/session.status

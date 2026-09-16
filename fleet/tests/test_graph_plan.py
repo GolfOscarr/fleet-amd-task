@@ -134,7 +134,7 @@ def test_constraints_are_enforced():
         B.dry_run(dims=bad)
 
 
-# ---- the runtime's chain rule (docs/round-2/01-preparation.md, P3) ----------------
+# ---- the runtime's chain rule (docs/gpu/02-validation/01-preparation.md, P3) ----------------
 
 @pytest.mark.parametrize("layers,head,debug,stop_after", [
     (27, True, False, None), (27, True, True, None), (27, False, True, None), (2, False, True, None),
@@ -166,7 +166,7 @@ def test_chain_rule_catches_the_broken_snapshot_wiring():
     assert plan.chain_violations() == [("L0.snapshot", "L1.norm1"), ("L2.snapshot", "head.norm")]
 
 
-# ---- per-tile linears (docs/round-2/01-preparation.md, P5) ------------------------
+# ---- per-tile linears (docs/gpu/02-validation/01-preparation.md, P5) ------------------------
 
 def test_tile_linears_flips_the_four_dense_linears():
     from fleet.graph_plan import grid_for_linear, REAL_DIMS as D
