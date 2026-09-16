@@ -1,4 +1,4 @@
-== setup.sh 2026-09-16T17:52:56+00:00 on enc1-gpuvm015; log /home/hotaisle/metalOps/env/logs/setup.20260916-175256.log
+== setup.sh 2026-09-16T19:26:33+00:00 on enc1-gpuvm015; log /home/hotaisle/metalOps/env/logs/setup.20260916-192633.log
 
 ---- 1. environment record
 [rocminfo] worked: rocminfo | head -40
@@ -339,7 +339,7 @@ Obtaining file:///home/hotaisle/metalOps/repos/fleet-chiplet-megakernel
       = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
 
   warning: `formal_verifier` (lib) generated 1 warning (run `cargo fix --lib -p formal_verifier` to apply 1 suggestion)
-      Finished `release` profile [optimized] target(s) in 0.05s
+      Finished `release` profile [optimized] target(s) in 0.07s
   Rust/Cargo not found, installing it...
   Rust and Cargo installed successfully.
   CC: /usr/bin/gcc, CXX: /usr/bin/g++
@@ -351,7 +351,7 @@ Obtaining file:///home/hotaisle/metalOps/repos/fleet-chiplet-megakernel
   -- Z3_LIBRARIES: /home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/lib/libz3.so
   -- Using the multi-header code from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include/
   -- Configuring done (0.1s)
-  -- Generating done (0.0s)
+  -- Generating done (0.1s)
   -- Build files have been written to: /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build
   /home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/cmake/data/bin/cmake -S/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel -B/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build --check-build-system CMakeFiles/Makefile.cmake 0
   /home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/cmake/data/bin/cmake -E cmake_progress_start /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build/CMakeFiles /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build//CMakeFiles/progress.marks
@@ -363,20 +363,20 @@ Obtaining file:///home/hotaisle/metalOps/repos/fleet-chiplet-megakernel
   make[2]: Leaving directory '/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build'
   make  -f CMakeFiles/mirage_runtime.dir/build.make CMakeFiles/mirage_runtime.dir/build
   make[2]: Entering directory '/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build'
-  [  2%] Building CXX object CMakeFiles/mirage_runtime.dir/src/kernel/all_reduce.cc.o
-  [  2%] Building CXX object CMakeFiles/mirage_runtime.dir/src/kernel/element_binary.cc.o
-  [  4%] Building CXX object CMakeFiles/mirage_runtime.dir/src/kernel/device_tensor.cc.o
-  [  5%] Building CXX object CMakeFiles/mirage_runtime.dir/src/kernel/element_unary.cc.o
-  [  3%] Building CXX object CMakeFiles/mirage_runtime.dir/src/kernel/chunk.cc.o
-  [  6%] Building CXX object CMakeFiles/mirage_runtime.dir/src/kernel/customized.cc.o
-  /opt/rocm/llvm/bin/clang++ -DMIRAGE_BACKEND_USE_ROCM -DMIRAGE_FINGERPRINT_USE_ROCM -D__HIP_PLATFORM_AMD__=1 -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include -I/opt/rocm/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/rocblas/include -I/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include -fopenmp -O2 -Wall -fPIC -g -std=gnu++17 -fPIC -fopenmp=libomp -MD -MT CMakeFiles/mirage_runtime.dir/src/kernel/device_tensor.cc.o -MF CMakeFiles/mirage_runtime.dir/src/kernel/device_tensor.cc.o.d -o CMakeFiles/mirage_runtime.dir/src/kernel/device_tensor.cc.o -c /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/kernel/device_tensor.cc
-  /opt/rocm/llvm/bin/clang++ -DMIRAGE_BACKEND_USE_ROCM -DMIRAGE_FINGERPRINT_USE_ROCM -D__HIP_PLATFORM_AMD__=1 -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include -I/opt/rocm/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/rocblas/include -I/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include -fopenmp -O2 -Wall -fPIC -g -std=gnu++17 -fPIC -fopenmp=libomp -MD -MT CMakeFiles/mirage_runtime.dir/src/kernel/all_reduce.cc.o -MF CMakeFiles/mirage_runtime.dir/src/kernel/all_reduce.cc.o.d -o CMakeFiles/mirage_runtime.dir/src/kernel/all_reduce.cc.o -c /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/kernel/all_reduce.cc
+  [  1%] Building CXX object CMakeFiles/mirage_runtime.dir/src/kernel/element_binary.cc.o
   /opt/rocm/llvm/bin/clang++ -DMIRAGE_BACKEND_USE_ROCM -DMIRAGE_FINGERPRINT_USE_ROCM -D__HIP_PLATFORM_AMD__=1 -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include -I/opt/rocm/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/rocblas/include -I/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include -fopenmp -O2 -Wall -fPIC -g -std=gnu++17 -fPIC -fopenmp=libomp -MD -MT CMakeFiles/mirage_runtime.dir/src/kernel/element_binary.cc.o -MF CMakeFiles/mirage_runtime.dir/src/kernel/element_binary.cc.o.d -o CMakeFiles/mirage_runtime.dir/src/kernel/element_binary.cc.o -c /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/kernel/element_binary.cc
+  [  2%] Building CXX object CMakeFiles/mirage_runtime.dir/src/kernel/all_reduce.cc.o
+  [  3%] Building CXX object CMakeFiles/mirage_runtime.dir/src/kernel/chunk.cc.o
+  [  5%] Building CXX object CMakeFiles/mirage_runtime.dir/src/kernel/customized.cc.o
+  [  5%] Building CXX object CMakeFiles/mirage_runtime.dir/src/kernel/device_tensor.cc.o
+  [  6%] Building CXX object CMakeFiles/mirage_runtime.dir/src/kernel/element_unary.cc.o
+  [  7%] Building CXX object CMakeFiles/mirage_runtime.dir/src/kernel/graph.cc.o
+  /opt/rocm/llvm/bin/clang++ -DMIRAGE_BACKEND_USE_ROCM -DMIRAGE_FINGERPRINT_USE_ROCM -D__HIP_PLATFORM_AMD__=1 -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include -I/opt/rocm/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/rocblas/include -I/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include -fopenmp -O2 -Wall -fPIC -g -std=gnu++17 -fPIC -fopenmp=libomp -MD -MT CMakeFiles/mirage_runtime.dir/src/kernel/all_reduce.cc.o -MF CMakeFiles/mirage_runtime.dir/src/kernel/all_reduce.cc.o.d -o CMakeFiles/mirage_runtime.dir/src/kernel/all_reduce.cc.o -c /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/kernel/all_reduce.cc
   /opt/rocm/llvm/bin/clang++ -DMIRAGE_BACKEND_USE_ROCM -DMIRAGE_FINGERPRINT_USE_ROCM -D__HIP_PLATFORM_AMD__=1 -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include -I/opt/rocm/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/rocblas/include -I/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include -fopenmp -O2 -Wall -fPIC -g -std=gnu++17 -fPIC -fopenmp=libomp -MD -MT CMakeFiles/mirage_runtime.dir/src/kernel/chunk.cc.o -MF CMakeFiles/mirage_runtime.dir/src/kernel/chunk.cc.o.d -o CMakeFiles/mirage_runtime.dir/src/kernel/chunk.cc.o -c /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/kernel/chunk.cc
-  [  7%] Building CXX object CMakeFiles/mirage_runtime.dir/src/kernel/input.cc.o
-  /opt/rocm/llvm/bin/clang++ -DMIRAGE_BACKEND_USE_ROCM -DMIRAGE_FINGERPRINT_USE_ROCM -D__HIP_PLATFORM_AMD__=1 -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include -I/opt/rocm/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/rocblas/include -I/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include -fopenmp -O2 -Wall -fPIC -g -std=gnu++17 -fPIC -fopenmp=libomp -MD -MT CMakeFiles/mirage_runtime.dir/src/kernel/element_unary.cc.o -MF CMakeFiles/mirage_runtime.dir/src/kernel/element_unary.cc.o.d -o CMakeFiles/mirage_runtime.dir/src/kernel/element_unary.cc.o -c /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/kernel/element_unary.cc
-  [  8%] Building CXX object CMakeFiles/mirage_runtime.dir/src/kernel/graph.cc.o
   /opt/rocm/llvm/bin/clang++ -DMIRAGE_BACKEND_USE_ROCM -DMIRAGE_FINGERPRINT_USE_ROCM -D__HIP_PLATFORM_AMD__=1 -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include -I/opt/rocm/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/rocblas/include -I/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include -fopenmp -O2 -Wall -fPIC -g -std=gnu++17 -fPIC -fopenmp=libomp -MD -MT CMakeFiles/mirage_runtime.dir/src/kernel/customized.cc.o -MF CMakeFiles/mirage_runtime.dir/src/kernel/customized.cc.o.d -o CMakeFiles/mirage_runtime.dir/src/kernel/customized.cc.o -c /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/kernel/customized.cc
+  /opt/rocm/llvm/bin/clang++ -DMIRAGE_BACKEND_USE_ROCM -DMIRAGE_FINGERPRINT_USE_ROCM -D__HIP_PLATFORM_AMD__=1 -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include -I/opt/rocm/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/rocblas/include -I/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include -fopenmp -O2 -Wall -fPIC -g -std=gnu++17 -fPIC -fopenmp=libomp -MD -MT CMakeFiles/mirage_runtime.dir/src/kernel/device_tensor.cc.o -MF CMakeFiles/mirage_runtime.dir/src/kernel/device_tensor.cc.o.d -o CMakeFiles/mirage_runtime.dir/src/kernel/device_tensor.cc.o -c /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/kernel/device_tensor.cc
+  [  8%] Building CXX object CMakeFiles/mirage_runtime.dir/src/kernel/input.cc.o
+  /opt/rocm/llvm/bin/clang++ -DMIRAGE_BACKEND_USE_ROCM -DMIRAGE_FINGERPRINT_USE_ROCM -D__HIP_PLATFORM_AMD__=1 -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include -I/opt/rocm/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/rocblas/include -I/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include -fopenmp -O2 -Wall -fPIC -g -std=gnu++17 -fPIC -fopenmp=libomp -MD -MT CMakeFiles/mirage_runtime.dir/src/kernel/element_unary.cc.o -MF CMakeFiles/mirage_runtime.dir/src/kernel/element_unary.cc.o.d -o CMakeFiles/mirage_runtime.dir/src/kernel/element_unary.cc.o -c /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/kernel/element_unary.cc
   /opt/rocm/llvm/bin/clang++ -DMIRAGE_BACKEND_USE_ROCM -DMIRAGE_FINGERPRINT_USE_ROCM -D__HIP_PLATFORM_AMD__=1 -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include -I/opt/rocm/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/rocblas/include -I/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include -fopenmp -O2 -Wall -fPIC -g -std=gnu++17 -fPIC -fopenmp=libomp -MD -MT CMakeFiles/mirage_runtime.dir/src/kernel/graph.cc.o -MF CMakeFiles/mirage_runtime.dir/src/kernel/graph.cc.o.d -o CMakeFiles/mirage_runtime.dir/src/kernel/graph.cc.o -c /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/kernel/graph.cc
   /opt/rocm/llvm/bin/clang++ -DMIRAGE_BACKEND_USE_ROCM -DMIRAGE_FINGERPRINT_USE_ROCM -D__HIP_PLATFORM_AMD__=1 -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include -I/opt/rocm/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/rocblas/include -I/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include -fopenmp -O2 -Wall -fPIC -g -std=gnu++17 -fPIC -fopenmp=libomp -MD -MT CMakeFiles/mirage_runtime.dir/src/kernel/input.cc.o -MF CMakeFiles/mirage_runtime.dir/src/kernel/input.cc.o.d -o CMakeFiles/mirage_runtime.dir/src/kernel/input.cc.o -c /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/kernel/input.cc
   [  9%] Building CXX object CMakeFiles/mirage_runtime.dir/src/kernel/matmul.cc.o
@@ -395,6 +395,9 @@ Obtaining file:///home/hotaisle/metalOps/repos/fleet-chiplet-megakernel
   /opt/rocm/llvm/bin/clang++ -DMIRAGE_BACKEND_USE_ROCM -DMIRAGE_FINGERPRINT_USE_ROCM -D__HIP_PLATFORM_AMD__=1 -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include -I/opt/rocm/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/rocblas/include -I/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include -fopenmp -O2 -Wall -fPIC -g -std=gnu++17 -fPIC -fopenmp=libomp -MD -MT CMakeFiles/mirage_runtime.dir/src/kernel/task_register.cc.o -MF CMakeFiles/mirage_runtime.dir/src/kernel/task_register.cc.o.d -o CMakeFiles/mirage_runtime.dir/src/kernel/task_register.cc.o -c /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/kernel/task_register.cc
   [ 17%] Building CXX object CMakeFiles/mirage_runtime.dir/src/kernel/triton_code_gen.cc.o
   /opt/rocm/llvm/bin/clang++ -DMIRAGE_BACKEND_USE_ROCM -DMIRAGE_FINGERPRINT_USE_ROCM -D__HIP_PLATFORM_AMD__=1 -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include -I/opt/rocm/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/rocblas/include -I/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include -fopenmp -O2 -Wall -fPIC -g -std=gnu++17 -fPIC -fopenmp=libomp -MD -MT CMakeFiles/mirage_runtime.dir/src/kernel/triton_code_gen.cc.o -MF CMakeFiles/mirage_runtime.dir/src/kernel/triton_code_gen.cc.o.d -o CMakeFiles/mirage_runtime.dir/src/kernel/triton_code_gen.cc.o -c /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/kernel/triton_code_gen.cc
+  /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/kernel/runtime.cc:1200:14: warning: unused variable 'event_pos' [-Wunused-variable]
+   1200 |       size_t event_pos = (task_desc.trigger_event & 0xffffffff);
+        |              ^~~~~~~~~
   /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/kernel/task_register.cc:659:7: warning: unused variable 'finalize_tiles' [-Wunused-variable]
     659 |   int finalize_tiles = params[2];
         |       ^~~~~~~~~~~~~~
@@ -496,9 +499,6 @@ Obtaining file:///home/hotaisle/metalOps/repos/fleet-chiplet-megakernel
         |       ^~~~~~~~~~
   [ 18%] Building CXX object CMakeFiles/mirage_runtime.dir/src/nki_transpiler/transpile.cc.o
   /opt/rocm/llvm/bin/clang++ -DMIRAGE_BACKEND_USE_ROCM -DMIRAGE_FINGERPRINT_USE_ROCM -D__HIP_PLATFORM_AMD__=1 -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include -I/opt/rocm/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/rocblas/include -I/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include -fopenmp -O2 -Wall -fPIC -g -std=gnu++17 -fPIC -fopenmp=libomp -MD -MT CMakeFiles/mirage_runtime.dir/src/nki_transpiler/transpile.cc.o -MF CMakeFiles/mirage_runtime.dir/src/nki_transpiler/transpile.cc.o.d -o CMakeFiles/mirage_runtime.dir/src/nki_transpiler/transpile.cc.o -c /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/nki_transpiler/transpile.cc
-  /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/kernel/runtime.cc:1199:14: warning: unused variable 'event_pos' [-Wunused-variable]
-   1199 |       size_t event_pos = (task_desc.trigger_event & 0xffffffff);
-        |              ^~~~~~~~~
   [ 19%] Building CXX object CMakeFiles/mirage_runtime.dir/src/nki_transpiler/transpile_tb.cc.o
   /opt/rocm/llvm/bin/clang++ -DMIRAGE_BACKEND_USE_ROCM -DMIRAGE_FINGERPRINT_USE_ROCM -D__HIP_PLATFORM_AMD__=1 -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include -I/opt/rocm/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/rocblas/include -I/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include -fopenmp -O2 -Wall -fPIC -g -std=gnu++17 -fPIC -fopenmp=libomp -MD -MT CMakeFiles/mirage_runtime.dir/src/nki_transpiler/transpile_tb.cc.o -MF CMakeFiles/mirage_runtime.dir/src/nki_transpiler/transpile_tb.cc.o.d -o CMakeFiles/mirage_runtime.dir/src/nki_transpiler/transpile_tb.cc.o -c /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/nki_transpiler/transpile_tb.cc
   In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/nki_transpiler/transpile.cc:16:
@@ -514,6 +514,10 @@ Obtaining file:///home/hotaisle/metalOps/repos/fleet-chiplet-megakernel
         |                          ^~~~~~
   [ 21%] Building CXX object CMakeFiles/mirage_runtime.dir/src/search/abstract_expr/abstract_expr_eval.cc.o
   /opt/rocm/llvm/bin/clang++ -DMIRAGE_BACKEND_USE_ROCM -DMIRAGE_FINGERPRINT_USE_ROCM -D__HIP_PLATFORM_AMD__=1 -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include -I/opt/rocm/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/rocblas/include -I/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include -fopenmp -O2 -Wall -fPIC -g -std=gnu++17 -fPIC -fopenmp=libomp -MD -MT CMakeFiles/mirage_runtime.dir/src/search/abstract_expr/abstract_expr_eval.cc.o -MF CMakeFiles/mirage_runtime.dir/src/search/abstract_expr/abstract_expr_eval.cc.o.d -o CMakeFiles/mirage_runtime.dir/src/search/abstract_expr/abstract_expr_eval.cc.o -c /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/search/abstract_expr/abstract_expr_eval.cc
+  [ 22%] Building CXX object CMakeFiles/mirage_runtime.dir/src/search/abstract_expr/abstract_expr_for_ops.cc.o
+  /opt/rocm/llvm/bin/clang++ -DMIRAGE_BACKEND_USE_ROCM -DMIRAGE_FINGERPRINT_USE_ROCM -D__HIP_PLATFORM_AMD__=1 -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include -I/opt/rocm/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/rocblas/include -I/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include -fopenmp -O2 -Wall -fPIC -g -std=gnu++17 -fPIC -fopenmp=libomp -MD -MT CMakeFiles/mirage_runtime.dir/src/search/abstract_expr/abstract_expr_for_ops.cc.o -MF CMakeFiles/mirage_runtime.dir/src/search/abstract_expr/abstract_expr_for_ops.cc.o.d -o CMakeFiles/mirage_runtime.dir/src/search/abstract_expr/abstract_expr_for_ops.cc.o -c /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/search/abstract_expr/abstract_expr_for_ops.cc
+  [ 23%] Building CXX object CMakeFiles/mirage_runtime.dir/src/search/config.cc.o
+  /opt/rocm/llvm/bin/clang++ -DMIRAGE_BACKEND_USE_ROCM -DMIRAGE_FINGERPRINT_USE_ROCM -D__HIP_PLATFORM_AMD__=1 -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include -I/opt/rocm/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/rocblas/include -I/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include -fopenmp -O2 -Wall -fPIC -g -std=gnu++17 -fPIC -fopenmp=libomp -MD -MT CMakeFiles/mirage_runtime.dir/src/search/config.cc.o -MF CMakeFiles/mirage_runtime.dir/src/search/config.cc.o.d -o CMakeFiles/mirage_runtime.dir/src/search/config.cc.o -c /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/search/config.cc
   In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/nki_transpiler/transpile_tb.cc:16:
   In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include/mirage/nki_transpiler/transpile.h:26:
   /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include/mirage/transpiler/structs.h:144:31: warning: field 'm_input' will be initialized after field 'tile_size' [-Wreorder-ctor]
@@ -532,15 +536,15 @@ Obtaining file:///home/hotaisle/metalOps/repos/fleet-chiplet-megakernel
   /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/nki_transpiler/transpile_tb.cc:456:14: warning: variable 'need_transpose' set but not used [-Wunused-but-set-variable]
     456 |         bool need_transpose = false;
         |              ^
-  [ 22%] Building CXX object CMakeFiles/mirage_runtime.dir/src/search/abstract_expr/abstract_expr_for_ops.cc.o
-  /opt/rocm/llvm/bin/clang++ -DMIRAGE_BACKEND_USE_ROCM -DMIRAGE_FINGERPRINT_USE_ROCM -D__HIP_PLATFORM_AMD__=1 -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include -I/opt/rocm/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/rocblas/include -I/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include -fopenmp -O2 -Wall -fPIC -g -std=gnu++17 -fPIC -fopenmp=libomp -MD -MT CMakeFiles/mirage_runtime.dir/src/search/abstract_expr/abstract_expr_for_ops.cc.o -MF CMakeFiles/mirage_runtime.dir/src/search/abstract_expr/abstract_expr_for_ops.cc.o.d -o CMakeFiles/mirage_runtime.dir/src/search/abstract_expr/abstract_expr_for_ops.cc.o -c /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/search/abstract_expr/abstract_expr_for_ops.cc
-  [ 23%] Building CXX object CMakeFiles/mirage_runtime.dir/src/search/config.cc.o
-  /opt/rocm/llvm/bin/clang++ -DMIRAGE_BACKEND_USE_ROCM -DMIRAGE_FINGERPRINT_USE_ROCM -D__HIP_PLATFORM_AMD__=1 -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include -I/opt/rocm/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/rocblas/include -I/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include -fopenmp -O2 -Wall -fPIC -g -std=gnu++17 -fPIC -fopenmp=libomp -MD -MT CMakeFiles/mirage_runtime.dir/src/search/config.cc.o -MF CMakeFiles/mirage_runtime.dir/src/search/config.cc.o.d -o CMakeFiles/mirage_runtime.dir/src/search/config.cc.o -c /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/search/config.cc
   [ 24%] Building CXX object CMakeFiles/mirage_runtime.dir/src/search/dim_strategy.cc.o
   /opt/rocm/llvm/bin/clang++ -DMIRAGE_BACKEND_USE_ROCM -DMIRAGE_FINGERPRINT_USE_ROCM -D__HIP_PLATFORM_AMD__=1 -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include -I/opt/rocm/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/rocblas/include -I/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include -fopenmp -O2 -Wall -fPIC -g -std=gnu++17 -fPIC -fopenmp=libomp -MD -MT CMakeFiles/mirage_runtime.dir/src/search/dim_strategy.cc.o -MF CMakeFiles/mirage_runtime.dir/src/search/dim_strategy.cc.o.d -o CMakeFiles/mirage_runtime.dir/src/search/dim_strategy.cc.o -c /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/search/dim_strategy.cc
-  2 warnings generated.
   [ 25%] Building CXX object CMakeFiles/mirage_runtime.dir/src/search/op_utils.cc.o
   /opt/rocm/llvm/bin/clang++ -DMIRAGE_BACKEND_USE_ROCM -DMIRAGE_FINGERPRINT_USE_ROCM -D__HIP_PLATFORM_AMD__=1 -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include -I/opt/rocm/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/rocblas/include -I/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include -fopenmp -O2 -Wall -fPIC -g -std=gnu++17 -fPIC -fopenmp=libomp -MD -MT CMakeFiles/mirage_runtime.dir/src/search/op_utils.cc.o -MF CMakeFiles/mirage_runtime.dir/src/search/op_utils.cc.o.d -o CMakeFiles/mirage_runtime.dir/src/search/op_utils.cc.o -c /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/search/op_utils.cc
+  2 warnings generated.
+  [ 26%] Building CXX object CMakeFiles/mirage_runtime.dir/src/search/range_propagation/irange.cc.o
+  /opt/rocm/llvm/bin/clang++ -DMIRAGE_BACKEND_USE_ROCM -DMIRAGE_FINGERPRINT_USE_ROCM -D__HIP_PLATFORM_AMD__=1 -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include -I/opt/rocm/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/rocblas/include -I/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include -fopenmp -O2 -Wall -fPIC -g -std=gnu++17 -fPIC -fopenmp=libomp -MD -MT CMakeFiles/mirage_runtime.dir/src/search/range_propagation/irange.cc.o -MF CMakeFiles/mirage_runtime.dir/src/search/range_propagation/irange.cc.o.d -o CMakeFiles/mirage_runtime.dir/src/search/range_propagation/irange.cc.o -c /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/search/range_propagation/irange.cc
+  [ 27%] Building CXX object CMakeFiles/mirage_runtime.dir/src/search/search.cc.o
+  /opt/rocm/llvm/bin/clang++ -DMIRAGE_BACKEND_USE_ROCM -DMIRAGE_FINGERPRINT_USE_ROCM -D__HIP_PLATFORM_AMD__=1 -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include -I/opt/rocm/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/rocblas/include -I/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include -fopenmp -O2 -Wall -fPIC -g -std=gnu++17 -fPIC -fopenmp=libomp -MD -MT CMakeFiles/mirage_runtime.dir/src/search/search.cc.o -MF CMakeFiles/mirage_runtime.dir/src/search/search.cc.o.d -o CMakeFiles/mirage_runtime.dir/src/search/search.cc.o -c /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/search/search.cc
   /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/search/dim_strategy.cc:13:10: warning: 'random_shuffle<__gnu_cxx::__normal_iterator<mirage::type::KNOperatorType *, std::vector<mirage::type::KNOperatorType>>>' is deprecated: use 'std::shuffle' instead [-Wdeprecated-declarations]
      13 |     std::random_shuffle(cands.begin(), cands.end());
         |          ^
@@ -715,10 +719,6 @@ Obtaining file:///home/hotaisle/metalOps/repos/fleet-chiplet-megakernel
   /usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/x86_64-linux-gnu/c++/13/bits/c++config.h:98:19: note: expanded from macro '_GLIBCXX_DEPRECATED_SUGGEST'
      98 |   __attribute__ ((__deprecated__ ("use '" ALT "' instead")))
         |                   ^
-  [ 26%] Building CXX object CMakeFiles/mirage_runtime.dir/src/search/range_propagation/irange.cc.o
-  /opt/rocm/llvm/bin/clang++ -DMIRAGE_BACKEND_USE_ROCM -DMIRAGE_FINGERPRINT_USE_ROCM -D__HIP_PLATFORM_AMD__=1 -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include -I/opt/rocm/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/rocblas/include -I/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include -fopenmp -O2 -Wall -fPIC -g -std=gnu++17 -fPIC -fopenmp=libomp -MD -MT CMakeFiles/mirage_runtime.dir/src/search/range_propagation/irange.cc.o -MF CMakeFiles/mirage_runtime.dir/src/search/range_propagation/irange.cc.o.d -o CMakeFiles/mirage_runtime.dir/src/search/range_propagation/irange.cc.o -c /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/search/range_propagation/irange.cc
-  [ 27%] Building CXX object CMakeFiles/mirage_runtime.dir/src/search/search.cc.o
-  /opt/rocm/llvm/bin/clang++ -DMIRAGE_BACKEND_USE_ROCM -DMIRAGE_FINGERPRINT_USE_ROCM -D__HIP_PLATFORM_AMD__=1 -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include -I/opt/rocm/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/rocblas/include -I/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include -fopenmp -O2 -Wall -fPIC -g -std=gnu++17 -fPIC -fopenmp=libomp -MD -MT CMakeFiles/mirage_runtime.dir/src/search/search.cc.o -MF CMakeFiles/mirage_runtime.dir/src/search/search.cc.o.d -o CMakeFiles/mirage_runtime.dir/src/search/search.cc.o -c /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/search/search.cc
   5 warnings generated.
   [ 29%] Building CXX object CMakeFiles/mirage_runtime.dir/src/search/search_c.cc.o
   /opt/rocm/llvm/bin/clang++ -DMIRAGE_BACKEND_USE_ROCM -DMIRAGE_FINGERPRINT_USE_ROCM -D__HIP_PLATFORM_AMD__=1 -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include -I/opt/rocm/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/rocblas/include -I/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include -fopenmp -O2 -Wall -fPIC -g -std=gnu++17 -fPIC -fopenmp=libomp -MD -MT CMakeFiles/mirage_runtime.dir/src/search/search_c.cc.o -MF CMakeFiles/mirage_runtime.dir/src/search/search_c.cc.o.d -o CMakeFiles/mirage_runtime.dir/src/search/search_c.cc.o -c /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/search/search_c.cc
@@ -739,10 +739,10 @@ Obtaining file:///home/hotaisle/metalOps/repos/fleet-chiplet-megakernel
         |     ^
   [ 31%] Building CXX object CMakeFiles/mirage_runtime.dir/src/search/symbolic_graph/op_args.cc.o
   /opt/rocm/llvm/bin/clang++ -DMIRAGE_BACKEND_USE_ROCM -DMIRAGE_FINGERPRINT_USE_ROCM -D__HIP_PLATFORM_AMD__=1 -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include -I/opt/rocm/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/rocblas/include -I/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include -fopenmp -O2 -Wall -fPIC -g -std=gnu++17 -fPIC -fopenmp=libomp -MD -MT CMakeFiles/mirage_runtime.dir/src/search/symbolic_graph/op_args.cc.o -MF CMakeFiles/mirage_runtime.dir/src/search/symbolic_graph/op_args.cc.o.d -o CMakeFiles/mirage_runtime.dir/src/search/symbolic_graph/op_args.cc.o -c /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/search/symbolic_graph/op_args.cc
-  16 warnings generated.
+  33 warnings generated.
   [ 32%] Building CXX object CMakeFiles/mirage_runtime.dir/src/search/symbolic_graph/symbolic_graph.cc.o
   /opt/rocm/llvm/bin/clang++ -DMIRAGE_BACKEND_USE_ROCM -DMIRAGE_FINGERPRINT_USE_ROCM -D__HIP_PLATFORM_AMD__=1 -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include -I/opt/rocm/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/rocblas/include -I/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include -fopenmp -O2 -Wall -fPIC -g -std=gnu++17 -fPIC -fopenmp=libomp -MD -MT CMakeFiles/mirage_runtime.dir/src/search/symbolic_graph/symbolic_graph.cc.o -MF CMakeFiles/mirage_runtime.dir/src/search/symbolic_graph/symbolic_graph.cc.o.d -o CMakeFiles/mirage_runtime.dir/src/search/symbolic_graph/symbolic_graph.cc.o -c /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/search/symbolic_graph/symbolic_graph.cc
-  33 warnings generated.
+  16 warnings generated.
   [ 33%] Building CXX object CMakeFiles/mirage_runtime.dir/src/search/symbolic_graph/symbolic_op.cc.o
   /opt/rocm/llvm/bin/clang++ -DMIRAGE_BACKEND_USE_ROCM -DMIRAGE_FINGERPRINT_USE_ROCM -D__HIP_PLATFORM_AMD__=1 -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include -I/opt/rocm/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/rocblas/include -I/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include -fopenmp -O2 -Wall -fPIC -g -std=gnu++17 -fPIC -fopenmp=libomp -MD -MT CMakeFiles/mirage_runtime.dir/src/search/symbolic_graph/symbolic_op.cc.o -MF CMakeFiles/mirage_runtime.dir/src/search/symbolic_graph/symbolic_op.cc.o.d -o CMakeFiles/mirage_runtime.dir/src/search/symbolic_graph/symbolic_op.cc.o -c /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/search/symbolic_graph/symbolic_op.cc
   1 warning generated.
@@ -762,10 +762,10 @@ Obtaining file:///home/hotaisle/metalOps/repos/fleet-chiplet-megakernel
   [ 37%] Building CXX object CMakeFiles/mirage_runtime.dir/src/transpiler/plan_stensor_memory.cc.o
   /opt/rocm/llvm/bin/clang++ -DMIRAGE_BACKEND_USE_ROCM -DMIRAGE_FINGERPRINT_USE_ROCM -D__HIP_PLATFORM_AMD__=1 -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include -I/opt/rocm/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/rocblas/include -I/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include -fopenmp -O2 -Wall -fPIC -g -std=gnu++17 -fPIC -fopenmp=libomp -MD -MT CMakeFiles/mirage_runtime.dir/src/transpiler/plan_stensor_memory.cc.o -MF CMakeFiles/mirage_runtime.dir/src/transpiler/plan_stensor_memory.cc.o.d -o CMakeFiles/mirage_runtime.dir/src/transpiler/plan_stensor_memory.cc.o -c /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/transpiler/plan_stensor_memory.cc
   1 warning generated.
-  [ 38%] Building CXX object CMakeFiles/mirage_runtime.dir/src/transpiler/plan_tb_swizzle_blackwell.cc.o
-  /opt/rocm/llvm/bin/clang++ -DMIRAGE_BACKEND_USE_ROCM -DMIRAGE_FINGERPRINT_USE_ROCM -D__HIP_PLATFORM_AMD__=1 -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include -I/opt/rocm/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/rocblas/include -I/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include -fopenmp -O2 -Wall -fPIC -g -std=gnu++17 -fPIC -fopenmp=libomp -MD -MT CMakeFiles/mirage_runtime.dir/src/transpiler/plan_tb_swizzle_blackwell.cc.o -MF CMakeFiles/mirage_runtime.dir/src/transpiler/plan_tb_swizzle_blackwell.cc.o.d -o CMakeFiles/mirage_runtime.dir/src/transpiler/plan_tb_swizzle_blackwell.cc.o -c /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/transpiler/plan_tb_swizzle_blackwell.cc
-  [ 39%] Building CXX object CMakeFiles/mirage_runtime.dir/src/transpiler/plan_tb_swizzle.cc.o
+  [ 38%] Building CXX object CMakeFiles/mirage_runtime.dir/src/transpiler/plan_tb_swizzle.cc.o
   /opt/rocm/llvm/bin/clang++ -DMIRAGE_BACKEND_USE_ROCM -DMIRAGE_FINGERPRINT_USE_ROCM -D__HIP_PLATFORM_AMD__=1 -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include -I/opt/rocm/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/rocblas/include -I/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include -fopenmp -O2 -Wall -fPIC -g -std=gnu++17 -fPIC -fopenmp=libomp -MD -MT CMakeFiles/mirage_runtime.dir/src/transpiler/plan_tb_swizzle.cc.o -MF CMakeFiles/mirage_runtime.dir/src/transpiler/plan_tb_swizzle.cc.o.d -o CMakeFiles/mirage_runtime.dir/src/transpiler/plan_tb_swizzle.cc.o -c /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/transpiler/plan_tb_swizzle.cc
+  [ 39%] Building CXX object CMakeFiles/mirage_runtime.dir/src/transpiler/plan_tb_swizzle_blackwell.cc.o
+  /opt/rocm/llvm/bin/clang++ -DMIRAGE_BACKEND_USE_ROCM -DMIRAGE_FINGERPRINT_USE_ROCM -D__HIP_PLATFORM_AMD__=1 -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include -I/opt/rocm/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/rocblas/include -I/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include -fopenmp -O2 -Wall -fPIC -g -std=gnu++17 -fPIC -fopenmp=libomp -MD -MT CMakeFiles/mirage_runtime.dir/src/transpiler/plan_tb_swizzle_blackwell.cc.o -MF CMakeFiles/mirage_runtime.dir/src/transpiler/plan_tb_swizzle_blackwell.cc.o.d -o CMakeFiles/mirage_runtime.dir/src/transpiler/plan_tb_swizzle_blackwell.cc.o -c /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/transpiler/plan_tb_swizzle_blackwell.cc
   [ 40%] Building CXX object CMakeFiles/mirage_runtime.dir/src/transpiler/plan_tb_swizzle_hopper.cc.o
   /opt/rocm/llvm/bin/clang++ -DMIRAGE_BACKEND_USE_ROCM -DMIRAGE_FINGERPRINT_USE_ROCM -D__HIP_PLATFORM_AMD__=1 -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include -I/opt/rocm/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/rocblas/include -I/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include -fopenmp -O2 -Wall -fPIC -g -std=gnu++17 -fPIC -fopenmp=libomp -MD -MT CMakeFiles/mirage_runtime.dir/src/transpiler/plan_tb_swizzle_hopper.cc.o -MF CMakeFiles/mirage_runtime.dir/src/transpiler/plan_tb_swizzle_hopper.cc.o.d -o CMakeFiles/mirage_runtime.dir/src/transpiler/plan_tb_swizzle_hopper.cc.o -c /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/transpiler/plan_tb_swizzle_hopper.cc
   In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/transpiler/plan_stensor_memory.cc:4:
@@ -790,6 +790,21 @@ Obtaining file:///home/hotaisle/metalOps/repos/fleet-chiplet-megakernel
     144 |         dstLayout(dstLayout), m_input(m_input), tile_size(tile_size),
         |                               ^~~~~~~~~~~~~~~~  ~~~~~~~~~~~~~~~~~~~~
         |                               tile_size(tile_size) m_input(m_input)
+  In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/transpiler/plan_tb_swizzle_hopper.cc:1:
+  In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include/mirage/transpiler/transpiler.h:25:
+  /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include/mirage/transpiler/structs.h:144:31: warning: field 'm_input' will be initialized after field 'tile_size' [-Wreorder-ctor]
+    144 |         dstLayout(dstLayout), m_input(m_input), tile_size(tile_size),
+        |                               ^~~~~~~~~~~~~~~~  ~~~~~~~~~~~~~~~~~~~~
+        |                               tile_size(tile_size) m_input(m_input)
+  /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/transpiler/plan_tb_swizzle_hopper.cc:144:9: warning: unused variable 'num_dims' [-Wunused-variable]
+    144 |     int num_dims = stensor.num_dims;
+        |         ^~~~~~~~
+  /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/transpiler/plan_tb_swizzle_hopper.cc:162:9: warning: unused variable 'num_chunks_in_inner_dim' [-Wunused-variable]
+    162 |     int num_chunks_in_inner_dim =
+        |         ^~~~~~~~~~~~~~~~~~~~~~~
+  /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/transpiler/plan_tb_swizzle_hopper.cc:164:9: warning: unused variable 'num_chunks_in_128B' [-Wunused-variable]
+    164 |     int num_chunks_in_128B =
+        |         ^~~~~~~~~~~~~~~~~~
   In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/transpiler/plan_stensor_memory.cc:1:
   In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include/mirage/threadblock/operator.h:17:
   In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include/mirage/kernel/device_tensor.h:19:
@@ -890,21 +905,6 @@ Obtaining file:///home/hotaisle/metalOps/repos/fleet-chiplet-megakernel
   /usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/bits/stl_construct.h:151:19: note: qualify call to silence this warning
     151 |       __pointer->~_Tp();
         |                   ^
-  In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/transpiler/plan_tb_swizzle_hopper.cc:1:
-  In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include/mirage/transpiler/transpiler.h:25:
-  /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include/mirage/transpiler/structs.h:144:31: warning: field 'm_input' will be initialized after field 'tile_size' [-Wreorder-ctor]
-    144 |         dstLayout(dstLayout), m_input(m_input), tile_size(tile_size),
-        |                               ^~~~~~~~~~~~~~~~  ~~~~~~~~~~~~~~~~~~~~
-        |                               tile_size(tile_size) m_input(m_input)
-  /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/transpiler/plan_tb_swizzle_hopper.cc:144:9: warning: unused variable 'num_dims' [-Wunused-variable]
-    144 |     int num_dims = stensor.num_dims;
-        |         ^~~~~~~~
-  /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/transpiler/plan_tb_swizzle_hopper.cc:162:9: warning: unused variable 'num_chunks_in_inner_dim' [-Wunused-variable]
-    162 |     int num_chunks_in_inner_dim =
-        |         ^~~~~~~~~~~~~~~~~~~~~~~
-  /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/transpiler/plan_tb_swizzle_hopper.cc:164:9: warning: unused variable 'num_chunks_in_128B' [-Wunused-variable]
-    164 |     int num_chunks_in_128B =
-        |         ^~~~~~~~~~~~~~~~~~
   In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/transpiler/resolve_dtensor_meta.cc:16:
   In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include/mirage/transpiler/transpiler.h:25:
   /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include/mirage/transpiler/structs.h:144:31: warning: field 'm_input' will be initialized after field 'tile_size' [-Wreorder-ctor]
@@ -917,26 +917,27 @@ Obtaining file:///home/hotaisle/metalOps/repos/fleet-chiplet-megakernel
     144 |         dstLayout(dstLayout), m_input(m_input), tile_size(tile_size),
         |                               ^~~~~~~~~~~~~~~~  ~~~~~~~~~~~~~~~~~~~~
         |                               tile_size(tile_size) m_input(m_input)
-  1 warning generated.
-  [ 44%] Building CXX object CMakeFiles/mirage_runtime.dir/src/transpiler/resolve_tensor_layout.cc.o
-  /opt/rocm/llvm/bin/clang++ -DMIRAGE_BACKEND_USE_ROCM -DMIRAGE_FINGERPRINT_USE_ROCM -D__HIP_PLATFORM_AMD__=1 -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include -I/opt/rocm/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/rocblas/include -I/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include -fopenmp -O2 -Wall -fPIC -g -std=gnu++17 -fPIC -fopenmp=libomp -MD -MT CMakeFiles/mirage_runtime.dir/src/transpiler/resolve_tensor_layout.cc.o -MF CMakeFiles/mirage_runtime.dir/src/transpiler/resolve_tensor_layout.cc.o.d -o CMakeFiles/mirage_runtime.dir/src/transpiler/resolve_tensor_layout.cc.o -c /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/transpiler/resolve_tensor_layout.cc
-  4 warnings generated.
-  [ 45%] Building CXX object CMakeFiles/mirage_runtime.dir/src/transpiler/sched_tb_graph.cc.o
-  /opt/rocm/llvm/bin/clang++ -DMIRAGE_BACKEND_USE_ROCM -DMIRAGE_FINGERPRINT_USE_ROCM -D__HIP_PLATFORM_AMD__=1 -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include -I/opt/rocm/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/rocblas/include -I/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include -fopenmp -O2 -Wall -fPIC -g -std=gnu++17 -fPIC -fopenmp=libomp -MD -MT CMakeFiles/mirage_runtime.dir/src/transpiler/sched_tb_graph.cc.o -MF CMakeFiles/mirage_runtime.dir/src/transpiler/sched_tb_graph.cc.o.d -o CMakeFiles/mirage_runtime.dir/src/transpiler/sched_tb_graph.cc.o -c /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/transpiler/sched_tb_graph.cc
-  [ 46%] Building CXX object CMakeFiles/mirage_runtime.dir/src/transpiler/transpile.cc.o
-  /opt/rocm/llvm/bin/clang++ -DMIRAGE_BACKEND_USE_ROCM -DMIRAGE_FINGERPRINT_USE_ROCM -D__HIP_PLATFORM_AMD__=1 -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include -I/opt/rocm/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/rocblas/include -I/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include -fopenmp -O2 -Wall -fPIC -g -std=gnu++17 -fPIC -fopenmp=libomp -MD -MT CMakeFiles/mirage_runtime.dir/src/transpiler/transpile.cc.o -MF CMakeFiles/mirage_runtime.dir/src/transpiler/transpile.cc.o.d -o CMakeFiles/mirage_runtime.dir/src/transpiler/transpile.cc.o -c /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/transpiler/transpile.cc
-  1 warning generated.
-  [ 47%] Building CXX object CMakeFiles/mirage_runtime.dir/src/transpiler/transpiler_kn.cc.o
-  /opt/rocm/llvm/bin/clang++ -DMIRAGE_BACKEND_USE_ROCM -DMIRAGE_FINGERPRINT_USE_ROCM -D__HIP_PLATFORM_AMD__=1 -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include -I/opt/rocm/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/rocblas/include -I/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include -fopenmp -O2 -Wall -fPIC -g -std=gnu++17 -fPIC -fopenmp=libomp -MD -MT CMakeFiles/mirage_runtime.dir/src/transpiler/transpiler_kn.cc.o -MF CMakeFiles/mirage_runtime.dir/src/transpiler/transpiler_kn.cc.o.d -o CMakeFiles/mirage_runtime.dir/src/transpiler/transpiler_kn.cc.o -c /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/transpiler/transpiler_kn.cc
   /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/transpiler/plan_tb_swizzle_hopper.cc:11:22: warning: unused variable 'MIN_LAYOUT_SiZE' [-Wunused-const-variable]
      11 | static constexpr int MIN_LAYOUT_SiZE = 8;
         |                      ^~~~~~~~~~~~~~~
+  4 warnings generated.
+  [ 44%] Building CXX object CMakeFiles/mirage_runtime.dir/src/transpiler/resolve_tensor_layout.cc.o
+  /opt/rocm/llvm/bin/clang++ -DMIRAGE_BACKEND_USE_ROCM -DMIRAGE_FINGERPRINT_USE_ROCM -D__HIP_PLATFORM_AMD__=1 -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include -I/opt/rocm/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/rocblas/include -I/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include -fopenmp -O2 -Wall -fPIC -g -std=gnu++17 -fPIC -fopenmp=libomp -MD -MT CMakeFiles/mirage_runtime.dir/src/transpiler/resolve_tensor_layout.cc.o -MF CMakeFiles/mirage_runtime.dir/src/transpiler/resolve_tensor_layout.cc.o.d -o CMakeFiles/mirage_runtime.dir/src/transpiler/resolve_tensor_layout.cc.o -c /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/transpiler/resolve_tensor_layout.cc
   1 warning generated.
+  [ 45%] Building CXX object CMakeFiles/mirage_runtime.dir/src/transpiler/sched_tb_graph.cc.o
+  /opt/rocm/llvm/bin/clang++ -DMIRAGE_BACKEND_USE_ROCM -DMIRAGE_FINGERPRINT_USE_ROCM -D__HIP_PLATFORM_AMD__=1 -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include -I/opt/rocm/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/rocblas/include -I/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include -fopenmp -O2 -Wall -fPIC -g -std=gnu++17 -fPIC -fopenmp=libomp -MD -MT CMakeFiles/mirage_runtime.dir/src/transpiler/sched_tb_graph.cc.o -MF CMakeFiles/mirage_runtime.dir/src/transpiler/sched_tb_graph.cc.o.d -o CMakeFiles/mirage_runtime.dir/src/transpiler/sched_tb_graph.cc.o -c /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/transpiler/sched_tb_graph.cc
+  1 warning generated.
+  [ 46%] Building CXX object CMakeFiles/mirage_runtime.dir/src/transpiler/transpile.cc.o
+  /opt/rocm/llvm/bin/clang++ -DMIRAGE_BACKEND_USE_ROCM -DMIRAGE_FINGERPRINT_USE_ROCM -D__HIP_PLATFORM_AMD__=1 -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include -I/opt/rocm/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/rocblas/include -I/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include -fopenmp -O2 -Wall -fPIC -g -std=gnu++17 -fPIC -fopenmp=libomp -MD -MT CMakeFiles/mirage_runtime.dir/src/transpiler/transpile.cc.o -MF CMakeFiles/mirage_runtime.dir/src/transpiler/transpile.cc.o.d -o CMakeFiles/mirage_runtime.dir/src/transpiler/transpile.cc.o -c /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/transpiler/transpile.cc
+  [ 47%] Building CXX object CMakeFiles/mirage_runtime.dir/src/transpiler/transpiler_kn.cc.o
+  /opt/rocm/llvm/bin/clang++ -DMIRAGE_BACKEND_USE_ROCM -DMIRAGE_FINGERPRINT_USE_ROCM -D__HIP_PLATFORM_AMD__=1 -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include -I/opt/rocm/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/rocblas/include -I/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include -fopenmp -O2 -Wall -fPIC -g -std=gnu++17 -fPIC -fopenmp=libomp -MD -MT CMakeFiles/mirage_runtime.dir/src/transpiler/transpiler_kn.cc.o -MF CMakeFiles/mirage_runtime.dir/src/transpiler/transpiler_kn.cc.o.d -o CMakeFiles/mirage_runtime.dir/src/transpiler/transpiler_kn.cc.o -c /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/transpiler/transpiler_kn.cc
+  5 warnings generated.
   [ 48%] Building CXX object CMakeFiles/mirage_runtime.dir/src/transpiler/transpiler_tb.cc.o
   /opt/rocm/llvm/bin/clang++ -DMIRAGE_BACKEND_USE_ROCM -DMIRAGE_FINGERPRINT_USE_ROCM -D__HIP_PLATFORM_AMD__=1 -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include -I/opt/rocm/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/rocblas/include -I/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include -fopenmp -O2 -Wall -fPIC -g -std=gnu++17 -fPIC -fopenmp=libomp -MD -MT CMakeFiles/mirage_runtime.dir/src/transpiler/transpiler_tb.cc.o -MF CMakeFiles/mirage_runtime.dir/src/transpiler/transpiler_tb.cc.o.d -o CMakeFiles/mirage_runtime.dir/src/transpiler/transpiler_tb.cc.o -c /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/transpiler/transpiler_tb.cc
-  5 warnings generated.
+  1 warning generated.
   [ 49%] Building CXX object CMakeFiles/mirage_runtime.dir/src/transpiler/transpiler_tb_blackwell.cc.o
   /opt/rocm/llvm/bin/clang++ -DMIRAGE_BACKEND_USE_ROCM -DMIRAGE_FINGERPRINT_USE_ROCM -D__HIP_PLATFORM_AMD__=1 -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include -I/opt/rocm/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/rocblas/include -I/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include -fopenmp -O2 -Wall -fPIC -g -std=gnu++17 -fPIC -fopenmp=libomp -MD -MT CMakeFiles/mirage_runtime.dir/src/transpiler/transpiler_tb_blackwell.cc.o -MF CMakeFiles/mirage_runtime.dir/src/transpiler/transpiler_tb_blackwell.cc.o.d -o CMakeFiles/mirage_runtime.dir/src/transpiler/transpiler_tb_blackwell.cc.o -c /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/transpiler/transpiler_tb_blackwell.cc
+  1 warning generated.
   [ 50%] Building CXX object CMakeFiles/mirage_runtime.dir/src/transpiler/transpiler_tb_hopper.cc.o
   /opt/rocm/llvm/bin/clang++ -DMIRAGE_BACKEND_USE_ROCM -DMIRAGE_FINGERPRINT_USE_ROCM -D__HIP_PLATFORM_AMD__=1 -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include -I/opt/rocm/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/rocblas/include -I/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include -fopenmp -O2 -Wall -fPIC -g -std=gnu++17 -fPIC -fopenmp=libomp -MD -MT CMakeFiles/mirage_runtime.dir/src/transpiler/transpiler_tb_hopper.cc.o -MF CMakeFiles/mirage_runtime.dir/src/transpiler/transpiler_tb_hopper.cc.o.d -o CMakeFiles/mirage_runtime.dir/src/transpiler/transpiler_tb_hopper.cc.o -c /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/transpiler/transpiler_tb_hopper.cc
   In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/transpiler/resolve_tensor_layout.cc:17:
@@ -945,10 +946,13 @@ Obtaining file:///home/hotaisle/metalOps/repos/fleet-chiplet-megakernel
     144 |         dstLayout(dstLayout), m_input(m_input), tile_size(tile_size),
         |                               ^~~~~~~~~~~~~~~~  ~~~~~~~~~~~~~~~~~~~~
         |                               tile_size(tile_size) m_input(m_input)
-  1 warning generated.
-  [ 51%] Building CXX object CMakeFiles/mirage_runtime.dir/src/triton_transpiler/transpile.cc.o
-  /opt/rocm/llvm/bin/clang++ -DMIRAGE_BACKEND_USE_ROCM -DMIRAGE_FINGERPRINT_USE_ROCM -D__HIP_PLATFORM_AMD__=1 -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include -I/opt/rocm/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/rocblas/include -I/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include -fopenmp -O2 -Wall -fPIC -g -std=gnu++17 -fPIC -fopenmp=libomp -MD -MT CMakeFiles/mirage_runtime.dir/src/triton_transpiler/transpile.cc.o -MF CMakeFiles/mirage_runtime.dir/src/triton_transpiler/transpile.cc.o.d -o CMakeFiles/mirage_runtime.dir/src/triton_transpiler/transpile.cc.o -c /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/triton_transpiler/transpile.cc
   In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/transpiler/sched_tb_graph.cc:4:
+  /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include/mirage/transpiler/structs.h:144:31: warning: field 'm_input' will be initialized after field 'tile_size' [-Wreorder-ctor]
+    144 |         dstLayout(dstLayout), m_input(m_input), tile_size(tile_size),
+        |                               ^~~~~~~~~~~~~~~~  ~~~~~~~~~~~~~~~~~~~~
+        |                               tile_size(tile_size) m_input(m_input)
+  In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/transpiler/transpile.cc:16:
+  In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include/mirage/transpiler/transpile.h:23:
   /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include/mirage/transpiler/structs.h:144:31: warning: field 'm_input' will be initialized after field 'tile_size' [-Wreorder-ctor]
     144 |         dstLayout(dstLayout), m_input(m_input), tile_size(tile_size),
         |                               ^~~~~~~~~~~~~~~~  ~~~~~~~~~~~~~~~~~~~~
@@ -962,18 +966,14 @@ Obtaining file:///home/hotaisle/metalOps/repos/fleet-chiplet-megakernel
   /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/transpiler/transpiler_kn.cc:703:30: warning: unused variable 'meta' [-Wunused-variable]
     703 |           DTensorMeta const &meta = dtensor_metas.at(guid);
         |                              ^~~~
-  In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/transpiler/transpile.cc:16:
-  In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include/mirage/transpiler/transpile.h:23:
+  [ 51%] Building CXX object CMakeFiles/mirage_runtime.dir/src/triton_transpiler/transpile.cc.o
+  /opt/rocm/llvm/bin/clang++ -DMIRAGE_BACKEND_USE_ROCM -DMIRAGE_FINGERPRINT_USE_ROCM -D__HIP_PLATFORM_AMD__=1 -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include -I/opt/rocm/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/rocblas/include -I/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include -fopenmp -O2 -Wall -fPIC -g -std=gnu++17 -fPIC -fopenmp=libomp -MD -MT CMakeFiles/mirage_runtime.dir/src/triton_transpiler/transpile.cc.o -MF CMakeFiles/mirage_runtime.dir/src/triton_transpiler/transpile.cc.o.d -o CMakeFiles/mirage_runtime.dir/src/triton_transpiler/transpile.cc.o -c /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/triton_transpiler/transpile.cc
+  In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/transpiler/transpiler_tb.cc:22:
   /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include/mirage/transpiler/structs.h:144:31: warning: field 'm_input' will be initialized after field 'tile_size' [-Wreorder-ctor]
     144 |         dstLayout(dstLayout), m_input(m_input), tile_size(tile_size),
         |                               ^~~~~~~~~~~~~~~~  ~~~~~~~~~~~~~~~~~~~~
         |                               tile_size(tile_size) m_input(m_input)
   In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/transpiler/transpiler_tb_blackwell.cc:21:
-  /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include/mirage/transpiler/structs.h:144:31: warning: field 'm_input' will be initialized after field 'tile_size' [-Wreorder-ctor]
-    144 |         dstLayout(dstLayout), m_input(m_input), tile_size(tile_size),
-        |                               ^~~~~~~~~~~~~~~~  ~~~~~~~~~~~~~~~~~~~~
-        |                               tile_size(tile_size) m_input(m_input)
-  In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/src/transpiler/transpiler_tb.cc:22:
   /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include/mirage/transpiler/structs.h:144:31: warning: field 'm_input' will be initialized after field 'tile_size' [-Wreorder-ctor]
     144 |         dstLayout(dstLayout), m_input(m_input), tile_size(tile_size),
         |                               ^~~~~~~~~~~~~~~~  ~~~~~~~~~~~~~~~~~~~~
@@ -1054,12 +1054,12 @@ Obtaining file:///home/hotaisle/metalOps/repos/fleet-chiplet-megakernel
   Mirage runtime library built successfully.
   Requirements: ['cmake>=3.24', 'cython>=0.28', 'z3-solver==4.15', 'torch>=2.4', 'accelerate==1.8.0', 'numpy', 'graphviz', 'tqdm', 'transformers==4.57.1', 'protobuf', 'tg4perfetto @ git+https://github.com/flashinfer-ai/tg4perfetto.git']
   running dist_info
-  creating /tmp/pip-modern-metadata-i29ukmvz/mirage_project.egg-info
-  writing /tmp/pip-modern-metadata-i29ukmvz/mirage_project.egg-info/PKG-INFO
-  writing dependency_links to /tmp/pip-modern-metadata-i29ukmvz/mirage_project.egg-info/dependency_links.txt
-  writing requirements to /tmp/pip-modern-metadata-i29ukmvz/mirage_project.egg-info/requires.txt
-  writing top-level names to /tmp/pip-modern-metadata-i29ukmvz/mirage_project.egg-info/top_level.txt
-  writing manifest file '/tmp/pip-modern-metadata-i29ukmvz/mirage_project.egg-info/SOURCES.txt'
+  creating /tmp/pip-modern-metadata-tj9rx9g1/mirage_project.egg-info
+  writing /tmp/pip-modern-metadata-tj9rx9g1/mirage_project.egg-info/PKG-INFO
+  writing dependency_links to /tmp/pip-modern-metadata-tj9rx9g1/mirage_project.egg-info/dependency_links.txt
+  writing requirements to /tmp/pip-modern-metadata-tj9rx9g1/mirage_project.egg-info/requires.txt
+  writing top-level names to /tmp/pip-modern-metadata-tj9rx9g1/mirage_project.egg-info/top_level.txt
+  writing manifest file '/tmp/pip-modern-metadata-tj9rx9g1/mirage_project.egg-info/SOURCES.txt'
   dependency /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include/mirage/kernel/device_memory_manager.h won't be automatically included in the manifest: the path must be relative
   dependency /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include/mirage/kernel/device_tensor.h won't be automatically included in the manifest: the path must be relative
   dependency /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include/mirage/kernel/graph.h won't be automatically included in the manifest: the path must be relative
@@ -1072,11 +1072,11 @@ Obtaining file:///home/hotaisle/metalOps/repos/fleet-chiplet-megakernel
   dependency /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include/mirage/triton_transpiler/transpile.h won't be automatically included in the manifest: the path must be relative
   dependency /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include/mirage/type.h won't be automatically included in the manifest: the path must be relative
   dependency /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include/mirage/vector_types.h won't be automatically included in the manifest: the path must be relative
-  reading manifest file '/tmp/pip-modern-metadata-i29ukmvz/mirage_project.egg-info/SOURCES.txt'
+  reading manifest file '/tmp/pip-modern-metadata-tj9rx9g1/mirage_project.egg-info/SOURCES.txt'
   reading manifest template 'MANIFEST.in'
   adding license file 'LICENSE'
-  writing manifest file '/tmp/pip-modern-metadata-i29ukmvz/mirage_project.egg-info/SOURCES.txt'
-  creating '/tmp/pip-modern-metadata-i29ukmvz/mirage_project-0.2.4.dist-info'
+  writing manifest file '/tmp/pip-modern-metadata-tj9rx9g1/mirage_project.egg-info/SOURCES.txt'
+  creating '/tmp/pip-modern-metadata-tj9rx9g1/mirage_project-0.2.4.dist-info'
   Preparing editable metadata (pyproject.toml): finished with status 'done'
 Requirement already satisfied: cmake>=3.24 in /home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages (from mirage-project==0.2.4) (4.4.3)
 Requirement already satisfied: cython>=0.28 in /home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages (from mirage-project==0.2.4) (3.3.0)
@@ -1089,11 +1089,11 @@ Requirement already satisfied: tqdm in /home/hotaisle/metalOps/.venv-fleet/lib/p
 Requirement already satisfied: transformers==4.57.1 in /home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages (from mirage-project==0.2.4) (4.57.1)
 Requirement already satisfied: protobuf in /home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages (from mirage-project==0.2.4) (7.36.1)
 Collecting tg4perfetto @ git+https://github.com/flashinfer-ai/tg4perfetto.git (from mirage-project==0.2.4)
-  Cloning https://github.com/flashinfer-ai/tg4perfetto.git to /tmp/pip-install-s0z4j9qw/tg4perfetto_5c3b8b7fa0c84fe99da452bc695eb0ba
+  Cloning https://github.com/flashinfer-ai/tg4perfetto.git to /tmp/pip-install-0aldwy48/tg4perfetto_bca73db345314af1b79f7079dfd79976
   Running command git version
   git version 2.43.0
-  Running command git clone --filter=blob:none https://github.com/flashinfer-ai/tg4perfetto.git /tmp/pip-install-s0z4j9qw/tg4perfetto_5c3b8b7fa0c84fe99da452bc695eb0ba
-  Cloning into '/tmp/pip-install-s0z4j9qw/tg4perfetto_5c3b8b7fa0c84fe99da452bc695eb0ba'...
+  Running command git clone --filter=blob:none https://github.com/flashinfer-ai/tg4perfetto.git /tmp/pip-install-0aldwy48/tg4perfetto_bca73db345314af1b79f7079dfd79976
+  Cloning into '/tmp/pip-install-0aldwy48/tg4perfetto_bca73db345314af1b79f7079dfd79976'...
   Running command git rev-parse HEAD
   2c1248a2f08e93c83fb312a544b701223c0d0bf3
   Resolved https://github.com/flashinfer-ai/tg4perfetto.git to commit 2c1248a2f08e93c83fb312a544b701223c0d0bf3
@@ -1207,7 +1207,7 @@ Building wheels for collected packages: mirage-project
       |                                    +++++++++
 
   warning: `abstract_subexpr` (lib) generated 3 warnings (run `cargo fix --lib -p abstract_subexpr` to apply 1 suggestion)
-      Finished `release` profile [optimized] target(s) in 0.06s
+      Finished `release` profile [optimized] target(s) in 0.07s
   warning: variable does not need to be mutable
      --> src/lib.rs:518:9
       |
@@ -1219,7 +1219,7 @@ Building wheels for collected packages: mirage-project
       = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
 
   warning: `formal_verifier` (lib) generated 1 warning (run `cargo fix --lib -p formal_verifier` to apply 1 suggestion)
-      Finished `release` profile [optimized] target(s) in 0.04s
+      Finished `release` profile [optimized] target(s) in 0.07s
   Rust/Cargo not found, installing it...
   Rust and Cargo installed successfully.
   CC: /usr/bin/gcc, CXX: /usr/bin/g++
@@ -1231,7 +1231,7 @@ Building wheels for collected packages: mirage-project
   -- Z3_LIBRARIES: /home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/lib/libz3.so
   -- Using the multi-header code from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include/
   -- Configuring done (0.1s)
-  -- Generating done (0.0s)
+  -- Generating done (0.1s)
   -- Build files have been written to: /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build
   /home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/cmake/data/bin/cmake -S/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel -B/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build --check-build-system CMakeFiles/Makefile.cmake 0
   /home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/cmake/data/bin/cmake -E cmake_progress_start /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build/CMakeFiles /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build//CMakeFiles/progress.marks
@@ -1251,12 +1251,12 @@ Building wheels for collected packages: mirage-project
   Mirage runtime library built successfully.
   Requirements: ['cmake>=3.24', 'cython>=0.28', 'z3-solver==4.15', 'torch>=2.4', 'accelerate==1.8.0', 'numpy', 'graphviz', 'tqdm', 'transformers==4.57.1', 'protobuf', 'tg4perfetto @ git+https://github.com/flashinfer-ai/tg4perfetto.git']
   running editable_wheel
-  creating /tmp/pip-ephem-wheel-cache-lvg_6or1/wheels/f7/bd/a0/bf187205763c0408cda81dd506c70deac32bb162a1f446f935/tmpm9zburuu/.tmp-desxolcl/mirage_project.egg-info
-  writing /tmp/pip-ephem-wheel-cache-lvg_6or1/wheels/f7/bd/a0/bf187205763c0408cda81dd506c70deac32bb162a1f446f935/tmpm9zburuu/.tmp-desxolcl/mirage_project.egg-info/PKG-INFO
-  writing dependency_links to /tmp/pip-ephem-wheel-cache-lvg_6or1/wheels/f7/bd/a0/bf187205763c0408cda81dd506c70deac32bb162a1f446f935/tmpm9zburuu/.tmp-desxolcl/mirage_project.egg-info/dependency_links.txt
-  writing requirements to /tmp/pip-ephem-wheel-cache-lvg_6or1/wheels/f7/bd/a0/bf187205763c0408cda81dd506c70deac32bb162a1f446f935/tmpm9zburuu/.tmp-desxolcl/mirage_project.egg-info/requires.txt
-  writing top-level names to /tmp/pip-ephem-wheel-cache-lvg_6or1/wheels/f7/bd/a0/bf187205763c0408cda81dd506c70deac32bb162a1f446f935/tmpm9zburuu/.tmp-desxolcl/mirage_project.egg-info/top_level.txt
-  writing manifest file '/tmp/pip-ephem-wheel-cache-lvg_6or1/wheels/f7/bd/a0/bf187205763c0408cda81dd506c70deac32bb162a1f446f935/tmpm9zburuu/.tmp-desxolcl/mirage_project.egg-info/SOURCES.txt'
+  creating /tmp/pip-ephem-wheel-cache-ldsid901/wheels/f7/bd/a0/bf187205763c0408cda81dd506c70deac32bb162a1f446f935/tmpn8a4p5y9/.tmp-zcugspuk/mirage_project.egg-info
+  writing /tmp/pip-ephem-wheel-cache-ldsid901/wheels/f7/bd/a0/bf187205763c0408cda81dd506c70deac32bb162a1f446f935/tmpn8a4p5y9/.tmp-zcugspuk/mirage_project.egg-info/PKG-INFO
+  writing dependency_links to /tmp/pip-ephem-wheel-cache-ldsid901/wheels/f7/bd/a0/bf187205763c0408cda81dd506c70deac32bb162a1f446f935/tmpn8a4p5y9/.tmp-zcugspuk/mirage_project.egg-info/dependency_links.txt
+  writing requirements to /tmp/pip-ephem-wheel-cache-ldsid901/wheels/f7/bd/a0/bf187205763c0408cda81dd506c70deac32bb162a1f446f935/tmpn8a4p5y9/.tmp-zcugspuk/mirage_project.egg-info/requires.txt
+  writing top-level names to /tmp/pip-ephem-wheel-cache-ldsid901/wheels/f7/bd/a0/bf187205763c0408cda81dd506c70deac32bb162a1f446f935/tmpn8a4p5y9/.tmp-zcugspuk/mirage_project.egg-info/top_level.txt
+  writing manifest file '/tmp/pip-ephem-wheel-cache-ldsid901/wheels/f7/bd/a0/bf187205763c0408cda81dd506c70deac32bb162a1f446f935/tmpn8a4p5y9/.tmp-zcugspuk/mirage_project.egg-info/SOURCES.txt'
   dependency /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include/mirage/kernel/device_memory_manager.h won't be automatically included in the manifest: the path must be relative
   dependency /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include/mirage/kernel/device_tensor.h won't be automatically included in the manifest: the path must be relative
   dependency /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include/mirage/kernel/graph.h won't be automatically included in the manifest: the path must be relative
@@ -1269,17 +1269,17 @@ Building wheels for collected packages: mirage-project
   dependency /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include/mirage/triton_transpiler/transpile.h won't be automatically included in the manifest: the path must be relative
   dependency /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include/mirage/type.h won't be automatically included in the manifest: the path must be relative
   dependency /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include/mirage/vector_types.h won't be automatically included in the manifest: the path must be relative
-  reading manifest file '/tmp/pip-ephem-wheel-cache-lvg_6or1/wheels/f7/bd/a0/bf187205763c0408cda81dd506c70deac32bb162a1f446f935/tmpm9zburuu/.tmp-desxolcl/mirage_project.egg-info/SOURCES.txt'
+  reading manifest file '/tmp/pip-ephem-wheel-cache-ldsid901/wheels/f7/bd/a0/bf187205763c0408cda81dd506c70deac32bb162a1f446f935/tmpn8a4p5y9/.tmp-zcugspuk/mirage_project.egg-info/SOURCES.txt'
   reading manifest template 'MANIFEST.in'
   adding license file 'LICENSE'
-  writing manifest file '/tmp/pip-ephem-wheel-cache-lvg_6or1/wheels/f7/bd/a0/bf187205763c0408cda81dd506c70deac32bb162a1f446f935/tmpm9zburuu/.tmp-desxolcl/mirage_project.egg-info/SOURCES.txt'
-  creating '/tmp/pip-ephem-wheel-cache-lvg_6or1/wheels/f7/bd/a0/bf187205763c0408cda81dd506c70deac32bb162a1f446f935/tmpm9zburuu/.tmp-desxolcl/mirage_project-0.2.4.dist-info'
-  creating /tmp/pip-ephem-wheel-cache-lvg_6or1/wheels/f7/bd/a0/bf187205763c0408cda81dd506c70deac32bb162a1f446f935/tmpm9zburuu/.tmp-desxolcl/mirage_project-0.2.4.dist-info/WHEEL
+  writing manifest file '/tmp/pip-ephem-wheel-cache-ldsid901/wheels/f7/bd/a0/bf187205763c0408cda81dd506c70deac32bb162a1f446f935/tmpn8a4p5y9/.tmp-zcugspuk/mirage_project.egg-info/SOURCES.txt'
+  creating '/tmp/pip-ephem-wheel-cache-ldsid901/wheels/f7/bd/a0/bf187205763c0408cda81dd506c70deac32bb162a1f446f935/tmpn8a4p5y9/.tmp-zcugspuk/mirage_project-0.2.4.dist-info'
+  creating /tmp/pip-ephem-wheel-cache-ldsid901/wheels/f7/bd/a0/bf187205763c0408cda81dd506c70deac32bb162a1f446f935/tmpn8a4p5y9/.tmp-zcugspuk/mirage_project-0.2.4.dist-info/WHEEL
   running build_py
   running build_ext
   building 'mirage.core' extension
-  creating /tmp/tmpb70tmb3c.build-temp/python/mirage/_cython
-  /usr/bin/g++ -fno-strict-overflow -Wsign-compare -DNDEBUG -g -O2 -Wall -fPIC -DMIRAGE_BACKEND_USE_ROCM -DMIRAGE_FINGERPRINT_USE_ROCM -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build/abstract_subexpr/release -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build/formal_verifier/release -I/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/rocblas/include -I/opt/rocm/include -I/home/hotaisle/metalOps/.venv-fleet/include -I/usr/include/python3.12 -c python/mirage/_cython/core.cpp -o /tmp/tmpb70tmb3c.build-temp/python/mirage/_cython/core.o -std=c++17 -fopenmp -D__HIP_PLATFORM_AMD__=1
+  creating /tmp/tmpysn7ji11.build-temp/python/mirage/_cython
+  /usr/bin/g++ -fno-strict-overflow -Wsign-compare -DNDEBUG -g -O2 -Wall -fPIC -DMIRAGE_BACKEND_USE_ROCM -DMIRAGE_FINGERPRINT_USE_ROCM -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build/abstract_subexpr/release -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build/formal_verifier/release -I/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/include -I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/rocblas/include -I/opt/rocm/include -I/home/hotaisle/metalOps/.venv-fleet/include -I/usr/include/python3.12 -c python/mirage/_cython/core.cpp -o /tmp/tmpysn7ji11.build-temp/python/mirage/_cython/core.o -std=c++17 -fopenmp -D__HIP_PLATFORM_AMD__=1
   In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include/mirage/threadblock/smem_tensor.h:20,
                    from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include/mirage/threadblock/operator.h:18,
                    from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include/mirage/threadblock/graph.h:20,
@@ -1302,16 +1302,16 @@ Building wheels for collected packages: mirage-project
   /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include/mirage/transpiler/structs.h:127:3: warning:   when initialized here [-Wreorder]
     127 |   TMAParams(size_t input_id,
         |   ^~~~~~~~~
-  creating /tmp/tmp44u1b76g.build-lib/mirage
-  /usr/bin/g++ -fno-strict-overflow -Wsign-compare -DNDEBUG -g -O2 -Wall -shared -Wl,-O1 -Wl,-Bsymbolic-functions /tmp/tmpb70tmb3c.build-temp/python/mirage/_cython/core.o -L/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build -L/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/lib -L/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build/abstract_subexpr/release -L/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build/formal_verifier/release -L/opt/rocm/lib -L/opt/rocm/lib64 -L/opt/rocm/llvm/lib -L/usr/lib/x86_64-linux-gnu -lmirage_runtime -lz3 -lrt -labstract_subexpr -lformal_verifier -lomp -lamdhip64 -lrocblas -lhipblas -o /tmp/tmp44u1b76g.build-lib/mirage/core.cpython-312-x86_64-linux-gnu.so -fPIC -fopenmp -lrt -Wl,-rpath,$ORIGIN/../../build/abstract_subexpr/release -Wl,-rpath,$ORIGIN/../../build/formal_verifier/release -L/opt/rocm/llvm/lib -lomp -Wl,-rpath,/opt/rocm/llvm/lib
-  copying /tmp/tmp44u1b76g.build-lib/mirage/core.cpython-312-x86_64-linux-gnu.so -> python/mirage
+  creating /tmp/tmpyovehjb2.build-lib/mirage
+  /usr/bin/g++ -fno-strict-overflow -Wsign-compare -DNDEBUG -g -O2 -Wall -shared -Wl,-O1 -Wl,-Bsymbolic-functions /tmp/tmpysn7ji11.build-temp/python/mirage/_cython/core.o -L/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build -L/home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/z3/lib -L/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build/abstract_subexpr/release -L/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/build/formal_verifier/release -L/opt/rocm/lib -L/opt/rocm/lib64 -L/opt/rocm/llvm/lib -L/usr/lib/x86_64-linux-gnu -lmirage_runtime -lz3 -lrt -labstract_subexpr -lformal_verifier -lomp -lamdhip64 -lrocblas -lhipblas -o /tmp/tmpyovehjb2.build-lib/mirage/core.cpython-312-x86_64-linux-gnu.so -fPIC -fopenmp -lrt -Wl,-rpath,$ORIGIN/../../build/abstract_subexpr/release -Wl,-rpath,$ORIGIN/../../build/formal_verifier/release -L/opt/rocm/llvm/lib -lomp -Wl,-rpath,/opt/rocm/llvm/lib
+  copying /tmp/tmpyovehjb2.build-lib/mirage/core.cpython-312-x86_64-linux-gnu.so -> python/mirage
   running egg_info
-  creating /tmp/tmpb70tmb3c.build-temp/mirage_project.egg-info
-  writing /tmp/tmpb70tmb3c.build-temp/mirage_project.egg-info/PKG-INFO
-  writing dependency_links to /tmp/tmpb70tmb3c.build-temp/mirage_project.egg-info/dependency_links.txt
-  writing requirements to /tmp/tmpb70tmb3c.build-temp/mirage_project.egg-info/requires.txt
-  writing top-level names to /tmp/tmpb70tmb3c.build-temp/mirage_project.egg-info/top_level.txt
-  writing manifest file '/tmp/tmpb70tmb3c.build-temp/mirage_project.egg-info/SOURCES.txt'
+  creating /tmp/tmpysn7ji11.build-temp/mirage_project.egg-info
+  writing /tmp/tmpysn7ji11.build-temp/mirage_project.egg-info/PKG-INFO
+  writing dependency_links to /tmp/tmpysn7ji11.build-temp/mirage_project.egg-info/dependency_links.txt
+  writing requirements to /tmp/tmpysn7ji11.build-temp/mirage_project.egg-info/requires.txt
+  writing top-level names to /tmp/tmpysn7ji11.build-temp/mirage_project.egg-info/top_level.txt
+  writing manifest file '/tmp/tmpysn7ji11.build-temp/mirage_project.egg-info/SOURCES.txt'
   dependency /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include/mirage/kernel/device_memory_manager.h won't be automatically included in the manifest: the path must be relative
   dependency /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include/mirage/kernel/device_tensor.h won't be automatically included in the manifest: the path must be relative
   dependency /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include/mirage/kernel/graph.h won't be automatically included in the manifest: the path must be relative
@@ -1324,10 +1324,10 @@ Building wheels for collected packages: mirage-project
   dependency /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include/mirage/triton_transpiler/transpile.h won't be automatically included in the manifest: the path must be relative
   dependency /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include/mirage/type.h won't be automatically included in the manifest: the path must be relative
   dependency /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/include/mirage/vector_types.h won't be automatically included in the manifest: the path must be relative
-  reading manifest file '/tmp/tmpb70tmb3c.build-temp/mirage_project.egg-info/SOURCES.txt'
+  reading manifest file '/tmp/tmpysn7ji11.build-temp/mirage_project.egg-info/SOURCES.txt'
   reading manifest template 'MANIFEST.in'
   adding license file 'LICENSE'
-  writing manifest file '/tmp/tmpb70tmb3c.build-temp/mirage_project.egg-info/SOURCES.txt'
+  writing manifest file '/tmp/tmpysn7ji11.build-temp/mirage_project.egg-info/SOURCES.txt'
   /home/hotaisle/metalOps/.venv-fleet/lib/python3.12/site-packages/setuptools/command/build_py.py:212: _Warning: Package 'mirage._cython' is absent from the `packages` configuration.
   !!
 
@@ -4534,15 +4534,15 @@ Building wheels for collected packages: mirage-project
   `packages.find.exclude/include` may have no effect.
 
   adding '__editable__.mirage_project-0.2.4.pth'
-  creating '/tmp/pip-ephem-wheel-cache-lvg_6or1/wheels/f7/bd/a0/bf187205763c0408cda81dd506c70deac32bb162a1f446f935/tmpm9zburuu/.tmp-desxolcl/mirage_project-0.2.4-0.editable-cp312-cp312-linux_x86_64.whl' and adding '/tmp/tmpwspz6a2vmirage_project-0.2.4-0.editable-cp312-cp312-linux_x86_64.whl' to it
+  creating '/tmp/pip-ephem-wheel-cache-ldsid901/wheels/f7/bd/a0/bf187205763c0408cda81dd506c70deac32bb162a1f446f935/tmpn8a4p5y9/.tmp-zcugspuk/mirage_project-0.2.4-0.editable-cp312-cp312-linux_x86_64.whl' and adding '/tmp/tmphy31dqpnmirage_project-0.2.4-0.editable-cp312-cp312-linux_x86_64.whl' to it
   adding 'mirage_project-0.2.4.dist-info/licenses/LICENSE'
   adding 'mirage_project-0.2.4.dist-info/METADATA'
   adding 'mirage_project-0.2.4.dist-info/WHEEL'
   adding 'mirage_project-0.2.4.dist-info/top_level.txt'
   adding 'mirage_project-0.2.4.dist-info/RECORD'
   Building editable for mirage-project (pyproject.toml): finished with status 'done'
-  Created wheel for mirage-project: filename=mirage_project-0.2.4-0.editable-cp312-cp312-linux_x86_64.whl size=5712 sha256=1a7857c3fbd72fc377ee1a53b8c4a14f1d5fc572cfd29b0c812b5d2ca450f607
-  Stored in directory: /tmp/pip-ephem-wheel-cache-lvg_6or1/wheels/f7/bd/a0/bf187205763c0408cda81dd506c70deac32bb162a1f446f935
+  Created wheel for mirage-project: filename=mirage_project-0.2.4-0.editable-cp312-cp312-linux_x86_64.whl size=5712 sha256=c9a4c5f13811c9a34ed7c50046d80979ff3ed3431271c45a2b33d8075183e0b7
+  Stored in directory: /tmp/pip-ephem-wheel-cache-ldsid901/wheels/f7/bd/a0/bf187205763c0408cda81dd506c70deac32bb162a1f446f935
 Successfully built mirage-project
 Installing collected packages: mirage-project
   Attempting uninstall: mirage-project
@@ -4554,8 +4554,8 @@ Installing collected packages: mirage-project
 Successfully installed mirage-project-0.2.4
 
 ---- summary
-log:            /home/hotaisle/metalOps/env/logs/setup.20260916-175256.log
-build log:      /home/hotaisle/metalOps/env/logs/build.20260916-175305.log
+log:            /home/hotaisle/metalOps/env/logs/setup.20260916-192633.log
+build log:      /home/hotaisle/metalOps/env/logs/build.20260916-192647.log
 AMDGPU_TARGETS: gfx942
 MIRAGE_HOME:    /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel
 venvs:          .venv (run_reference.py, calibrate.py, reassoc_check.py, make_prompt.py)
@@ -4564,4 +4564,4 @@ export MIRAGE_HOME=/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel AMDGPU
 step in persistent_kernel.py defaults --offload-arch to gfx950 (run_fleet.py sets it itself)
 GATE 1: PASS - Fleet built for gfx942 and imports
 next: bash env/check_day1.sh
-2026-09-16T17:54:01Z PASS setup 65s
+2026-09-16T19:27:40Z PASS setup 67s

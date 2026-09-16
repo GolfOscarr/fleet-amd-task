@@ -1,0 +1,42 @@
+# Measurement report
+
+| Quantity | Predicted | Measured |
+|---|---|---|
+| bytes per iteration (read, MiB) | 4709.9 weights + cache; about 4772.0 with activations | - |
+| time per iteration, median (us) | 1148.5-1349.4 + 326 t_b + T_serial | - |
+| time per iteration, P95 (us) |  | - |
+| time per iteration from event timing, median (us) |  | - |
+| time per iteration from host wall clock (us) |  | 1508.9 |
+| time per iteration from the kernel trace (us) |  | - |
+| achieved read bandwidth (TB/s) | 3.66-4.3 over T_bw | - |
+| launches per generation | 3 | - |
+| L2 hit rate | 16-17% (Fleet's batch-1 figure) | - |
+| tokens per second |  | - |
+
+## Per-operator time (event gaps, mean over iterations after the first)
+
+| Event | Operator | mean us | min us | max us | n |
+|---|---|---|---|---|---|
+| 1 | embed_layer | 143.19 | 7.96 | 184.28 | 30 |
+| 2 | rmsnorm_layer | 11.94 | 11.13 | 14.28 | 31 |
+| 3 | gang_linear_layer | 3.91 | 3.48 | 4.88 | 31 |
+| 4 | mla_prep_layer | 26.21 | 23.12 | 27.40 | 31 |
+| 5 | mla_attend_layer | 146.01 | 141.65 | 157.05 | 31 |
+| 6 | mla_merge_uv_layer | 57.72 | 53.91 | 60.39 | 31 |
+| 7 | gang_linear_with_residual_layer | 22.86 | 22.19 | 27.44 | 31 |
+| 8 | rmsnorm_layer | 16.68 | 13.36 | 17.44 | 31 |
+| 9 | gang_linear_silu_layer | 4.03 | 3.65 | 4.77 | 31 |
+| 10 | gang_linear_with_residual_layer | 32.27 | 31.15 | 33.52 | 31 |
+| 11 | rmsnorm_layer | 49.94 | 49.31 | 50.64 | 31 |
+| 12 | gang_linear_layer | 3.95 | 3.31 | 4.67 | 31 |
+| 13 | mla_prep_layer | 13.99 | 12.98 | 14.60 | 31 |
+| 14 | mla_attend_layer | 145.98 | 140.77 | 150.28 | 31 |
+| 15 | mla_merge_uv_layer | 57.82 | 54.17 | 60.28 | 31 |
+| 16 | gang_linear_with_residual_layer | 21.29 | 21.00 | 21.84 | 31 |
+| 17 | rmsnorm_layer | 13.53 | 13.32 | 13.84 | 31 |
+| 18 | moe_router_layer | 3.56 | 3.47 | 3.72 | 31 |
+| 19 | gang_moe_w13_linear_layer | 19.78 | 19.04 | 21.44 | 31 |
+| 20 | moe_silu_mul_layer | 41.88 | 40.15 | 44.23 | 31 |
+| 21 | gang_moe_w2_linear_layer | 4.67 | 3.55 | 6.20 | 31 |
+| 22 | moe_mul_sum_add_layer | 21.23 | 19.61 | 23.55 | 31 |
+| 23 | event_23 | 3.77 | 3.51 | 4.05 | 31 |
