@@ -30,5 +30,7 @@ reaching the VM are unchanged from `docs/gpu-bringup/06-agent-guide.md`.
 | 2026-09-16 | P2 done: partials row padded to 516 (16-byte-aligned rows) across the plan, kernels and launcher; offline compile clean |
 | 2026-09-16 | P7 done: `measure.py` filters counters and launches to the megakernel, merges PMC runs per file (the concatenation double count fixed), trace-derived per-iteration time |
 | 2026-09-16 | P8 done: the 1x-shape corrections in `docs/gpu-bringup`, 05 superseded, the docker README, the MAJ-7 re-reading and the B0 attribution check |
-| 2026-09-16 | plan improved: the fault fixes as flags, the queue guards, the rehearsal appendix, shellcheck, the row-format rewrite of 02 with the decision tree, thresholds and playbook, the skeletons 03 and 04 |
 | 2026-09-16 | P6 done: `mla_attend` and `mla_merge_uv` batch four loads in flight and the score lanes map to heads (the 211 us was 144 serialised loads per thread); more splits deferred with the reason; preparation complete, gate next |
+| 2026-09-16 | plan improved: the fault fixes as flags, the queue guards, the rehearsal appendix, shellcheck, the row-format rewrite of 02 with the decision tree, thresholds and playbook, the skeletons 03 and 04 |
+| 2026-09-16 | the user's decisions recorded in the plan (image yes, 4.0 h, rocgdb only for a layer-7 label, prefetch fallback, deletion asked every time); the helpers `wait`, `report`, `check`, `preflight`, `kill`, `gdb`, `pf.sh`, `queue_flag.py`, `addr_diff.py` |
+| 2026-09-16 | final check before the PR: stale wording removed; 153 tests, preflight 8 PASS, shellcheck clean; the gate (balance, GHCR) and the sessions follow on the user's go |

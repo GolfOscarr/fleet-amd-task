@@ -82,7 +82,7 @@ the "PASS when" column is the row that must appear in it.
 | 42 | A6 | `L start bisect env/session/queue-fault.txt -- --layers 8 --head --iters 2` | `BISECT first-fault=<label>` in `env/logs/bisect.result`, about 5 runs | AUTO | `no-fault-up-to=head.argmax_reduce`: the fault needs the untruncated graph; skip to A7 with all four fix rows |
 | 50 | A7 | `L start queue env/session/queue-fix.txt` (the four pre-baked fixes, in order) | the first row with `PASS ... fwd=2` | DECIDE (agent: first PASS wins; user is told which) | all four FAIL: time box; record the frontier, the addresses and the label, and go to A8 with the 27-layer graph at 2 iterations instead of 32 (the fallbacks) |
 | 60 | A7b | only if A7 found nothing and A6 named a label in layer 7: 60 minutes at most of `rocgdb` with `MPK_EXTRA_HIPCC_FLAGS=-gline-tables-only` on that label (the recipe in `01-preparation.md`, P1) | the faulting source line | AUTO (decided 2026-09-16: layer-7 label yes, head label no) | past the box, or a head label: fallbacks |
-| 90 | A8 | `L pull` (30-minute checkpoint), then `L start queue env/session/queue-a2.txt` with the winning flag added to its rows by hand (A8.1 the fixed 8-layer graph; A8.2 M4; A8.3 the growth curve; A8.4 B0 attribution, two runs; A8.5 the 2-layer timing with and without `--tile-linears`; A8.6 the 27-layer baseline of this machine) | A8.2 `compare=PASS` and 32 ids equal to `harness/ref/ref_output_ids.json`; A8.3 27 per-layer errors under the threshold; A8.6 the per-iteration time in `report_table.md` | AUTO to A8.3, DECIDE at A8.4 and A8.5 (rules below) | A8.2 a mismatch at token k: the run stands, the index goes to `04`; A8.3 the first layer above threshold is named |
+| 90 | A8 | `L pull` (30-minute checkpoint), then `L start queue env/session/queue-a2.txt` with the winning flag added to its rows by `queue_flag.py` (A8.1 the fixed 8-layer graph; A8.2 M4; A8.3 the growth curve; A8.4 B0 attribution, two runs; A8.5 the 2-layer timing with and without `--tile-linears`; A8.6 the 27-layer baseline of this machine) | A8.2 `compare=PASS` and 32 ids equal to `harness/ref/ref_output_ids.json`; A8.3 27 per-layer errors under the threshold; A8.6 the per-iteration time in `report_table.md` | AUTO to A8.3, DECIDE at A8.4 and A8.5 (rules below) | A8.2 a mismatch at token k: the run stands, the index goes to `04`; A8.3 the first layer above threshold is named |
 | 120 | A9 | `L pull`; `L balance`; image status in `L status` | `PASS image` (build, push, logout); balance above $16 | DECIDE (agent: the push cutoff) | not built: read `env/logs/image.out`, fix on the laptop, `L push`, `L start image` only if more than 60 minutes remain; a push slower than 30 MB in the first 5 minutes is stopped (`docker save` is not attempted) |
 | 150 | A10 | `L pull` | a commit on the branch | AUTO | |
 | 180 | A11 | `L pull`; `L balance` | balance above $13 (session B needs $10.47 plus the reserve) | DECIDE (agent: hard stop at $13) | below: stop the queue now |
@@ -118,7 +118,7 @@ Starts from the image if it was pushed (`L login`; the `setup` stage is
 skipped; `L start checks` at about minute 8) and from `setup.sh`
 otherwise (minute 25 as in A). Then `L start reference`, `L start kernels`,
 and `L start queue env/session/queue-b.txt`; the flags that won in session
-A are added to its rows by hand before the push.
+A are added to its rows with `queue_flag.py` before the push.
 
 | Minute | Row | PASS when | Mode | On FAIL |
 |---|---|---|---|---|

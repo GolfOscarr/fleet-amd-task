@@ -194,6 +194,16 @@ Each idea names the number it rests on and what it would take to try.
     and `argmax_reduce`'s `tokens + step + 1` against those sizes. Next
     session: `--layers 2 --head` at 8, 16 and 32 iterations, then the
     runtime's verbose mode to name the faulting task.
+    Update 2026-09-16 (round-2 preparation, `docs/round-2/01-preparation.md`):
+    the plans of every layer count were generated without a GPU and every
+    quantity is linear in the layer count, so nothing in the plan is
+    special at 7 to 9 layers and the addresses are the variable; the
+    partials row was padded to 516 floats anyway (P2) but the buffer base
+    is 512-byte aligned at every layer count, so the misalignment cannot
+    be the cause. The session-A tools are `--pad-alloc` (does the fault
+    move with the addresses), the bisection over the labels of layer 7,
+    the pre-baked fixes `--align-alloc` and `--workspaces-first`, and
+    `vm.sh gdb` with line tables for the label.
 
 14. **The E4 working-set sweep needs constant loads per thread.** The
     first version changed code path with size (the reviewer's finding);
