@@ -69,6 +69,7 @@ constexpr int QKVA = NH * (D_N + D_R) + D_C + D_R;
 constexpr int N_SLOTS = TOPK + N_FORCED;
 constexpr int N_TOTAL = N_EXPERTS + N_FORCED;
 constexpr int HEADS_PER_XCD = NH / XCDS;
+constexpr int P_ROW = ((D_C + 1 + 3) / 4) * 4;   // padded partials row (P2), matches the kernels
 // What the worker kernel is launched with (persistent_kernel.cuh); a task
 // may use up to this much dynamic LDS.
 constexpr int SMEM_BYTES = mirage::runtime::MAX_DYNAMIC_SHARED_MEMORY_SIZE;
@@ -117,7 +118,7 @@ __global__ __launch_bounds__(256, 1) void k_mla_attend(void const *ql_nope,
   // partials imap (0, -1, -1): the runtime hands XCD x a pointer n_splits / 8 * x
   // rows in; the registration passes that row count so the kernel undoes it.
   void *partials_xcd = static_cast<float *>(partials)
-      + (size_t)xcd * partials_xcd_offset_rows * NH * (D_C + 1);
+      + (size_t)xcd * partials_xcd_offset_rows * NH * P_ROW;
   kernel::mla_attend_mi300_task_impl<bf16, NH, D_C, D_R, S_MAX>(
       ql_nope, q_pe, c_kv, k_pe, partials_xcd, meta.step[0], softmax_scale, split, n_splits,
       tiles_per_xcd, partials_xcd_offset_rows, tile_idx, debug_scores);
@@ -199,12 +200,12 @@ static const Spec SPEC_MLA_ATTEND[] = {
     {"q_pe", (size_t)NH * D_R * 2, false},
     {"c_kv", (size_t)S_MAX * D_C * 2, false},
     {"k_pe", (size_t)S_MAX * D_R * 2, false},
-    {"partials", 0, true},   // n_splits * NH * (D_C + 1) * 4, from params
+    {"partials", 0, true},   // n_splits * NH * P_ROW * 4, from params
 };
 static const Spec SPEC_MLA_ATTEND_SCORES = {"scores", (size_t)NH * S_MAX * 4, true};
 
 static const Spec SPEC_MLA_MERGE_UV[] = {
-    {"partials", 0, false},  // n_splits * NH * (D_C + 1) * 4, from params
+    {"partials", 0, false},  // n_splits * NH * P_ROW * 4, from params
     {"w_uv", (size_t)NH * D_V * D_C * 2, false},
     {"attn", (size_t)NH * D_V * 2, true},
 };
@@ -387,7 +388,7 @@ void run_mla_attend(std::string const &dir) {
 #endif
   }
   Buffers b{dir, specs_of(SPEC_MLA_ATTEND), {}};
-  b.specs[4].bytes = (size_t)n_splits * NH * (D_C + 1) * 4;
+  b.specs[4].bytes = (size_t)n_splits * NH * P_ROW * 4;
   if (debug) {
     b.specs.push_back(SPEC_MLA_ATTEND_SCORES);
   }
@@ -410,7 +411,7 @@ void run_mla_merge_uv(std::string const &dir) {
   int split = (int)param(p, "split");
   int n_splits = (int)param(p, "n_splits");
   Buffers b{dir, specs_of(SPEC_MLA_MERGE_UV), {}};
-  b.specs[0].bytes = (size_t)n_splits * NH * (D_C + 1) * 4;
+  b.specs[0].bytes = (size_t)n_splits * NH * P_ROW * 4;
   b.load();
   DeviceMeta m((int)param(p, "step"), (int)param_or(p, "prompt_length", 0));
   allow_full_lds(k_mla_merge_uv);

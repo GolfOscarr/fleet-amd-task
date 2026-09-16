@@ -244,7 +244,7 @@ def test_dry_run_all_tests(tmp_path):
     d = tmp_path / "work/mla_attend_splits/000"
     assert {p.name for p in d.iterdir()} == {"attend33", "attend1", "merge33", "merge1"}
     assert K.read_params(d / "attend1/params.txt")["n_splits"] == 1
-    assert (d / "attend33/partials.out.bin").stat().st_size == 33 * 16 * 513 * 4
+    assert (d / "attend33/partials.out.bin").stat().st_size == 33 * 16 * 516 * 4   # padded row P_ROW (P2)
 
 
 def test_dry_run_cli_single_kernel(tmp_path):

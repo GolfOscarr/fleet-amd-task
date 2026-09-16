@@ -120,7 +120,7 @@ def test_input_bytes_and_shapes():
                   if not t.source.startswith(("capture:", "meta:")))
     from fleet.pack_weights import EXPECTED_PACKED_BYTES
     assert weights == EXPECTED_PACKED_BYTES
-    assert plan.tensors["partials"].shape == (33, 16, 513)
+    assert plan.tensors["partials"].shape == (33, 16, 516)   # padded row P_ROW (P2)
     assert plan.tensors["c_kv_0"].shape == (1056, 512) and plan.tensors["k_pe_26"].shape == (1056, 64)
     assert plan.tensors["route_log"].shape == (32, 26, 8)
 

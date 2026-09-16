@@ -136,6 +136,13 @@ class Plan:
         return -(-self.s_max // SPLIT)
 
 
+def partials_row(d_c):
+    """Innermost width of the split-KV partials buffer: D_C values of o plus one lse at
+    column D_C, padded up to a multiple of 4 floats so each [split, head] row is 16-byte
+    aligned when the buffer base is (docs/round-2 P2). 513 -> 516 at D_C = 512."""
+    return ((d_c + 1 + 3) // 4) * 4
+
+
 def gang_tiles(n_out, tile_n):
     """The reused gang linears' Python asserts (persistent_kernel.py:1591-1595)."""
     assert n_out % XCDS == 0, f"N {n_out} must be divisible by 8"
@@ -184,7 +191,7 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
     p.t("qkva", (1, d.Q_OUT + d.KVA_OUT))
     p.t("ql_nope", (d.NH, d.D_C))
     p.t("q_pe", (d.NH, d.D_R))
-    p.t("partials", (n_splits, d.NH, d.D_C + 1), "f32")
+    p.t("partials", (n_splits, d.NH, partials_row(d.D_C)), "f32")   # padded row, P2
     p.t("attn", (1, d.NH * d.D_V))
     p.t("cos", (s_max, d.D_R), kind="input", source="capture:cos")
     p.t("sin", (s_max, d.D_R), kind="input", source="capture:sin")

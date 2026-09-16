@@ -68,7 +68,7 @@ def mla_attend_layer(mpk, ql_nope, q_pe, c_kv, k_pe, partials, softmax_scale, sp
     scores: optional second output [nh, s_max] FP32 for boundary B5; only written by the
     MLA_ATTEND_DEBUG_SCORES build (MPK_DEBUG_SCORES=1 at compile time)."""
     assert partials.num_dims == 3 and partials.dim(0) == n_splits
-    assert partials.dim(1) == ql_nope.dim(0) and partials.dim(2) == ql_nope.dim(1) + 1
+    assert partials.dim(1) == ql_nope.dim(0) and partials.dim(2) == G.partials_row(ql_nope.dim(1))
     assert c_kv.dim(0) == k_pe.dim(0) and -(-c_kv.dim(0) // split) == n_splits
     tiles_per_xcd = -(-n_splits // XCDS)
     tensors = [(ql_nope, (-1, -1, -1), -1), (q_pe, (-1, -1, -1), -1),
@@ -86,7 +86,7 @@ def mla_attend_layer(mpk, ql_nope, q_pe, c_kv, k_pe, partials, softmax_scale, sp
 def mla_merge_uv_layer(mpk, partials, w_uv, output, split, n_splits, block_dim=(256, 1, 1)):
     """Gang task, 8 x (nh / 8) tiles: head h = 2 bid.x + t; output columns [128 h, 128 h + 128)."""
     nh, d_v, d_c = w_uv.dim(0), w_uv.dim(1), w_uv.dim(2)
-    assert nh % XCDS == 0 and output.dim(1) == nh * d_v and partials.dim(2) == d_c + 1
+    assert nh % XCDS == 0 and output.dim(1) == nh * d_v and partials.dim(2) == G.partials_row(d_c)
     assert d_c % 256 == 0, "K of the W_uv product must be a multiple of 256"
     assert n_splits <= 64, "mla_merge_uv merges one split per lane of one wavefront"
     _new_task(mpk, (XCDS, 1, 1), block_dim,

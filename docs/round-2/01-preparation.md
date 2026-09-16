@@ -115,7 +115,7 @@ Saves on the VM: the per-operator sweep of layer 7 (15 runs) becomes 5,
 and the "is it the address" question is answered in two runs instead of
 being open.
 
-### P2. Partials row padded to 516 floats (1 hour, after P1)
+### P2. Partials row padded to 516 floats (1 hour, after P1) - done 2026-09-16
 
 `D_C + 1` is the row length in `fleet/graph_plan.py` (the `partials`
 tensor), `harness/numpy_ref.py` (`mla_attend`, `merge_partials`), the two kernels
@@ -131,6 +131,21 @@ compile (`OFFLINE_COMPILE=1 bash env/preflight.sh`).
 Saves on the VM: nothing directly; removes one hypothesis from the fault
 work and makes every partials row a 16-byte multiple for the later prefetch
 work in `mla_attend` (P6).
+
+Done: `partials_row(d_c)` in `fleet/graph_plan.py` (D_C + 1 rounded up to a
+multiple of 4, so 513 -> 516 and every row is 16-byte aligned when the base
+is) sizes the tensor; the two kernels and the launcher define a matching
+`P_ROW` and use it as the row stride, with the lse still at column D_C and
+columns 513 to 515 unused. The reference in `numpy_ref.py` stays logical
+(513 wide) and `merge_partials` / `mla_merge_uv` take an explicit `d_c`; the
+launcher's driver pads the device buffers and slices back for the compare
+(`kernel_tests.py`, `rows_partials` gained a `d_c` argument). 141 tests and
+the offline gfx942 compile pass (no VGPR spills). Standing caveat: P1
+already showed this is not the M4 fault (the base is 512-byte aligned, so
+513-float rows are misaligned at every layer count, yet 2, 3, 4, 16 and 27
+layers run) and the kernels read partials with scalar loads today, so the
+alignment matters only once P6 vectorises that access; this is hygiene that
+makes P6 possible, not a fix.
 
 ### P3. Growth curve: re-wire the debug snapshot (1 hour) - done 2026-09-16
 

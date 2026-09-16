@@ -19,7 +19,7 @@
  * by FP32 reassociation only.
  *
  * Inputs : ql_nope [NH, D_C], q_pe [NH, D_R], c_kv [S_max, D_C], k_pe [S_max, D_R]
- * Outputs: partials [n_splits, NH, D_C + 1] FP32
+ * Outputs: partials [n_splits, NH, P_ROW] FP32 (P_ROW = D_C+1 padded to a multiple of 4; o in [0,D_C), lse at D_C)
  *          (debug builds, -DMLA_ATTEND_DEBUG_SCORES: scores [NH, S_max] FP32,
  *          the scaled pre-softmax scores, boundary B5)
  * partials_xcd_offset_rows: rows the runtime already added to the partials
@@ -63,6 +63,9 @@ __device__ __forceinline__ void
   static_assert(NH % WAVES == 0, "heads split over the 4 waves");
   static_assert(NH * TILE <= 2 * NUM_THREADS, "two scores per thread per pass");
   static_assert(D_C % 8 == 0 && D_R % 8 == 0, "16-byte loads");
+  // partials row padded up to a multiple of 4 floats: each [split, head] row is then
+  // 16-byte aligned when the buffer base is (docs/round-2 P2). o in [0, D_C), lse at D_C.
+  constexpr int P_ROW = ((D_C + 1 + 3) / 4) * 4;
 
   int xcd = tile_idx / tiles_per_xcd;
   int t = tile_idx % tiles_per_xcd;
@@ -71,13 +74,13 @@ __device__ __forceinline__ void
     return;
   }
   float *partials = static_cast<float *>(partials_ptr)
-      - (size_t)xcd * partials_xcd_offset_rows * NH * (D_C + 1)
-      + (size_t)split_id * NH * (D_C + 1);
+      - (size_t)xcd * partials_xcd_offset_rows * NH * P_ROW
+      + (size_t)split_id * NH * P_ROW;
   int tid = threadIdx.x;
   int lo = split_id * split;
   if (lo > step) {
-    for (int e = tid; e < NH * (D_C + 1); e += NUM_THREADS) {
-      partials[e] = (e % (D_C + 1) == D_C) ? -INFINITY : 0.0f;
+    for (int e = tid; e < NH * P_ROW; e += NUM_THREADS) {
+      partials[e] = (e % P_ROW == D_C) ? -INFINITY : 0.0f;
     }
     return;
   }
@@ -213,11 +216,11 @@ __device__ __forceinline__ void
     float inv_l = 1.0f / l_s[h0 + j];
 #pragma unroll
     for (int k = 0; k < 8; k++) {
-      partials[(h0 + j) * (D_C + 1) + c0 + k] = acc[j][k] * inv_l;
+      partials[(h0 + j) * P_ROW + c0 + k] = acc[j][k] * inv_l;
     }
   }
   if (tid < NH) {
-    partials[tid * (D_C + 1) + D_C] = m_s[tid] + logf(l_s[tid]);
+    partials[tid * P_ROW + D_C] = m_s[tid] + logf(l_s[tid]);
   }
 }
 

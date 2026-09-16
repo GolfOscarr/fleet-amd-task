@@ -147,10 +147,14 @@ def mla_attend(ql_nope, q_pe, c_kv, k_pe, step, softmax_scale, *, split=32, n_sp
     return (partials, scores_all) if debug_scores else partials
 
 
-def merge_partials(partials, step, *, split=32):
-    """CK-style merge of the live splits: o = sum_j o_j exp(lse_j - M) / sum_j exp(lse_j - M)."""
-    nh, d_c1 = partials.shape[1], partials.shape[2]
-    d_c = d_c1 - 1
+def merge_partials(partials, step, *, split=32, d_c=None):
+    """CK-style merge of the live splits: o = sum_j o_j exp(lse_j - M) / sum_j exp(lse_j - M).
+
+    d_c: the logical o-width; the lse is column d_c. Defaults to partials.shape[2] - 1, but the
+    device buffer pads the row past d_c + 1 (P2), so pass d_c explicitly for a padded input."""
+    nh = partials.shape[1]
+    if d_c is None:
+        d_c = partials.shape[2] - 1
     live = -(-(step + 1) // split)
     lse = partials[:live, :, d_c]                     # [live, nh]
     M = lse.max(axis=0)                               # [nh]
@@ -159,11 +163,11 @@ def merge_partials(partials, step, *, split=32):
     return o.astype(F32)                              # [nh, d_c]
 
 
-def mla_merge_uv(partials, W_uv, step, *, split=32):
+def mla_merge_uv(partials, W_uv, step, *, split=32, d_c=None):
     """attn [nh * d_v] BF16: per head, merge then o[h] @ W_uv[h]^T with FP32 accumulate.
 
-    o is rounded to BF16 before the product (it is an MFMA operand)."""
-    o = bf16(merge_partials(partials, step, split=split))
+    o is rounded to BF16 before the product (it is an MFMA operand). d_c: see merge_partials."""
+    o = bf16(merge_partials(partials, step, split=split, d_c=d_c))
     attn = np.einsum("hc,hvc->hv", o, np.asarray(W_uv, F32), dtype=F32)
     return bf16(attn.reshape(-1))
 
