@@ -1,10 +1,10 @@
 == L8_head_it2_al65536: /home/hotaisle/metalOps/.venv-fleet/bin/python harness/run_fleet.py --layers 8 --head --iters 2 --align-alloc 65536 --model-dir /home/hotaisle/.cache/huggingface/hub/models--deepseek-ai--DeepSeek-Coder-V2-Lite-Base/snapshots/ea9b066cee82f82906fdd58898cb3788b1c5d770
-2026-09-16T17:59:40Z L8_head_it2_al65536 PASS rc=0 mpk=1 fault=0 fwd=2 wall=38s
-== L8_head_it2_wsfirst: /home/hotaisle/metalOps/.venv-fleet/bin/python harness/run_fleet.py --layers 8 --head --iters 2 --workspaces-first --model-dir /home/hotaisle/.cache/huggingface/hub/models--deepseek-ai--DeepSeek-Coder-V2-Lite-Base/snapshots/ea9b066cee82f82906fdd58898cb3788b1c5d770
-2026-09-16T18:00:17Z L8_head_it2_wsfirst PASS rc=0 mpk=1 fault=0 fwd=2 wall=37s
-== L8_head_it2_al65536_wsfirst: /home/hotaisle/metalOps/.venv-fleet/bin/python harness/run_fleet.py --layers 8 --head --iters 2 --align-alloc 65536 --workspaces-first --model-dir /home/hotaisle/.cache/huggingface/hub/models--deepseek-ai--DeepSeek-Coder-V2-Lite-Base/snapshots/ea9b066cee82f82906fdd58898cb3788b1c5d770
-2026-09-16T18:00:54Z L8_head_it2_al65536_wsfirst PASS rc=0 mpk=1 fault=0 fwd=2 wall=37s
-== L8_head_it2_al2097152_wsfirst: /home/hotaisle/metalOps/.venv-fleet/bin/python harness/run_fleet.py --layers 8 --head --iters 2 --align-alloc 2097152 --workspaces-first --model-dir /home/hotaisle/.cache/huggingface/hub/models--deepseek-ai--DeepSeek-Coder-V2-Lite-Base/snapshots/ea9b066cee82f82906fdd58898cb3788b1c5d770
-2026-09-16T18:01:32Z L8_head_it2_al2097152_wsfirst PASS rc=0 mpk=1 fault=0 fwd=2 wall=38s
-2026-09-16T18:01:32Z DONE env/session/queue-fix.txt
-2026-09-16T18:01:32Z PASS queue 150s
+2026-09-16T18:03:57Z L8_head_it2_al65536 PASS rc=0 mpk=1 fault=0 fwd=2 wall=37s
+== L27_head_it32_al65536: /home/hotaisle/metalOps/.venv-fleet/bin/python harness/run_fleet.py --layers 27 --head --iters 32 --align-alloc 65536 --model-dir /home/hotaisle/.cache/huggingface/hub/models--deepseek-ai--DeepSeek-Coder-V2-Lite-Base/snapshots/ea9b066cee82f82906fdd58898cb3788b1c5d770
+2026-09-16T18:04:47Z L27_head_it32_al65536 PASS rc=0 mpk=1 fault=0 fwd=31 wall=48s compare=FAIL
+== L27_it1_al65536: /home/hotaisle/metalOps/.venv-fleet/bin/python harness/run_fleet.py --layers 27 --debug --align-alloc 65536 --model-dir /home/hotaisle/.cache/huggingface/hub/models--deepseek-ai--DeepSeek-Coder-V2-Lite-Base/snapshots/ea9b066cee82f82906fdd58898cb3788b1c5d770
+2026-09-16T18:05:34Z L27_it1_al65536 PASS rc=0 mpk=1 fault=0 fwd=0 wall=46s compare=FAIL
+== L2_it4_L0.norm1_al65536: /home/hotaisle/metalOps/.venv-fleet/bin/python harness/run_fleet.py --layers 2 --stop-after L0.norm1 --iters 4 --align-alloc 65536 --model-dir /home/hotaisle/.cache/huggingface/hub/models--deepseek-ai--DeepSeek-Coder-V2-Lite-Base/snapshots/ea9b066cee82f82906fdd58898cb3788b1c5d770
+env/session/queue.sh: line 117: 33645 Aborted                 (core dumped) $PROFILER --kernel-trace --output-format csv -d "$prof/ktrace" -- $RUN_FLEET "${args[@]}" --model-dir "$snap" --out "$FLEET_OUT/${name}_ktrace" > "$prof/ktrace.out" 2>&1
+2026-09-16T18:06:00Z L2_it4_L0.norm1_al65536 PASS rc=0 mpk=1 fault=0 fwd=3 wall=24s measure=FAIL
+== L2_it4_L0.qkva_al65536: /home/hotaisle/metalOps/.venv-fleet/bin/python harness/run_fleet.py --layers 2 --stop-after L0.qkva --iters 4 --align-alloc 65536 --model-dir /home/hotaisle/.cache/huggingface/hub/models--deepseek-ai--DeepSeek-Coder-V2-Lite-Base/snapshots/ea9b066cee82f82906fdd58898cb3788b1c5d770
