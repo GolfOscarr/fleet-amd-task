@@ -77,7 +77,7 @@ compiled for `gfx942` offline with the ROCm 7.0 compiler.
 
 | | |
 |---|---|
-| Documentation | 5 discovery sets (41 files) + the design set (15 files, 1 script) |
+| Documentation | 5 discovery sets (41 files) + the design set (15 files, 1 script) + the two GPU sets under `docs/gpu-experiments/` (7 and 8 files: the bring-up of 2026-09-15, the validation of 2026-09-16) |
 | Local harness | reference run and capture, comparison, weight packing, graph builder, four new kernels and their runtime glue, environment and measurement scripts (`harness/`, `fleet/`, `env/`) |
 | Offline gfx942 compile | the patched megakernel headers parse and our kernels compile and link, no spills; the cross-XCD fences lower as designed ([`env/offline_gfx942/`](env/offline_gfx942/README.md)) |
 | Next agent | how to reach the GPU and run on the VM: [`docs/gpu-experiments/01-bringup/06-agent-guide.md`](docs/gpu-experiments/01-bringup/06-agent-guide.md); round 2 in one page: [`docs/gpu-experiments/02-validation/07-summary.md`](docs/gpu-experiments/02-validation/07-summary.md), then its log, numbers and lessons in [`docs/gpu-experiments/02-validation/`](docs/gpu-experiments/02-validation/README.md) |

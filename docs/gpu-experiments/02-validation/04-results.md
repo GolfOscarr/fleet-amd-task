@@ -1,8 +1,8 @@
 # 04 - Results
 
-Filled after the sessions from the record (`env/hw/<date>/runs/`). The
+Filled from the record of 2026-09-16 (`env/hw/20260916/runs/`). The
 baseline column holds the 2026-09-15 numbers so every cell is a
-comparison, not a bare value. A cell is left `-` until the run exists;
+comparison, not a bare value. A cell marked not measured says why;
 nothing is estimated.
 
 ## Correctness evidence
