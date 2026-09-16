@@ -21,7 +21,7 @@ quotes a status line or a file in the record.
 
 | UTC | Row | Command | Status line or result | Note |
 |---|---|---|---|---|
-| | A0 | `laptop.sh balance` | | |
+| 2026-09-16 (gate, before the session) | A0 | `laptop.sh balance`; `gh api /user/packages?package_type=container` | `No virtual machines`, `Available Balance: $27.56`, `Hourly Rate: $0.00/hour`; GHCR: no container package, no `fleet-amd-task` image | the plan's assumptions hold; the image is built in session A |
 | | A0 | `laptop.sh provision` | | |
 | | A1 | `start download` / `login` / `start image` / `start setup` / `start hw` | | |
 | | A2 | `start checks` | | |

@@ -13,9 +13,9 @@ skeletons with the 2026-09-15 baseline already in their cells.
 
 | | |
 |---|---|
-| Balance | $27.00 |
+| Balance | $27.56 (read from the team page on 2026-09-16, before any session; the gate of row A0) |
 | Shape | 1x MI300X, $2.99 per hour, one-hour minimum, per-minute after |
-| Hours | 9.0 |
+| Hours | 9.2 |
 | Session A | up to 4.0 hours of VM time ($11.96): the image, the fault, M4, the growth curve, the attribution check, the first timings |
 | Session B | up to 3.5 hours ($10.47): the measurements and the second lever |
 | Reserve | 1.5 hours ($4.49): a rescue if a session ends with an unsynced record or an unpushed image |
