@@ -15,7 +15,7 @@ nothing is estimated.
 | M4: 32 token ids equal to the reference | `fleet_output_ids.json` = `harness/ref/ref_output_ids.json` | `runs/L27_head_it32_al65536` (A8.2, 2026-09-16 18:04:47) | PASS: `output_ids PASS`, 32 of 32 equal, `head.B16.token fleet 25 ref 25`; the route log differs in 60 of 832 (step, layer) top-k sets, one expert in most, growing after step 22 (BF16 drift, ids unchanged); the head norm and logits rows compare the last iteration with the step-1 reference and are not evidence |
 | The fault is fixed | 8 layers with the head, 2 iterations, `fwd=2` | `runs/L8_head_it2_al65536` (A7) | PASS: `fwd=2`, and the same for `_wsfirst`, `_al65536_wsfirst`, `_al2097152_wsfirst`; then 27 layers with the head at 32 iterations |
 | The kernels after P6 | 7 suites, 100 of 100 | `fleet/tasks/results/kernel_tests.json` (A4) | PASS: 7 suites, 100 of 100 each, twice (before and after the runtime rebuild) |
-| Every flag on, still correct | B4 `compare=PASS` | `runs/L27_head_it32_<flags>` (B4) | - |
+| Every flag on, still correct | B4 `compare=PASS` | `runs/L27_head_it32_tile_al65536` (B4) | `output_ids PASS`, 32 of 32 equal with `--tile-linears --align-alloc 65536`; the route log differs as in A8.2 (drift, not a wrong id) |
 
 ## The fault (M4)
 
@@ -33,8 +33,8 @@ nothing is estimated.
 |---|---|---|---|---|---|
 | Baseline, 2x host, gang, old kernels | `runs/L27_it32` (2026-09-15) | 15,572 | - | - | 1.00 |
 | Baseline, this host, gang, P6 kernels, `--align-alloc 65536` | A8.6, `runs/L27_head_it32_al65536` (with the head) | 15,019.5 (host clock, mean of 32) | - | - | 0.96 |
-| `--tile-linears` | A8.5 (2 layers): 1,735.8 to 1,595.9 us per iteration; 27 layers in B2 | - | - | - | 0.92 on the 2-layer graph |
-| `--nt-weights` | B5 | - | - | - | |
+| `--tile-linears` | B2, `runs/L27_head_it32_tile_al65536` (2 layers in A8.5: 1,735.8 to 1,595.9) | 14,384.2 (host clock) | - | - | 0.92 |
+| `--nt-weights` (E2) | B5, `runs/L27_head_it32_nt_al65536` (2 layers: 1,497.3) | 12,977.8 (host clock) | - | - | 0.83; `mla_attend` 215 to 150 us, `w13` 26 to 22 us |
 | Design band | `09-expected-performance.md` | 1,148 to 1,349 + 326 t_b | | | |
 
 ## Per-operator time (event gaps, mean over iterations; the 2-layer graph, 32 iterations)

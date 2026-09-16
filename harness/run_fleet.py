@@ -193,9 +193,10 @@ def run_name(args):
     tile = "_tile" if args.tile_linears else ""
     al = f"_al{args.align_alloc}" if args.align_alloc else ""
     ws = "_wsfirst" if args.workspaces_first else ""
+    nt = "_nt" if args.nt_weights else ""   # session B, 2026-09-16: the E2 runs overwrote their baselines
     return (f"L{args.layers}{'_head' if args.head else ''}_it{args.iters}"
             + (f"_{args.stop_after}" if args.stop_after else "") + ("_scores" if args.debug_scores else "")
-            + tile + al + ws + pad)
+            + tile + nt + al + ws + pad)
 
 
 def tensor_addresses(host):

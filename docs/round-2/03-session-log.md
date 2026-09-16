@@ -15,7 +15,7 @@ quotes a status line or a file in the record.
 | ROCm, hipcc | 7.2.4, hipcc 7.2; rocprofv3 1.1.0; rocgdb present |
 | Balance at provision, at deletion | $27.56 before; $25.12 at minute 51 (billed per minute, no 1-hour minimum); at deletion: see the end row |
 | Record | `env/hw/20260916/`, branch `gpu/round-2` |
-| Image | building since 17:22; the 13 Dockerfile steps done by 18:04, exporting layers at 18:12 (A9 decides) |
+| Image | pushed: `ghcr.io/golfoscarr/fleet-amd-task:20260916`, 25 GB; `PASS image 3663s` at 18:23 (the 13 build steps 42 min, the export of layers 2,824 s of it, the push 3 min) |
 
 ### Timeline
 
@@ -42,6 +42,12 @@ quotes a status line or a file in the record.
 | 18:08:26 | A8 | `start queue queue-a2.txt` (flag `--align-alloc 65536` on every row) | A8.1 `L8_head_it2_al65536 PASS fwd=2`; A8.2 `L27_head_it32_al65536 PASS fwd=31 compare=FAIL` (`output_ids PASS`: 32 ids equal; `route_log FAIL`; head rows compare the last iteration with the step-1 reference); A8.3 `L27_it1_al65536 PASS compare=FAIL` (`growth_curve FAIL`, max 0.0297 at layer 5); A8.4 two rows `measure=FAIL` (rocprofv3 aborts, fix 5); A8.5 `L2_it32_al65536 table=PASS`, `L2_it32_tile_al65536 table=PASS`; A8.6 `L27_head_it32_al65536 table=PASS`, 15,019.5 us per iteration | M4 reached at 18:04:47; DECIDE A8.4, A8.5 below |
 | 18:12 to 18:17 | A8.4 | `start queue queue-b0.txt` (the stop-after ladder of layer 0 at 32 iterations) | nine rows PASS, `fwd` 28 to 32; per-iteration host clock 670 us with `norm1` alone, 1,075 us through `down` | B0 from the host clock: at 4 iterations the 15 ms launch cost hid the difference (-29 us); at 32 the ladder is noisy to about 100 us; the empty iteration costs about 670 us |
 | 18:12 | A9 (early) | `report --balance` | minute 51; `Available Balance: $25.12`, `Hourly Rate: $2.99/hour`; the image still exporting layers | |
+| 18:19 | A9 | the user's decision: session B runs on this VM | `queue-b2.txt`: B2, B4, the E2 lever on 2 and 27 layers; B1 is A8.5; B3 is out (rocprofv3, fix 5) | |
+| 18:22:06 | B2 | `start queue queue-b2.txt` | `L27_head_it32_tile_al65536 PASS fwd=31 table=PASS`: 14,384.2 us per iteration (host clock) | 0.96 of A8.6 |
+| 18:22:57 | B4 | (same queue) | `L27_head_it32_tile_al65536 PASS compare=FAIL`: `output_ids PASS`, `route_log FAIL` as in A8.2 | every flag on, the 32 ids equal |
+| 18:23:32, 18:24:21 | B5 (E2) | (same queue) `--nt-weights` | 2 layers 1,497.3 us per iteration; 27 layers with the head 12,977.8 us; `mla_attend` 145 to 150 us instead of 215, `w13` 20 to 22 instead of 24 to 26 | the runs were named like their baselines and renamed `_nt` on the VM before the pull; `run_name` carries the suffix now |
+| 18:23:06 | A9 | image | `PASS image 3663s`; `pushed ghcr.io/golfoscarr/fleet-amd-task:20260916` | session B of a later round can start from it |
+| 18:27 | fix | `start queue queue-fix2.txt` (the plan-side fix, no flag) | | |
 
 ### Decisions (the DECIDE rows)
 
@@ -87,8 +93,8 @@ quotes a status line or a file in the record.
 
 | Row | Rule | Measured | Chosen | Told the user at |
 |---|---|---|---|---|
-| B1 | the thresholds of `02` | | | |
-| B5 | which lever | | | |
+| B1 | the thresholds of `02` | A8.5 stands for B1 | | |
+| B5 | which lever | the user asked for session B in this VM; E2 (`--nt-weights`) ran as the cheap lever: 27 layers 12,977.8 us against 15,019.5 (0.86); `mla_attend` 215 to 150 us | E2 stays on; the per-tile MoE linears and the elementwise ops are the next code lever | 18:25 |
 
 ### Failures and fixes
 
