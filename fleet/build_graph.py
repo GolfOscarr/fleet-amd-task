@@ -138,7 +138,7 @@ TORCH_DTYPES = {"bf16": "bfloat16", "f32": "float32", "i32": "int32", "i64": "in
 
 def aligned_copy(torch, t, align):
     """A copy of t whose base address is a multiple of align bytes (the M4 fault tooling,
-    docs/gpu/02-validation P1: the caching allocator aligns to 512 only). The backing buffer stays alive
+    docs/gpu-experiments/02-validation P1: the caching allocator aligns to 512 only). The backing buffer stays alive
     through the returned view's storage."""
     assert align > 0 and align & (align - 1) == 0, "align must be a power of two"
     n = t.numel() * t.element_size()
@@ -158,7 +158,7 @@ def new_workspace(torch, t, align=0, device="cuda"):
 
     A [1, D] activation is backed by ROW_SLACK rows and the first row is returned: the stock
     gang_linear_silu_kernel tiles M by 16 with no active-token mask, so at batch 1 it reads
-    16 rows from its input (docs/gpu/02-validation/04-results.md, the fault of M4). The over-read stays
+    16 rows from its input (docs/gpu-experiments/02-validation/04-results.md, the fault of M4). The over-read stays
     inside this allocation whatever the allocator puts after it; the view's storage keeps the
     rows alive."""
     dtype = getattr(torch, TORCH_DTYPES[t.dtype])

@@ -1,9 +1,9 @@
 # 05 - Next session: from a fresh VM to a running graph in ten minutes
 
-**Superseded on 2026-09-16 by `docs/gpu/02-validation/02-session-plan.md`** (the 1x
+**Superseded on 2026-09-16 by `docs/gpu-experiments/02-validation/02-session-plan.md`** (the 1x
 MI300X shape, the session scripts of `env/session/`, the queue files and
 the minute-by-minute plan). That plan ran on 2026-09-16: the outcome is
-`docs/gpu/02-validation/07-summary.md`, and the image this file wanted is pushed as
+`docs/gpu-experiments/02-validation/07-summary.md`, and the image this file wanted is pushed as
 `ghcr.io/golfoscarr/fleet-amd-task:20260916`. Kept as the record of what the
 next session looked like right after the first one; the commands below still
 work by hand.

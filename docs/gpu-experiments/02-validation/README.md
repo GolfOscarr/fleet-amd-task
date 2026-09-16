@@ -1,7 +1,7 @@
 # Round 2
 
 The second round on the MI300X, planned from the artifacts of the first
-(`docs/gpu/01-bringup/`): what is prepared on the laptop first, how the two
+(`docs/gpu-experiments/01-bringup/`): what is prepared on the laptop first, how the two
 sessions on the 1x MI300X VM are spent, the log of what actually ran, and
 the results. Written from 2026-09-16 on; the preparation on branch `local/round-2` (merged as PR #6), the sessions and the write-up on `gpu/round-2`.
 
@@ -18,7 +18,7 @@ the results. Written from 2026-09-16 on; the preparation on branch `local/round-
 The scripts of this round are `env/session/` (the VM stages, the run
 queue, the laptop driver; P4 of `01-preparation.md`) and the flags added to
 `harness/run_fleet.py` (`--pad-alloc`, `--tile-linears`). The rules for
-reaching the VM are unchanged from `docs/gpu/01-bringup/06-agent-guide.md`.
+reaching the VM are unchanged from `docs/gpu-experiments/01-bringup/06-agent-guide.md`.
 
 ## Status
 
@@ -31,7 +31,7 @@ reaching the VM are unchanged from `docs/gpu/01-bringup/06-agent-guide.md`.
 | 2026-09-16 | P5 done: `--tile-linears` switches qkva/o_proj/down/lm_head to per-tile linear tasks; six tests |
 | 2026-09-16 | P2 done: partials row padded to 516 (16-byte-aligned rows) across the plan, kernels and launcher; offline compile clean |
 | 2026-09-16 | P7 done: `measure.py` filters counters and launches to the megakernel, merges PMC runs per file (the concatenation double count fixed), trace-derived per-iteration time |
-| 2026-09-16 | P8 done: the 1x-shape corrections in `docs/gpu/01-bringup`, 05 superseded, the docker README, the MAJ-7 re-reading and the B0 attribution check |
+| 2026-09-16 | P8 done: the 1x-shape corrections in `docs/gpu-experiments/01-bringup`, 05 superseded, the docker README, the MAJ-7 re-reading and the B0 attribution check |
 | 2026-09-16 | P6 done: `mla_attend` and `mla_merge_uv` batch four loads in flight and the score lanes map to heads (the 211 us was 144 serialised loads per thread); more splits deferred with the reason; preparation complete, gate next |
 | 2026-09-16 | plan improved: the fault fixes as flags, the queue guards, the rehearsal appendix, shellcheck, the row-format rewrite of 02 with the decision tree, thresholds and playbook, the skeletons 03 and 04 |
 | 2026-09-16 | the user's decisions recorded in the plan (image yes, 4.0 h, rocgdb only for a layer-7 label, prefetch fallback, deletion asked every time); the helpers `wait`, `report`, `check`, `preflight`, `kill`, `gdb`, `pf.sh`, `queue_flag.py`, `addr_diff.py` |

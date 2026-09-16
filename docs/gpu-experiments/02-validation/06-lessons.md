@@ -1,6 +1,6 @@
 # 06 - Lessons from round 2, and what the measurements say
 
-The counterpart of `docs/gpu/01-bringup/03-lessons-and-ideas.md` for the sessions
+The counterpart of `docs/gpu-experiments/01-bringup/03-lessons-and-ideas.md` for the sessions
 of 2026-09-16 (`03-session-log.md` has the rows, `04-results.md` the
 numbers). The first part is what went wrong or was believed wrongly, with the
 fix and the rule that would have avoided it; the second is what the measured

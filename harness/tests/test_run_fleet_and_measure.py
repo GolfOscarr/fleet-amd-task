@@ -221,7 +221,7 @@ def test_measure_end_to_end(tmp_path):
     assert "| time per iteration from the kernel trace (us) |  | 2000.0 |" in md
 
 
-# ---- P1 of docs/gpu/02-validation/01-preparation.md: the address-shift flag ----------------
+# ---- P1 of docs/gpu-experiments/02-validation/01-preparation.md: the address-shift flag ----------------
 
 def test_pad_alloc_argument_and_run_name():
     p = run_fleet.build_parser()
@@ -252,7 +252,7 @@ def test_fault_bisection_labels_are_in_plan_order():
     assert want[0] == "L7.norm1" and want[-1] == "head.argmax_reduce"
 
 
-# ---- the candidate M4 fault fixes as flags (docs/gpu/02-validation, session A row A4) -----------
+# ---- the candidate M4 fault fixes as flags (docs/gpu-experiments/02-validation, session A row A4) -----------
 
 def test_aligned_copy_rebases_and_preserves_values():
     for align in (512, 4096, 65536):

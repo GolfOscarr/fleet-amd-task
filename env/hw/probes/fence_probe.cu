@@ -1,4 +1,4 @@
-// fence_probe - group G of docs/gpu/01-bringup/01-plan.md.
+// fence_probe - group G of docs/gpu-experiments/01-bringup/01-plan.md.
 //
 // What the machine's hipcc lowers each fence to on gfx942. The design rests
 // on agent-scope release becoming buffer_wbl2 sc1 and agent-scope acquire

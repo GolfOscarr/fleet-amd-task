@@ -13,7 +13,7 @@ layer export 47 minutes more, the push 3 minutes; `PASS image 3663s`). The histo
 before that: four builds ran on the first VM;
 the first three failed for the reasons below, each fixed in the tree; the
 fourth was stopped with the VM. The fifth is the `image` stage of
-`env/session/vm.sh` (`docs/gpu/02-validation/02-session-plan.md`, minute 2 of
+`env/session/vm.sh` (`docs/gpu-experiments/02-validation/02-session-plan.md`, minute 2 of
 session A): it starts at minute zero next to `setup.sh`, needs no GPU,
 pushes when `laptop.sh login` has put the laptop's token on the VM and
 otherwise keeps the image local, and writes `PASS image` or the first error
@@ -75,7 +75,7 @@ on GHCR); start it with at least 30 minutes of balance left.
 
 ## Using it
 
-`docs/gpu/01-bringup/05-next-session.md`, "On the VM": pull, run with
+`docs/gpu-experiments/01-bringup/05-next-session.md`, "On the VM": pull, run with
 `--device=/dev/kfd --device=/dev/dri --group-add video --group-add render
 --security-opt seccomp=unconfined`, mount the Hugging Face cache and the
 fresh repo tree, rsync the code in, and the graphs run. Rebuild the image

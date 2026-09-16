@@ -80,11 +80,11 @@ compiled for `gfx942` offline with the ROCm 7.0 compiler.
 | Documentation | 5 discovery sets (41 files) + the design set (15 files, 1 script) |
 | Local harness | reference run and capture, comparison, weight packing, graph builder, four new kernels and their runtime glue, environment and measurement scripts (`harness/`, `fleet/`, `env/`) |
 | Offline gfx942 compile | the patched megakernel headers parse and our kernels compile and link, no spills; the cross-XCD fences lower as designed ([`env/offline_gfx942/`](env/offline_gfx942/README.md)) |
-| Next agent | how to reach the GPU and run on the VM: [`docs/gpu/01-bringup/06-agent-guide.md`](docs/gpu/01-bringup/06-agent-guide.md); round 2 in one page: [`docs/gpu/02-validation/07-summary.md`](docs/gpu/02-validation/07-summary.md), then its log, numbers and lessons in [`docs/gpu/02-validation/`](docs/gpu/02-validation/README.md) |
-| Session image | pushed 2026-09-16 as `ghcr.io/golfoscarr/fleet-amd-task:20260916` (25 GB, private) by the `image` stage of round 2; the Dockerfile in [`env/docker/README.md`](env/docker/README.md); the runs of round 2 in [`docs/gpu/02-validation/03-session-log.md`](docs/gpu/02-validation/03-session-log.md) and their numbers in [`04-results.md`](docs/gpu/02-validation/04-results.md) |
-| Hardware record | the first hour on the MI300X: 62 checks, the placement offset, the bandwidth band confirmed, the latencies ([`env/hw/20260915/`](env/hw/20260915/summary.md), [`docs/gpu/01-bringup/`](docs/gpu/01-bringup/README.md)) |
+| Next agent | how to reach the GPU and run on the VM: [`docs/gpu-experiments/01-bringup/06-agent-guide.md`](docs/gpu-experiments/01-bringup/06-agent-guide.md); round 2 in one page: [`docs/gpu-experiments/02-validation/07-summary.md`](docs/gpu-experiments/02-validation/07-summary.md), then its log, numbers and lessons in [`docs/gpu-experiments/02-validation/`](docs/gpu-experiments/02-validation/README.md) |
+| Session image | pushed 2026-09-16 as `ghcr.io/golfoscarr/fleet-amd-task:20260916` (25 GB, private) by the `image` stage of round 2; the Dockerfile in [`env/docker/README.md`](env/docker/README.md); the runs of round 2 in [`docs/gpu-experiments/02-validation/03-session-log.md`](docs/gpu-experiments/02-validation/03-session-log.md) and their numbers in [`04-results.md`](docs/gpu-experiments/02-validation/04-results.md) |
+| Hardware record | the first hour on the MI300X: 62 checks, the placement offset, the bandwidth band confirmed, the latencies ([`env/hw/20260915/`](env/hw/20260915/summary.md), [`docs/gpu-experiments/01-bringup/`](docs/gpu-experiments/01-bringup/README.md)) |
 | Open problems | 5 major open (MAJ-7 measured in round 2: the megakernel's per-task overhead), 15 minor, 31 resolved ([`OPEN-PROBLEMS.md`](OPEN-PROBLEMS.md)) |
-| Milestone | **M4 reached 2026-09-16**: the 27-layer graph with the head runs 32 iterations and the 32 ids equal the reference's; M2 (layer 1 validated end to end, all 16 boundaries, top-k exact) since 2026-09-15; the fault of round 1 named and fixed in the plan; 12.3 ms per token steady state with the gang linears, 9.6 ms with E2 and per-tile linears (the runtime's event clock; 15.0 and 10.3 ms as host means over 32 iterations) against a 1.15 to 1.35 ms design band ([`PROGRESS.md`](PROGRESS.md), [`docs/gpu/02-validation/04-results.md`](docs/gpu/02-validation/04-results.md)) |
+| Milestone | **M4 reached 2026-09-16**: the 27-layer graph with the head runs 32 iterations and the 32 ids equal the reference's; M2 (layer 1 validated end to end, all 16 boundaries, top-k exact) since 2026-09-15; the fault of round 1 named and fixed in the plan; 12.3 ms per token steady state with the gang linears, 9.6 ms with E2 and per-tile linears (the runtime's event clock; 15.0 and 10.3 ms as host means over 32 iterations) against a 1.15 to 1.35 ms design band ([`PROGRESS.md`](PROGRESS.md), [`docs/gpu-experiments/02-validation/04-results.md`](docs/gpu-experiments/02-validation/04-results.md)) |
 | Day-1 question | answered: Fleet builds and runs graphs on this machine (gate 1 PASS, [`env/check_day1.log`](env/check_day1.log)) |
 
 ## Key numbers
@@ -94,7 +94,7 @@ compiled for `gfx942` offline with the ROCm 7.0 compiler.
 | Traffic per token | **4,705.9 MiB** — routed experts 55%, shared experts 18%, `lm_head` 8.5% |
 | Roofline | **931 µs** floor at 5.3 TB/s theoretical · **1.15–1.35 ms** at 3.66–4.3 TB/s achievable |
 | Rate | 1,074 tok/s floor · **742–871 tok/s** realistic |
-| Measured (round 2, 2026-09-16) | **9.6 ms per token, 104 tok/s** steady state with E2 and per-tile linears; 12.3 ms with the gang linears; the attention kernel 34 us standalone against 146 us in the graph ([`docs/gpu/02-validation/04-results.md`](docs/gpu/02-validation/04-results.md)) |
+| Measured (round 2, 2026-09-16) | **9.6 ms per token, 104 tok/s** steady state with E2 and per-tile linears; 12.3 ms with the gang linears; the attention kernel 34 us standalone against 146 us in the graph ([`docs/gpu-experiments/02-validation/04-results.md`](docs/gpu-experiments/02-validation/04-results.md)) |
 | Layer-1 milestone | 159.6 MiB → 31.6 µs floor / 38.9–45.7 µs realistic |
 | Task graph | 12 ops / 68 tasks per MoE layer; 326 ops / 1,880 tasks per token; **3 kernel dispatches per 32-token generation** |
 | FP8 (stretch) | 2,571 MiB → 509 µs floor / 627–737 µs realistic — **1.83×** |
@@ -117,7 +117,7 @@ docs/
                      and a ledger ranking everything by value
   mla-decode/        the one kernel with no prior art in Fleet: implementation
                      survey and our kernel spec
-  gpu/               the GPU sessions
+  gpu-experiments/   the GPU sessions
     01-bringup/      the first sessions (2026-09-15): the hardware record's
                      plan and checklist, every run with its failure and fix,
                      the lessons and ideas, the agent guide
@@ -217,8 +217,8 @@ are not tracked here — download them on the target machine.
 |---|---|
 | Technical design | [`docs/design-doc/`](docs/design-doc/README.md) |
 | Source, build and run instructions | `env/setup.sh`, `env/check_day1.sh`, `env/preflight.sh`, [`harness/README.md`](harness/README.md), [`fleet/tasks/README.md`](fleet/tasks/README.md), [`fleet/patches/README.md`](fleet/patches/README.md); results pending GPU access |
-| Correctness evidence at every boundary | method in [`docs/deepseek-v2-lite/08-correctness.md`](docs/deepseek-v2-lite/08-correctness.md); the evidence in [`docs/gpu/02-validation/04-results.md`](docs/gpu/02-validation/04-results.md) and the reports under `env/hw/20260916/runs/` |
-| Profiling commands and results | plan in [`docs/mi300x/06-profiling.md`](docs/mi300x/06-profiling.md); the commands in `env/session/` and the results in [`docs/gpu/02-validation/04-results.md`](docs/gpu/02-validation/04-results.md) |
-| Milestone reached, remaining fallbacks | [`PROGRESS.md`](PROGRESS.md), [`docs/gpu/02-validation/07-summary.md`](docs/gpu/02-validation/07-summary.md) |
-| Known failures | [`OPEN-PROBLEMS.md`](OPEN-PROBLEMS.md), [`docs/gpu/02-validation/06-lessons.md`](docs/gpu/02-validation/06-lessons.md) |
-| Recommended next steps | [`docs/gpu/02-validation/06-lessons.md`](docs/gpu/02-validation/06-lessons.md) (measured, in the order of the gain), [`docs/acceleration/04-technique-ledger.md`](docs/acceleration/04-technique-ledger.md) |
+| Correctness evidence at every boundary | method in [`docs/deepseek-v2-lite/08-correctness.md`](docs/deepseek-v2-lite/08-correctness.md); the evidence in [`docs/gpu-experiments/02-validation/04-results.md`](docs/gpu-experiments/02-validation/04-results.md) and the reports under `env/hw/20260916/runs/` |
+| Profiling commands and results | plan in [`docs/mi300x/06-profiling.md`](docs/mi300x/06-profiling.md); the commands in `env/session/` and the results in [`docs/gpu-experiments/02-validation/04-results.md`](docs/gpu-experiments/02-validation/04-results.md) |
+| Milestone reached, remaining fallbacks | [`PROGRESS.md`](PROGRESS.md), [`docs/gpu-experiments/02-validation/07-summary.md`](docs/gpu-experiments/02-validation/07-summary.md) |
+| Known failures | [`OPEN-PROBLEMS.md`](OPEN-PROBLEMS.md), [`docs/gpu-experiments/02-validation/06-lessons.md`](docs/gpu-experiments/02-validation/06-lessons.md) |
+| Recommended next steps | [`docs/gpu-experiments/02-validation/06-lessons.md`](docs/gpu-experiments/02-validation/06-lessons.md) (measured, in the order of the gain), [`docs/acceleration/04-technique-ledger.md`](docs/acceleration/04-technique-ledger.md) |

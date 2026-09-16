@@ -1,4 +1,4 @@
-// xcc_map - group F of docs/gpu/01-bringup/01-plan.md.
+// xcc_map - group F of docs/gpu-experiments/01-bringup/01-plan.md.
 //
 // Which XCD each workgroup of a plain launch lands on. The design puts eight
 // consecutive gang tasks on eight distinct XCDs and the Fleet runtime indexes

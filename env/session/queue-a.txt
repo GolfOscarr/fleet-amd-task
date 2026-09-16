@@ -1,4 +1,4 @@
-# Session A, part 1: the fault (docs/gpu/02-validation/02-session-plan.md, row A5).
+# Session A, part 1: the fault (docs/gpu-experiments/02-validation/02-session-plan.md, row A5).
 # Rows run one at a time; 'continue' keeps the queue going after an expected FAIL.
 --layers 8 --head --iters 2 continue                 # A5.1: the fault reproduces on this machine (expected FAIL)
 --layers 8 --head --iters 2 --pad-alloc 1 continue   # A5.2: does the address decide? any PASS here says yes

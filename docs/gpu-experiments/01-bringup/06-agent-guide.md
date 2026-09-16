@@ -14,7 +14,7 @@ file is about the mechanics of getting there and back.
   everything on it.
 - Shapes seen: 2x MI300X VM at $5.98 per hour (26 cores, 448 GiB, 13 TB
   NVMe, the only one listed on 2026-09-15); the 1x at $2.99 is the shape
-  of round 2 (`docs/gpu/02-validation/02-session-plan.md`). On a 1x everything runs
+  of round 2 (`docs/gpu-experiments/02-validation/02-session-plan.md`). On a 1x everything runs
   on GPU 0 in sequence: the reference run, the calibration, the kernel
   tests and the probes queue behind the graph runs (about 4 minutes in
   total). On a 2x the second GPU can take them, never a second graph run
@@ -117,7 +117,7 @@ row in `env/logs/session.status`; the graph runs come from queue files
 (`env/session/queue-*.txt`) through `queue.sh`, one at a time; `laptop.sh
 wait` and `report`, `vm.sh check`, `preflight`, `kill` and `gdb`, `pf.sh`,
 `queue_flag.py` and `addr_diff.py` are the helpers (the table in the plan).
-The plan that uses them is `docs/gpu/02-validation/02-session-plan.md`; what it looked like when it ran is `docs/gpu/02-validation/03-session-log.md`. Three rules from that day: the first push of a session is `FULL=1 laptop.sh push` and every later push leaves `repos/` alone (the laptop's fork is pristine, the VM's is patched); `laptop.sh pull` brings back the record only; when the list shows no 1x unit, `env/session/grab.sh` polls it and provisions the moment one appears. The shape itself:
+The plan that uses them is `docs/gpu-experiments/02-validation/02-session-plan.md`; what it looked like when it ran is `docs/gpu-experiments/02-validation/03-session-log.md`. Three rules from that day: the first push of a session is `FULL=1 laptop.sh push` and every later push leaves `repos/` alone (the laptop's fork is pristine, the VM's is patched); `laptop.sh pull` brings back the record only; when the list shows no 1x unit, `env/session/grab.sh` polls it and provisions the moment one appears. The shape itself:
 
 1. Provision (or `grab.sh`); note the time and the balance. Billing is per minute.
 2. rsync the tree; start the model download and the image build;

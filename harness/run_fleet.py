@@ -8,11 +8,11 @@
 
 --align-alloc BYTES re-bases every weight, capture and workspace on an aligned address and
 --workspaces-first allocates the workspaces before the weights (the candidate M4 fault fixes,
-docs/gpu/02-validation/02-session-plan.md, row A4); both are recorded in fleet_run_meta.json.
+docs/gpu-experiments/02-validation/02-session-plan.md, row A4); both are recorded in fleet_run_meta.json.
 --pad-alloc GB holds a dummy device allocation of that size for the whole run,
 made before the weights are packed, so every later buffer moves to a different
 address without any change to the graph; fleet_run_meta.json records the pad
-and the device address of every tensor (the M4 fault test of docs/gpu/02-validation).
+and the device address of every tensor (the M4 fault test of docs/gpu-experiments/02-validation).
 
 Positions follow D14/D15: step is set to 1022 after compile() (the seeded
 prepare_next_batch makes it 1023), num_new_tokens 1, qo_indptr [0, 1],
@@ -183,10 +183,10 @@ def build_parser():
     ap.add_argument("--pad-alloc", type=float, default=0.0, metavar="GB",
                     help="hold a dummy device allocation of GB gibibytes before packing (address shift)")
     ap.add_argument("--tile-linears", action="store_true",
-                    help="issue qkva, o_proj, down and lm_head as per-tile linear_layer tasks (MAJ-7, docs/gpu/02-validation P5)")
+                    help="issue qkva, o_proj, down and lm_head as per-tile linear_layer tasks (MAJ-7, docs/gpu-experiments/02-validation P5)")
     ap.add_argument("--align-alloc", type=int, default=0, metavar="BYTES",
                     help="re-base every weight, capture and workspace on a BYTES-aligned address (power of two; "
-                         "the M4 fault candidates, docs/gpu/02-validation)")
+                         "the M4 fault candidates, docs/gpu-experiments/02-validation)")
     ap.add_argument("--workspaces-first", action="store_true",
                     help="allocate the workspaces from the plan before the weights are packed (address order)")
     return ap
@@ -291,7 +291,7 @@ def main():
     torch.cuda.synchronize()
 
     # the static part of the record, with the addresses, before the run: a faulting run keeps it
-    # (docs/gpu/02-validation/02-session-plan.md, the fault decision tree reads the addresses of the failing run)
+    # (docs/gpu-experiments/02-validation/02-session-plan.md, the fault decision tree reads the addresses of the failing run)
     meta_out = {
         "layers": args.layers, "head": args.head, "iters": args.iters, "debug": args.debug,
         "stop_after": args.stop_after, "s_max": s_max, "n_prompt": n_prompt, "tile_linears": args.tile_linears,

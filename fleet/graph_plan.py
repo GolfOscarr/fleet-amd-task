@@ -139,7 +139,7 @@ class Plan:
 def partials_row(d_c):
     """Innermost width of the split-KV partials buffer: D_C values of o plus one lse at
     column D_C, padded up to a multiple of 4 floats so each [split, head] row is 16-byte
-    aligned when the buffer base is (docs/gpu/02-validation P2). 513 -> 516 at D_C = 512."""
+    aligned when the buffer base is (docs/gpu-experiments/02-validation P2). 513 -> 516 at D_C = 512."""
     return ((d_c + 1 + 3) // 4) * 4
 
 
@@ -171,7 +171,7 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
     """debug_scores: the mla_attend kernel also writes the scaled pre-softmax scores
     [NH, s_max] FP32 (boundary B5); needs the MLA_ATTEND_DEBUG_SCORES build (MPK_DEBUG_SCORES=1).
     tile_linears: issue the four dense linears (qkva, o_proj, down, lm_head) as per-tile
-    linear_layer tasks over all workers instead of 8-task gangs (MAJ-7; docs/gpu/02-validation P5). The
+    linear_layer tasks over all workers instead of 8-task gangs (MAJ-7; docs/gpu-experiments/02-validation P5). The
     silu-fused gate_up and the MoE linears stay gang (no drop-in non-gang equivalent)."""
     d = dims
     assert 1 <= layers <= d.L

@@ -139,7 +139,7 @@ docker image for J5: rocm/dev-ubuntu-24.04:7.2
 ---- summary
 # Hardware collection 20260916
 
-Collected on 20260916 on enc1-gpuvm015, ROCm 7.2.4, hipcc 7.2.53211. 62 checklist rows: 30 PASS, 7 MISMATCH, 23 INFO, 2 UNAVAILABLE. Raw captures are in raw/, one file per command, and collect.log holds the run. Every MISMATCH belongs in OPEN-PROBLEMS.md and the owning 99-open-questions.md with its date and command (docs/gpu/01-bringup/02-checklist.md, Sign-off).
+Collected on 20260916 on enc1-gpuvm015, ROCm 7.2.4, hipcc 7.2.53211. 62 checklist rows: 30 PASS, 7 MISMATCH, 23 INFO, 2 UNAVAILABLE. Raw captures are in raw/, one file per command, and collect.log holds the run. Every MISMATCH belongs in OPEN-PROBLEMS.md and the owning 99-open-questions.md with its date and command (docs/gpu-experiments/01-bringup/02-checklist.md, Sign-off).
 
 | # | Check | Measured | Expected | Result |
 |---|---|---|---|---|
@@ -211,6 +211,6 @@ written: /home/hotaisle/metalOps/env/hw/20260916/summary.md (62 rows)
 raw files:  /home/hotaisle/metalOps/env/hw/20260916/raw
 summary:    /home/hotaisle/metalOps/env/hw/20260916/summary.md
 log:        /home/hotaisle/metalOps/env/hw/20260916/collect.log
-next: read the summary against docs/gpu/01-bringup/02-checklist.md, file every
+next: read the summary against docs/gpu-experiments/01-bringup/02-checklist.md, file every
       MISMATCH in OPEN-PROBLEMS.md, then commit env/hw/20260916/
 2026-09-16T17:23:14Z PASS hw 65s

@@ -4,7 +4,7 @@ The TUI needs a real terminal, so this opens a pseudo-terminal, connects,
 waits <seconds> for the first screen, sends the keys in order (2.5 s apart,
 WAIT<n> pauses n seconds), hangs up, and prints a rough text rendering of
 the last screen. The raw byte stream goes to raw.bin next to this file for
-a second look (see docs/gpu/01-bringup/06-agent-guide.md for the recipes).
+a second look (see docs/gpu-experiments/01-bringup/06-agent-guide.md for the recipes).
 
     python3 env/hotaisle/tui.py 8                      # the team page
     python3 env/hotaisle/tui.py 8 n WAIT4              # the provisioning list

@@ -13,7 +13,7 @@ for the next session. Written from 2026-09-15 on.
 | [`02-checklist.md`](02-checklist.md) | the checks, one row each: command, expected value with its source, what it settles; the sign-off list |
 | [`03-lessons-and-ideas.md`](03-lessons-and-ideas.md) | what went wrong on the first sessions and the fix for each; fourteen ideas the measurements suggest, each with the number it rests on |
 | [`04-session-log.md`](04-session-log.md) | the timeline of every run of 2026-09-15, every failure with its cause and fix, what each artifact proves |
-| [`05-next-session.md`](05-next-session.md) | superseded by [`docs/gpu/02-validation/02-session-plan.md`](../02-validation/02-session-plan.md); from a fresh VM to a running graph in ten minutes with the pushed image; what to do first |
+| [`05-next-session.md`](05-next-session.md) | superseded by [`docs/gpu-experiments/02-validation/02-session-plan.md`](../02-validation/02-session-plan.md); from a fresh VM to a running graph in ten minutes with the pushed image; what to do first |
 | [`06-agent-guide.md`](06-agent-guide.md) | for the next agent: the Hot Aisle TUI from a script (`env/hotaisle/tui.py`), provisioning and deletion, reaching the VM, commands that survive the session, the traps, the session shape, what the user expects |
 
 The script and the six probes are `env/collect_hw.sh` and
