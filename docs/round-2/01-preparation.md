@@ -300,7 +300,7 @@ read from the disassembly (no VGPR spills, `env/offline_gfx942/`), and
 On the VM: `kernel_tests.py --kernel mla_attend --kernel mla_attend_splits
 --kernel mla_merge_uv` (100 trials each), then the 2-layer timing run.
 
-### P7. Measurement commands for the submission (1 hour)
+### P7. Measurement commands for the submission (1 hour) - done 2026-09-16
 
 `harness/measure.py` reads a rocprofv3 kernel-trace CSV and PMC CSVs, but
 no graph run has been profiled yet. Add to the queue format a `measure`
@@ -317,6 +317,22 @@ Check here: the queue test of P4 with a fake `rocprofv3`; the existing
 
 On the VM: five runs of about two minutes, giving bytes per iteration,
 achieved bandwidth, launches per generation and the per-operator table.
+
+Done: `measure.py` filters the counters and the launch count to the
+megakernel's dispatches (`prepare_kernel`, `worker_kernel`,
+`scheduler_kernel`, `persistent_kernel`; `--kernel-filter ''` sums the whole
+process), reports the megakernel's dispatches against the run's total, and
+derives a per-iteration time from the trace's own timestamps. `--pmc` takes
+a file, a comma-separated list or a directory of runs, merged per file with
+the later file winning (the summarizer's rule): a bug found on the way is
+that P4's `measure` row concatenated the four PMC runs, and the counter
+present in two of them (`TCC_EA0_RDREQ_sum`, in the 32B pair and in the
+BUBBLE pair) was double counted, 1.5 GiB for a 1 GiB copy; `queue.sh` now
+passes the profile directory and copies the per-run CSVs into the record.
+Checked against the 2026-09-15 record: filtered to `copy_kernel`, reads and
+writes are 1 GiB within 1e-4 in both the directory and the list form. Four
+tests. What P7 cannot do here: the megakernel filter matches no dispatch of
+a probe run, so its first real use is session B's B3 row.
 
 ### P8. Documents for the 1x shape and this round (1 hour)
 

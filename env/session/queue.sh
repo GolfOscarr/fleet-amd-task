@@ -92,11 +92,11 @@ do_measure() {
   local name="$1"; shift
   local args=("$@") snap prof="$LOGDIR/prof/$1"; snap="$(snap_dir)"
   mkdir -p "$prof"
-  local k=0 set_ ktrace pmc_all="$prof/pmc_all.csv"
+  local k=0 set_ ktrace
   if [ "$DRY" = "1" ]; then    # the commands go to stderr: stdout is the verdict the caller captures
     echo "+ $PROFILER --kernel-trace --output-format csv -d $prof/ktrace -- $RUN_FLEET ${args[*]} --model-dir $snap --out $FLEET_OUT/${name}_ktrace" >&2
     for set_ in "${PMC_SETS[@]}"; do k=$((k + 1)); echo "+ $PROFILER --pmc $set_ --output-format csv -d $prof/pmc$k -- $RUN_FLEET ${args[*]} --model-dir $snap --out $FLEET_OUT/${name}_pmc$k" >&2; done
-    echo "+ $MEASURE --run $FLEET_OUT/$name --kernel-trace <csv> --pmc $pmc_all" >&2; echo PASS; return 0
+    echo "+ $MEASURE --run $FLEET_OUT/$name --kernel-trace <csv> --pmc $prof" >&2; echo PASS; return 0
   fi
   # shellcheck disable=SC2086
   $PROFILER --kernel-trace --output-format csv -d "$prof/ktrace" -- $RUN_FLEET "${args[@]}" --model-dir "$snap" --out "$FLEET_OUT/${name}_ktrace" > "$prof/ktrace.out" 2>&1 || { echo FAIL; return 1; }
@@ -106,14 +106,16 @@ do_measure() {
     $PROFILER --pmc $set_ --output-format csv -d "$prof/pmc$k" -- $RUN_FLEET "${args[@]}" --model-dir "$snap" --out "$FLEET_OUT/${name}_pmc$k" > "$prof/pmc$k.out" 2>&1 || { echo FAIL; return 1; }
   done
   ktrace="$(find "$prof/ktrace" -name '*kernel_trace.csv' | head -1)"
-  : > "$pmc_all"; local first=1 f
-  for f in $(find "$prof" -path '*pmc*' -name '*counter_collection.csv' | sort); do
-    if [ "$first" = "1" ]; then cat "$f" > "$pmc_all"; first=0; else tail -n +2 "$f" >> "$pmc_all"; fi
-  done
+  # the four PMC runs are passed as a directory: measure.py merges them per file (a counter in two
+  # runs takes the later run's value; pmc4 is the TCC_BUBBLE + RDREQ pair), never as one concatenation
   # shellcheck disable=SC2086
-  if $MEASURE --run "$FLEET_OUT/$name" --kernel-trace "$ktrace" --pmc "$pmc_all" > "$prof/measure.out" 2>&1; then
+  if $MEASURE --run "$FLEET_OUT/$name" --kernel-trace "$ktrace" --pmc "$prof" > "$prof/measure.out" 2>&1; then
     cp "$FLEET_OUT/$name"/metrics.json "$FLEET_OUT/$name"/report_table.md "$RECORD/runs/$name/" 2>/dev/null || true
-    cp "$pmc_all" "$ktrace" "$RECORD/runs/$name/" 2>/dev/null || true
+    mkdir -p "$RECORD/runs/$name/prof"
+    local f
+    for f in $(find "$prof" -name '*counter_collection.csv' -o -name '*kernel_trace.csv'); do
+      cp "$f" "$RECORD/runs/$name/prof/$(basename "$(dirname "$(dirname "$f")")")_$(basename "$f")"
+    done
     echo PASS
   else echo FAIL; fi
 }

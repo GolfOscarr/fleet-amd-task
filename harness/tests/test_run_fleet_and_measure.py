@@ -109,9 +109,12 @@ def test_pmc_and_trace_parsers(tmp_path):
     pmc.write_text("Dispatch_Id,Kernel_Name,TCC_BUBBLE_sum,TCC_EA0_RDREQ_sum,"
                    "TCC_EA0_RDREQ_32B_sum,TCC_EA0_WRREQ_sum,TCC_EA0_WRREQ_64B_sum,"
                    "TCC_HIT_sum,TCC_MISS_sum\n"
-                   "1,worker,1000,1000,0,10,10,30,70\n2,scheduler,24,24,0,2,2,1,1\n")
+                   "1,worker_kernel(mirage::runtime::RuntimeConfig),1000,1000,0,10,10,30,70\n"
+                   "2,scheduler_kernel(mirage::runtime::RuntimeConfig),24,24,0,2,2,1,1\n"
+                   "3,__amd_rocclr_copyBuffer,5000,5000,0,900,900,0,0\n")   # the packing blit: excluded
     c = measure.parse_pmc(pmc)
     assert c["TCC_EA0_RDREQ_sum"] == 1024 and c["TCC_HIT_sum"] == 31
+    assert measure.parse_pmc(pmc, kernel_filter="")["TCC_EA0_RDREQ_sum"] == 6024   # no filter: everything
     tr = measure.traffic_from_counters(c, iters=32)
     # Every read request is a 128 B TCC_BUBBLE one here, so reads are 128 x 1024.
     assert abs(tr["read_MiB_per_iteration"] - 1024 * 128 / 2**20 / 32) < 1e-12
@@ -121,9 +124,15 @@ def test_pmc_and_trace_parsers(tmp_path):
     pmc2.write_text("Counter_Name,Counter_Value\nTCC_EA0_RDREQ_sum,5\nTCC_EA0_RDREQ_sum,7\n")
     assert measure.parse_pmc(pmc2)["TCC_EA0_RDREQ_sum"] == 12
     kt = tmp_path / "kt.csv"
-    kt.write_text("Kernel_Name,Start\nprepare_kernel,1\nworker_kernel,2\nscheduler_kernel,3\n")
-    assert measure.parse_kernel_trace(kt) == {"dispatches": 3, "by_kernel": {"prepare_kernel": 1, "worker_kernel": 1,
-                                                                            "scheduler_kernel": 1}}
+    kt.write_text("Kernel_Name,Start_Timestamp,End_Timestamp\n__amd_rocclr_copyBuffer,0,500\n"
+                  "prepare_kernel(mirage::runtime::RuntimeConfig),1000,2000\n"
+                  "worker_kernel(mirage::runtime::RuntimeConfig),2000,32002000\n"
+                  "scheduler_kernel(mirage::runtime::RuntimeConfig),2000,32001000\n")
+    lt = measure.parse_kernel_trace(kt)
+    assert lt["dispatches"] == 4 and lt["megakernel_dispatches"] == 3
+    assert lt["by_kernel"]["__amd_rocclr_copyBuffer"] == 1
+    assert lt["megakernel_us"]["worker_kernel(mirage::runtime::RuntimeConfig)"] == 32000.0
+    assert lt["megakernel_total_us"] == 1.0 + 32000.0 + 31999.0
 
 
 def test_bytes_from_requests_matches_the_measured_copy():
@@ -158,6 +167,26 @@ def test_bytes_from_requests_matches_the_measured_copy():
                                          iters=1) == {"l2_hit_rate": 0.5}
 
 
+def test_kernel_filter_on_the_recorded_counter_csv(tmp_path):
+    """The 2026-09-15 record: the probe copied 1 GiB; filtered to copy_kernel the read formula
+    gives exactly 1 GiB, and unfiltered it also counts the fill and warm-up dispatches."""
+    raw = ROOT / "env/hw/20260915/raw"
+    files = measure.pmc_files(raw)
+    assert len(files) == 4 and files[-1].endswith("counter_collection.csv") and "/pmc4/" in files[-1]
+    c = measure.parse_pmc(raw, kernel_filter="copy_kernel")           # the directory form
+    assert abs(measure.bytes_read(c) - 2**30) / 2**30 < 1e-4 and abs(measure.bytes_written(c) - 2**30) / 2**30 < 1e-4
+    assert measure.parse_pmc(",".join(files), kernel_filter="copy_kernel") == c   # the list form
+    assert measure.bytes_read(measure.parse_pmc(raw, kernel_filter="")) > 2**30  # fill and warm-up too
+    assert measure.parse_pmc(raw) == {}                                # no megakernel dispatch in a probe run
+    # a concatenation of the four runs would double count the counter present in two of them
+    merged = tmp_path / "pmc_all.csv"
+    with merged.open("w") as out:
+        for i, f in enumerate(files):
+            lines = Path(f).read_text().splitlines(keepends=True)
+            out.writelines(lines if i == 0 else lines[1:])
+    assert measure.bytes_read(measure.parse_pmc(merged, kernel_filter="copy_kernel")) > 1.4 * 2**30
+
+
 def test_measure_end_to_end(tmp_path):
     run = tmp_path / "run"
     run.mkdir()
@@ -180,6 +209,16 @@ def test_measure_end_to_end(tmp_path):
     assert m["event_timing"]["per_op"][1]["op"] == "embed_layer"
     md = measure.report_table(m)
     assert "| launches per generation | 3 | - |" in md and "embed_layer" in md
+    kt = tmp_path / "kt.csv"
+    kt.write_text("Kernel_Name,Start_Timestamp,End_Timestamp\n__amd_rocclr_copyBuffer,0,500\n"
+                  "prepare_kernel(mirage::runtime::RuntimeConfig),1000,2000\n"
+                  "worker_kernel(mirage::runtime::RuntimeConfig),2000,32002000\n"
+                  "scheduler_kernel(mirage::runtime::RuntimeConfig),2000,32001000\n")
+    m = measure.measure(run, kernel_trace=kt)
+    assert abs(m["launches"]["per_iteration_us_from_trace"] - 64000.0 / 32) < 1e-9
+    md = measure.report_table(m)
+    assert "| launches per generation | 3 | 3 megakernel of 4 dispatches in the run |" in md
+    assert "| time per iteration from the kernel trace (us) |  | 2000.0 |" in md
 
 
 # ---- P1 of docs/round-2/01-preparation.md: the address-shift flag ----------------

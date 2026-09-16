@@ -157,6 +157,7 @@ def test_vm_measure_row_in_dry_mode_names_the_four_pmc_pairs(tree):
                  "TCC_HIT_sum TCC_MISS_sum", "TCC_BUBBLE_sum TCC_EA0_RDREQ_sum"):
         assert f"--pmc {pair}" in out
     assert "--kernel-trace" in out and out.count("rocprofv3") == 5
+    assert "--pmc " in out and "pmc_all" not in out      # the runs are merged per file by measure.py, not concatenated
     assert (tmp / "logs/queue.status").read_text().rstrip().splitlines()[0].endswith("measure=PASS")
 
 
