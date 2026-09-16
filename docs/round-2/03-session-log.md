@@ -10,47 +10,63 @@ quotes a status line or a file in the record.
 
 | | |
 |---|---|
-| Date | |
-| VM | `ssh hotaisle@<ip>`, host name from `env/hw/<date>/summary.md` or `hostname` |
-| ROCm, hipcc | |
-| Balance at provision, at deletion | |
-| Record | `env/hw/<date>/` |
-| Image | pushed / built only / failed (tag) |
+| Date | 2026-09-16 (UTC) |
+| VM | `enc1-gpuvm015`, 1x MI300X, 8 cores, 224 GiB, 13 TB disk; the shape lists a 1-minute minimum and bills per minute |
+| ROCm, hipcc | 7.2.4, hipcc 7.2; rocprofv3 1.1.0; rocgdb present |
+| Balance at provision, at deletion | $27.56 before; $25.12 at minute 51 (billed per minute, no 1-hour minimum); at deletion: see the end row |
+| Record | `env/hw/20260916/`, branch `gpu/round-2` |
+| Image | building since 17:22; the 13 Dockerfile steps done by 18:04, exporting layers at 18:12 (A9 decides) |
 
 ### Timeline
 
 | UTC | Row | Command | Status line or result | Note |
 |---|---|---|---|---|
 | 2026-09-16 (gate, before the session) | A0 | `laptop.sh balance`; `gh api /user/packages?package_type=container` | `No virtual machines`, `Available Balance: $27.56`, `Hourly Rate: $0.00/hour`; GHCR: no container package, no `fleet-amd-task` image | the plan's assumptions hold; the image is built in session A |
-| | A0 | `laptop.sh provision` | | |
-| | A1 | `start download` / `login` / `start image` / `start setup` / `start hw` | | |
-| | A2 | `start checks` | | |
-| | A3 | `start reference` | | |
-| | A4 | `start kernels` | | |
-| | A5 | `start queue queue-a.txt` | | |
-| | A6 | `start bisect queue-fault.txt` | | |
-| | A7 | `start queue queue-fix.txt` | | |
-| | A8 | `start queue queue-a2.txt` | | |
-| | A9 | image status, balance | | |
-| | end | `pull`, `delete --yes`, rate | | |
+| 16:46 to 17:19 | A0 | `env/session/grab.sh` (109 polls of the list, one every 18 s) | the first `L provision` at 16:4x failed: `available VM matching requested specs not found` (the single unit was taken between the read and the request); the poller provisioned at poll 109 | the user authorized the poller: "check every 5 seconds; if there's a slot, reserve immediately" |
+| 17:20:27 | A0 | `laptop.sh provision` (by the poller) | address saved; `L push` done at minute 1; team page `Hourly Rate: $2.99/hour` | |
+| 17:21:56 to 17:22:09 | A1 | `start download`; `login`; `start image`; `start setup`; `start hw` | `PASS preflight 0s` (13 checks); `PASS download 53s` (the model was in the host cache); `PASS hw 65s` | |
+| 17:29:26 | A1 | `setup` | `PASS setup 440s` | 8 cores and the image build overlapping: still faster than the plan's 25 minutes |
+| 17:31:05 | A2 | `start checks` | `PASS checks 71s`; 7 PASS lines, the same readings as 2026-09-15 | |
+| 17:32:26 | A3 | `start reference` | `FAIL reference 39s`: the 38 tensors and 32 ids were written, then `calibrate.py` refused to overwrite the tracked `calibration.json` the push had carried | fix 1 below |
+| 17:34:34 | A3 | `start reference` again | `PASS reference 62s`; floors router 3.59e-3, layer 4.33e-3; route overlap 0.21 | |
+| 17:35:24 | A4 | `start kernels` | `PASS kernels 28s`: 7 suites, 100 of 100 each | DECIDE A4 below |
+| 17:37:07 | A5 | `start queue queue-a.txt` | five rows `FAIL rc=134 fault=0` in 4 to 57 s: `task_register.cc:4686 Assertion ... dim[2] == d_c + 1` | not the fault: fix 2 below |
+| 17:40:55 | A5 | `start setup` (the fork reset, the patch fixed) | `PASS setup 70s` (incremental rebuild); `PASS kernels 23s` | |
+| 17:45:15 | A5 | `start queue queue-a.txt` again | `L8_head_it2 FAIL rc=1 fault=1 fwd=0`; `_pad1`, `_pad2`, `_pad4` the same; `L16_head_it2_pad1 PASS fwd=2 wall=42s` (7.3 ms per iteration) | DECIDE A5 below |
+| 17:48:27 | A6 | `start bisect queue-fault.txt -- --layers 8 --head --iters 2` | `BISECT first-fault=L7.norm1 runs=4`: every layer-7 label faults, the list is too narrow | the fault is in layers 0 to 6 |
+| 17:49 | A6 | `L push` (the wide label list) | overwrote the VM's patched fork with the laptop's pristine copy | fix 3 below |
+| 17:51:21 | A6 | `start bisect queue-fault-all.txt` (98 labels) | five rows `FAIL rc=1 fault=0` in 12 s (JIT: `TASK_MLA_PREP_MI300` undeclared), two PASS rows on stock operators; verdict void | fix 4 below |
+| 17:54:01 | A6 | `start setup` | `PASS setup 65s`: the three patches applied again | |
+| 17:58:07 | A6 | `start bisect queue-fault-all.txt` again | `BISECT first-fault=L0.gate_up runs=7`: `L0.norm2 PASS fwd=2`, `L0.gate_up FAIL fault=1`, `L0.o_proj PASS`, `L1.mla_prep`, `L2.mla_prep`, `L4.mla_prep` FAIL | the fused gate-up gang linear of the dense layer 0 |
+| 18:01:32 | A7 | `start queue queue-fix.txt` | `L8_head_it2_al65536 PASS fwd=2`; `_wsfirst PASS`; `_al65536_wsfirst PASS`; `_al2097152_wsfirst PASS` | DECIDE A7 below |
+| 18:08:26 | A8 | `start queue queue-a2.txt` (flag `--align-alloc 65536` on every row) | A8.1 `L8_head_it2_al65536 PASS fwd=2`; A8.2 `L27_head_it32_al65536 PASS fwd=31 compare=FAIL` (`output_ids PASS`: 32 ids equal; `route_log FAIL`; head rows compare the last iteration with the step-1 reference); A8.3 `L27_it1_al65536 PASS compare=FAIL` (`growth_curve FAIL`, max 0.0297 at layer 5); A8.4 two rows `measure=FAIL` (rocprofv3 aborts, fix 5); A8.5 `L2_it32_al65536 table=PASS`, `L2_it32_tile_al65536 table=PASS`; A8.6 `L27_head_it32_al65536 table=PASS`, 15,019.5 us per iteration | M4 reached at 18:04:47; DECIDE A8.4, A8.5 below |
+| 18:12 | A8.4 | `start queue queue-b0.txt` (the stop-after ladder of layer 0 at 32 iterations) | | B0 from the host clock: at 4 iterations the 15 ms launch cost hid the difference (-29 us) |
+| 18:12 | A9 (early) | `report --balance` | minute 51; `Available Balance: $25.12`, `Hourly Rate: $2.99/hour`; the image still exporting layers | |
 
 ### Decisions (the DECIDE rows)
 
 | Row | Rule | Measured | Chosen | Told the user at |
 |---|---|---|---|---|
-| A4 | the P6 kernels pass their suites | | | |
-| A5 | the fault tree | | | |
-| A7 | first fix row that passes | | | |
-| A8.4 (B0) | near 4 us or near 40 us | | | |
-| A8.5 | `o_proj` under 10 us; attention under 60 and 20 us | | | |
+| A4 | the P6 kernels pass their suites | 7 suites, 100 of 100, `mla_attend`, `mla_merge_uv`, `mla_attend_splits` included | session A on the P6 kernels, no prefetch fallback | 17:36 |
+| A5 | the fault tree | A5.1 faults; pads 1, 2, 4 GiB all fault; the 16-layer pad run passes | "not the address; the layer count itself" branch: A6 for the label, A7 anyway | 17:46 |
+| A7 | first fix row that passes | all four pass; the first is `--align-alloc 65536` alone | `--align-alloc 65536` on every remaining row (`queue_flag.py`); a uniform shift keeps the low address bits, alignment changes them | 18:02 |
+| A8.4 (B0) | near 4 us or near 40 us | at 4 iterations: -29 us (noise under the launch cost); the 32-iteration ladder pending | pending | |
+| A8.5 | `o_proj` under 10 us; attention under 60 and 20 us | `o_proj` (event 7) 28.6 us gang, 24.6 us per-tile; `mla_attend` 215 us; `mla_merge_uv` 61 us gang, 46 us with per-tile linears | per-tile is not the lever (above 10 us); P6 did not hold (215 and 61 us): session B's B1 question; the residual variant sits on a 25 to 35 us floor whatever its size (`down`, 46 MB, 34 us) | 18:10 |
 | A9 | the push cutoff | | | |
-| A11 | balance above $13 | | | |
+| A11 | balance above $13 | $25.12 at minute 51 | continue | 18:12 |
 
 ### Failures and fixes
 
 | Failure | Cause | Fix, and where it lives now |
 |---|---|---|
-| | | |
+| 1. `reference` FAIL: `calibration.json exists; the floor is recorded once` | the tracked 2026-09-15 file rides along with the rsync; `calibrate.py` refuses to overwrite by design | the stage removes the file before calibrating, every machine records its own floor (`vm.sh`, commit 9569302) |
+| 2. every graph run `rc=134`: `register_mla_attend_mi300_task ... dim[2] == d_c + 1` | P2 padded the partials row to 516 in the plan, the kernels and the reference; the two registration asserts of `new_tasks.patch` still demanded 513; the offline compile covers the kernels, not the runtime | both asserts use the kernels' expression `((d_c + 1 + 3) / 4) * 4`; verified by applying the three patches on the pristine fork (`fleet/patches/new_tasks.patch`, commit 9569302) |
+| 3. `L push` overwrote the VM's patched fork | the laptop's fork is the pristine pinned commit (restored after the patch check) and its files were newer; rsync sent them | `push` excludes `repos/` unless `FULL=1` (the first push of a session); `setup` re-applied the patches in 65 s (`laptop.sh`, commit d393dc8) |
+| 4. the bisection narrowed on JIT failures | `queue_bisect` took any FAIL for the fault | a FAIL without a fault line ends the bisection with `BISECT error=<label>`; test with the fake harness (`queue.sh`, commits d393dc8 and 8e6ba55) |
+| 5. `measure` rows: rocprofv3 aborts, `api registration failed with error code 16: Configuration request occurred outside of valid rocprofiler configuration period` | the torch wheel ships its own `libamdhip64.so` (soname without a version), loaded after the system HIP that rocprofv3 hooked; the second runtime registers again; `LD_PRELOAD` of the system library does not satisfy the unversioned soname | open: B0 answered from the host clock instead (`queue-b0.txt`); for B3 either torch's bundled HIP is replaced by a link to the system one or the counters are not measured |
+| 6. a faulting run had no `fleet_run_meta.json` | the record was written after the forward loop | written with the addresses before the loop, completed after (`run_fleet.py`, commit d393dc8) |
+| 7. `L pull` reverted a test edit | the pull rsynced the whole `env/hw/` tree from the VM, `tests/` included | the pull brings back the record only (`laptop.sh`, commit 8e6ba55) |
+| 8. `L provision` failed with `available VM matching requested specs not found` | one unit, taken between the list read and the request | `env/session/grab.sh` polls the list and provisions at once (authorized by the user) |
 
 ## Session B
 
