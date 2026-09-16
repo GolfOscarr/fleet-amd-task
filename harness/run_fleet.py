@@ -5,6 +5,9 @@
                                 [--model-dir <snapshot>] [--ref harness/ref] [--out harness/fleet_out/<name>]
                                 [--event-timing] [--nt-weights] [--pad-alloc GB]
 
+--align-alloc BYTES re-bases every weight, capture and workspace on an aligned address and
+--workspaces-first allocates the workspaces before the weights (the candidate M4 fault fixes,
+docs/round-2/02-session-plan.md, row A4); both are recorded in fleet_run_meta.json.
 --pad-alloc GB holds a dummy device allocation of that size for the whole run,
 made before the weights are packed, so every later buffer moves to a different
 address without any change to the graph; fleet_run_meta.json records the pad
@@ -176,6 +179,11 @@ def build_parser():
                     help="hold a dummy device allocation of GB gibibytes before packing (address shift)")
     ap.add_argument("--tile-linears", action="store_true",
                     help="issue qkva, o_proj, down and lm_head as per-tile linear_layer tasks (MAJ-7, docs/round-2 P5)")
+    ap.add_argument("--align-alloc", type=int, default=0, metavar="BYTES",
+                    help="re-base every weight, capture and workspace on a BYTES-aligned address (power of two; "
+                         "the M4 fault candidates, docs/round-2)")
+    ap.add_argument("--workspaces-first", action="store_true",
+                    help="allocate the workspaces from the plan before the weights are packed (address order)")
     return ap
 
 
@@ -183,8 +191,11 @@ def run_name(args):
     """The run directory name under harness/fleet_out, from the arguments."""
     pad = f"_pad{args.pad_alloc:g}" if args.pad_alloc else ""
     tile = "_tile" if args.tile_linears else ""
+    al = f"_al{args.align_alloc}" if args.align_alloc else ""
+    ws = "_wsfirst" if args.workspaces_first else ""
     return (f"L{args.layers}{'_head' if args.head else ''}_it{args.iters}"
-            + (f"_{args.stop_after}" if args.stop_after else "") + ("_scores" if args.debug_scores else "") + tile + pad)
+            + (f"_{args.stop_after}" if args.stop_after else "") + ("_scores" if args.debug_scores else "")
+            + tile + al + ws + pad)
 
 
 def tensor_addresses(host):
@@ -224,7 +235,19 @@ def main():
         print(f"pad-alloc {args.pad_alloc:g} GiB at 0x{pad.data_ptr():x}")
     t0 = time.time()
     dims = Dims.from_config(json.loads((Path(args.model_dir) / "config.json").read_text()))
+    if args.align_alloc:
+        assert args.align_alloc >= 512 and args.align_alloc & (args.align_alloc - 1) == 0, "--align-alloc: power of two, >= 512"
+    workspaces = None
+    if args.workspaces_first:
+        # the plan's tensors do not depend on --stop-after (it only cuts calls)
+        from fleet import graph_plan as G
+        pre_plan = G.build_plan(dims, s_max, args.layers, args.head, args.debug, args.debug_scores, args.tile_linears)
+        workspaces = B.allocate_workspaces(torch, pre_plan, args.align_alloc)
+        print(f"workspaces-first: {len(workspaces)} buffers allocated before the weights")
     packed = pack_all(args.model_dir, "cuda", dims, layers=args.layers, head=args.head or None)
+    if args.align_alloc:
+        packed = {k: B.aligned_copy(torch, v, args.align_alloc) for k, v in packed.items()}
+        print(f"align-alloc {args.align_alloc}: {len(packed)} weight tensors re-based")
     t_pack = time.time() - t0
 
     cache = load_file(str(ref_dir / "ref_cache.safetensors"))
@@ -232,12 +255,15 @@ def main():
     for l in range(args.layers):
         capture[f"c_kv_{l}"] = cache["c_kv"][l, :s_max].contiguous().cuda()
         capture[f"k_pe_{l}"] = cache["k_pe"][l, :s_max].contiguous().cuda()
+    if args.align_alloc:
+        capture = {k: B.aligned_copy(torch, v, args.align_alloc) for k, v in capture.items()}
     meta = B.make_meta(torch, s_max, prompt, n_prompt)
 
     t1 = time.time()
     mpk, host, plan = B.build(packed, capture, meta, dims=dims, s_max=s_max, layers=args.layers,
                               head=args.head, debug=args.debug, stop_after=args.stop_after,
-                              debug_scores=args.debug_scores, tile_linears=args.tile_linears)
+                              debug_scores=args.debug_scores, tile_linears=args.tile_linears,
+                              align=args.align_alloc, workspaces=workspaces)
     pj = B.plan_json(plan)
     (out / "plan.json").write_text(json.dumps(pj) + "\n")
     mpk.compile(output_dir=str(out / "build"))
@@ -284,6 +310,7 @@ def main():
                                                 "MPK_DEBUG_SCORES")},
         "boundary_keys": sorted(b.keys()), "output_ids": ids, "notes": notes, "timings_s": wall,
         "pad_alloc_gb": args.pad_alloc, "pad_addr": int(pad.data_ptr()) if pad is not None else None,
+        "align_alloc": args.align_alloc, "workspaces_first": args.workspaces_first,
         "addresses": tensor_addresses(host),
     }
     (out / "fleet_run_meta.json").write_text(json.dumps(meta_out, indent=2) + "\n")

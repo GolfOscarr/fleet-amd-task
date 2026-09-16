@@ -250,3 +250,54 @@ def test_fault_bisection_labels_are_in_plan_order():
     assert all(w in labels for w in want)
     assert [l for l in labels if l in want] == want
     assert want[0] == "L7.norm1" and want[-1] == "head.argmax_reduce"
+
+
+# ---- the candidate M4 fault fixes as flags (docs/round-2, session A row A4) -----------
+
+def test_aligned_copy_rebases_and_preserves_values():
+    for align in (512, 4096, 65536):
+        t = torch.arange(1000, dtype=torch.float32).reshape(10, 100) * 0.5
+        a = B.aligned_copy(torch, t, align)
+        assert a.data_ptr() % align == 0 and a.shape == t.shape and a.dtype == t.dtype
+        assert torch.equal(a, t) and a.data_ptr() != t.data_ptr()
+    b16 = torch.ones(3, 7, dtype=torch.bfloat16)
+    a = B.aligned_copy(torch, b16, 4096)
+    assert a.dtype == torch.bfloat16 and a.data_ptr() % 4096 == 0 and torch.equal(a, b16)
+    with pytest.raises(AssertionError):
+        B.aligned_copy(torch, t, 3000)
+
+
+def test_allocate_workspaces_and_make_tensors_reuse_them():
+    plan, _ = B.dry_run(REAL_DIMS, 1026, 1, False)
+    ws = B.allocate_workspaces(torch, plan, align=4096, device="cpu")
+    names = {t.name for t in plan.tensors.values() if t.kind != "input"}
+    assert set(ws) == names and all(v.data_ptr() % 4096 == 0 for v in ws.values())
+    assert all(tuple(ws[n].shape) == plan.tensors[n].shape for n in names)
+    assert all(float(ws[n].float().abs().sum()) == 0.0 for n in names)
+    # make_tensors attaches the given buffers instead of allocating
+    dt = {"bf16": torch.bfloat16, "f32": torch.float32, "i32": torch.int32, "i64": torch.int64}
+    packed, capture, meta = {}, {}, {}
+    for t in plan.tensors.values():
+        if t.kind != "input":
+            continue
+        buf = torch.zeros(t.shape, dtype=dt[t.dtype])
+        if t.source.startswith("meta:"):
+            meta[t.source[5:]] = buf
+        elif t.source.startswith("capture:"):
+            capture[t.source[8:]] = buf
+        else:
+            packed[t.source] = buf
+    fake = B.FakeMPK()
+    _, host = B.make_tensors(fake, plan, packed, capture, meta, torch, workspaces=ws)
+    assert all(host[n] is ws[n] for n in names)
+
+
+def test_fault_fix_flags_and_run_names():
+    p = run_fleet.build_parser()
+    a = p.parse_args(["--layers", "8", "--head", "--iters", "2", "--model-dir", "x", "--align-alloc", "65536"])
+    assert a.align_alloc == 65536 and run_fleet.run_name(a) == "L8_head_it2_al65536"
+    a = p.parse_args(["--layers", "8", "--head", "--iters", "2", "--model-dir", "x", "--workspaces-first"])
+    assert a.workspaces_first and run_fleet.run_name(a) == "L8_head_it2_wsfirst"
+    a = p.parse_args(["--layers", "8", "--head", "--iters", "2", "--model-dir", "x", "--align-alloc", "4096",
+                      "--workspaces-first", "--pad-alloc", "1"])
+    assert run_fleet.run_name(a) == "L8_head_it2_al4096_wsfirst_pad1"

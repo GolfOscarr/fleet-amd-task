@@ -128,10 +128,42 @@ NEW_LAYERS = {
 # driving the plan
 
 
-def make_tensors(mpk, plan, packed, capture, meta, torch):
-    """Attach inputs and allocate workspaces; returns name -> DTensor and name -> torch tensor."""
+TORCH_DTYPES = {"bf16": "bfloat16", "f32": "float32", "i32": "int32", "i64": "int64"}
+
+
+def aligned_copy(torch, t, align):
+    """A copy of t whose base address is a multiple of align bytes (the M4 fault tooling,
+    docs/round-2 P1: the caching allocator aligns to 512 only). The backing buffer stays alive
+    through the returned view's storage."""
+    assert align > 0 and align & (align - 1) == 0, "align must be a power of two"
+    n = t.numel() * t.element_size()
+    raw = torch.empty(n + align, dtype=torch.uint8, device=t.device)
+    off = (-raw.data_ptr()) % align
+    out = raw[off:off + n].view(t.dtype).view(t.shape)
+    out.copy_(t)
+    assert out.data_ptr() % align == 0
+    return out
+
+
+def new_workspace(torch, t, align=0, device="cuda"):
+    """A zeroed workspace for plan tensor t, aligned to align bytes when align is set."""
+    buf = torch.zeros(t.shape, dtype=getattr(torch, TORCH_DTYPES[t.dtype]), device=device)
+    return aligned_copy(torch, buf, align) if align else buf
+
+
+def allocate_workspaces(torch, plan, align=0, device="cuda"):
+    """Every non-input tensor of the plan, allocated now (--workspaces-first: before the weights
+    are packed, so the workspaces sit below the weights instead of above them)."""
+    return {t.name: new_workspace(torch, t, align, device) for t in plan.tensors.values() if t.kind != "input"}
+
+
+def make_tensors(mpk, plan, packed, capture, meta, torch, align=0, workspaces=None):
+    """Attach inputs and allocate workspaces; returns name -> DTensor and name -> torch tensor.
+    workspaces: pre-allocated buffers by name (allocate_workspaces); align: alignment of any
+    workspace allocated here (the inputs are aligned by the caller, see run_fleet.py)."""
     dt = {}
     host = {}
+    workspaces = workspaces or {}
     for t in plan.tensors.values():
         if t.kind == "input":
             if t.source.startswith("meta:"):
@@ -144,9 +176,10 @@ def make_tensors(mpk, plan, packed, capture, meta, torch):
             host[t.name] = src
             dt[t.name] = mpk.attach_input(torch_tensor=src, name=t.name)
         else:
-            dtype = {"bf16": torch.bfloat16, "f32": torch.float32, "i32": torch.int32,
-                     "i64": torch.int64}[t.dtype]
-            buf = torch.zeros(t.shape, dtype=dtype, device="cuda")
+            buf = workspaces.get(t.name)
+            if buf is None:
+                buf = new_workspace(torch, t, align)
+            assert tuple(buf.shape) == t.shape, (t.name, tuple(buf.shape), t.shape)
             host[t.name] = buf
             dt[t.name] = mpk.attach_input(torch_tensor=buf, name=t.name)
     return dt, host
@@ -209,7 +242,7 @@ def plan_json(plan):
 
 def build(packed, capture, meta, dims=REAL_DIMS, s_max=1056, layers=27, head=True, debug=False,
           stop_after=None, debug_scores=False, tile_linears=False, num_workers=296, num_schedulers=8,
-          profiler_tensor=None):
+          profiler_tensor=None, align=0, workspaces=None):
     """On the machine: construct the PersistentKernel, attach, issue, return (mpk, host tensors, plan)."""
     import torch
     import mirage as mi
@@ -226,7 +259,7 @@ def build(packed, capture, meta, dims=REAL_DIMS, s_max=1056, layers=27, head=Tru
         trace_name="", spec_decode_config=None, use_cutlass_kernel=False, eos_token_id=-1,
     )
     meta_for_inputs = {"input_tokens": meta["input_tokens"], "output_tokens": meta["output_tokens"]}
-    dt, host = make_tensors(mpk, plan, packed, capture, meta_for_inputs, torch)
+    dt, host = make_tensors(mpk, plan, packed, capture, meta_for_inputs, torch, align, workspaces)
     issue_calls(mpk, plan, dt)
     return mpk, host, plan
 
