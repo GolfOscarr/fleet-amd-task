@@ -1,6 +1,6 @@
 # Hardware collection 20260915
 
-Collected on 20260915 on enc1-gpuvm005, ROCm 7.2.4, hipcc 7.2.53211. 62 checklist rows: 32 PASS, 5 MISMATCH, 24 INFO, 1 UNAVAILABLE. Raw captures are in raw/, one file per command, and collect.log holds the run. Every MISMATCH belongs in OPEN-PROBLEMS.md and the owning 99-open-questions.md with its date and command (docs/gpu-bringup/02-checklist.md, Sign-off).
+Collected on 20260915 on enc1-gpuvm005, ROCm 7.2.4, hipcc 7.2.53211. 62 checklist rows: 32 PASS, 5 MISMATCH, 24 INFO, 1 UNAVAILABLE. Raw captures are in raw/, one file per command, and collect.log holds the run. Every MISMATCH belongs in OPEN-PROBLEMS.md and the owning 99-open-questions.md with its date and command (docs/gpu/01-bringup/02-checklist.md, Sign-off).
 
 | # | Check | Measured | Expected | Result |
 |---|---|---|---|---|
