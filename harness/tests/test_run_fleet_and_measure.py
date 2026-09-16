@@ -180,3 +180,32 @@ def test_measure_end_to_end(tmp_path):
     assert m["event_timing"]["per_op"][1]["op"] == "embed_layer"
     md = measure.report_table(m)
     assert "| launches per generation | 3 | - |" in md and "embed_layer" in md
+
+
+# ---- P1 of docs/round-2/01-preparation.md: the address-shift flag ----------------
+
+def test_pad_alloc_argument_and_run_name():
+    p = run_fleet.build_parser()
+    a = p.parse_args(["--layers", "8", "--head", "--iters", "2", "--model-dir", "x", "--pad-alloc", "2"])
+    assert a.pad_alloc == 2.0 and run_fleet.run_name(a) == "L8_head_it2_pad2"
+    a = p.parse_args(["--layers", "8", "--model-dir", "x", "--pad-alloc", "0.5", "--stop-after", "L7.o_proj"])
+    assert run_fleet.run_name(a) == "L8_it1_L7.o_proj_pad0.5"
+    a = p.parse_args(["--layers", "27", "--head", "--iters", "32", "--model-dir", "x"])
+    assert a.pad_alloc == 0.0 and run_fleet.run_name(a) == "L27_head_it32"     # unchanged without the flag
+
+
+def test_tensor_addresses_records_every_host_tensor():
+    b, _, h = dump(2, True)
+    addr = run_fleet.tensor_addresses(h)
+    assert set(addr) == set(h) and all(isinstance(v, int) for v in addr.values())
+    assert addr["x_res"] == h["x_res"].data_ptr()
+
+
+def test_fault_bisection_labels_are_in_plan_order():
+    plan, _ = B.dry_run(REAL_DIMS, 1026, 8, True, False, None, False)
+    labels = [c.label for c in plan.calls]
+    want = [l.strip() for l in (ROOT / "env/session/queue-fault.txt").read_text().splitlines()
+            if l.strip() and not l.startswith("#")]
+    assert all(w in labels for w in want)
+    assert [l for l in labels if l in want] == want
+    assert want[0] == "L7.norm1" and want[-1] == "head.argmax_reduce"

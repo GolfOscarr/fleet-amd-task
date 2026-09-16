@@ -22,3 +22,4 @@ reaching the VM are unchanged from `docs/gpu-bringup/06-agent-guide.md`.
 | Date | State |
 |---|---|
 | 2026-09-16 | plan written; preparation not started; no VM |
+| 2026-09-16 | P1 done: `--pad-alloc` and the address record in `run_fleet.py`, the `MPK_EXTRA_HIPCC_FLAGS` hunk in `gfx942.patch`, `env/session/queue-fault.txt`; three tests |

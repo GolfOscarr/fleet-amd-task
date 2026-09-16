@@ -159,9 +159,17 @@ ls deps
 
 # ---------------------------------------------------------------------------
 step "5. gfx942 patch (fleet/patches/README.md)"
+# A tree that carries an older version of a patch (an image or a VM from a
+# previous session after a code rsync) passes neither check: the tracked
+# files of the submodule are reset to the pinned commit and all three patches
+# apply again below (the untracked deps/ and the new task kernels are kept).
 if git apply --reverse --check "$PATCH" 2>/dev/null; then
   echo "already applied"
 else
+  if ! git apply --check "$PATCH" 2>/dev/null; then
+    echo "an older version of the patches is in the tree: resetting the tracked files to $(git rev-parse --short HEAD)"
+    git checkout -q -- .
+  fi
   git apply --check "$PATCH"
   git apply "$PATCH"
   echo "applied"

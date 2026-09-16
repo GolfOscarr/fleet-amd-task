@@ -72,7 +72,7 @@ Two consequences for the plan:
 
 ## Items
 
-### P1. Fault tooling in `run_fleet.py` (2 hours)
+### P1. Fault tooling in `run_fleet.py` (2 hours) - done 2026-09-16
 
 Deliverables:
 
@@ -98,10 +98,18 @@ Deliverables:
    to read the faulting task's source line. Time-boxed to two runs; the
    bisection alone locates the operator if the trace is unreadable.
 
-Check here: `--pad-alloc` and the patch are exercised by the dry-run path
-of `harness/tests/test_run_fleet_and_measure.py` (argument parsing and
-`run_meta` contents); the three patches apply on a clean tree
-(`env/preflight.sh`).
+Check here: `harness/tests/test_run_fleet_and_measure.py` covers the
+argument, the run name, the address record and the label list against
+the 8-layer plan (three tests); the three patches apply on a clean tree
+(`env/preflight.sh`). Done: `run_name`, `tensor_addresses` and the
+`pad_alloc_gb`, `pad_addr`, `addresses` fields of `fleet_run_meta.json`;
+the hunk is the last of `gfx942.patch`; the labels are
+`env/session/queue-fault.txt`, in plan order, with the bisection rule in
+its header for P4's `queue.sh bisect`. One trap found on the way: a tree
+that already carries the previous `gfx942.patch` (the image, or a VM
+after a code rsync) passes neither of `setup.sh`'s checks for the new
+one; step 5 now resets the submodule's tracked files and re-applies all
+three patches in that case (simulated here on a worktree).
 
 Saves on the VM: the per-operator sweep of layer 7 (15 runs) becomes 5,
 and the "is it the address" question is answered in two runs instead of

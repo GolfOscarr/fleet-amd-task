@@ -3,7 +3,12 @@
 
     python harness/run_fleet.py --layers N [--head] [--iters K] [--debug] [--stop-after L1.o_proj]
                                 [--model-dir <snapshot>] [--ref harness/ref] [--out harness/fleet_out/<name>]
-                                [--event-timing] [--nt-weights]
+                                [--event-timing] [--nt-weights] [--pad-alloc GB]
+
+--pad-alloc GB holds a dummy device allocation of that size for the whole run,
+made before the weights are packed, so every later buffer moves to a different
+address without any change to the graph; fleet_run_meta.json records the pad
+and the device address of every tensor (the M4 fault test of docs/round-2).
 
 Positions follow D14/D15: step is set to 1022 after compile() (the seeded
 prepare_next_batch makes it 1023), num_new_tokens 1, qo_indptr [0, 1],
@@ -157,7 +162,7 @@ class StdoutToFile:
         self.f.close()
 
 
-def main():
+def build_parser():
     ap = argparse.ArgumentParser()
     ap.add_argument("--layers", type=int, required=True)
     ap.add_argument("--head", action="store_true")
@@ -172,15 +177,32 @@ def main():
     ap.add_argument("--debug-scores", action="store_true",
                     help="MPK_DEBUG_SCORES=1 build; mla_attend also writes the scores (boundary B5)")
     ap.add_argument("--prompt", default=str(common.PROMPT_IDS))
-    args = ap.parse_args()
+    ap.add_argument("--pad-alloc", type=float, default=0.0, metavar="GB",
+                    help="hold a dummy device allocation of GB gibibytes before packing (address shift)")
+    return ap
+
+
+def run_name(args):
+    """The run directory name under harness/fleet_out, from the arguments."""
+    pad = f"_pad{args.pad_alloc:g}" if args.pad_alloc else ""
+    return (f"L{args.layers}{'_head' if args.head else ''}_it{args.iters}"
+            + (f"_{args.stop_after}" if args.stop_after else "") + ("_scores" if args.debug_scores else "") + pad)
+
+
+def tensor_addresses(host):
+    """name -> device address of every attached tensor, for the address-dependence test."""
+    return {name: int(t.data_ptr()) for name, t in host.items()}
+
+
+def main():
+    args = build_parser().parse_args()
 
     import torch
     from safetensors.torch import load_file, save_file
     from fleet import build_graph as B
     from fleet.pack_weights import pack_all, Dims
 
-    name = (f"L{args.layers}{'_head' if args.head else ''}_it{args.iters}"
-            + (f"_{args.stop_after}" if args.stop_after else "") + ("_scores" if args.debug_scores else ""))
+    name = run_name(args)
     out = Path(args.out) if args.out else common.ROOT / "harness/fleet_out" / name
     out.mkdir(parents=True, exist_ok=True)
     if args.event_timing:
@@ -198,6 +220,10 @@ def main():
     n_prompt = len(prompt)
     s_max = n_prompt + args.iters
     ref_dir = Path(args.ref)
+    pad = None
+    if args.pad_alloc:
+        pad = torch.empty(int(args.pad_alloc * 2 ** 30), dtype=torch.uint8, device="cuda")
+        print(f"pad-alloc {args.pad_alloc:g} GiB at 0x{pad.data_ptr():x}")
     t0 = time.time()
     dims = Dims.from_config(json.loads((Path(args.model_dir) / "config.json").read_text()))
     packed = pack_all(args.model_dir, "cuda", dims, layers=args.layers, head=args.head or None)
@@ -259,6 +285,8 @@ def main():
         "env": {k: os.environ.get(k) for k in ("MPK_EVENT_TIMING", "USE_NT_WEIGHTS", "USE_GANG", "AMDGPU_TARGETS",
                                                 "MPK_DEBUG_SCORES")},
         "boundary_keys": sorted(b.keys()), "output_ids": ids, "notes": notes, "timings_s": wall,
+        "pad_alloc_gb": args.pad_alloc, "pad_addr": int(pad.data_ptr()) if pad is not None else None,
+        "addresses": tensor_addresses(host),
     }
     (out / "fleet_run_meta.json").write_text(json.dumps(meta_out, indent=2) + "\n")
     print(f"ids {ids}; {len(b)} boundary tensors; mpk() {t_mpk * 1e3:.1f} ms for {args.iters} iterations -> {out}")
