@@ -261,6 +261,7 @@ def test_queue_measure_row_end_to_end_with_a_fake_profiler(tree):
     rows = (tmp / "logs/queue.status").read_text().splitlines()
     assert " L2_it4 PASS " in rows[0] and rows[0].endswith("measure=PASS"), rows
     rec = tmp / "record/runs/L2_it4"
+    assert (tmp / "logs/prof/L2_it4/ktrace").is_dir() and (tmp / "logs/prof/L2_it4/pmc4").is_dir()   # per run, not shared
     m = json.loads((rec / "metrics.json").read_text())
     assert m["launches"]["dispatches"] == 4 and m["launches"]["megakernel_dispatches"] == 3
     assert abs(m["launches"]["per_iteration_us_from_trace"] - (4000 + 0.5 + 0.5) / 4) < 1e-9

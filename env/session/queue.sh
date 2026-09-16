@@ -116,7 +116,7 @@ do_table() {
 # the same graph under the profiler: one kernel trace, one run per PMC pair, then measure.py
 do_measure() {
   local name="$1"; shift
-  local args=("$@") snap prof="$LOGDIR/prof/$1"; snap="$(snap_dir)"
+  local args=("$@") snap prof="$LOGDIR/prof/$name"; snap="$(snap_dir)"
   mkdir -p "$prof"
   local k=0 set_ ktrace
   if [ "$DRY" = "1" ]; then    # the commands go to stderr: stdout is the verdict the caller captures

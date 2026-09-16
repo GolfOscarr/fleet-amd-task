@@ -1,10 +1,10 @@
-# Session A, part 1: the fault (docs/round-2/02-session-plan.md, rows A1 to A3).
+# Session A, part 1: the fault (docs/round-2/02-session-plan.md, row A5).
 # Rows run one at a time; 'continue' keeps the queue going after an expected FAIL.
---layers 8 --head --iters 2 continue                 # A1: the fault reproduces on this machine (expected FAIL)
---layers 8 --head --iters 2 --pad-alloc 1 continue   # A2: does the address decide? any PASS here says yes
+--layers 8 --head --iters 2 continue                 # A5.1: the fault reproduces on this machine (expected FAIL)
+--layers 8 --head --iters 2 --pad-alloc 1 continue   # A5.2: does the address decide? any PASS here says yes
 --layers 8 --head --iters 2 --pad-alloc 2 continue
 --layers 8 --head --iters 2 --pad-alloc 4 continue
---layers 16 --head --iters 2 --pad-alloc 1 continue  # A2: the converse: a 16-layer graph that ran, shifted
-# A3 is the bisection, not a queue row:
+--layers 16 --head --iters 2 --pad-alloc 1 continue  # A5.2: the converse: a 16-layer graph that ran, shifted
+# A6 is the bisection, not a queue row:
 #   bash env/session/vm.sh start bisect env/session/queue-fault.txt -- --layers 8 --head --iters 2
-# A4 is the fix, coded on the laptop and pushed; then queue-a2.txt.
+# A7 is queue-fix.txt (the pre-baked fixes); then queue-a2.txt (A8).
