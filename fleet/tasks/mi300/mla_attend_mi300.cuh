@@ -66,6 +66,11 @@ __device__ __forceinline__ void
   // partials row padded up to a multiple of 4 floats: each [split, head] row is then
   // 16-byte aligned when the buffer base is (docs/round-2 P2). o in [0, D_C), lse at D_C.
   constexpr int P_ROW = ((D_C + 1 + 3) / 4) * 4;
+  // loads in flight per thread (docs/round-2 P6): the streaming knee measured on the MI300X
+  // is at 4 (env/hw/20260915, E2); one load at a time made a 36 KB tile cost about 144
+  // serialised HBM latencies, the 211 us of runs/L27_it32.
+  constexpr int PF = 4;
+  static_assert(D_C % (8 * PF) == 0 && D_R % (8 * PF) == 0, "the column loops batch PF loads of 8");
 
   int xcd = tile_idx / tiles_per_xcd;
   int t = tile_idx % tiles_per_xcd;
@@ -130,28 +135,43 @@ __device__ __forceinline__ void
   for (int r0 = lo; r0 < hi; r0 += TILE) {
     int rows = (hi - r0 < TILE) ? (hi - r0) : TILE;
 
-    // scores [NH][rows]: two per thread, FP32 dot products over D_C and D_R
+    // scores [NH][rows]: two per thread, FP32 dot products over D_C and D_R.
+    // Lane -> head, so the 16 lanes of one row share its 16-byte loads (one row per 16
+    // lanes per instruction) instead of every lane streaming its own row; PF loads are
+    // issued before their FMAs. Each (head, row) is computed exactly once as before.
     for (int e = tid; e < NH * TILE; e += NUM_THREADS) {
-      int h = e / TILE, p = e % TILE;
+      int h = e % NH, p = e / NH;
       float s = -INFINITY;
       if (p < rows) {
         T const *ck = c_kv + (size_t)(r0 + p) * D_C;
         T const *kp = k_pe + (size_t)(r0 + p) * D_R;
         float dot = 0.0f;
-        for (int c = 0; c < D_C; c += 8) {
-          float v[8];
-          load8(ck + c, v);
+        for (int c = 0; c < D_C; c += 8 * PF) {
+          float v[PF][8];
 #pragma unroll
-          for (int k = 0; k < 8; k++) {
-            dot += ld(ql_s + h * D_C + c + k) * v[k];
+          for (int u = 0; u < PF; u++) {
+            load8(ck + c + 8 * u, v[u]);
+          }
+#pragma unroll
+          for (int u = 0; u < PF; u++) {
+#pragma unroll
+            for (int k = 0; k < 8; k++) {
+              dot += ld(ql_s + h * D_C + c + 8 * u + k) * v[u][k];
+            }
           }
         }
-        for (int r = 0; r < D_R; r += 8) {
-          float v[8];
-          load8(kp + r, v);
+        for (int r = 0; r < D_R; r += 8 * PF) {
+          float v[PF][8];
 #pragma unroll
-          for (int k = 0; k < 8; k++) {
-            dot += ld(qpe_s + h * D_R + r + k) * v[k];
+          for (int u = 0; u < PF; u++) {
+            load8(kp + r + 8 * u, v[u]);
+          }
+#pragma unroll
+          for (int u = 0; u < PF; u++) {
+#pragma unroll
+            for (int k = 0; k < 8; k++) {
+              dot += ld(qpe_s + h * D_R + r + 8 * u + k) * v[u][k];
+            }
           }
         }
         s = dot * softmax_scale;
@@ -195,7 +215,28 @@ __device__ __forceinline__ void
         acc[j][k] *= a;
       }
     }
-    for (int p = 0; p < rows; p++) {
+    // rows in batches of PF: PF coalesced row loads in flight per thread; a short tail
+    // (rows not a multiple of PF) is finished one row at a time. Same FP32 order per row.
+    int p = 0;
+    for (; p + PF <= rows; p += PF) {
+      float v[PF][8];
+#pragma unroll
+      for (int u = 0; u < PF; u++) {
+        load8(c_kv + (size_t)(r0 + p + u) * D_C + c0, v[u]);
+      }
+#pragma unroll
+      for (int u = 0; u < PF; u++) {
+#pragma unroll
+        for (int j = 0; j < HPT; j++) {
+          float pv = p_s[(h0 + j) * TILE + p + u];
+#pragma unroll
+          for (int k = 0; k < 8; k++) {
+            acc[j][k] += pv * v[u][k];
+          }
+        }
+      }
+    }
+    for (; p < rows; p++) {
       float v[8];
       load8(c_kv + (size_t)(r0 + p) * D_C + c0, v);
 #pragma unroll

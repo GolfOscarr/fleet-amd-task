@@ -283,7 +283,7 @@ holds. Scope: `gate_up` is silu-fused (gang-only; a non-gang split would
 add a boundary) and the MoE linears are expert-routed, so both stay gang;
 they are session B's per-tile work if A7 pays.
 
-### P6. Prefetch and more splits in `mla_attend` and `mla_merge_uv` (3 hours, second)
+### P6. Prefetch and more splits in `mla_attend` and `mla_merge_uv` (3 hours, second) - done 2026-09-16 (prefetch; splits deferred)
 
 `mla_attend` is 5.7 ms of the 15.6 ms and `mla_merge_uv` 1.45 ms. Both are
 ours. Two changes prepared here and validated only on the VM: a prefetch
@@ -299,6 +299,40 @@ read from the disassembly (no VGPR spills, `env/offline_gfx942/`), and
 
 On the VM: `kernel_tests.py --kernel mla_attend --kernel mla_attend_splits
 --kernel mla_merge_uv` (100 trials each), then the 2-layer timing run.
+
+Done: reading the kernels explained the 211 us. Each thread of an
+`mla_attend` tile computed two scores by walking a 576-element cache row
+with one 16-byte load at a time, 144 serialised loads per thread; at the
+measured 1 to 1.5 us of HBM latency that is 150 to 216 us, the number in
+`runs/L27_it32`, for a tile that moves 36 KB. Two changes, both keeping
+the FP32 accumulation order and the BF16 probabilities: the column loops
+of the score dot, the row loop of the PV product and the merge's two
+loops now issue `PF = 4` loads before their FMAs (the E2 knee); and the
+score mapping is lane-to-head (`h = e % NH, p = e / NH`) instead of
+lane-to-row, so the 16 lanes of one row share its loads and a row is no
+longer fetched 16 times through 64-line uncoalesced instructions. Expected
+order: about 4x from the batching and less L2 traffic from the mapping;
+B1 of the session plan asks for `mla_attend` under 60 us and
+`mla_merge_uv` under 20 us. Cost in registers, offline: `k_mla_attend` 90
+to 124 VGPRs, `k_mla_merge_uv` 32 to 75, no spills; the worker kernel's
+union 182 to 234 VGPRs offline (the VM's union with the CK linears was
+248, a maximum not a sum, so it should not move). Syntax check, the 142
+tests and the offline compile pass; the kernel tests on the VM
+(`kernels` stage, 100 trials, both binaries) are the correctness gate,
+and the `mla_attend_splits` suite checks the 33-split merge against one
+split end to end.
+
+Deferred, with the reason: "more splits" is not a constant change.
+`mla_merge_uv` maps one lane of a wave per split, so 64 splits is a hard
+cap (the plan's 33 fit; 32 rows per split at 1,056 positions), and the
+attend tile is 32 rows because 16 heads times 32 rows is two scores per
+thread; a 16-row split needs a new score mapping and a merge over more
+than one wave. With the batching in place the tile is no longer
+latency-bound, so the case for more splits rests on B1's number: if
+`mla_attend` lands near its 36 KB at 4 TB/s (about 9 us plus the boundary)
+the split count stays; if it stays above 60 us, the next lever is the
+column-mapped score (a wave reduces one row, coalesced 1 KB loads, 16
+accumulators per lane) or the MFMA path of `docs/mla-decode/04`.
 
 ### P7. Measurement commands for the submission (1 hour) - done 2026-09-16
 
@@ -389,7 +423,8 @@ timed from the kernel trace whose difference is one plain gang linear
 | 7 | P8 documents | 1 | link check, no emoji, no names |
 | 8 | P6 attention prefetch and splits | 3 | offline compile, resources |
 
-About 13 hours of laptop work; P6 can slip to between the two sessions.
+About 13 hours of laptop work; all eight items were done on 2026-09-16
+(P6 with the split count deferred, see its section).
 
 Gate, all PASS before `laptop.sh provision`: `bash env/preflight.sh` (the
 8 checks plus the three new files), `OFFLINE_COMPILE=1` once after P2 and
