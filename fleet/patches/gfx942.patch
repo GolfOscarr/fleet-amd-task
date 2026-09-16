@@ -106,3 +106,19 @@ index afad1af..9906f75 100755
  #include "tasks/mi300/paged_attention_ck_fmha_split_kv_mi300.cuh"
  #include "tasks/mi300/gang_attention_mi300.cuh"
  #endif
+diff --git a/python/mirage/mpk/persistent_kernel.py b/python/mirage/mpk/persistent_kernel.py
+index ccb754b..6830b64 100644
+--- a/python/mirage/mpk/persistent_kernel.py
++++ b/python/mirage/mpk/persistent_kernel.py
+@@ -313,6 +313,11 @@ def get_compile_command(
+             "-o",
+             py_so_path,
+         ]
++        # extra hipcc flags from the environment, e.g. MPK_EXTRA_HIPCC_FLAGS="-gline-tables-only"
++        # so rocgdb can name the source line of a faulting task (fleet/patches/README.md)
++        extra_flags = os.environ.get("MPK_EXTRA_HIPCC_FLAGS", "").split()
++        if extra_flags:
++            flags = flags + extra_flags
+         if mpk.mode == "offline":
+             flags = flags + ["-DMODE_OFFLINE"]
+         elif mpk.mode == "online":

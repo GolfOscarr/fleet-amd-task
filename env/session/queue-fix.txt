@@ -1,0 +1,6 @@
+# Session A, row A7: the pre-baked candidate fixes for the M4 fault, tried in order after A5.2 said
+# the fault moves with the addresses (docs/round-2/02-session-plan.md). Every row continues.
+--layers 8 --head --iters 2 --align-alloc 65536 continue                     # every buffer on a 64 KiB boundary
+--layers 8 --head --iters 2 --workspaces-first continue                      # workspaces below the weights
+--layers 8 --head --iters 2 --align-alloc 65536 --workspaces-first continue  # both
+--layers 8 --head --iters 2 --align-alloc 2097152 --workspaces-first continue  # 2 MiB: past any page or TLB effect

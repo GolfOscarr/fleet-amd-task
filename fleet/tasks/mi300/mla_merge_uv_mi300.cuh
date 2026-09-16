@@ -10,7 +10,7 @@
  * o = sum_j w_j o_j / sum_j w_j (FP32), rounded to BF16 (an MFMA operand);
  * attn[h * D_V + v] = sum_c o[c] * W_uv[h, v, c] with FP32 accumulation, BF16 store.
  *
- * Inputs : partials [n_splits, NH, D_C + 1] FP32, W_uv [NH, D_V, D_C] BF16
+ * Inputs : partials [n_splits, NH, P_ROW] FP32 (P_ROW = D_C+1 padded to /4), W_uv [NH, D_V, D_C] BF16
  * Outputs: attn [1, NH * D_V] BF16
  * Pointer conventions (computed by the registration from the imaps):
  *   partials_xcd_offset_rows: rows already added for this XCD (0 if unpartitioned)
@@ -40,7 +40,10 @@ __device__ __forceinline__ void
                                  int tile_idx) {
   using namespace dsv2;
   static_assert(D_C % 16 == 0, "two lanes share a row of W_uv, 8 columns per load");
+  constexpr int P_ROW = ((D_C + 1 + 3) / 4) * 4;   // padded partials row (P2); o in [0,D_C), lse at D_C
   static_assert(2 * D_V <= NUM_THREADS, "two threads per output element");
+  constexpr int PF = 4;   // loads in flight per thread (docs/round-2 P6; the E2 knee)
+  static_assert((D_C / 2) % (8 * PF) == 0, "the W_uv half-row loop batches PF loads of 8");
 
   int xcd = tile_idx / tiles_per_xcd;
   int t = tile_idx % tiles_per_xcd;
@@ -53,7 +56,7 @@ __device__ __forceinline__ void
     live = n_splits;
   }
   float const *partials = static_cast<float const *>(partials_ptr)
-      - (size_t)xcd * partials_xcd_offset_rows * NH * (D_C + 1);
+      - (size_t)xcd * partials_xcd_offset_rows * NH * P_ROW;
   T const *w_uv = static_cast<T const *>(w_uv_ptr)
       + (size_t)(w_uv_local ? t : h) * D_V * D_C;
   T *attn = static_cast<T *>(attn_ptr) + (size_t)(out_local ? t : h) * D_V;
@@ -71,7 +74,7 @@ __device__ __forceinline__ void
     live = WAVE;   // unreachable when the asserts hold; never read past the wave
   }
   if (tid < WAVE) {
-    float lse = (lane < live) ? partials[((size_t)lane * NH + h) * (D_C + 1) + D_C] : -INFINITY;
+    float lse = (lane < live) ? partials[((size_t)lane * NH + h) * P_ROW + D_C] : -INFINITY;
     float M = wave_max(lse);
     float w = (lane < live) ? expf(lse - M) : 0.0f;
     w_s[lane] = w;
@@ -86,8 +89,20 @@ __device__ __forceinline__ void
   float inv_tot = 1.0f / tot_s[0];
   for (int c = tid; c < D_C; c += NUM_THREADS) {
     float o = 0.0f;
-    for (int j = 0; j < live; j++) {
-      o += w_s[j] * partials[((size_t)j * NH + h) * (D_C + 1) + c];
+    int j = 0;
+    for (; j + PF <= live; j += PF) {         // PF split rows in flight, then the FMAs in order
+      float v[PF];
+#pragma unroll
+      for (int u = 0; u < PF; u++) {
+        v[u] = partials[((size_t)(j + u) * NH + h) * P_ROW + c];
+      }
+#pragma unroll
+      for (int u = 0; u < PF; u++) {
+        o += w_s[j + u] * v[u];
+      }
+    }
+    for (; j < live; j++) {
+      o += w_s[j] * partials[((size_t)j * NH + h) * P_ROW + c];
     }
     o_s[c] = bf16r(o * inv_tot);
   }
@@ -98,12 +113,18 @@ __device__ __forceinline__ void
   for (int v = tid >> 1; v < D_V; v += NUM_THREADS / 2) {
     T const *row = w_uv + (size_t)v * D_C;
     float acc = 0.0f;
-    for (int c = half * (D_C / 2); c < (half + 1) * (D_C / 2); c += 8) {
-      float w[8];
-      load8(row + c, w);
+    for (int c = half * (D_C / 2); c < (half + 1) * (D_C / 2); c += 8 * PF) {
+      float w[PF][8];
 #pragma unroll
-      for (int k = 0; k < 8; k++) {
-        acc += o_s[c + k] * w[k];
+      for (int u = 0; u < PF; u++) {
+        load8(row + c + 8 * u, w[u]);
+      }
+#pragma unroll
+      for (int u = 0; u < PF; u++) {
+#pragma unroll
+        for (int k = 0; k < 8; k++) {
+          acc += o_s[c + 8 * u + k] * w[u][k];
+        }
       }
     }
     acc += __shfl_xor(acc, 1, WAVE);

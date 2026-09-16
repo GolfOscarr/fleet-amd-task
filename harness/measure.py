@@ -91,34 +91,94 @@ def event_per_op(entries, num_events, op_names=None, skip_first_iteration=True):
     return rows
 
 
-def parse_kernel_trace(path):
-    """rocprofv3 --kernel-trace CSV: count dispatches and name them."""
+# The megakernel's dispatches: three per generation on MI300 (persistent_kernel.cuh,
+# launch_persistent_kernel: prepare_kernel, worker_kernel, scheduler_kernel; persistent_kernel on
+# the single-launch path). init_kernel runs once at compile time. A profiled run_fleet.py run
+# also dispatches the weight packing, the cache copies and rocclr's fill and copy blits, so the
+# counters and the launch count are filtered to these names (docs/round-2/01-preparation.md, P7).
+DEFAULT_KERNEL_FILTER = "prepare_kernel,worker_kernel,scheduler_kernel,persistent_kernel"
+
+
+def kernel_matches(name, kernel_filter):
+    """True if any comma-separated pattern of kernel_filter is a substring of name; an empty
+    filter matches everything."""
+    if not kernel_filter:
+        return True
+    return any(pat and pat in (name or "") for pat in kernel_filter.split(","))
+
+
+def _name_key(rows):
+    return next((k for k in rows[0] if k and k.lower() in ("kernel_name", "name")), None) if rows else None
+
+
+def parse_kernel_trace(path, kernel_filter=DEFAULT_KERNEL_FILTER):
+    """rocprofv3 --kernel-trace CSV: every dispatch by name, the megakernel's dispatches
+    (kernel_filter), and their wall time from the trace's own timestamps (ns) when present."""
     with open(path, newline="") as f:
         rows = list(csv.DictReader(f))
-    name_key = next((k for k in rows[0] if k and k.lower() in ("kernel_name", "name")), None) if rows else None
-    names = [r[name_key] for r in rows] if name_key else []
+    name_key = _name_key(rows)
     counts = {}
-    for n in names:
+    for r in rows:
+        n = r[name_key] if name_key else ""
         counts[n] = counts.get(n, 0) + 1
-    return {"dispatches": len(rows), "by_kernel": counts}
+    mega = [r for r in rows if name_key and kernel_matches(r[name_key], kernel_filter)]
+    out = {"dispatches": len(rows), "by_kernel": counts, "kernel_filter": kernel_filter,
+           "megakernel_dispatches": len(mega)}
+    if mega and "Start_Timestamp" in mega[0] and "End_Timestamp" in mega[0]:
+        durations = [(int(r["End_Timestamp"]) - int(r["Start_Timestamp"])) / 1e3 for r in mega]
+        out["megakernel_us"] = {r[name_key]: round(d, 1) for r, d in zip(mega, durations)}
+        out["megakernel_total_us"] = round(sum(durations), 1)
+    return out
 
 
-def parse_pmc(path):
-    """rocprofv3 --pmc CSV: sum each counter column over the rows (dispatches)."""
+def _parse_pmc_file(path, kernel_filter):
     with open(path, newline="") as f:
         rows = list(csv.DictReader(f))
     if not rows:
         return {}
+    name_key = _name_key(rows)
+    if name_key:
+        rows = [r for r in rows if kernel_matches(r[name_key], kernel_filter)]
     # two layouts seen: one column per counter, or (Counter_Name, Counter_Value) pairs
-    if "Counter_Name" in rows[0] and "Counter_Value" in rows[0]:
+    if rows and "Counter_Name" in rows[0] and "Counter_Value" in rows[0]:
         sums = {}
         for r in rows:
             sums[r["Counter_Name"]] = sums.get(r["Counter_Name"], 0.0) + float(r["Counter_Value"])
         return sums
     sums = {}
-    for k in rows[0]:
+    for k in (rows[0] if rows else {}):
         if k and (k.startswith("TCC_") or k.startswith("SQ_")):
             sums[k] = sum(float(r[k] or 0) for r in rows)
+    return sums
+
+
+def pmc_files(spec):
+    """The counter CSVs named by spec: a file, a comma-separated list, or a directory searched
+    recursively for rocprofv3's *counter_collection.csv, in sorted order."""
+    if isinstance(spec, (list, tuple)):
+        out = []
+        for x in spec:
+            out += pmc_files(x)
+        return out
+    spec = str(spec)
+    if "," in spec:
+        return pmc_files(spec.split(","))
+    p = Path(spec)
+    if p.is_dir():
+        return sorted(str(f) for f in p.rglob("*counter_collection.csv"))
+    return [spec]
+
+
+def parse_pmc(spec, kernel_filter=DEFAULT_KERNEL_FILTER):
+    """Counter sums over the dispatches whose Kernel_Name matches kernel_filter (all rows when
+    a file has no Kernel_Name column or the filter is empty), from one or several rocprofv3
+    --pmc runs (see pmc_files). Each run holds one counter pair; a counter present in several
+    runs takes the value of the later file, never a sum across runs, so the last run should be
+    the TCC_BUBBLE_sum + TCC_EA0_RDREQ_sum pair that the read formula subtracts as one
+    (env/hw/summarize.py does the same; env/session/queue.sh runs the pairs in that order)."""
+    sums = {}
+    for f in pmc_files(spec):
+        sums.update(_parse_pmc_file(f, kernel_filter))
     return sums
 
 
@@ -163,9 +223,9 @@ def traffic_from_counters(c, iters):
 # ----------------------------------------------------------------------------
 
 
-def measure(run_dir: Path, kernel_trace=None, pmc=None):
+def measure(run_dir: Path, kernel_trace=None, pmc=None, kernel_filter=DEFAULT_KERNEL_FILTER):
     run_dir = Path(run_dir)
-    m = {"run_dir": str(run_dir), "predicted": PREDICTED}
+    m = {"run_dir": str(run_dir), "predicted": PREDICTED, "kernel_filter": kernel_filter}
     wall = json.loads((run_dir / "wall.json").read_text()) if (run_dir / "wall.json").exists() else {}
     iters = wall.get("iters") or common.N_STEPS
     m["wall"] = wall
@@ -193,9 +253,11 @@ def measure(run_dir: Path, kernel_trace=None, pmc=None):
                              "per_iteration_us": percentiles(iter_us),
                              "per_op": event_per_op(entries, num_events, op_names)}
     if kernel_trace:
-        m["launches"] = parse_kernel_trace(kernel_trace)
+        m["launches"] = parse_kernel_trace(kernel_trace, kernel_filter)
+        if m["launches"].get("megakernel_total_us") and iters:
+            m["launches"]["per_iteration_us_from_trace"] = m["launches"]["megakernel_total_us"] / iters
     if pmc:
-        counters = parse_pmc(pmc)
+        counters = parse_pmc(pmc, kernel_filter)
         m["counters"] = counters
         m["traffic"] = traffic_from_counters(counters, iters)
         per_it = m.get("fwd_pass", {}).get("per_iteration_us", {}).get("p50")
@@ -229,8 +291,11 @@ def report_table(m):
         ("time per iteration, P95 (us)", "", f(g("fwd_pass", "per_iteration_us", "p95"))),
         ("time per iteration from event timing, median (us)", "", f(g("event_timing", "per_iteration_us", "p50"))),
         ("time per iteration from host wall clock (us)", "", f(g("wall", "per_iteration_us_from_wall"))),
+        ("time per iteration from the kernel trace (us)", "", f(g("launches", "per_iteration_us_from_trace"))),
         ("achieved read bandwidth (TB/s)", "3.66-4.3 over T_bw", f(g("traffic", "achieved_read_TBs"), 2)),
-        ("launches per generation", str(p["launches_per_generation"]), f(g("launches", "dispatches"))),
+        ("launches per generation", str(p["launches_per_generation"]),
+         "-" if g("launches") is None else
+         f"{g('launches', 'megakernel_dispatches')} megakernel of {g('launches', 'dispatches')} dispatches in the run"),
         ("L2 hit rate", "16-17% (Fleet's batch-1 figure)", f(g("traffic", "l2_hit_rate"), 3)),
         ("tokens per second", "", f(1e6 / g("fwd_pass", "per_iteration_us", "p50")) if g("fwd_pass", "per_iteration_us", "p50") else "-"),
     ]
@@ -250,13 +315,17 @@ def main():
     ap.add_argument("--run", required=True, help="run_fleet.py output directory")
     ap.add_argument("--kernel-trace", default=None,
                     help="rocprofv3 --kernel-trace CSV")
+    ap.add_argument("--kernel-filter", default=DEFAULT_KERNEL_FILTER,
+                    help="comma-separated kernel-name substrings the counters and launch count are "
+                         "restricted to; '' sums every dispatch of the profiled process")
     ap.add_argument("--pmc", default=None,
-                    help="rocprofv3 --pmc CSV. Traffic needs TCC_BUBBLE_sum, "
+                    help="rocprofv3 --pmc CSV, a comma-separated list of them, or a directory of "
+                         "runs (searched for *counter_collection.csv). Traffic needs TCC_BUBBLE_sum, "
                          "TCC_EA0_RDREQ_sum and TCC_EA0_RDREQ_32B_sum for reads "
                          "and TCC_EA0_WRREQ_sum with TCC_EA0_WRREQ_64B_sum for "
                          "writes; a read is a 128 B request counted by TCC_BUBBLE")
     args = ap.parse_args()
-    m = measure(Path(args.run), args.kernel_trace, args.pmc)
+    m = measure(Path(args.run), args.kernel_trace, args.pmc, args.kernel_filter)
     out = Path(args.run)
     (out / "metrics.json").write_text(json.dumps(m, indent=2) + "\n")
     (out / "report_table.md").write_text(report_table(m))

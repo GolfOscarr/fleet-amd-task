@@ -126,6 +126,15 @@ BF16_REL = 2e-3
 BF16_ULP = 2.0 ** -7     # one BF16 ulp of v is at most 2^-7 |v|
 BF16_ABS_FLOOR = BF16_ULP   # one ulp of the largest element: the cancellation bound (row_bf16)
 PARTIALS_O_REL = 5e-4
+P_ROW = ((D.D_C + 1 + 3) // 4) * 4     # padded partials row (P2): 513 -> 516, 16-byte-aligned rows
+
+
+def pad_partials(logical):
+    """Logical [..., D_C+1] -> device [..., P_ROW], the extra columns zeroed as the kernel inits them."""
+    pad = P_ROW - logical.shape[-1]
+    if pad <= 0:
+        return logical
+    return np.concatenate([logical, np.zeros(logical.shape[:-1] + (pad,), logical.dtype)], axis=-1)
 LSE_ABS = 1e-4
 SPLITS_REL = 1e-2
 NEAR_TIE = 1e-4          # logit gap below which the reference's own top-k is ambiguous
@@ -261,9 +270,11 @@ def row_bf16(output, got, exp, threshold=BF16_REL):
     return _row(output, "bf16", threshold, got, exp, ok)
 
 
-def rows_partials(prefix, got, exp, o_rel):
-    """o with a rel_err bound, lse absolute on the live splits, the -inf pattern exact."""
-    d_c = exp.shape[-1] - 1
+def rows_partials(prefix, got, exp, o_rel, d_c=None):
+    """o with a rel_err bound, lse absolute on the live splits, the -inf pattern exact.
+    d_c defaults to exp.shape[-1] - 1; pass it for a padded row (P2), where the width is P_ROW."""
+    if d_c is None:
+        d_c = exp.shape[-1] - 1
     rows = [row_rel(f"{prefix}.o", got[..., :d_c], exp[..., :d_c], o_rel)]
     lse_g, lse_e = got[..., d_c], exp[..., d_c]
     live = np.isfinite(lse_e)
@@ -355,7 +366,7 @@ def tensors_mla_attend(params):
     n_splits = params["n_splits"]
     t = [T("ql_nope", "bf16", (D.NH, D.D_C)), T("q_pe", "bf16", (D.NH, D.D_R)),
          T("c_kv", "bf16", (S_MAX, D.D_C)), T("k_pe", "bf16", (S_MAX, D.D_R)),
-         T("partials", "f32", (n_splits, D.NH, D.D_C + 1), True)]
+         T("partials", "f32", (n_splits, D.NH, P_ROW), True)]
     if params.get("debug_scores"):
         t.append(T("scores", "f32", (D.NH, S_MAX), True))
     return t
@@ -374,7 +385,7 @@ def make_mla_attend(rng, **kw):
     p = attend_params(random_step(rng), **kw)
     t = {"ql_nope": bf16_normal(rng, (D.NH, D.D_C)), "q_pe": bf16_normal(rng, (D.NH, D.D_R)),
          "c_kv": bf16_normal(rng, (S_MAX, D.D_C)), "k_pe": bf16_normal(rng, (S_MAX, D.D_R)),
-         "partials": sentinel("f32", (p["n_splits"], D.NH, D.D_C + 1))}
+         "partials": sentinel("f32", (p["n_splits"], D.NH, P_ROW))}
     if p.get("debug_scores"):
         t["scores"] = sentinel("f32", (D.NH, S_MAX))
     return t, p
@@ -390,15 +401,15 @@ def ref_mla_attend(t, p):
     out = R.mla_attend(t["ql_nope"], t["q_pe"], t["c_kv"], t["k_pe"], step, scale,
                        split=p["split"], n_splits=p["n_splits"], debug_scores=debug)
     if not debug:
-        return {"partials": out}
+        return {"partials": pad_partials(out)}
     partials, scores = out
     exp_scores = t["scores"].copy()                    # columns beyond step stay untouched
     exp_scores[:, :step + 1] = scores
-    return {"partials": partials, "scores": exp_scores}
+    return {"partials": pad_partials(partials), "scores": exp_scores}
 
 
 def check_mla_attend(t, p, exp, got):
-    rows = rows_partials("partials", got["partials"], exp["partials"], PARTIALS_O_REL)
+    rows = rows_partials("partials", got["partials"], exp["partials"], PARTIALS_O_REL, d_c=D.D_C)
     if p.get("debug_scores"):
         s = p["step"] + 1
         rows.append(row_rel("scores[:, :step+1]", got["scores"][:, :s], exp["scores"][:, :s], F32_REL))
@@ -409,7 +420,7 @@ def check_mla_attend(t, p, exp, got):
 # --- mla_merge_uv -----------------------------------------------------------
 
 def tensors_mla_merge_uv(params):
-    return [T("partials", "f32", (params["n_splits"], D.NH, D.D_C + 1)),
+    return [T("partials", "f32", (params["n_splits"], D.NH, P_ROW)),
             T("w_uv", "bf16", (D.NH, D.D_V, D.D_C)), T("attn", "bf16", (D.NH * D.D_V,), True)]
 
 
@@ -429,14 +440,14 @@ def random_partials(rng, step, split, n_splits):
 
 def make_mla_merge_uv(rng):
     p = merge_params(random_step(rng))
-    t = {"partials": random_partials(rng, p["step"], p["split"], p["n_splits"]),
+    t = {"partials": pad_partials(random_partials(rng, p["step"], p["split"], p["n_splits"])),
          "w_uv": bf16_normal(rng, (D.NH, D.D_V, D.D_C), D.D_C ** -0.5),
          "attn": sentinel("bf16", (D.NH * D.D_V,))}
     return t, p
 
 
 def ref_mla_merge_uv(t, p):
-    return {"attn": R.mla_merge_uv(t["partials"], t["w_uv"], p["step"], split=p["split"])}
+    return {"attn": R.mla_merge_uv(t["partials"], t["w_uv"], p["step"], split=p["split"], d_c=D.D_C)}
 
 
 def check_mla_merge_uv(t, p, exp, got):
@@ -658,7 +669,7 @@ def run_splits(ctx, name):
         base = ctx.work / name / f"{i:03d}"
         tensors, p33 = make_mla_attend(rng)
         p1 = attend_params(p33["step"], split=S_MAX, n_splits=1)
-        t1 = dict(tensors, partials=sentinel("f32", (1, D.NH, D.D_C + 1)))
+        t1 = dict(tensors, partials=sentinel("f32", (1, D.NH, P_ROW)))
         write_trial(base / "attend33", att, tensors, p33)
         write_trial(base / "attend1", att, t1, p1)
         w_uv = bf16_normal(rng, (D.NH, D.D_V, D.D_C), D.D_C ** -0.5)
@@ -679,7 +690,7 @@ def run_splits(ctx, name):
         _, _, m1 = read_trial(base / "merge1", mrg)
         step = p33["step"]
         # the 33 kernel splits merged in NumPy against the kernel's single split
-        merged = R.merge_partials(g33["partials"], step, split=SPLIT)
+        merged = R.merge_partials(g33["partials"], step, split=SPLIT, d_c=D.D_C)
         lse33 = g33["partials"][:, :, D.D_C]
         live = -(-(step + 1) // SPLIT)
         M = lse33[:live].max(axis=0)
@@ -688,11 +699,11 @@ def run_splits(ctx, name):
         r = [row_rel("o: 33 splits merged vs 1 split", merged, one[:, :D.D_C], SPLITS_REL),
              row_abs("lse: 33 splits merged vs 1 split", lse_merged, one[:, D.D_C], LSE_ABS)]
         # each path against its own NumPy reference
-        r += rows_partials("1 split vs numpy_ref", g1["partials"], att.reference(t33, p1)["partials"], SPLITS_REL)
+        r += rows_partials("1 split vs numpy_ref", g1["partials"], att.reference(t33, p1)["partials"], SPLITS_REL, d_c=D.D_C)
         r.append(row_bf16("attn(33 splits) vs numpy_ref merge of the kernel's partials", m33["attn"],
-                          R.mla_merge_uv(g33["partials"], w_uv, step, split=SPLIT)))
+                          R.mla_merge_uv(g33["partials"], w_uv, step, split=SPLIT, d_c=D.D_C)))
         r.append(row_bf16("attn(1 split) vs numpy_ref merge of the kernel's partials", m1["attn"],
-                          R.mla_merge_uv(g1["partials"], w_uv, step, split=S_MAX)))
+                          R.mla_merge_uv(g1["partials"], w_uv, step, split=S_MAX, d_c=D.D_C)))
         # the two kernel paths end to end
         r.append(row_rel("attn: 33 splits vs 1 split", m33["attn"], m1["attn"], SPLITS_REL))
         rows.append(r)

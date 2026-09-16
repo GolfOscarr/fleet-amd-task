@@ -63,12 +63,12 @@ def mla_prep_layer(mpk, qkva, w_kv_norm, w_uk, cos, sin, c_kv, k_pe, ql_nope, q_
 
 def mla_attend_layer(mpk, ql_nope, q_pe, c_kv, k_pe, partials, softmax_scale, split, n_splits,
                      scores=None, block_dim=(256, 1, 1)):
-    """Gang task, 8 x ceil(n_splits / 8) tiles: split = tile * 8 + bid.x; partials [n_splits, nh, d_c + 1].
+    """Gang task, 8 x ceil(n_splits / 8) tiles: split = tile * 8 + bid.x; partials [n_splits, nh, partials_row(d_c)].
 
     scores: optional second output [nh, s_max] FP32 for boundary B5; only written by the
     MLA_ATTEND_DEBUG_SCORES build (MPK_DEBUG_SCORES=1 at compile time)."""
     assert partials.num_dims == 3 and partials.dim(0) == n_splits
-    assert partials.dim(1) == ql_nope.dim(0) and partials.dim(2) == ql_nope.dim(1) + 1
+    assert partials.dim(1) == ql_nope.dim(0) and partials.dim(2) == G.partials_row(ql_nope.dim(1))
     assert c_kv.dim(0) == k_pe.dim(0) and -(-c_kv.dim(0) // split) == n_splits
     tiles_per_xcd = -(-n_splits // XCDS)
     tensors = [(ql_nope, (-1, -1, -1), -1), (q_pe, (-1, -1, -1), -1),
@@ -86,7 +86,7 @@ def mla_attend_layer(mpk, ql_nope, q_pe, c_kv, k_pe, partials, softmax_scale, sp
 def mla_merge_uv_layer(mpk, partials, w_uv, output, split, n_splits, block_dim=(256, 1, 1)):
     """Gang task, 8 x (nh / 8) tiles: head h = 2 bid.x + t; output columns [128 h, 128 h + 128)."""
     nh, d_v, d_c = w_uv.dim(0), w_uv.dim(1), w_uv.dim(2)
-    assert nh % XCDS == 0 and output.dim(1) == nh * d_v and partials.dim(2) == d_c + 1
+    assert nh % XCDS == 0 and output.dim(1) == nh * d_v and partials.dim(2) == G.partials_row(d_c)
     assert d_c % 256 == 0, "K of the W_uv product must be a multiple of 256"
     assert n_splits <= 64, "mla_merge_uv merges one split per lane of one wavefront"
     _new_task(mpk, (XCDS, 1, 1), block_dim,
@@ -128,10 +128,42 @@ NEW_LAYERS = {
 # driving the plan
 
 
-def make_tensors(mpk, plan, packed, capture, meta, torch):
-    """Attach inputs and allocate workspaces; returns name -> DTensor and name -> torch tensor."""
+TORCH_DTYPES = {"bf16": "bfloat16", "f32": "float32", "i32": "int32", "i64": "int64"}
+
+
+def aligned_copy(torch, t, align):
+    """A copy of t whose base address is a multiple of align bytes (the M4 fault tooling,
+    docs/round-2 P1: the caching allocator aligns to 512 only). The backing buffer stays alive
+    through the returned view's storage."""
+    assert align > 0 and align & (align - 1) == 0, "align must be a power of two"
+    n = t.numel() * t.element_size()
+    raw = torch.empty(n + align, dtype=torch.uint8, device=t.device)
+    off = (-raw.data_ptr()) % align
+    out = raw[off:off + n].view(t.dtype).view(t.shape)
+    out.copy_(t)
+    assert out.data_ptr() % align == 0
+    return out
+
+
+def new_workspace(torch, t, align=0, device="cuda"):
+    """A zeroed workspace for plan tensor t, aligned to align bytes when align is set."""
+    buf = torch.zeros(t.shape, dtype=getattr(torch, TORCH_DTYPES[t.dtype]), device=device)
+    return aligned_copy(torch, buf, align) if align else buf
+
+
+def allocate_workspaces(torch, plan, align=0, device="cuda"):
+    """Every non-input tensor of the plan, allocated now (--workspaces-first: before the weights
+    are packed, so the workspaces sit below the weights instead of above them)."""
+    return {t.name: new_workspace(torch, t, align, device) for t in plan.tensors.values() if t.kind != "input"}
+
+
+def make_tensors(mpk, plan, packed, capture, meta, torch, align=0, workspaces=None):
+    """Attach inputs and allocate workspaces; returns name -> DTensor and name -> torch tensor.
+    workspaces: pre-allocated buffers by name (allocate_workspaces); align: alignment of any
+    workspace allocated here (the inputs are aligned by the caller, see run_fleet.py)."""
     dt = {}
     host = {}
+    workspaces = workspaces or {}
     for t in plan.tensors.values():
         if t.kind == "input":
             if t.source.startswith("meta:"):
@@ -144,9 +176,10 @@ def make_tensors(mpk, plan, packed, capture, meta, torch):
             host[t.name] = src
             dt[t.name] = mpk.attach_input(torch_tensor=src, name=t.name)
         else:
-            dtype = {"bf16": torch.bfloat16, "f32": torch.float32, "i32": torch.int32,
-                     "i64": torch.int64}[t.dtype]
-            buf = torch.zeros(t.shape, dtype=dtype, device="cuda")
+            buf = workspaces.get(t.name)
+            if buf is None:
+                buf = new_workspace(torch, t, align)
+            assert tuple(buf.shape) == t.shape, (t.name, tuple(buf.shape), t.shape)
             host[t.name] = buf
             dt[t.name] = mpk.attach_input(torch_tensor=buf, name=t.name)
     return dt, host
@@ -208,14 +241,16 @@ def plan_json(plan):
 
 
 def build(packed, capture, meta, dims=REAL_DIMS, s_max=1056, layers=27, head=True, debug=False,
-          stop_after=None, debug_scores=False, num_workers=296, num_schedulers=8, profiler_tensor=None):
+          stop_after=None, debug_scores=False, tile_linears=False, num_workers=296, num_schedulers=8,
+          profiler_tensor=None, align=0, workspaces=None):
     """On the machine: construct the PersistentKernel, attach, issue, return (mpk, host tensors, plan)."""
     import torch
     import mirage as mi
 
-    plan = G.build_plan(dims, s_max, layers, head, debug, debug_scores)
+    plan = G.build_plan(dims, s_max, layers, head, debug, debug_scores, tile_linears)
     if stop_after:
         plan.truncate(stop_after)
+    assert not plan.chain_violations(), f"the runtime would reject this graph: {plan.chain_violations()}"
     mpk = mi.PersistentKernel(
         mode="online", world_size=1, mpi_rank=0, num_workers=num_workers,
         num_local_schedulers=num_schedulers, num_remote_schedulers=0,
@@ -224,7 +259,7 @@ def build(packed, capture, meta, dims=REAL_DIMS, s_max=1056, layers=27, head=Tru
         trace_name="", spec_decode_config=None, use_cutlass_kernel=False, eos_token_id=-1,
     )
     meta_for_inputs = {"input_tokens": meta["input_tokens"], "output_tokens": meta["output_tokens"]}
-    dt, host = make_tensors(mpk, plan, packed, capture, meta_for_inputs, torch)
+    dt, host = make_tensors(mpk, plan, packed, capture, meta_for_inputs, torch, align, workspaces)
     issue_calls(mpk, plan, dt)
     return mpk, host, plan
 
@@ -327,6 +362,25 @@ class FakeMPK:
                   output_stride=output_stride)
         self.register_task(None, "gang_linear_silu_mi300", [output_stride, tile_n, 1, 1, n_tiles, n_tiles, wgm])
 
+    def linear_layer(self, input, weight, output, grid_dim, block_dim):
+        # the stock non-gang linear (persistent_kernel.py:2045): grid_dim[0] tasks split
+        # the output columns; the runtime reads the output stride from the tensor
+        assert input.num_dims == 2 and weight.num_dims == 2 and output.num_dims == 2
+        assert weight.dim(1) == input.dim(1), (weight.dim(1), input.dim(1))    # reduction
+        assert weight.dim(0) == output.dim(1), (weight.dim(0), output.dim(1))  # output size
+        assert output.dim(1) % grid_dim[0] == 0, (output.dim(1), grid_dim[0])
+        self._rec("linear_layer", input=input, weight=weight, output=output, grid_dim=list(grid_dim))
+        self.register_task(None, "linear", [])
+
+    def linear_with_residual_layer(self, input, weight, residual, output, grid_dim, block_dim):
+        assert input.num_dims == 2 and weight.num_dims == 2 and output.num_dims == 2 and residual.num_dims == 2
+        assert weight.dim(1) == input.dim(1), (weight.dim(1), input.dim(1))
+        assert weight.dim(0) == output.dim(1) == residual.dim(1), (weight.dim(0), output.dim(1), residual.dim(1))
+        assert output.dim(1) % grid_dim[0] == 0, (output.dim(1), grid_dim[0])
+        self._rec("linear_with_residual_layer", input=input, weight=weight, residual=residual,
+                  output=output, grid_dim=list(grid_dim))
+        self.register_task(None, "linear_with_residual", [])
+
     def _gang_moe(self, method, input, weight, moe_routing_indices, moe_mask, output, k_mult):
         assert weight.num_dims == 3 and moe_routing_indices.num_dims == 2 and moe_mask.num_dims == 1
         assert output.num_dims == 3
@@ -375,10 +429,11 @@ class FakeMPK:
 
 
 def dry_run(dims=REAL_DIMS, s_max=1056, layers=27, head=True, debug=False, stop_after=None,
-            debug_scores=False):
-    plan = G.build_plan(dims, s_max, layers, head, debug, debug_scores)
+            debug_scores=False, tile_linears=False):
+    plan = G.build_plan(dims, s_max, layers, head, debug, debug_scores, tile_linears)
     if stop_after:
         plan.truncate(stop_after)
+    assert not plan.chain_violations(), f"the runtime would reject this graph: {plan.chain_violations()}"
     mpk = FakeMPK()
     dt = {t.name: FakeDTensor(t.name, t.shape) for t in plan.tensors.values()}
     issue_calls(mpk, plan, dt)
@@ -394,12 +449,13 @@ def main():
     ap.add_argument("--s-max", type=int, default=1056)
     ap.add_argument("--stop-after", default=None, help="operator label, e.g. L1.o_proj")
     ap.add_argument("--debug-scores", action="store_true")
+    ap.add_argument("--tile-linears", action="store_true")
     ap.add_argument("--out", default=None)
     args = ap.parse_args()
     if not args.dry_run:
         sys.exit("the real build is driven from harness/run_fleet.py on the machine; use --dry-run here")
     plan, calls = dry_run(REAL_DIMS, args.s_max, args.layers, not args.no_head, args.debug, args.stop_after,
-                          args.debug_scores)
+                          args.debug_scores, args.tile_linears)
     s = G.summary(plan)
     print(json.dumps({k: v for k, v in s.items()}, indent=None))
     print(f"{len(calls)} calls recorded; task types: {sorted(set(c['task_type'] for c in calls))}")

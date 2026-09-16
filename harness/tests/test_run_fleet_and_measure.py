@@ -109,9 +109,12 @@ def test_pmc_and_trace_parsers(tmp_path):
     pmc.write_text("Dispatch_Id,Kernel_Name,TCC_BUBBLE_sum,TCC_EA0_RDREQ_sum,"
                    "TCC_EA0_RDREQ_32B_sum,TCC_EA0_WRREQ_sum,TCC_EA0_WRREQ_64B_sum,"
                    "TCC_HIT_sum,TCC_MISS_sum\n"
-                   "1,worker,1000,1000,0,10,10,30,70\n2,scheduler,24,24,0,2,2,1,1\n")
+                   "1,worker_kernel(mirage::runtime::RuntimeConfig),1000,1000,0,10,10,30,70\n"
+                   "2,scheduler_kernel(mirage::runtime::RuntimeConfig),24,24,0,2,2,1,1\n"
+                   "3,__amd_rocclr_copyBuffer,5000,5000,0,900,900,0,0\n")   # the packing blit: excluded
     c = measure.parse_pmc(pmc)
     assert c["TCC_EA0_RDREQ_sum"] == 1024 and c["TCC_HIT_sum"] == 31
+    assert measure.parse_pmc(pmc, kernel_filter="")["TCC_EA0_RDREQ_sum"] == 6024   # no filter: everything
     tr = measure.traffic_from_counters(c, iters=32)
     # Every read request is a 128 B TCC_BUBBLE one here, so reads are 128 x 1024.
     assert abs(tr["read_MiB_per_iteration"] - 1024 * 128 / 2**20 / 32) < 1e-12
@@ -121,9 +124,15 @@ def test_pmc_and_trace_parsers(tmp_path):
     pmc2.write_text("Counter_Name,Counter_Value\nTCC_EA0_RDREQ_sum,5\nTCC_EA0_RDREQ_sum,7\n")
     assert measure.parse_pmc(pmc2)["TCC_EA0_RDREQ_sum"] == 12
     kt = tmp_path / "kt.csv"
-    kt.write_text("Kernel_Name,Start\nprepare_kernel,1\nworker_kernel,2\nscheduler_kernel,3\n")
-    assert measure.parse_kernel_trace(kt) == {"dispatches": 3, "by_kernel": {"prepare_kernel": 1, "worker_kernel": 1,
-                                                                            "scheduler_kernel": 1}}
+    kt.write_text("Kernel_Name,Start_Timestamp,End_Timestamp\n__amd_rocclr_copyBuffer,0,500\n"
+                  "prepare_kernel(mirage::runtime::RuntimeConfig),1000,2000\n"
+                  "worker_kernel(mirage::runtime::RuntimeConfig),2000,32002000\n"
+                  "scheduler_kernel(mirage::runtime::RuntimeConfig),2000,32001000\n")
+    lt = measure.parse_kernel_trace(kt)
+    assert lt["dispatches"] == 4 and lt["megakernel_dispatches"] == 3
+    assert lt["by_kernel"]["__amd_rocclr_copyBuffer"] == 1
+    assert lt["megakernel_us"]["worker_kernel(mirage::runtime::RuntimeConfig)"] == 32000.0
+    assert lt["megakernel_total_us"] == 1.0 + 32000.0 + 31999.0
 
 
 def test_bytes_from_requests_matches_the_measured_copy():
@@ -158,6 +167,26 @@ def test_bytes_from_requests_matches_the_measured_copy():
                                          iters=1) == {"l2_hit_rate": 0.5}
 
 
+def test_kernel_filter_on_the_recorded_counter_csv(tmp_path):
+    """The 2026-09-15 record: the probe copied 1 GiB; filtered to copy_kernel the read formula
+    gives exactly 1 GiB, and unfiltered it also counts the fill and warm-up dispatches."""
+    raw = ROOT / "env/hw/20260915/raw"
+    files = measure.pmc_files(raw)
+    assert len(files) == 4 and files[-1].endswith("counter_collection.csv") and "/pmc4/" in files[-1]
+    c = measure.parse_pmc(raw, kernel_filter="copy_kernel")           # the directory form
+    assert abs(measure.bytes_read(c) - 2**30) / 2**30 < 1e-4 and abs(measure.bytes_written(c) - 2**30) / 2**30 < 1e-4
+    assert measure.parse_pmc(",".join(files), kernel_filter="copy_kernel") == c   # the list form
+    assert measure.bytes_read(measure.parse_pmc(raw, kernel_filter="")) > 2**30  # fill and warm-up too
+    assert measure.parse_pmc(raw) == {}                                # no megakernel dispatch in a probe run
+    # a concatenation of the four runs would double count the counter present in two of them
+    merged = tmp_path / "pmc_all.csv"
+    with merged.open("w") as out:
+        for i, f in enumerate(files):
+            lines = Path(f).read_text().splitlines(keepends=True)
+            out.writelines(lines if i == 0 else lines[1:])
+    assert measure.bytes_read(measure.parse_pmc(merged, kernel_filter="copy_kernel")) > 1.4 * 2**30
+
+
 def test_measure_end_to_end(tmp_path):
     run = tmp_path / "run"
     run.mkdir()
@@ -180,3 +209,95 @@ def test_measure_end_to_end(tmp_path):
     assert m["event_timing"]["per_op"][1]["op"] == "embed_layer"
     md = measure.report_table(m)
     assert "| launches per generation | 3 | - |" in md and "embed_layer" in md
+    kt = tmp_path / "kt.csv"
+    kt.write_text("Kernel_Name,Start_Timestamp,End_Timestamp\n__amd_rocclr_copyBuffer,0,500\n"
+                  "prepare_kernel(mirage::runtime::RuntimeConfig),1000,2000\n"
+                  "worker_kernel(mirage::runtime::RuntimeConfig),2000,32002000\n"
+                  "scheduler_kernel(mirage::runtime::RuntimeConfig),2000,32001000\n")
+    m = measure.measure(run, kernel_trace=kt)
+    assert abs(m["launches"]["per_iteration_us_from_trace"] - 64000.0 / 32) < 1e-9
+    md = measure.report_table(m)
+    assert "| launches per generation | 3 | 3 megakernel of 4 dispatches in the run |" in md
+    assert "| time per iteration from the kernel trace (us) |  | 2000.0 |" in md
+
+
+# ---- P1 of docs/round-2/01-preparation.md: the address-shift flag ----------------
+
+def test_pad_alloc_argument_and_run_name():
+    p = run_fleet.build_parser()
+    a = p.parse_args(["--layers", "8", "--head", "--iters", "2", "--model-dir", "x", "--pad-alloc", "2"])
+    assert a.pad_alloc == 2.0 and run_fleet.run_name(a) == "L8_head_it2_pad2"
+    a = p.parse_args(["--layers", "8", "--model-dir", "x", "--pad-alloc", "0.5", "--stop-after", "L7.o_proj"])
+    assert run_fleet.run_name(a) == "L8_it1_L7.o_proj_pad0.5"
+    a = p.parse_args(["--layers", "27", "--head", "--iters", "32", "--model-dir", "x"])
+    assert a.pad_alloc == 0.0 and run_fleet.run_name(a) == "L27_head_it32"     # unchanged without the flag
+    a = p.parse_args(["--layers", "2", "--iters", "32", "--tile-linears", "--model-dir", "x"])
+    assert a.tile_linears and run_fleet.run_name(a) == "L2_it32_tile"
+
+
+def test_tensor_addresses_records_every_host_tensor():
+    b, _, h = dump(2, True)
+    addr = run_fleet.tensor_addresses(h)
+    assert set(addr) == set(h) and all(isinstance(v, int) for v in addr.values())
+    assert addr["x_res"] == h["x_res"].data_ptr()
+
+
+def test_fault_bisection_labels_are_in_plan_order():
+    plan, _ = B.dry_run(REAL_DIMS, 1026, 8, True, False, None, False)
+    labels = [c.label for c in plan.calls]
+    want = [l.strip() for l in (ROOT / "env/session/queue-fault.txt").read_text().splitlines()
+            if l.strip() and not l.startswith("#")]
+    assert all(w in labels for w in want)
+    assert [l for l in labels if l in want] == want
+    assert want[0] == "L7.norm1" and want[-1] == "head.argmax_reduce"
+
+
+# ---- the candidate M4 fault fixes as flags (docs/round-2, session A row A4) -----------
+
+def test_aligned_copy_rebases_and_preserves_values():
+    for align in (512, 4096, 65536):
+        t = torch.arange(1000, dtype=torch.float32).reshape(10, 100) * 0.5
+        a = B.aligned_copy(torch, t, align)
+        assert a.data_ptr() % align == 0 and a.shape == t.shape and a.dtype == t.dtype
+        assert torch.equal(a, t) and a.data_ptr() != t.data_ptr()
+    b16 = torch.ones(3, 7, dtype=torch.bfloat16)
+    a = B.aligned_copy(torch, b16, 4096)
+    assert a.dtype == torch.bfloat16 and a.data_ptr() % 4096 == 0 and torch.equal(a, b16)
+    with pytest.raises(AssertionError):
+        B.aligned_copy(torch, t, 3000)
+
+
+def test_allocate_workspaces_and_make_tensors_reuse_them():
+    plan, _ = B.dry_run(REAL_DIMS, 1026, 1, False)
+    ws = B.allocate_workspaces(torch, plan, align=4096, device="cpu")
+    names = {t.name for t in plan.tensors.values() if t.kind != "input"}
+    assert set(ws) == names and all(v.data_ptr() % 4096 == 0 for v in ws.values())
+    assert all(tuple(ws[n].shape) == plan.tensors[n].shape for n in names)
+    assert all(float(ws[n].float().abs().sum()) == 0.0 for n in names)
+    # make_tensors attaches the given buffers instead of allocating
+    dt = {"bf16": torch.bfloat16, "f32": torch.float32, "i32": torch.int32, "i64": torch.int64}
+    packed, capture, meta = {}, {}, {}
+    for t in plan.tensors.values():
+        if t.kind != "input":
+            continue
+        buf = torch.zeros(t.shape, dtype=dt[t.dtype])
+        if t.source.startswith("meta:"):
+            meta[t.source[5:]] = buf
+        elif t.source.startswith("capture:"):
+            capture[t.source[8:]] = buf
+        else:
+            packed[t.source] = buf
+    fake = B.FakeMPK()
+    _, host = B.make_tensors(fake, plan, packed, capture, meta, torch, workspaces=ws)
+    assert all(host[n] is ws[n] for n in names)
+
+
+def test_fault_fix_flags_and_run_names():
+    p = run_fleet.build_parser()
+    a = p.parse_args(["--layers", "8", "--head", "--iters", "2", "--model-dir", "x", "--align-alloc", "65536"])
+    assert a.align_alloc == 65536 and run_fleet.run_name(a) == "L8_head_it2_al65536"
+    a = p.parse_args(["--layers", "8", "--head", "--iters", "2", "--model-dir", "x", "--workspaces-first"])
+    assert a.workspaces_first and run_fleet.run_name(a) == "L8_head_it2_wsfirst"
+    a = p.parse_args(["--layers", "8", "--head", "--iters", "2", "--model-dir", "x", "--align-alloc", "4096",
+                      "--workspaces-first", "--pad-alloc", "1"])
+    assert run_fleet.run_name(a) == "L8_head_it2_al4096_wsfirst_pad1"

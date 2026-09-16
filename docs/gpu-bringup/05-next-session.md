@@ -1,5 +1,11 @@
 # 05 - Next session: from a fresh VM to a running graph in ten minutes
 
+**Superseded on 2026-09-16 by `docs/round-2/02-session-plan.md`** (the 1x
+MI300X shape, the session scripts of `env/session/`, the queue files and
+the minute-by-minute plan). Kept as the record of what the next session
+looked like right after the first one; the commands below still work by
+hand.
+
 Written 2026-09-16 after the first two sessions (`04-session-log.md`). The
 built environment of those sessions is meant to be an image on GitHub
 Container Registry, so no session pays for the Fleet build again. **As of
@@ -66,8 +72,8 @@ python harness/run_fleet.py --layers 2 --model-dir $SNAP && python harness/compa
 
 The reference artifacts (`harness/ref/*.json`, `calibration.json`) are in
 the repo; the tensors (`ref_cache.safetensors`, boundaries) are not, so
-`run_reference.py --device cuda` (under `.venv`, 1 minute, GPU 1 if there
-is one) runs before any `compare.py`.
+`run_reference.py --device cuda` (under `.venv`, 1 minute; on a 1x before
+the first graph run, on a 2x on GPU 1) runs before any `compare.py`.
 
 ## What to do first, in order of value
 
