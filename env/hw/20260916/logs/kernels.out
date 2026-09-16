@@ -1,151 +1,175 @@
-fleet/tasks/kernel_tests_mi300.cu:411:5: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
-  411 |     hipEventCreate(&t0); hipEventCreate(&t1);
+fleet/tasks/kernel_tests_mi300.cu:423:5: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  423 |     hipEventCreate(&t0); hipEventCreate(&t1);
       |     ^~~~~~~~~~~~~~~~~~~
-fleet/tasks/kernel_tests_mi300.cu:411:26: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
-  411 |     hipEventCreate(&t0); hipEventCreate(&t1);
+fleet/tasks/kernel_tests_mi300.cu:423:26: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  423 |     hipEventCreate(&t0); hipEventCreate(&t1);
       |                          ^~~~~~~~~~~~~~~~~~~
-fleet/tasks/kernel_tests_mi300.cu:412:5: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
-  412 |     hipEventRecord(t0, 0);
+fleet/tasks/kernel_tests_mi300.cu:424:5: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  424 |     hipEventRecord(t0, 0);
       |     ^~~~~~~~~~~~~~~~~~~~~
-fleet/tasks/kernel_tests_mi300.cu:420:5: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
-  420 |     hipEventRecord(t1, 0); hipEventSynchronize(t1);
+fleet/tasks/kernel_tests_mi300.cu:432:5: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  432 |     hipEventRecord(t1, 0); hipEventSynchronize(t1);
       |     ^~~~~~~~~~~~~~~~~~~~~
-fleet/tasks/kernel_tests_mi300.cu:420:28: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
-  420 |     hipEventRecord(t1, 0); hipEventSynchronize(t1);
+fleet/tasks/kernel_tests_mi300.cu:432:28: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  432 |     hipEventRecord(t1, 0); hipEventSynchronize(t1);
       |                            ^~~~~~~~~~~~~~~~~~~~~~~
-fleet/tasks/kernel_tests_mi300.cu:421:19: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
-  421 |     float ms = 0; hipEventElapsedTime(&ms, t0, t1);
+fleet/tasks/kernel_tests_mi300.cu:433:19: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  433 |     float ms = 0; hipEventElapsedTime(&ms, t0, t1);
       |                   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-fleet/tasks/kernel_tests_mi300.cu:442:5: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
-  442 |     hipEventCreate(&t0); hipEventCreate(&t1);
+fleet/tasks/kernel_tests_mi300.cu:436:38: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  436 |     for (int k = 0; k < cold; k++) { hipFree(ckv[k]); hipFree(kpe[k]); }
+      |                                      ^~~~~~~~~~~~~~~
+fleet/tasks/kernel_tests_mi300.cu:436:55: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  436 |     for (int k = 0; k < cold; k++) { hipFree(ckv[k]); hipFree(kpe[k]); }
+      |                                                       ^~~~~~~~~~~~~~~
+fleet/tasks/kernel_tests_mi300.cu:456:5: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  456 |     hipEventCreate(&t0); hipEventCreate(&t1);
       |     ^~~~~~~~~~~~~~~~~~~
-fleet/tasks/kernel_tests_mi300.cu:442:26: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
-  442 |     hipEventCreate(&t0); hipEventCreate(&t1);
+fleet/tasks/kernel_tests_mi300.cu:456:26: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  456 |     hipEventCreate(&t0); hipEventCreate(&t1);
       |                          ^~~~~~~~~~~~~~~~~~~
-fleet/tasks/kernel_tests_mi300.cu:443:5: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
-  443 |     hipEventRecord(t0, 0);
+fleet/tasks/kernel_tests_mi300.cu:457:5: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  457 |     hipEventRecord(t0, 0);
       |     ^~~~~~~~~~~~~~~~~~~~~
-fleet/tasks/kernel_tests_mi300.cu:448:5: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
-  448 |     hipEventRecord(t1, 0); hipEventSynchronize(t1);
+fleet/tasks/kernel_tests_mi300.cu:462:5: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  462 |     hipEventRecord(t1, 0); hipEventSynchronize(t1);
       |     ^~~~~~~~~~~~~~~~~~~~~
-fleet/tasks/kernel_tests_mi300.cu:448:28: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
-  448 |     hipEventRecord(t1, 0); hipEventSynchronize(t1);
+fleet/tasks/kernel_tests_mi300.cu:462:28: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  462 |     hipEventRecord(t1, 0); hipEventSynchronize(t1);
       |                            ^~~~~~~~~~~~~~~~~~~~~~~
-fleet/tasks/kernel_tests_mi300.cu:449:19: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
-  449 |     float ms = 0; hipEventElapsedTime(&ms, t0, t1);
+fleet/tasks/kernel_tests_mi300.cu:463:19: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  463 |     float ms = 0; hipEventElapsedTime(&ms, t0, t1);
       |                   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-12 warnings generated when compiling for gfx942.
-fleet/tasks/kernel_tests_mi300.cu:411:5: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
-  411 |     hipEventCreate(&t0); hipEventCreate(&t1);
+14 warnings generated when compiling for gfx942.
+fleet/tasks/kernel_tests_mi300.cu:423:5: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  423 |     hipEventCreate(&t0); hipEventCreate(&t1);
       |     ^~~~~~~~~~~~~~~~~~~
-fleet/tasks/kernel_tests_mi300.cu:411:26: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
-  411 |     hipEventCreate(&t0); hipEventCreate(&t1);
+fleet/tasks/kernel_tests_mi300.cu:423:26: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  423 |     hipEventCreate(&t0); hipEventCreate(&t1);
       |                          ^~~~~~~~~~~~~~~~~~~
-fleet/tasks/kernel_tests_mi300.cu:412:5: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
-  412 |     hipEventRecord(t0, 0);
+fleet/tasks/kernel_tests_mi300.cu:424:5: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  424 |     hipEventRecord(t0, 0);
       |     ^~~~~~~~~~~~~~~~~~~~~
-fleet/tasks/kernel_tests_mi300.cu:420:5: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
-  420 |     hipEventRecord(t1, 0); hipEventSynchronize(t1);
+fleet/tasks/kernel_tests_mi300.cu:432:5: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  432 |     hipEventRecord(t1, 0); hipEventSynchronize(t1);
       |     ^~~~~~~~~~~~~~~~~~~~~
-fleet/tasks/kernel_tests_mi300.cu:420:28: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
-  420 |     hipEventRecord(t1, 0); hipEventSynchronize(t1);
+fleet/tasks/kernel_tests_mi300.cu:432:28: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  432 |     hipEventRecord(t1, 0); hipEventSynchronize(t1);
       |                            ^~~~~~~~~~~~~~~~~~~~~~~
-fleet/tasks/kernel_tests_mi300.cu:421:19: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
-  421 |     float ms = 0; hipEventElapsedTime(&ms, t0, t1);
+fleet/tasks/kernel_tests_mi300.cu:433:19: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  433 |     float ms = 0; hipEventElapsedTime(&ms, t0, t1);
       |                   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-fleet/tasks/kernel_tests_mi300.cu:442:5: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
-  442 |     hipEventCreate(&t0); hipEventCreate(&t1);
+fleet/tasks/kernel_tests_mi300.cu:436:38: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  436 |     for (int k = 0; k < cold; k++) { hipFree(ckv[k]); hipFree(kpe[k]); }
+      |                                      ^~~~~~~~~~~~~~~
+fleet/tasks/kernel_tests_mi300.cu:436:55: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  436 |     for (int k = 0; k < cold; k++) { hipFree(ckv[k]); hipFree(kpe[k]); }
+      |                                                       ^~~~~~~~~~~~~~~
+fleet/tasks/kernel_tests_mi300.cu:456:5: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  456 |     hipEventCreate(&t0); hipEventCreate(&t1);
       |     ^~~~~~~~~~~~~~~~~~~
-fleet/tasks/kernel_tests_mi300.cu:442:26: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
-  442 |     hipEventCreate(&t0); hipEventCreate(&t1);
+fleet/tasks/kernel_tests_mi300.cu:456:26: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  456 |     hipEventCreate(&t0); hipEventCreate(&t1);
       |                          ^~~~~~~~~~~~~~~~~~~
-fleet/tasks/kernel_tests_mi300.cu:443:5: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
-  443 |     hipEventRecord(t0, 0);
+fleet/tasks/kernel_tests_mi300.cu:457:5: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  457 |     hipEventRecord(t0, 0);
       |     ^~~~~~~~~~~~~~~~~~~~~
-fleet/tasks/kernel_tests_mi300.cu:448:5: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
-  448 |     hipEventRecord(t1, 0); hipEventSynchronize(t1);
+fleet/tasks/kernel_tests_mi300.cu:462:5: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  462 |     hipEventRecord(t1, 0); hipEventSynchronize(t1);
       |     ^~~~~~~~~~~~~~~~~~~~~
-fleet/tasks/kernel_tests_mi300.cu:448:28: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
-  448 |     hipEventRecord(t1, 0); hipEventSynchronize(t1);
+fleet/tasks/kernel_tests_mi300.cu:462:28: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  462 |     hipEventRecord(t1, 0); hipEventSynchronize(t1);
       |                            ^~~~~~~~~~~~~~~~~~~~~~~
-fleet/tasks/kernel_tests_mi300.cu:449:19: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
-  449 |     float ms = 0; hipEventElapsedTime(&ms, t0, t1);
+fleet/tasks/kernel_tests_mi300.cu:463:19: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  463 |     float ms = 0; hipEventElapsedTime(&ms, t0, t1);
       |                   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-12 warnings generated when compiling for host.
-fleet/tasks/kernel_tests_mi300.cu:411:5: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
-  411 |     hipEventCreate(&t0); hipEventCreate(&t1);
+14 warnings generated when compiling for host.
+fleet/tasks/kernel_tests_mi300.cu:423:5: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  423 |     hipEventCreate(&t0); hipEventCreate(&t1);
       |     ^~~~~~~~~~~~~~~~~~~
-fleet/tasks/kernel_tests_mi300.cu:411:26: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
-  411 |     hipEventCreate(&t0); hipEventCreate(&t1);
+fleet/tasks/kernel_tests_mi300.cu:423:26: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  423 |     hipEventCreate(&t0); hipEventCreate(&t1);
       |                          ^~~~~~~~~~~~~~~~~~~
-fleet/tasks/kernel_tests_mi300.cu:412:5: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
-  412 |     hipEventRecord(t0, 0);
+fleet/tasks/kernel_tests_mi300.cu:424:5: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  424 |     hipEventRecord(t0, 0);
       |     ^~~~~~~~~~~~~~~~~~~~~
-fleet/tasks/kernel_tests_mi300.cu:420:5: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
-  420 |     hipEventRecord(t1, 0); hipEventSynchronize(t1);
+fleet/tasks/kernel_tests_mi300.cu:432:5: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  432 |     hipEventRecord(t1, 0); hipEventSynchronize(t1);
       |     ^~~~~~~~~~~~~~~~~~~~~
-fleet/tasks/kernel_tests_mi300.cu:420:28: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
-  420 |     hipEventRecord(t1, 0); hipEventSynchronize(t1);
+fleet/tasks/kernel_tests_mi300.cu:432:28: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  432 |     hipEventRecord(t1, 0); hipEventSynchronize(t1);
       |                            ^~~~~~~~~~~~~~~~~~~~~~~
-fleet/tasks/kernel_tests_mi300.cu:421:19: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
-  421 |     float ms = 0; hipEventElapsedTime(&ms, t0, t1);
+fleet/tasks/kernel_tests_mi300.cu:433:19: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  433 |     float ms = 0; hipEventElapsedTime(&ms, t0, t1);
       |                   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-fleet/tasks/kernel_tests_mi300.cu:442:5: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
-  442 |     hipEventCreate(&t0); hipEventCreate(&t1);
+fleet/tasks/kernel_tests_mi300.cu:436:38: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  436 |     for (int k = 0; k < cold; k++) { hipFree(ckv[k]); hipFree(kpe[k]); }
+      |                                      ^~~~~~~~~~~~~~~
+fleet/tasks/kernel_tests_mi300.cu:436:55: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  436 |     for (int k = 0; k < cold; k++) { hipFree(ckv[k]); hipFree(kpe[k]); }
+      |                                                       ^~~~~~~~~~~~~~~
+fleet/tasks/kernel_tests_mi300.cu:456:5: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  456 |     hipEventCreate(&t0); hipEventCreate(&t1);
       |     ^~~~~~~~~~~~~~~~~~~
-fleet/tasks/kernel_tests_mi300.cu:442:26: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
-  442 |     hipEventCreate(&t0); hipEventCreate(&t1);
+fleet/tasks/kernel_tests_mi300.cu:456:26: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  456 |     hipEventCreate(&t0); hipEventCreate(&t1);
       |                          ^~~~~~~~~~~~~~~~~~~
-fleet/tasks/kernel_tests_mi300.cu:443:5: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
-  443 |     hipEventRecord(t0, 0);
+fleet/tasks/kernel_tests_mi300.cu:457:5: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  457 |     hipEventRecord(t0, 0);
       |     ^~~~~~~~~~~~~~~~~~~~~
-fleet/tasks/kernel_tests_mi300.cu:448:5: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
-  448 |     hipEventRecord(t1, 0); hipEventSynchronize(t1);
+fleet/tasks/kernel_tests_mi300.cu:462:5: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  462 |     hipEventRecord(t1, 0); hipEventSynchronize(t1);
       |     ^~~~~~~~~~~~~~~~~~~~~
-fleet/tasks/kernel_tests_mi300.cu:448:28: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
-  448 |     hipEventRecord(t1, 0); hipEventSynchronize(t1);
+fleet/tasks/kernel_tests_mi300.cu:462:28: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  462 |     hipEventRecord(t1, 0); hipEventSynchronize(t1);
       |                            ^~~~~~~~~~~~~~~~~~~~~~~
-fleet/tasks/kernel_tests_mi300.cu:449:19: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
-  449 |     float ms = 0; hipEventElapsedTime(&ms, t0, t1);
+fleet/tasks/kernel_tests_mi300.cu:463:19: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  463 |     float ms = 0; hipEventElapsedTime(&ms, t0, t1);
       |                   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-12 warnings generated when compiling for gfx942.
-fleet/tasks/kernel_tests_mi300.cu:411:5: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
-  411 |     hipEventCreate(&t0); hipEventCreate(&t1);
+14 warnings generated when compiling for gfx942.
+fleet/tasks/kernel_tests_mi300.cu:423:5: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  423 |     hipEventCreate(&t0); hipEventCreate(&t1);
       |     ^~~~~~~~~~~~~~~~~~~
-fleet/tasks/kernel_tests_mi300.cu:411:26: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
-  411 |     hipEventCreate(&t0); hipEventCreate(&t1);
+fleet/tasks/kernel_tests_mi300.cu:423:26: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  423 |     hipEventCreate(&t0); hipEventCreate(&t1);
       |                          ^~~~~~~~~~~~~~~~~~~
-fleet/tasks/kernel_tests_mi300.cu:412:5: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
-  412 |     hipEventRecord(t0, 0);
+fleet/tasks/kernel_tests_mi300.cu:424:5: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  424 |     hipEventRecord(t0, 0);
       |     ^~~~~~~~~~~~~~~~~~~~~
-fleet/tasks/kernel_tests_mi300.cu:420:5: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
-  420 |     hipEventRecord(t1, 0); hipEventSynchronize(t1);
+fleet/tasks/kernel_tests_mi300.cu:432:5: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  432 |     hipEventRecord(t1, 0); hipEventSynchronize(t1);
       |     ^~~~~~~~~~~~~~~~~~~~~
-fleet/tasks/kernel_tests_mi300.cu:420:28: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
-  420 |     hipEventRecord(t1, 0); hipEventSynchronize(t1);
+fleet/tasks/kernel_tests_mi300.cu:432:28: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  432 |     hipEventRecord(t1, 0); hipEventSynchronize(t1);
       |                            ^~~~~~~~~~~~~~~~~~~~~~~
-fleet/tasks/kernel_tests_mi300.cu:421:19: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
-  421 |     float ms = 0; hipEventElapsedTime(&ms, t0, t1);
+fleet/tasks/kernel_tests_mi300.cu:433:19: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  433 |     float ms = 0; hipEventElapsedTime(&ms, t0, t1);
       |                   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-fleet/tasks/kernel_tests_mi300.cu:442:5: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
-  442 |     hipEventCreate(&t0); hipEventCreate(&t1);
+fleet/tasks/kernel_tests_mi300.cu:436:38: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  436 |     for (int k = 0; k < cold; k++) { hipFree(ckv[k]); hipFree(kpe[k]); }
+      |                                      ^~~~~~~~~~~~~~~
+fleet/tasks/kernel_tests_mi300.cu:436:55: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  436 |     for (int k = 0; k < cold; k++) { hipFree(ckv[k]); hipFree(kpe[k]); }
+      |                                                       ^~~~~~~~~~~~~~~
+fleet/tasks/kernel_tests_mi300.cu:456:5: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  456 |     hipEventCreate(&t0); hipEventCreate(&t1);
       |     ^~~~~~~~~~~~~~~~~~~
-fleet/tasks/kernel_tests_mi300.cu:442:26: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
-  442 |     hipEventCreate(&t0); hipEventCreate(&t1);
+fleet/tasks/kernel_tests_mi300.cu:456:26: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  456 |     hipEventCreate(&t0); hipEventCreate(&t1);
       |                          ^~~~~~~~~~~~~~~~~~~
-fleet/tasks/kernel_tests_mi300.cu:443:5: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
-  443 |     hipEventRecord(t0, 0);
+fleet/tasks/kernel_tests_mi300.cu:457:5: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  457 |     hipEventRecord(t0, 0);
       |     ^~~~~~~~~~~~~~~~~~~~~
-fleet/tasks/kernel_tests_mi300.cu:448:5: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
-  448 |     hipEventRecord(t1, 0); hipEventSynchronize(t1);
+fleet/tasks/kernel_tests_mi300.cu:462:5: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  462 |     hipEventRecord(t1, 0); hipEventSynchronize(t1);
       |     ^~~~~~~~~~~~~~~~~~~~~
-fleet/tasks/kernel_tests_mi300.cu:448:28: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
-  448 |     hipEventRecord(t1, 0); hipEventSynchronize(t1);
+fleet/tasks/kernel_tests_mi300.cu:462:28: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  462 |     hipEventRecord(t1, 0); hipEventSynchronize(t1);
       |                            ^~~~~~~~~~~~~~~~~~~~~~~
-fleet/tasks/kernel_tests_mi300.cu:449:19: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
-  449 |     float ms = 0; hipEventElapsedTime(&ms, t0, t1);
+fleet/tasks/kernel_tests_mi300.cu:463:19: warning: ignoring return value of type 'hipError_t' declared with 'nodiscard' attribute [-Wunused-value]
+  463 |     float ms = 0; hipEventElapsedTime(&ms, t0, t1);
       |                   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-12 warnings generated when compiling for host.
+14 warnings generated when compiling for host.
   PASS c_kv[step]                                                 bf16  max_abs 0.00e+00 rel 0.00e+00 thr 2.00e-03
   PASS c_kv[other rows]                                           exact max_abs 0.00e+00 rel 0.00e+00 thr 0.00e+00
   PASS k_pe                                                       exact max_abs 0.00e+00 rel 0.00e+00 thr 0.00e+00
@@ -183,4 +207,4 @@ PASS mla_attend_scores (100 trials, 0 failed)
   PASS attn: 33 splits vs 1 split                                 rel   max_abs 1.56e-02 rel 2.83e-03 thr 1.00e-02
 PASS mla_attend_splits (100 trials, 0 failed)
 overall: PASS -> /home/hotaisle/metalOps/fleet/tasks/results/kernel_tests.json
-2026-09-16T19:19:48Z PASS kernels 21s
+2026-09-16T19:41:15Z PASS kernels 21s
