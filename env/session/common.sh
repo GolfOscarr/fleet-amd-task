@@ -19,6 +19,7 @@ STATUS="${STATUS:-$LOGDIR/session.status}"
 QSTATUS="${QSTATUS:-$LOGDIR/queue.status}"
 DRY="${DRY:-0}"
 HF_CACHE="${HF_HOME:-$HOME/.cache/huggingface}"
+# shellcheck disable=SC2034   # used by vm.sh (download stage)
 MODEL_ID="deepseek-ai/DeepSeek-Coder-V2-Lite-Base"
 IMAGE_REPO="${IMAGE_REPO:-ghcr.io/golfoscarr/fleet-amd-task}"
 export HIP_VISIBLE_DEVICES="${HIP_VISIBLE_DEVICES:-0}"     # the only device on a 1x VM

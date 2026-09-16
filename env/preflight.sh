@@ -52,6 +52,11 @@ patches_apply() {
 }
 check "gfx942.patch, new_tasks.patch, sched_xcd.patch apply in order on a clean tree" patches_apply
 
+if [ "${SHELLCHECK:-0}" = "1" ]; then
+  # the session scripts under shellcheck, through Docker (the laptop has no binary)
+  check "shellcheck on env/session/*.sh (warnings and above)" docker run --rm -v "$ROOT:/mnt" -w /mnt \
+    koalaman/shellcheck:stable -x -S warning env/session/common.sh env/session/vm.sh env/session/queue.sh env/session/laptop.sh
+fi
 if [ "${OFFLINE_COMPILE:-0}" = "1" ]; then
   check "offline gfx942 compile of the patched megakernel (Docker, hipcc 7.0)" bash env/offline_gfx942/run.sh
   check "offline gfx942 compile of the six hardware probes (Docker, hipcc 7.0)" bash env/hw/probes/compile_offline.sh

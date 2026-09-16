@@ -22,7 +22,7 @@
 set -uo pipefail
 # shellcheck disable=SC1091
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
-cd "$ROOT"
+cd "$ROOT" || exit 1
 
 stage_download() {
   local venv=/tmp/hfdl
@@ -40,7 +40,8 @@ stage_download() {
 }
 
 stage_image() {
-  local tag="$IMAGE_REPO:$(date -u +%Y%m%d)" log="$LOGDIR/docker_build.out"
+  local tag log="$LOGDIR/docker_build.out"
+  tag="$IMAGE_REPO:$(date -u +%Y%m%d)"
   run docker pull rocm/dev-ubuntu-24.04:7.2 || return 1
   run bash -c "docker build -f env/docker/Dockerfile -t $tag . > $log 2>&1" || { echo "build failed: $(grep -m1 -iE 'error' "$log" 2>/dev/null)"; return 1; }
   if [ "$DRY" != "1" ] && ! grep -q "import mirage OK" "$log"; then echo "build ended without 'import mirage OK'"; return 1; fi

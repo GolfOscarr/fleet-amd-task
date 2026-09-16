@@ -28,7 +28,7 @@
 set -uo pipefail
 # shellcheck disable=SC1091
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
-cd "$ROOT"
+cd "$ROOT" || exit 1
 
 PY="${PY:-python}"
 REF_DIR="${REF_DIR:-$ROOT/harness/ref}"
@@ -139,9 +139,9 @@ do_measure() {
     cp "$FLEET_OUT/$name"/metrics.json "$FLEET_OUT/$name"/report_table.md "$RECORD/runs/$name/" 2>/dev/null || true
     mkdir -p "$RECORD/runs/$name/prof"
     local f
-    for f in $(find "$prof" -name '*counter_collection.csv' -o -name '*kernel_trace.csv'); do
+    while IFS= read -r -d '' f; do
       cp "$f" "$RECORD/runs/$name/prof/$(basename "$(dirname "$(dirname "$f")")")_$(basename "$f")"
-    done
+    done < <(find "$prof" \( -name '*counter_collection.csv' -o -name '*kernel_trace.csv' \) -print0)
     echo PASS
   else echo FAIL; fi
 }
