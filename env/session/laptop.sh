@@ -123,7 +123,10 @@ cmd_pull() {
   vm "cd $REMOTE_DIR && bash env/session/vm.sh snapshot-logs" || true
   mkdir -p "$ROOT/env/logs/vm"
   run rsync -az -e "ssh ${SSH_OPTS[*]}" "$REMOTE_USER@$i:$REMOTE_DIR/env/logs/" "$ROOT/env/logs/vm/"
-  run rsync -az --exclude build --exclude probes/work --exclude '*.safetensors' --max-size=400k \
+  # only the record: env/hw/tests and the other laptop files under env/hw must not come back from the VM
+  # (a pull on 2026-09-16 reverted a test edit with the VM's older copy)
+  run rsync -az --exclude build --exclude probes --exclude tests --exclude '*.py' --exclude '__pycache__' \
+    --exclude '*.safetensors' --max-size=400k \
     -e "ssh ${SSH_OPTS[*]}" "$REMOTE_USER@$i:$REMOTE_DIR/env/hw/" "$ROOT/env/hw/"
   run rsync -az -e "ssh ${SSH_OPTS[*]}" --include '*.json' --include '*.log' --exclude '*' \
     "$REMOTE_USER@$i:$REMOTE_DIR/harness/ref/" "$ROOT/harness/ref/"
