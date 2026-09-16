@@ -90,9 +90,12 @@ cmd_pull() {
   run rsync -az -e "ssh ${SSH_OPTS[*]}" "$REMOTE_USER@$i:$REMOTE_DIR/env/check_day1.log" "$ROOT/env/check_day1.log" 2>/dev/null || true
   run rsync -az -e "ssh ${SSH_OPTS[*]}" "$REMOTE_USER@$i:$REMOTE_DIR/fleet/tasks/results/" "$ROOT/fleet/tasks/results/" 2>/dev/null || true
   [ "$DRY" = "1" ] && return 0
+  # commit when the pull brings more than logs (a run, the record, reference files); a logs-only
+  # pull stays staged for the next commit (the user's rule, docs/round-2/02-session-plan.md)
   (cd "$ROOT" && git add env/hw harness/ref env/check_day1.log fleet/tasks/results 2>/dev/null
-   if ! git diff --cached --quiet; then
+   if git diff --cached --name-only | grep -qv "/logs/"; then
      git commit -q -m "record: pull $(date -u +%Y-%m-%dT%H:%MZ) from the VM (env/hw/$day)" && git log --oneline -1
+   elif ! git diff --cached --quiet; then echo "logs only: staged, not committed"
    else echo "nothing new to commit"; fi)
 }
 

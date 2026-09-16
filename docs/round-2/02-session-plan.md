@@ -24,6 +24,19 @@ Running out of balance deletes the VM with everything on it, so the
 record is pulled every 30 minutes and the balance is read before the
 image push and at minute 180.
 
+## Decisions taken by the user on 2026-09-16
+
+| Decision | Choice |
+|---|---|
+| Image build in session A | yes: build and push in the background from minute 2, with the A9 cutoff |
+| Session A length | 4.0 hours of VM time, hard stop at minute 240 |
+| A7b, rocgdb after the four fixes fail | spend up to 60 minutes only if the bisection named a label in layer 7 (one of our kernels' offsets); a head label goes to the fallback |
+| A4, the P6 kernels fail their suites | the rule: prefetch depth back to 1, continue with the old kernels, P6 becomes session B work |
+| B5, the second lever | chosen by the user from the A8 numbers when they exist |
+| Deletion of the VM | asked every time, at the end of each session; never on the agent's own judgment |
+| Reporting | the protocol below, unchanged |
+| Commits and pushes | `laptop.sh pull` commits when it brings more than logs (a new run, a changed record, reference files); a logs-only pull stages and does not commit; the branch is pushed at the end of each session |
+
 ## Reporting protocol
 
 - Before `laptop.sh provision`: the balance and the GHCR check, and a
@@ -68,13 +81,13 @@ the "PASS when" column is the row that must appear in it.
 | 33 | A5 | `L start queue env/session/queue-a.txt` (A5.1 the fault reproduces; A5.2 the address shift, four runs) | one status row per run; A5.1 `FAIL ... fault=1`; A5.2 read against the tree below | DECIDE (agent: the tree) | the queue continues past every row (all are `continue`) |
 | 42 | A6 | `L start bisect env/session/queue-fault.txt -- --layers 8 --head --iters 2` | `BISECT first-fault=<label>` in `env/logs/bisect.result`, about 5 runs | AUTO | `no-fault-up-to=head.argmax_reduce`: the fault needs the untruncated graph; skip to A7 with all four fix rows |
 | 50 | A7 | `L start queue env/session/queue-fix.txt` (the four pre-baked fixes, in order) | the first row with `PASS ... fwd=2` | DECIDE (agent: first PASS wins; user is told which) | all four FAIL: time box; record the frontier, the addresses and the label, and go to A8 with the 27-layer graph at 2 iterations instead of 32 (the fallbacks) |
-| 60 | A7b | only if A7 found nothing: 60 minutes at most of `rocgdb` with `MPK_EXTRA_HIPCC_FLAGS=-gline-tables-only` on the faulting label (the recipe in `01-preparation.md`, P1) | the faulting source line | DECIDE (user: whether to spend the hour) | past the box: fallbacks |
+| 60 | A7b | only if A7 found nothing and A6 named a label in layer 7: 60 minutes at most of `rocgdb` with `MPK_EXTRA_HIPCC_FLAGS=-gline-tables-only` on that label (the recipe in `01-preparation.md`, P1) | the faulting source line | AUTO (decided 2026-09-16: layer-7 label yes, head label no) | past the box, or a head label: fallbacks |
 | 90 | A8 | `L pull` (30-minute checkpoint), then `L start queue env/session/queue-a2.txt` with the winning flag added to its rows by hand (A8.1 the fixed 8-layer graph; A8.2 M4; A8.3 the growth curve; A8.4 B0 attribution, two runs; A8.5 the 2-layer timing with and without `--tile-linears`; A8.6 the 27-layer baseline of this machine) | A8.2 `compare=PASS` and 32 ids equal to `harness/ref/ref_output_ids.json`; A8.3 27 per-layer errors under the threshold; A8.6 the per-iteration time in `report_table.md` | AUTO to A8.3, DECIDE at A8.4 and A8.5 (rules below) | A8.2 a mismatch at token k: the run stands, the index goes to `04`; A8.3 the first layer above threshold is named |
 | 120 | A9 | `L pull`; `L balance`; image status in `L status` | `PASS image` (build, push, logout); balance above $16 | DECIDE (agent: the push cutoff) | not built: read `env/logs/image.out`, fix on the laptop, `L push`, `L start image` only if more than 60 minutes remain; a push slower than 30 MB in the first 5 minutes is stopped (`docker save` is not attempted) |
 | 150 | A10 | `L pull` | a commit on the branch | AUTO | |
 | 180 | A11 | `L pull`; `L balance` | balance above $13 (session B needs $10.47 plus the reserve) | DECIDE (agent: hard stop at $13) | below: stop the queue now |
 | 200 to 235 | A12 | whatever `queue-a2.txt` has left; nothing new is started after minute 220 | | AUTO | |
-| 240 | end | `L pull`; `git push`; `L delete --yes`; `L balance` shows `Hourly Rate: $0.00` | | AUTO (the deletion was agreed for every session end) | the delete dialog needs `y`; if the rate is not $0.00, check the TUI by hand |
+| 240 | end | `L pull`; `git push`; then, after the user's yes, `L delete --yes`; `L balance` shows `Hourly Rate: $0.00` | | DECIDE (user: the deletion, asked every time) | the delete dialog needs `y`; if the rate is not $0.00, check the TUI by hand |
 
 Hard stops: at 4 hours of VM time the queue is stopped, the record pulled
 and the VM deleted whatever the state; at any point when the balance shows
@@ -115,7 +128,7 @@ A are added to its rows by hand before the push.
 | 45 | B3: the `measure` row: kernel trace and the four PMC pairs, then `measure.py` | bytes per iteration, achieved bandwidth, `3 megakernel of N dispatches` | AUTO | the guard fails the row if rocprofv3 is missing |
 | 60 | B4: correctness with every flag on: 27 layers, head, 32 iterations, `compare` | 32 ids equal, every boundary PASS | AUTO | a mismatch: the flag that broke it is bisected over the rows of B4 (one flag at a time) |
 | 75 | B5: the second lever if time remains: per-tile MoE linears and elementwise ops, or `--nt-weights` (the design's experiment E2, MAJ-6), each as a 2-layer timing then a 27-layer one | `report_table.md` per variant | DECIDE (user: which lever, from the A8 numbers) | |
-| 150 | `L pull`; `git push`; `L delete --yes`; the rate is $0.00 | | AUTO | |
+| 150 | `L pull`; `git push`; after the user's yes, `L delete --yes`; the rate is $0.00 | | DECIDE (user: the deletion) | |
 
 Every timing row is the same command with one flag changed, so
 `04-results.md` is a table of variants against the 15.6 ms baseline and
@@ -174,7 +187,8 @@ on the branch. Not pulled: the tensors, the build directories, files above
   `setup.sh`; the Dockerfile is not debugged on VM time beyond reading
   the log.
 - The P6 kernels fail their tests: `PF = 1` restores the old kernels (the
-  loops are the same with one load in flight); P6 becomes session B work.
+  loops are the same with one load in flight); P6 becomes session B work
+  (decided by the user, 2026-09-16).
 - The per-tile flag does not help (A8.5): session B's second lever is the
   boundary fusions of `docs/design-doc/09-expected-performance.md`,
   reductions 1 and 2.
