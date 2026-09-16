@@ -64,3 +64,10 @@
 2026-09-16T18:27:05Z L27_head_it32 PASS rc=0 mpk=1 fault=0 fwd=31 wall=47s compare=FAIL
 2026-09-16T18:27:40Z L2_it32 PASS rc=0 mpk=1 fault=0 fwd=26 wall=34s table=PASS
 2026-09-16T18:27:40Z DONE env/session/queue-fix2.txt
+2026-09-16T18:29:25Z L27_head_it32_tile_nt PASS rc=0 mpk=1 fault=0 fwd=31 wall=48s table=PASS
+2026-09-16T18:30:15Z L27_head_it32_tile_nt PASS rc=0 mpk=1 fault=0 fwd=31 wall=48s compare=FAIL
+2026-09-16T18:30:15Z DONE env/session/queue-b3.txt
+2026-09-16T19:14:11Z L2_it32_nt_s17 PASS rc=0 mpk=1 fault=0 fwd=26 wall=35s table=PASS
+2026-09-16T19:14:59Z L27_head_it32_tile_nt_s17 PASS rc=0 mpk=1 fault=0 fwd=31 wall=48s table=PASS
+2026-09-16T19:15:49Z L27_head_it32_tile_nt_s17 PASS rc=0 mpk=1 fault=0 fwd=31 wall=48s compare=FAIL
+2026-09-16T19:15:49Z DONE env/session/queue-b4.txt
