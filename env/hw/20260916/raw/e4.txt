@@ -1,0 +1,8 @@
+stream_read occupancy=full grid=2432 block=256 lds_bytes=0 blocks_per_cu_query=8 size_mib=4 unroll=8 ms=0.135914 gbps=7900.156 tbps=7.9002 checksum=00000000 vgprs=60 passes=256
+stream_read occupancy=full grid=2432 block=256 lds_bytes=0 blocks_per_cu_query=8 size_mib=16 unroll=8 ms=0.135112 gbps=7947.050 tbps=7.9470 checksum=00000000 vgprs=60 passes=64
+stream_read occupancy=full grid=2432 block=256 lds_bytes=0 blocks_per_cu_query=8 size_mib=32 unroll=8 ms=0.143933 gbps=7460.012 tbps=7.4600 checksum=00000000 vgprs=60 passes=32
+stream_read occupancy=full grid=2432 block=256 lds_bytes=0 blocks_per_cu_query=8 size_mib=64 unroll=8 ms=0.294040 gbps=3651.686 tbps=3.6517 checksum=00000000 vgprs=60 passes=16
+stream_read occupancy=full grid=2432 block=256 lds_bytes=0 blocks_per_cu_query=8 size_mib=128 unroll=8 ms=0.284298 gbps=3776.818 tbps=3.7768 checksum=00000000 vgprs=60 passes=8
+stream_read occupancy=full grid=2432 block=256 lds_bytes=0 blocks_per_cu_query=8 size_mib=256 unroll=8 ms=0.247412 gbps=4339.894 tbps=4.3399 checksum=00000000 vgprs=60 passes=4
+stream_read occupancy=full grid=2432 block=256 lds_bytes=0 blocks_per_cu_query=8 size_mib=512 unroll=8 ms=0.258038 gbps=4161.177 tbps=4.1612 checksum=00000000 vgprs=60 passes=2
+stream_read occupancy=full grid=2432 block=256 lds_bytes=0 blocks_per_cu_query=8 size_mib=1024 unroll=8 ms=0.307152 gbps=3495.800 tbps=3.4958 checksum=14000000 vgprs=60 passes=1

@@ -1,0 +1,27 @@
+"Correlation_Id","Dispatch_Id","Agent_Id","Queue_Id","Process_Id","Thread_Id","Grid_Size","Kernel_Id","Kernel_Name","Workgroup_Size","LDS_Block_Size","Scratch_Size","VGPR_Count","Accum_VGPR_Count","SGPR_Count","Counter_Name","Counter_Value","Start_Timestamp","End_Timestamp"
+1,1,"Agent 1",1,4883,4883,262144,3,"fill_kernel(HIP_vector_type<unsigned int, 4u>*, unsigned long)",256,0,0,12,4,32,"TCC_EA0_RDREQ_sum",940.000000,214199338915,214199624629
+1,1,"Agent 1",1,4883,4883,262144,3,"fill_kernel(HIP_vector_type<unsigned int, 4u>*, unsigned long)",256,0,0,12,4,32,"TCC_BUBBLE_sum",0.00000000e+00,214199338915,214199624629
+2,2,"Agent 1",1,4883,4883,77824,13,"__amd_rocclr_fillBufferAligned",256,0,0,12,4,48,"TCC_EA0_RDREQ_sum",760.000000,214201896543,214202120350
+2,2,"Agent 1",1,4883,4883,77824,13,"__amd_rocclr_fillBufferAligned",256,0,0,12,4,48,"TCC_BUBBLE_sum",0.00000000e+00,214201896543,214202120350
+3,3,"Agent 1",1,4883,4883,65536,13,"__amd_rocclr_fillBufferAligned",256,0,0,12,4,48,"TCC_EA0_RDREQ_sum",232.000000,214202286261,214202288547
+3,3,"Agent 1",1,4883,4883,65536,13,"__amd_rocclr_fillBufferAligned",256,0,0,12,4,48,"TCC_BUBBLE_sum",0.00000000e+00,214202286261,214202288547
+4,4,"Agent 1",1,4883,4883,65536,2,"warmup_kernel(HIP_vector_type<unsigned int, 4u> const*, HIP_vector_type<unsigned int, 4u>*, unsigned long)",256,0,0,8,0,16,"TCC_EA0_RDREQ_sum",8344.000000,214202422944,214202425510
+4,4,"Agent 1",1,4883,4883,65536,2,"warmup_kernel(HIP_vector_type<unsigned int, 4u> const*, HIP_vector_type<unsigned int, 4u>*, unsigned long)",256,0,0,8,0,16,"TCC_BUBBLE_sum",8192.000000,214202422944,214202425510
+5,5,"Agent 1",1,4883,4883,67108864,1,"copy_kernel(HIP_vector_type<unsigned int, 4u> const*, HIP_vector_type<unsigned int, 4u>*, unsigned long)",256,0,0,8,0,16,"TCC_EA0_RDREQ_sum",8388760.000000,214202558623,214203108399
+5,5,"Agent 1",1,4883,4883,67108864,1,"copy_kernel(HIP_vector_type<unsigned int, 4u> const*, HIP_vector_type<unsigned int, 4u>*, unsigned long)",256,0,0,8,0,16,"TCC_BUBBLE_sum",8388608.000000,214202558623,214203108399
+6,6,"Agent 1",1,4883,4883,512,9,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_EA0_RDREQ_sum",87.000000,214203245883,214203248650
+6,6,"Agent 1",1,4883,4883,512,9,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_BUBBLE_sum",64.000000,214203245883,214203248650
+7,7,"Agent 1",1,4883,4883,512,9,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_EA0_RDREQ_sum",87.000000,214203383849,214203386455
+7,7,"Agent 1",1,4883,4883,512,9,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_BUBBLE_sum",64.000000,214203383849,214203386455
+8,8,"Agent 1",1,4883,4883,512,9,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_EA0_RDREQ_sum",87.000000,214203521934,214203524460
+8,8,"Agent 1",1,4883,4883,512,9,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_BUBBLE_sum",64.000000,214203521934,214203524460
+9,9,"Agent 1",1,4883,4883,512,9,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_EA0_RDREQ_sum",87.000000,214203664670,214203667277
+9,9,"Agent 1",1,4883,4883,512,9,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_BUBBLE_sum",64.000000,214203664670,214203667277
+10,10,"Agent 1",1,4883,4883,512,9,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_EA0_RDREQ_sum",87.000000,214203804560,214203807246
+10,10,"Agent 1",1,4883,4883,512,9,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_BUBBLE_sum",64.000000,214203804560,214203807246
+11,11,"Agent 1",1,4883,4883,512,9,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_EA0_RDREQ_sum",87.000000,214203944089,214203946775
+11,11,"Agent 1",1,4883,4883,512,9,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_BUBBLE_sum",64.000000,214203944089,214203946775
+12,12,"Agent 1",1,4883,4883,512,9,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_EA0_RDREQ_sum",87.000000,214204096488,214204099134
+12,12,"Agent 1",1,4883,4883,512,9,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_BUBBLE_sum",64.000000,214204096488,214204099134
+13,13,"Agent 1",1,4883,4883,512,9,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_EA0_RDREQ_sum",87.000000,214204235255,214204237781
+13,13,"Agent 1",1,4883,4883,512,9,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_BUBBLE_sum",64.000000,214204235255,214204237781

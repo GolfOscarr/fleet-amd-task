@@ -1,0 +1,12 @@
+== L8_head_it2: /home/hotaisle/metalOps/.venv-fleet/bin/python harness/run_fleet.py --layers 8 --head --iters 2 --model-dir /home/hotaisle/.cache/huggingface/hub/models--deepseek-ai--DeepSeek-Coder-V2-Lite-Base/snapshots/ea9b066cee82f82906fdd58898cb3788b1c5d770
+2026-09-16T17:42:39Z L8_head_it2 FAIL rc=1 mpk=0 fault=1 fwd=0 wall=37s
+== L8_head_it2_pad1: /home/hotaisle/metalOps/.venv-fleet/bin/python harness/run_fleet.py --layers 8 --head --iters 2 --pad-alloc 1 --model-dir /home/hotaisle/.cache/huggingface/hub/models--deepseek-ai--DeepSeek-Coder-V2-Lite-Base/snapshots/ea9b066cee82f82906fdd58898cb3788b1c5d770
+2026-09-16T17:43:17Z L8_head_it2_pad1 FAIL rc=1 mpk=0 fault=1 fwd=0 wall=37s
+== L8_head_it2_pad2: /home/hotaisle/metalOps/.venv-fleet/bin/python harness/run_fleet.py --layers 8 --head --iters 2 --pad-alloc 2 --model-dir /home/hotaisle/.cache/huggingface/hub/models--deepseek-ai--DeepSeek-Coder-V2-Lite-Base/snapshots/ea9b066cee82f82906fdd58898cb3788b1c5d770
+2026-09-16T17:43:55Z L8_head_it2_pad2 FAIL rc=1 mpk=0 fault=1 fwd=0 wall=38s
+== L8_head_it2_pad4: /home/hotaisle/metalOps/.venv-fleet/bin/python harness/run_fleet.py --layers 8 --head --iters 2 --pad-alloc 4 --model-dir /home/hotaisle/.cache/huggingface/hub/models--deepseek-ai--DeepSeek-Coder-V2-Lite-Base/snapshots/ea9b066cee82f82906fdd58898cb3788b1c5d770
+2026-09-16T17:44:33Z L8_head_it2_pad4 FAIL rc=1 mpk=0 fault=1 fwd=0 wall=38s
+== L16_head_it2_pad1: /home/hotaisle/metalOps/.venv-fleet/bin/python harness/run_fleet.py --layers 16 --head --iters 2 --pad-alloc 1 --model-dir /home/hotaisle/.cache/huggingface/hub/models--deepseek-ai--DeepSeek-Coder-V2-Lite-Base/snapshots/ea9b066cee82f82906fdd58898cb3788b1c5d770
+2026-09-16T17:45:15Z L16_head_it2_pad1 PASS rc=0 mpk=1 fault=0 fwd=2 wall=42s
+2026-09-16T17:45:15Z DONE env/session/queue-a.txt
+2026-09-16T17:45:15Z PASS queue 193s
