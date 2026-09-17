@@ -246,7 +246,7 @@ def measure(run_dir: Path, kernel_trace=None, pmc=None, kernel_filter=DEFAULT_KE
         if plan:
             # event index i marks the completion of operator i - 1 (event 0 is the begin-graph event);
             # verify on the machine against task_graph.json (docs/design-doc/03-synchronization.md)
-            op_names = ["begin"] + [c["method"] for c in plan["calls"]]
+            op_names = ["begin"] + [c["method"] for c in plan["calls"] if not c.get("side")]   # side operators (O8) add no event
         end_idx = num_events - 1 if num_events else max(e for e, _ in entries)
         iter_us = event_iterations(entries, end_idx)
         m["event_timing"] = {"num_events": num_events, "firings": len(entries),

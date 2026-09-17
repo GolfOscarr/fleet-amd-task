@@ -243,6 +243,8 @@ def test_pad_alloc_argument_and_run_name():
     assert a.fuse_norm1 and run_fleet.run_name(a) == "L2_it32_fn1_fn2"     # O3
     a = p.parse_args(["--layers", "2", "--iters", "32", "--nt-streams", "--mfma-attend", "--model-dir", "x"])
     assert a.mfma_attend and run_fleet.run_name(a) == "L2_it32_nts_mfma"   # O7
+    a = p.parse_args(["--layers", "2", "--iters", "32", "--prefetch", "--probe-before", "L1.o_proj", "--model-dir", "x"])
+    assert a.prefetch and run_fleet.run_name(a) == "L2_it32_pf_probe_L1.o_proj"   # O8
 
 
 def test_tensor_addresses_records_every_host_tensor():

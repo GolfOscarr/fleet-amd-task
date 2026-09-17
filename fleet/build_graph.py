@@ -168,6 +168,31 @@ def linear_norm_layer(mpk, input, w_norm, weight, output, scratch, grid_dim, eps
               "linear_norm_mi300", [G.float_bits(eps)])
 
 
+def prefetch_layer(mpk, weight, dummy, grid_dim, block_dim=(256, 1, 1)):
+    """O8 (docs/gpu-experiments/03-acceleration): a side operator streaming a dense weight [N, K]
+    in grid_dim[0] stripes (the weight partitioned on dim 0, as the per-tile linear's) into a dummy
+    [grid, 4] int32 (one row per task). Registration prefetch_mi300; the runtime patch attaches the
+    operator to the one registered before it."""
+    assert weight.num_dims == 2 and dummy.num_dims == 2
+    assert weight.dim(0) % grid_dim[0] == 0, (weight.shape, grid_dim)
+    assert dummy.dim(0) == grid_dim[0] and dummy.dim(1) == 4, (dummy.shape, grid_dim)
+    _new_task(mpk, grid_dim, block_dim, [(weight, (0, -1, -1), 1), (dummy, (0, -1, -1), -1)],
+              "prefetch_mi300", [])
+
+
+def prefetch_moe_layer(mpk, weight, moe_mask, dummy, parts, block_dim=(256, 1, 1)):
+    """O8: a side operator streaming the active experts' slabs of an expert weight [E, N, K]:
+    task (slot, part) reads rows [part N / parts, (part + 1) N / parts) of expert mask[slot];
+    grid slots x parts with slots = dummy rows / parts (the mask's slot capacity)."""
+    assert weight.num_dims == 3 and moe_mask.num_dims == 1 and dummy.num_dims == 2
+    assert moe_mask.dim(0) == weight.dim(0) + 1, (moe_mask.shape, weight.shape)
+    assert weight.dim(1) % parts == 0 and dummy.dim(0) % parts == 0 and dummy.dim(1) == 4
+    grid = dummy.dim(0)
+    _new_task(mpk, (grid, 1, 1), block_dim,
+              [(weight, (-1, -1, -1), -1), (moe_mask, (-1, -1, -1), -1), (dummy, (0, -1, -1), -1)],
+              "prefetch_moe_mi300", [parts])
+
+
 def copy_layer(mpk, input, output, grid_dim=(1, 1, 1), block_dim=(256, 1, 1)):
     """Debug builds only: snapshot of the residual after a layer (an identity task)."""
     assert input.num_dims == 2 and output.num_dims == 2 and input.dim(1) == output.dim(1)
@@ -181,6 +206,8 @@ NEW_LAYERS = {
     "mla_merge_uv_layer": mla_merge_uv_layer,
     "gang_moe_w2_silu_linear_layer": gang_moe_w2_silu_linear_layer,
     "linear_norm_layer": linear_norm_layer,
+    "prefetch_layer": prefetch_layer,
+    "prefetch_moe_layer": prefetch_moe_layer,
     "moe_router_layer": moe_router_layer,
     "copy_layer": copy_layer,
 }
@@ -312,20 +339,20 @@ def plan_json(plan):
             "tensors": {n: {"shape": list(t.shape), "dtype": t.dtype, "kind": t.kind, "source": t.source}
                         for n, t in plan.tensors.items()},
             "calls": [{"method": c.method, "label": c.label, "status": c.status, "tasks": c.tasks,
-                       "tiles": c.tiles, "args": {k: (list(v) if isinstance(v, tuple) else v)
+                       "tiles": c.tiles, "side": c.side, "args": {k: (list(v) if isinstance(v, tuple) else v)
                                                   for k, v in c.args.items()}} for c in plan.calls]}
 
 
 def build(packed, capture, meta, dims=REAL_DIMS, s_max=1056, layers=27, head=True, debug=False,
           stop_after=None, debug_scores=False, tile_linears=False, attend_tasks=False, num_workers=296, num_schedulers=8,
           profiler_tensor=None, align=0, workspaces=None, fuse_norm2=False, fuse_silu=False,
-          probe_before=None, fuse_norm1=False):
+          probe_before=None, fuse_norm1=False, prefetch=False):
     """On the machine: construct the PersistentKernel, attach, issue, return (mpk, host tensors, plan)."""
     import torch
     import mirage as mi
 
     plan = G.build_plan(dims, s_max, layers, head, debug, debug_scores, tile_linears, attend_tasks, fuse_norm2,
-                        fuse_silu, fuse_norm1)
+                        fuse_silu, fuse_norm1, prefetch)
     if probe_before:
         plan.insert_probe(probe_before)
     if stop_after:
@@ -510,9 +537,9 @@ class FakeMPK:
 
 def dry_run(dims=REAL_DIMS, s_max=1056, layers=27, head=True, debug=False, stop_after=None,
             debug_scores=False, tile_linears=False, attend_tasks=False, fuse_norm2=False, fuse_silu=False,
-            probe_before=None, fuse_norm1=False):
+            probe_before=None, fuse_norm1=False, prefetch=False):
     plan = G.build_plan(dims, s_max, layers, head, debug, debug_scores, tile_linears, attend_tasks, fuse_norm2,
-                        fuse_silu, fuse_norm1)
+                        fuse_silu, fuse_norm1, prefetch)
     if probe_before:
         plan.insert_probe(probe_before)
     if stop_after:

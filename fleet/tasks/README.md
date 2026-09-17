@@ -46,6 +46,8 @@ choice of imap in `build_graph.py`.
 | same file, `NORM = true` (registration `moe_router_norm_mi300`; `--fuse-norm2`, O1 of `docs/gpu-experiments/03-acceleration`) | `TASK_MOE_ROUTER_MI300` (188), CU-task | 1 | `x_res [1,2048]`, `w_norm [2048]`, `W_gate [64,2048]` | `h [1,2048]` (the normalised row, for the expert gate-up), then the five above | the six above and `eps_bits` |
 | `gang_moe_w2_silu_mi300.cuh` | `TASK_GANG_MOE_W2_SILU_MI300` (191), gang (registration `gang_moe_w2_silu_linear_mi300`; `--fuse-silu`, O2 of `docs/gpu-experiments/03-acceleration`) | 8 x 32 tiles | `mid [1,8,2816]` (gate then up per slot), `W2 [66,2048,1408]`, `routing`, `mask` | `out8 [1,8,2048]`, `w2_scratch [256,1408]` (one activation row per (XCD, tile)) | the stock w2's `[tiles_per_expert, max_experts_per_xcd, total_tiles_per_xcd]`; K from the weight |
 | `copy_mi300.cuh` | `TASK_COPY_MI300` (189), CU-task | 1 | `x [1,N]` | `y [1,N]` | `[N]` |
+| `prefetch_mi300.cuh` | `TASK_PREFETCH_MI300` (193), regular, a side operator (registration `prefetch_mi300`; `--prefetch`, O8 of `docs/gpu-experiments/03-acceleration`) | `grid_for_linear(N)` stripes | `W [N,K]` (the task's `N / grid` rows) | `dummy [grid,4]` int32 (the task's row: one XOR word per wave, so the loads are not elided) | none |
+| same file, `prefetch_moe_mi300_task_impl` | `TASK_PREFETCH_MOE_MI300` (194), regular, a side operator (registration `prefetch_moe_mi300`) | `8 x parts` | `W [E,N,K]` (whole), `mask [E+1]` | `dummy [8 x parts,4]` int32 | `[parts]`; the task's (slot, part) is its `bid.x` through the `expert_offset` metadata |
 | `linear_norm_mi300.cuh` | `TASK_LINEAR_NORM_MI300` (192), regular (registration `linear_norm_mi300`; `--fuse-norm1`, O3 of `docs/gpu-experiments/03-acceleration`) | `grid_for_linear(N)` tasks (96 for `qkva`, 400 for `lm_head`) | `x [1,2048]` (whole), `w_norm [2048]`, `W [N,2048]` (the task's `N / grid` rows) | `out [1,N]` (the task's columns), `scratch [grid,2048]` (the task's normalised row) | `[eps_bits]`; the output size and stride as the stock per-tile `linear` |
 
 Float parameters travel as IEEE-754 bit patterns (`register_task` takes
@@ -98,6 +100,22 @@ take the last slots at weight 1.0; `routing[e] = slot + 1`, `mask[slot] =
 id`, `mask[66] = 8`, unused mask entries `-1` (as the stock kernel; the
 consumers read only `mask[count]` and `mask[0..count)`); `route_log[step -
 (prompt_len - 1)][layer_index][slot] = id`. LDS 256 B.
+
+### Side operators (in `new_tasks.patch`, O8)
+
+An operator registered as `prefetch_mi300` or `prefetch_moe_mi300` is a
+*side operator* (`Graph::side_ops`): `register_mugraph` appends its tasks
+right behind the tasks of the operator registered before it (its host),
+extends the host's last launch event range over them so the end-of-loop
+pass gives them the host's dependent event (or makes them first tasks when
+the host is the graph's first operator), points their trigger at the
+end-of-graph event with `num_triggers` raised by their count, and leaves
+`pre_op` on the host, so the next operator still chains to the host. In
+the worker queues (task index modulo the worker count, FIFO per worker) the
+side tasks land on workers holding no host task and run when the host's
+event fires, concurrently with the host; after a gang host they run after
+each worker's tile share. `fleet/task_graph_check.py` verifies the wiring
+in a build's `task_graph_rank0.json`.
 
 ### Variants (in `new_tasks.patch`)
 

@@ -188,6 +188,9 @@ def build_parser():
     ap.add_argument("--nt-streams", action="store_true",
                     help="-DMLA_NT_STREAMS: our kernels' cache streams (the attention's p x V loads, the merge's "
                          "partials) with the stock linears' non-temporal policy (O6, docs/gpu-experiments/03-acceleration)")
+    ap.add_argument("--prefetch", action="store_true",
+                    help="the side operators of O8 (docs/gpu-experiments/03-acceleration): weight prefetches on the "
+                         "idle workers beside qkva, o_proj and w13 (needs the runtime patch's side-operator branch)")
     ap.add_argument("--mfma-attend", action="store_true",
                     help="-DMLA_ATTEND_MFMA: the attention on the matrix cores in place of the VALU kernel "
                          "(O7, docs/gpu-experiments/03-acceleration)")
@@ -223,9 +226,10 @@ def run_name(args):
     probe = f"_probe_{args.probe_before}" if args.probe_before else ""
     nts = "_nts" if args.nt_streams else ""
     mf = "_mfma" if args.mfma_attend else ""
+    pf = "_pf" if args.prefetch else ""
     return (f"L{args.layers}{'_head' if args.head else ''}_it{args.iters}"
             + (f"_{args.stop_after}" if args.stop_after else "") + ("_scores" if args.debug_scores else "")
-            + tile + at + fn1 + fn2 + fs + probe + nt + nts + mf + sp + al + ws + pad)
+            + tile + at + fn1 + fn2 + fs + pf + probe + nt + nts + mf + sp + al + ws + pad)
 
 
 def tensor_addresses(host):
@@ -280,7 +284,7 @@ def main():
         # the plan's tensors do not depend on --stop-after (it only cuts calls)
         from fleet import graph_plan as G
         pre_plan = G.build_plan(dims, s_max, args.layers, args.head, args.debug, args.debug_scores, args.tile_linears,
-                                args.attend_tasks, args.fuse_norm2, args.fuse_silu, args.fuse_norm1)
+                                args.attend_tasks, args.fuse_norm2, args.fuse_silu, args.fuse_norm1, args.prefetch)
         workspaces = B.allocate_workspaces(torch, pre_plan, args.align_alloc)
         print(f"workspaces-first: {len(workspaces)} buffers allocated before the weights")
     packed = pack_all(args.model_dir, "cuda", dims, layers=args.layers, head=args.head or None)
@@ -303,7 +307,7 @@ def main():
                               head=args.head, debug=args.debug, stop_after=args.stop_after,
                               debug_scores=args.debug_scores, tile_linears=args.tile_linears,
                               attend_tasks=args.attend_tasks, fuse_norm2=args.fuse_norm2, fuse_silu=args.fuse_silu,
-                              probe_before=args.probe_before, fuse_norm1=args.fuse_norm1,
+                              probe_before=args.probe_before, fuse_norm1=args.fuse_norm1, prefetch=args.prefetch,
                               align=args.align_alloc, workspaces=workspaces)
     pj = B.plan_json(plan)
     (out / "plan.json").write_text(json.dumps(pj) + "\n")
@@ -324,6 +328,7 @@ def main():
         "stop_after": args.stop_after, "s_max": s_max, "n_prompt": n_prompt, "tile_linears": args.tile_linears,
         "attend_tasks": args.attend_tasks, "fuse_norm2": args.fuse_norm2, "fuse_silu": args.fuse_silu,
         "probe_before": args.probe_before, "fuse_norm1": args.fuse_norm1, "mfma_attend": args.mfma_attend,
+        "prefetch": args.prefetch,
         "ops": len(pj["calls"]), "tasks": sum(c["tasks"] for c in pj["calls"]),
         "env": {k: os.environ.get(k) for k in ("MPK_EVENT_TIMING", "USE_NT_WEIGHTS", "USE_GANG", "AMDGPU_TARGETS",
                                                 "MPK_DEBUG_SCORES", "MPK_EXTRA_HIPCC_FLAGS")},

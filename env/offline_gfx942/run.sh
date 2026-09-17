@@ -84,6 +84,20 @@ compile cklinear -DMK_CK_LINEAR=1 || ok=1
 # O7: the MFMA attention (v_mfma_f32_16x16x16_bf16) in place of the VALU kernel
 compile mfma -DMLA_ATTEND_MFMA=1 || ok=1
 
+# The patched host sources of the runtime (O8, docs/gpu-experiments/03-acceleration: the
+# side-operator branch of register_mugraph; also every registration our patch adds), parsed
+# and type-checked with the ROCm clang as the fork's CMake compiles them (host C++, no
+# device code), so a patch edit that does not compile is caught before the VM's build. The
+# image carries no rocblas-dev or hipblas-dev; stub/ declares what the fork's helper headers
+# need from them (rocblas_helper.h parses against the stub, nothing runs).
+docker run --rm --platform linux/amd64 -v "$WORK/fleet:/fleet" -v "$WORK/json:/json" -v "$HERE:/here" -v "$WORK/out:/out" "$IMAGE" bash -c "
+  cd /fleet && rm -f /out/hostcc.log; rc=0; for f in src/kernel/graph.cc src/kernel/runtime.cc src/kernel/task_register.cc; do
+    hipcc -fsyntax-only -x c++ -std=c++17 -D__HIP_PLATFORM_AMD__=1 -DMIRAGE_BACKEND_USE_ROCM -DMIRAGE_FINGERPRINT_USE_ROCM \
+      -I/fleet/include -I/json/include -I/opt/rocm/include -I/fleet/deps/rocblas/include -I/here/stub \
+      \$f >> /out/hostcc.log 2>&1 || rc=1; done; echo \$rc > /out/hostcc.rc"
+echo "host sources (graph.cc, runtime.cc, task_register.cc): syntax check exit $(cat "$WORK/out/hostcc.rc"), errors: $(grep -c 'error:' "$WORK/out/hostcc.log" || true)"
+[ "$(cat "$WORK/out/hostcc.rc")" = 0 ] || ok=1
+
 # The standalone kernel-test launcher (fleet/tasks/kernel_tests_mi300.cu),
 # with the build line of fleet/tasks/README.md, both variants; it links to an
 # executable, so this is the day-2 binary minus the run.

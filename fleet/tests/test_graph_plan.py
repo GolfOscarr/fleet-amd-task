@@ -315,6 +315,47 @@ def test_fuse_norm1_default_off_and_debug_keep_the_stock_norms():
     assert not plan_dbg.chain_violations()
 
 
+def test_prefetch_adds_side_operators_that_the_chain_rule_skips():
+    """O8 (docs/gpu-experiments/03-acceleration): --prefetch adds three side operators per layer
+    (the layer's W_o after qkva, the next layer's W_qkva after o_proj, the active experts' W2 after
+    w13), each registered right after its host; the chain of non-side operators is unchanged."""
+    from fleet.graph_plan import grid_for_linear, PREFETCH_PARTS, TOPK_TOTAL_SLOTS, REAL_DIMS as D
+    plan, calls = B.dry_run(layers=27, head=True, fuse_norm2=True, fuse_silu=True, fuse_norm1=True, prefetch=True)
+    base, _ = B.dry_run(layers=27, head=True, fuse_norm2=True, fuse_silu=True, fuse_norm1=True)
+    side = [c for c in plan.calls if c.side]
+    assert len(side) == 27 + 26 + 26 and plan.n_ops == 246 + len(side)
+    assert [c.label for c in plan.chain()] == [c.label for c in base.calls] and not plan.chain_violations()
+    labels = [c.label for c in plan.calls]
+    # each side operator directly follows its host
+    assert labels[labels.index("L3.prefetch_W_o") - 1] == "L3.qkva"
+    assert labels[labels.index("L3.prefetch_W_qkva_next") - 1] == "L3.o_proj"
+    assert labels[labels.index("L3.prefetch_W2") - 1] == "L3.w13"
+    assert "L26.prefetch_W_qkva_next" not in labels          # no next layer
+    by = {c.label: c for c in plan.calls}
+    assert by["L3.prefetch_W_o"].tasks == grid_for_linear(D.H) == 64 and by["L3.prefetch_W_o"].args["weight"] == "W_o_3"
+    assert by["L3.prefetch_W_qkva_next"].args["weight"] == "W_qkva_4"
+    assert by["L3.prefetch_W2"].tasks == TOPK_TOTAL_SLOTS * PREFETCH_PARTS and by["L3.prefetch_W2"].args["weight"] == "W2_3"
+    assert plan.tensors["pf_dummy_w2"].shape == (TOPK_TOTAL_SLOTS * PREFETCH_PARTS, 4)
+    # the recorded calls: the dense one partitions the weight and the dummy on dim 0, the expert one reads mask
+    rec = [c for c in calls if c["method"] == "prefetch_mi300@new"]
+    assert len(rec) == 53 and rec[0]["inputs"] == ["W_o_0", "pf_dummy_o"] and rec[0]["imaps"] == [[0, -1, -1], [0, -1, -1]]
+    rec = [c for c in calls if c["method"] == "prefetch_moe_mi300@new"]
+    assert len(rec) == 26 and rec[0]["inputs"] == ["W2_1", "mask", "pf_dummy_w2"] and rec[0]["params"] == [PREFETCH_PARTS]
+    # a probe before an operator whose predecessor carries side operators lands right before the operator
+    plan.insert_probe("L3.mla_prep")
+    labels = [c.label for c in plan.calls]
+    i = labels.index("L3.probe_mla_prep")
+    assert labels[i - 1] == "L3.prefetch_W_o" and labels[i + 1] == "L3.mla_prep" and not plan.chain_violations()
+    assert {c.label: c for c in plan.calls}["L3.mla_prep"].args["qkva"] == "qkva_probe"
+
+
+def test_prefetch_default_off_leaves_the_plan_unchanged():
+    plan, calls = B.dry_run(layers=27, head=True)
+    assert plan.n_ops == 326 and not any(c.side for c in plan.calls)
+    assert not any(c["method"].startswith("prefetch") for c in calls)
+    assert "pf_dummy_o" not in plan.tensors
+
+
 def test_probe_before_inserts_a_one_task_copy_and_rewires_the_consumer():
     """O5 (docs/gpu-experiments/03-acceleration): a copy of the chain's tensor in front of the
     named operator, which then reads the twin; one more operator and task, the chain intact."""

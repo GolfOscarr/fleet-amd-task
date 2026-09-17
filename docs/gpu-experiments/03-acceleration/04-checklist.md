@@ -96,12 +96,12 @@ Status:
 
 ## O8. The prefetch operator (8 h, only if time remains)
 
-- [ ] `new_tasks.patch`, `runtime.cc`: the side-operator branch (dependent events from the following operator, not made `pre_op`, triggers the end-of-graph event with `num_triggers` raised); `prefetch_layer` in the Python API
-- [ ] `prefetch_mi300.cuh` and its registration; `graph_plan.py --prefetch` (the expert prefetch on the router's event, the linears' on the previous operator's); `build_graph.py`
-- [ ] the plan's chain check skips side operators; a host compile of the patched `runtime.cc` (`clang++ -fsyntax-only`); the offline compile of the task; a test that reads a VM dry run's `task_graph_0.json`
-- [ ] VM: `task_graph_0.json` shows the side tasks' events; `L2_it32` compare; the event clock without and with E2 on the consuming linears
+- [x] `new_tasks.patch`, `runtime.cc`: the side-operator branch (`Graph::side_ops`; the side operator is registered right after its host, not before: the task-graph printer walks the operators in registration order with sequential task ids; its tasks join the host's last event range and so take the host's dependent event, trigger the end-of-graph event with `num_triggers` raised, and the chain stays on the host); `prefetch_layer` and `prefetch_moe_layer` in `build_graph.py`
+- [x] `prefetch_mi300.cuh` (a dense stripe; an active expert's part by `mask`, the index through the `expert_offset` metadata) and the two registrations (task types 193, 194); `graph_plan.py --prefetch`: three side operators per layer (the layer's `W_o` after `qkva`, the next layer's `W_qkva` after `o_proj`, the active experts' `W2` after `w13`, on the router's event as the doc asked, 8 slots x 32 parts); `build_graph.py`
+- [x] the plan's chain check, `insert_probe` and `measure.py`'s event names skip side operators; the host syntax check of the patched `graph.cc`, `runtime.cc` and `task_register.cc` with the ROCm clang is a step of `env/offline_gfx942/run.sh`; the offline compile of both tasks; `fleet/task_graph_check.py` reads a build's `task_graph_rank0.json` (a test against a model of the runtime's rules)
+- [ ] VM: `task_graph_check.py` PASS on the build; `L2_it32 --prefetch` compare; the event clock without and with E2 on the consuming linears
 
-Status:
+Status: laptop part done 2026-09-17 (commit below on `local/round-3`). What the runtime's source settled beyond the sketch: after the pair analysis every launch event becomes an empty counter event, all tasks from index 2 are prelaunched at the start of each iteration into the worker queues (task index modulo the worker count, FIFO per worker; a gang task broadcast to its XCD's workers), and a task waits at the head of its queue on its own dependent event. So a side task needs only its host's dependent event and the end-of-graph trigger, and its position right behind the host's tasks puts it on a worker holding no host task, where it runs as soon as the host's event fires. After a gang host (w13) the side tasks run after each worker's tile share, so the W2 prefetch overlaps the tail of w13 and delays w2's tiles on the workers it occupies if it outlasts the slack: 180 KB per task. The flag is default off; with the three fusions the plan has 325 operators of which 79 are side (the chain stays 246). Checks: 175 tests (six new), check_syntax 9 PASS, preflight 8 PASS, the offline compile of all eleven variants and the host syntax check exit 0.
 
 ## Instruments (Part 2 of `03`; detailed on the next pass)
 

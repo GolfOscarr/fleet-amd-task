@@ -433,6 +433,16 @@ construction.
 **Files.** `new_tasks.patch` (`runtime.cc`: the side-operator branch of the
 loop, about 40 lines; the Python API `prefetch_layer`), a header and a
 registration for the task, `graph_plan.py` (`--prefetch`), `build_graph.py`.
+Done 2026-09-17 with two departures: the side operator is registered right
+*after* its host (the task-graph printer walks the operators in
+registration order with sequential task ids, so its tasks must follow the
+host's), which gives the same wiring; and the plan adds three side
+operators per layer (`W_o` after `qkva`, the next layer's `W_qkva` after
+`o_proj`, the active experts' `W2` after `w13`) rather than one. The
+prelaunch model of the scheduler (every task queued at the iteration
+start, FIFO per worker) means a side task runs on a worker holding no host
+task as soon as the host's event fires; after a gang host it runs after
+that worker's tile share.
 
 **Checks here.** the dry run with the plan's own chain check extended to
 skip side operators; a host compile of the patched `runtime.cc` with
@@ -497,7 +507,8 @@ first VM session can run both the measurements and the first fusions.
 | the two venvs (`.venv`, `.venv-fleet`) | in place | `env/setup.sh`; the tests run under `.venv` |
 | the pristine fork at `51dce4f` with the three patches applying cleanly | in place | every patch edit is regenerated against the pristine tree; `env/preflight.sh` checks the apply |
 | the tiny random model of `run_reference.py --smoke` | in place | O1 and O3 compose the norm with the tiny model's modules in `test_numpy_ref` |
-| the offline translation unit `mk_tu.cu` extended with the new tasks | to do, with each item | the unit hand-writes the dispatcher calls; O2, O3, O7 and the spin task add theirs |
+| the offline translation unit `mk_tu.cu` extended with the new tasks | done with each item (O2, O3, O8 added theirs; O7 is the same call under a define) | the unit hand-writes the dispatcher calls; the spin task adds its own |
+| a host compile of the patched runtime sources | done 2026-09-17 (O8): the host step of `env/offline_gfx942/run.sh` parses `graph.cc`, `runtime.cc` and `task_register.cc` with the ROCm clang against the fork's headers, `env/offline_gfx942/stub/` standing in for the rocblas and hipblas headers the image lacks | catches a patch edit that does not compile before the VM's `setup` stage |
 | the kernel suite (`kernel_tests_mi300.cu`) extended with the new kernels and variants | to do, with each item | the suites are the first VM row |
 | the CK linear instantiated offline | yes (2026-09-17, O2 and O3): the `ckgang` and `cklinear` variants of `env/offline_gfx942/run.sh` instantiate the fused w2's and the fused linear's CK small-tile pipelines for gfx942 under ROCm 7.0's hipcc, exit 0 | the K = 2048 tile of the fused linear is the stock linear's register-heavy tier (256 VGPRs and 23 AGPRs in the worker union offline; the VM's day-1 megakernel was 248 and 48) |
 | the operand layout of the gfx942 16 x 16 x 16 BF16 MFMA | assumed from the ISA and the design spec | tested by emulation here, verified by the suite on the VM |
@@ -554,8 +565,9 @@ Still assumptions, to be settled where named:
 - (settled 2026-09-17, O3) the offline unit instantiates the CK linear
   (the `cklinear` variant).
 - the MFMA operand layout (O7): emulated here, verified on the VM.
-- the runtime honours a side operator whose trigger is the end-of-graph
-  event without a scheduler change (O8): the end-of-graph event is created with `num_triggers = pre_task_map.size()`
+- (settled in the source 2026-09-17, O8; the run itself is a VM row) the
+  runtime honours a side operator whose trigger is the end-of-graph
+  event without a scheduler change: the end-of-graph event is created with `num_triggers = pre_task_map.size()`
   (`runtime.cc`, line 590) and the patch raises it; the VM's
   `task_graph_0.json` is the check.
 - the per-tile combine's stock registration accepts a 64-task grid (O4):
