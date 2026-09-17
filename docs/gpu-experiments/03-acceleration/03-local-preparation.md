@@ -200,11 +200,16 @@ registration of a stock kernel with a prologue.
   by `mla_prep`. The compare loses `h` after `norm1` (B1) in the non-debug
   graph; `--debug` keeps the stock norm operator.
 
-**Files.** `fleet/tasks/mi300/linear_norm_mi300.cuh` (the wrapper: prologue
-plus the call into `linear_kernel_ck` with `residual_add = false`),
-`new_tasks.patch` (the registration: copy `register_linear_task`, add the
-two inputs, emit the call; a `linear_norm_layer` in the Python API),
-`build_graph.py`, `graph_plan.py` (`--fuse-norm1`), the workspace.
+**Files.** `fleet/tasks/mi300/linear_norm_mi300.cuh` (the prologue, then
+the batch-1 tier of `linear_kernel_ck` copied rather than called: the A
+tensor view's coherence bits live inside that function, and the copy gives
+the A view the `sc0` bit of O2's pattern; the residual path is left out),
+`new_tasks.patch` (the registration: from `register_linear_task`, the two
+extra tensors, the emitted call; the layer method lives in `build_graph.py`
+as the other new tasks do), `build_graph.py`, `graph_plan.py`
+(`--fuse-norm1`), the workspaces. Done 2026-09-17; the fused linear is
+per-tile whether or not `--tile-linears` is set, and the scratch is the
+task's second output (as O2's), not a third input.
 
 **Checks here.** the dry run (274 to 246 operators), the chain check, the
 offline compile (this instantiates the CK linear for gfx942 in the offline
@@ -487,7 +492,7 @@ first VM session can run both the measurements and the first fusions.
 | the tiny random model of `run_reference.py --smoke` | in place | O1 and O3 compose the norm with the tiny model's modules in `test_numpy_ref` |
 | the offline translation unit `mk_tu.cu` extended with the new tasks | to do, with each item | the unit hand-writes the dispatcher calls; O2, O3, O7 and the spin task add theirs |
 | the kernel suite (`kernel_tests_mi300.cu`) extended with the new kernels and variants | to do, with each item | the suites are the first VM row |
-| the CK linear instantiated offline | yes (2026-09-17, O2): the `ckgang` variant of `env/offline_gfx942/run.sh` instantiates the fused w2's CK small-tile pipeline for gfx942 under ROCm 7.0's hipcc, exit 0 | O3's `linear_kernel_ck` instantiation can be checked the same way |
+| the CK linear instantiated offline | yes (2026-09-17, O2 and O3): the `ckgang` and `cklinear` variants of `env/offline_gfx942/run.sh` instantiate the fused w2's and the fused linear's CK small-tile pipelines for gfx942 under ROCm 7.0's hipcc, exit 0 | the K = 2048 tile of the fused linear is the stock linear's register-heavy tier (256 VGPRs and 23 AGPRs in the worker union offline; the VM's day-1 megakernel was 248 and 48) |
 | the operand layout of the gfx942 16 x 16 x 16 BF16 MFMA | assumed from the ISA and the design spec | tested by emulation here, verified by the suite on the VM |
 | the VM image `ghcr.io/golfoscarr/fleet-amd-task:20260916` | pushed | the `setup` stage re-applies the patches and rebuilds the host library in about a minute; the megakernel is compiled per run, so no new image is needed |
 | the balance | $20.23, about 6.7 hours of 1x MI300X | Part 2's rows are minutes each |
@@ -534,12 +539,13 @@ Verified in the source:
 
 Still assumptions, to be settled where named:
 
-- the workgroup-scope acquire lowers to `buffer_inv sc0` on gfx942 and is
-  what makes a just-written scratch row safe to read through a buffer
-  load in the same workgroup (O2, O3): read from the offline disassembly;
-  if the compiler emits nothing, the CK view can take a coherence value
-  that bypasses L1 (`sc0`) instead.
-- the offline unit can instantiate the CK linear (O3).
+- (settled 2026-09-17, O2 and O3) the workgroup-scope acquire lowers to
+  nothing on gfx942 outside threadgroup-split mode, so both fused kernels
+  give the CK A view the L1-bypassing coherence value (`sc0`) and make the
+  stores' completion explicit (`s_waitcnt 0`) before the release and the
+  barrier; read from the offline disassembly of both.
+- (settled 2026-09-17, O3) the offline unit instantiates the CK linear
+  (the `cklinear` variant).
 - the MFMA operand layout (O7): emulated here, verified on the VM.
 - the runtime honours a side operator whose trigger is the end-of-graph
   event without a scheduler change (O8): the end-of-graph event is created with `num_triggers = pre_task_map.size()`

@@ -203,6 +203,26 @@ def test_router_norm_matches_modules(step):
     assert sorted(mask[:K].tolist()) == sorted(idx_ref[0].tolist())
 
 
+def test_linear_norm_matches_modules(step):
+    """O3: the input norm folded into the per-tile Q projection equals the tiny model's
+    input_layernorm followed by its q_proj (the norm as in test_rmsnorm_matches_module; the
+    product one BF16 rounding away from the module's)."""
+    model, cap = step["model"], step["cap"]
+    for l in (0, 1):
+        layer = model.model.layers[l]
+        x = R.from_torch_bf16(cap.store[f"L{l}.layer_in"]).reshape(-1)
+        w = R.from_torch_bf16(layer.input_layernorm.weight)
+        W = R.from_torch_bf16(layer.self_attn.q_proj.weight)
+        h, q = R.linear_norm(x, w, W, layer.input_layernorm.variance_epsilon)
+        exp_h = R.from_torch_bf16(cap.store[f"L{l}.B1.norm1"]).reshape(-1)
+        exp_q = R.from_torch_bf16(cap.store[f"L{l}.B2.q"]).reshape(-1)
+        assert rel(h, exp_h) < 2e-3, rel(h, exp_h)
+        assert q.shape == exp_q.shape and rel(q, exp_q) < 4e-3, rel(q, exp_q)
+        # the same product on the module's own normalised row: the linear half alone
+        q2 = R.bf16(W @ exp_h)
+        assert rel(q2, exp_q) < 4e-3, rel(q2, exp_q)
+
+
 def test_router_tie_break_and_combine():
     h = np.ones(8, np.float32)
     W = np.zeros((4, 8), np.float32)

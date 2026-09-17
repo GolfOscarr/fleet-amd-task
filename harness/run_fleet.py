@@ -175,6 +175,9 @@ def build_parser():
     ap.add_argument("--nt-weights", action="store_true", help="USE_NT_WEIGHTS=1 (E2)")
     ap.add_argument("--attend-tasks", action="store_true",
                     help="mla_attend as one regular task per split instead of a gang task (session B, 2026-09-16)")
+    ap.add_argument("--fuse-norm1", action="store_true",
+                    help="the input norm folded into the per-tile Q/KV projection and the final norm into lm_head "
+                         "(O3, docs/gpu-experiments/03-acceleration); off under --debug")
     ap.add_argument("--fuse-norm2", action="store_true",
                     help="the post-attention norm folded into the router in the MoE layers (O1, docs/gpu-experiments/03-acceleration)")
     ap.add_argument("--fuse-silu", action="store_true",
@@ -211,13 +214,14 @@ def run_name(args):
     nt = "_nt" if args.nt_weights else ""   # session B, 2026-09-16: the E2 runs overwrote their baselines
     sp = f"_s{args.split}" if args.split else ""
     at = "_at" if args.attend_tasks else ""
+    fn1 = "_fn1" if args.fuse_norm1 else ""
     fn2 = "_fn2" if args.fuse_norm2 else ""
     fs = "_fs" if args.fuse_silu else ""
     probe = f"_probe_{args.probe_before}" if args.probe_before else ""
     nts = "_nts" if args.nt_streams else ""
     return (f"L{args.layers}{'_head' if args.head else ''}_it{args.iters}"
             + (f"_{args.stop_after}" if args.stop_after else "") + ("_scores" if args.debug_scores else "")
-            + tile + at + fn2 + fs + probe + nt + nts + sp + al + ws + pad)
+            + tile + at + fn1 + fn2 + fs + probe + nt + nts + sp + al + ws + pad)
 
 
 def tensor_addresses(host):
@@ -270,7 +274,7 @@ def main():
         # the plan's tensors do not depend on --stop-after (it only cuts calls)
         from fleet import graph_plan as G
         pre_plan = G.build_plan(dims, s_max, args.layers, args.head, args.debug, args.debug_scores, args.tile_linears,
-                                args.attend_tasks, args.fuse_norm2, args.fuse_silu)
+                                args.attend_tasks, args.fuse_norm2, args.fuse_silu, args.fuse_norm1)
         workspaces = B.allocate_workspaces(torch, pre_plan, args.align_alloc)
         print(f"workspaces-first: {len(workspaces)} buffers allocated before the weights")
     packed = pack_all(args.model_dir, "cuda", dims, layers=args.layers, head=args.head or None)
@@ -293,7 +297,7 @@ def main():
                               head=args.head, debug=args.debug, stop_after=args.stop_after,
                               debug_scores=args.debug_scores, tile_linears=args.tile_linears,
                               attend_tasks=args.attend_tasks, fuse_norm2=args.fuse_norm2, fuse_silu=args.fuse_silu,
-                              probe_before=args.probe_before,
+                              probe_before=args.probe_before, fuse_norm1=args.fuse_norm1,
                               align=args.align_alloc, workspaces=workspaces)
     pj = B.plan_json(plan)
     (out / "plan.json").write_text(json.dumps(pj) + "\n")
@@ -313,7 +317,7 @@ def main():
         "layers": args.layers, "head": args.head, "iters": args.iters, "debug": args.debug,
         "stop_after": args.stop_after, "s_max": s_max, "n_prompt": n_prompt, "tile_linears": args.tile_linears,
         "attend_tasks": args.attend_tasks, "fuse_norm2": args.fuse_norm2, "fuse_silu": args.fuse_silu,
-        "probe_before": args.probe_before,
+        "probe_before": args.probe_before, "fuse_norm1": args.fuse_norm1,
         "ops": len(pj["calls"]), "tasks": sum(c["tasks"] for c in pj["calls"]),
         "env": {k: os.environ.get(k) for k in ("MPK_EVENT_TIMING", "USE_NT_WEIGHTS", "USE_GANG", "AMDGPU_TARGETS",
                                                 "MPK_DEBUG_SCORES", "MPK_EXTRA_HIPCC_FLAGS")},

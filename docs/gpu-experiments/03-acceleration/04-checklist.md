@@ -64,15 +64,15 @@ Status: laptop part done 2026-09-17 (commit below on `local/round-3`). `StreamSr
 
 ## O3. The input norm as a prologue of the per-tile linear (5 h)
 
-- [ ] `mla_common_mi300.cuh`: `rmsnorm_row` shared with O1
-- [ ] `linear_norm_mi300.cuh`: the prologue into the task's scratch row, the fences of O2, the call into `linear_kernel_ck` with `residual_add = false`
-- [ ] `new_tasks.patch`: `register_linear_norm_task` (from `register_linear_task`, two more inputs: `w_norm`, the scratch partitioned on dim 0), the emitted call, `linear_norm_layer` in the Python API
-- [ ] `build_graph.py`: the wrapper; two scratch workspaces `[96, 2048]` and `[400, 2048]`; `graph_plan.py --fuse-norm1`: `L{l}.norm1` and `head.norm` dropped, `qkva` reads `x_res`, `lm_head` reads the head's input; under `--debug` the stock norms stay; the dry run reports 246 operators; a test
-- [ ] `test_numpy_ref`: `rmsnorm` then the linear against the tiny model's modules
-- [ ] the offline compile: whether `mk_tu.cu` can instantiate `linear_kernel_ck` for gfx942 (record the answer in `03`, Part 3); if not, `check_syntax.sh` and the VM build carry the item
+- [x] `mla_common_mi300.cuh`: `rmsnorm_row` shared with O1
+- [x] `linear_norm_mi300.cuh`: the prologue into the task's scratch row, the fences of O2, then the batch-1 tier of `linear_kernel_ck` copied with the `sc0` A view (not a call: the view's coherence bits are inside that function), no residual
+- [x] `new_tasks.patch`: `register_linear_norm_mi300_task` (from `register_linear_task`: inputs `x`, `w_norm`, `W`; outputs `out`, the scratch partitioned on dim 0), the emitted call, task type 192, `linear_norm_layer` in `build_graph.py` (where the other new layer methods live)
+- [x] `build_graph.py`: the wrapper; two scratch workspaces `[96, 2048]` and `[400, 2048]`; `graph_plan.py --fuse-norm1`: `L{l}.norm1` and `head.norm` dropped, `qkva` reads `x_res`, `lm_head` reads the head's input; under `--debug` the stock norms stay; the dry run reports 246 operators; two tests
+- [x] `test_numpy_ref`: `rmsnorm` then the linear against the tiny model's modules (`numpy_ref.linear_norm`, against `input_layernorm` and `q_proj` of layers 0 and 1)
+- [x] the offline compile: `mk_tu.cu` instantiates the fused linear (the CK small-tile linear at K = 2048) for gfx942 under `MK_CK_LINEAR` (the `cklinear` variant of `run.sh`, exit 0); the disassembly shows the O2 sequence and the `sc0` A loads
 - [ ] VM: `L2_it32` compare PASS (B2 `qkva`, the logits); the ids; the event clock
 
-Status:
+Status: laptop part done 2026-09-17 (commit below on `local/round-3`). `fleet/tasks/mi300/linear_norm_mi300.cuh`: the `rmsnorm_row` prologue into the task's scratch row, `s_waitcnt 0`, the workgroup-scope release, `__syncthreads()`, then the batch-1 tier of `linear_kernel_ck` copied with the `sc0` A view (the view's coherence bits are inside that function, so a call could not carry them; the residual path left out). Task type 192 (regular); registration `linear_norm_mi300` (inputs `x`, `w_norm`, `W`; outputs `out`, `scratch`; K from `x`, the output size and stride as the stock per-tile linear, the scratch's rows asserted equal to the grid); `linear_norm_layer` in `build_graph.py` with the stock linear's imaps and the scratch on dim 0; `--fuse-norm1` default off: with `--fuse-norm2 --fuse-silu` 246 operators (5,954 tasks with `--tile-linears`, 4,386 without: the fused linear is per-tile either way); off under `--debug`. Disassembly of the fused function: `flat_store_short` (the norm row), `s_waitcnt vmcnt(0) expcnt(0) lgkmcnt(0)`, `s_barrier`, then `buffer_load_dwordx4 ... sc0` (six sites per instantiation, twelve in the worker with the two registrations of `mk_tu.cu`). Registers: the K = 2048 small tile is the stock linear's register-heavy tier; offline, with only our tasks in the unit, the worker union is 256 VGPRs and 23 AGPRs (`__forceinline__`, the stock form; 35 AGPRs as a `__noinline__` call, so the stock form is kept), no VGPR spills; the VM's day-1 megakernel with the stock linears was already 248 VGPRs and 48 AGPRs at one wave per SIMD (`01-bringup/04-session-log.md`), the regime the persistent kernel runs in anyway. `numpy_ref.linear_norm` and its test against the tiny model's `input_layernorm` and `q_proj`. Checks: 164 tests (three new), check_syntax 7 PASS (the CK header is outside its reach), preflight 8 PASS, the three patches apply, the offline compile of all nine variants exit 0.
 
 ## O7. The MFMA attention (12 h)
 

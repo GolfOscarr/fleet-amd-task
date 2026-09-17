@@ -1,8 +1,8 @@
 diff --git a/include/mirage/kernel/task_register.h b/include/mirage/kernel/task_register.h
-index 2aab442..a0fd2f8 100755
+index 2aab442..3e0d68a 100755
 --- a/include/mirage/kernel/task_register.h
 +++ b/include/mirage/kernel/task_register.h
-@@ -172,6 +172,22 @@ public:
+@@ -172,6 +172,24 @@ public:
                                       bool w13_linear);
    int register_moe_mul_sum_add_mi300_task(threadblock::Graph const &bgraph,
                                            std::vector<int> const &params);
@@ -22,6 +22,8 @@ index 2aab442..a0fd2f8 100755
 +                                           std::vector<int> const &params);
 +  int register_copy_mi300_task(threadblock::Graph const &bgraph,
 +                               std::vector<int> const &params);
++  int register_linear_norm_mi300_task(threadblock::Graph const &bgraph,
++                                      std::vector<int> const &params);   // O3: the per-tile linear with the norm prologue
    // SM100 tasks
    int register_splitk_linear_sm100_task(threadblock::Graph const &bgraph,
                                          std::vector<int> const &params,
@@ -41,7 +43,7 @@ index 28aade0..6e81361 100755
  
  __device__ __forceinline__ bool is_termination_event(size_t event_loc,
 diff --git a/include/mirage/persistent_kernel/runtime_header.h b/include/mirage/persistent_kernel/runtime_header.h
-index f2dfe4e..6718617 100755
+index f2dfe4e..9d7b90d 100755
 --- a/include/mirage/persistent_kernel/runtime_header.h
 +++ b/include/mirage/persistent_kernel/runtime_header.h
 @@ -83,7 +83,7 @@ unsigned long long int const EVENT_INVALID_ID = 0x7ffffffffffffffe;
@@ -53,7 +55,7 @@ index f2dfe4e..6718617 100755
  // Increased to 304 to support full CU utilization on AMD MI300X (304 CUs)
  // and NVIDIA Blackwell (160+ SMs which uses 144 workers)
  int const MAX_NUM_WORKERS = 304;
-@@ -144,6 +144,14 @@ enum TaskType {
+@@ -144,6 +144,15 @@ enum TaskType {
    TASK_MOE_MUL_SUM_ADD_MI300 = 173,
    TASK_GANG_MOE_W13_LINEAR_MI300 = 174,
    TASK_GANG_MOE_W2_LINEAR_MI300 = 175,
@@ -65,6 +67,7 @@ index f2dfe4e..6718617 100755
 +  TASK_MOE_ROUTER_MI300 = 188,
 +  TASK_COPY_MI300 = 189,
 +  TASK_GANG_MOE_W2_SILU_MI300 = 191, // gang: the stock w2 with the silu-mul in its prologue (O2)
++  TASK_LINEAR_NORM_MI300 = 192,      // regular: the per-tile linear with the input norm in its prologue (O3)
    // Hopper Tasks
    TASK_HOPPER_TASK_BEGIN = 150, // Hopper start placeholder, not a real task
    TASK_LINEAR_WITH_RESIDUAL_HOPPER = 151,
@@ -121,10 +124,10 @@ index 6963110..e144d30 100644
      }
    }
 diff --git a/include/mirage/persistent_kernel/tasks/mi300/task_header.cuh b/include/mirage/persistent_kernel/tasks/mi300/task_header.cuh
-index 9906f75..b64d21e 100755
+index 9906f75..c33ac09 100755
 --- a/include/mirage/persistent_kernel/tasks/mi300/task_header.cuh
 +++ b/include/mirage/persistent_kernel/tasks/mi300/task_header.cuh
-@@ -49,3 +49,11 @@
+@@ -49,3 +49,12 @@
  #include "tasks/ampere/merge_splitkv.cuh"
  // Gang merge wrapper for split-KV CK FMHA (depends on merge_splitkv.cuh)
  #include "tasks/mi300/gang_attention_merge_mi300.cuh"
@@ -136,6 +139,7 @@ index 9906f75..b64d21e 100755
 +#include "tasks/mi300/moe_router_mi300.cuh"
 +#include "tasks/mi300/copy_mi300.cuh"
 +#include "tasks/mi300/gang_moe_w2_silu_mi300.cuh"
++#include "tasks/mi300/linear_norm_mi300.cuh"
 diff --git a/python/mirage/mpk/persistent_kernel.py b/python/mirage/mpk/persistent_kernel.py
 index 6830b64..86bdc9c 100644
 --- a/python/mirage/mpk/persistent_kernel.py
@@ -174,10 +178,10 @@ index 6830b64..86bdc9c 100644
      def sampling_sm100_layer(
          self,
 diff --git a/python/mirage/mpk/profiler_persistent.py b/python/mirage/mpk/profiler_persistent.py
-index f3f98ad..10ed167 100755
+index f3f98ad..8cf2d47 100755
 --- a/python/mirage/mpk/profiler_persistent.py
 +++ b/python/mirage/mpk/profiler_persistent.py
-@@ -58,6 +58,13 @@ event_name_list = {
+@@ -58,6 +58,14 @@ event_name_list = {
      174: "TASK_GANG_MOE_W13_LINEAR_MI300",
      175: "TASK_GANG_MOE_W2_LINEAR_MI300",
      176: "TASK_DEVICE_LINEAR_MI300",
@@ -188,14 +192,15 @@ index f3f98ad..10ed167 100755
 +    189: "TASK_COPY_MI300",
 +    190: "TASK_MLA_ATTEND_TILE_MI300",
 +    191: "TASK_GANG_MOE_W2_SILU_MI300",
++    192: "TASK_LINEAR_NORM_MI300",
      177: "TASK_DEVICE_LINEAR_RES_MI300",
      150: "TASK_HOPPER_TASK_BEGIN",
      151: "TASK_LINEAR_WITH_RESIDUAL_HOPPER",
 diff --git a/src/kernel/graph.cc b/src/kernel/graph.cc
-index 97c4923..4df65a3 100755
+index 97c4923..5bf59e0 100755
 --- a/src/kernel/graph.cc
 +++ b/src/kernel/graph.cc
-@@ -841,6 +841,49 @@ void Graph::register_task(char const *task_type, std::vector<int> params) {
+@@ -841,6 +841,55 @@ void Graph::register_task(char const *task_type, std::vector<int> params) {
          customized->bgraph, params);
      task_config[op] =
          std::make_tuple(3, 1, TASK_MOE_MUL_SUM_ADD_MI300, variant_id);
@@ -238,6 +243,12 @@ index 97c4923..4df65a3 100755
 +    int variant_id = task_register->register_gang_moe_w2_silu_mi300_task(customized->bgraph, params);
 +    task_config[op] = std::make_tuple(4, 2, TASK_GANG_MOE_W2_SILU_MI300, variant_id);
 +    gang_task_tiles_per_xcd[op] = params[2]; // total_tiles_per_xcd
++  } else if (name == "linear_norm_mi300") {
++    // O3 (docs/gpu-experiments/03-acceleration): the stock per-tile linear with the input norm
++    // in its prologue; inputs x, w_norm, W; outputs out, scratch [grid, K]; params [eps_bits]
++    assert(params.size() == 1);
++    int variant_id = task_register->register_linear_norm_mi300_task(customized->bgraph, params);
++    task_config[op] = std::make_tuple(3, 2, TASK_LINEAR_NORM_MI300, variant_id);
 +  } else if (name == "copy_mi300") {
 +    assert(params.size() == 1);
 +    int variant_id = task_register->register_copy_mi300_task(customized->bgraph, params);
@@ -246,7 +257,7 @@ index 97c4923..4df65a3 100755
      printf("Unsupported task name: %s\n", name.c_str());
      assert(false && "Unsupported task type");
 diff --git a/src/kernel/runtime.cc b/src/kernel/runtime.cc
-index 9dde169..0afc9db 100755
+index 9dde169..660ce48 100755
 --- a/src/kernel/runtime.cc
 +++ b/src/kernel/runtime.cc
 @@ -397,7 +397,8 @@ void register_mugraph(
@@ -283,7 +294,7 @@ index 9dde169..0afc9db 100755
                task.task_metadata.n_tile_start = (uint16_t)(bid.x * tiles_per_xcd);
              } else if (task_type == TASK_GANG_KSPLIT_GEMM_MI300) {
                // K-split index = XCD index (bid.x)
-@@ -1536,6 +1542,13 @@ TaskGraphResult print_task_graph(
+@@ -1536,6 +1542,14 @@ TaskGraphResult print_task_graph(
        "TASK_GANG_LINEAR_MSPLIT_MI300";
    task_type_to_name[TASK_GANG_LINEAR_RES_MSPLIT_MI300] =
        "TASK_GANG_LINEAR_RES_MSPLIT_MI300";
@@ -294,10 +305,11 @@ index 9dde169..0afc9db 100755
 +  task_type_to_name[TASK_MOE_ROUTER_MI300] = "TASK_MOE_ROUTER_MI300";
 +  task_type_to_name[TASK_COPY_MI300] = "TASK_COPY_MI300";
 +  task_type_to_name[TASK_GANG_MOE_W2_SILU_MI300] = "TASK_GANG_MOE_W2_SILU_MI300";
++  task_type_to_name[TASK_LINEAR_NORM_MI300] = "TASK_LINEAR_NORM_MI300";
    task_type_to_name[TASK_GANG_LINEAR_SILU_MI300] =
        "TASK_GANG_LINEAR_SILU_MI300";
    task_type_to_name[TASK_GANG_RMS_NORM_MI300] =
-@@ -1578,8 +1591,11 @@ TaskGraphResult print_task_graph(
+@@ -1578,8 +1592,11 @@ TaskGraphResult print_task_graph(
          task.first == TASK_GANG_ATTN_MERGE_MI300 ||
          task.first == TASK_GANG_MOE_W13_LINEAR_MI300 ||
          task.first == TASK_GANG_MOE_W2_LINEAR_MI300 ||
@@ -310,7 +322,7 @@ index 9dde169..0afc9db 100755
        continue;
      for (size_t variant_id = 0; variant_id < task.second.size(); variant_id++) {
        std::string cond = first_task ? "if" : "else if";
-@@ -1617,8 +1633,11 @@ TaskGraphResult print_task_graph(
+@@ -1617,8 +1634,11 @@ TaskGraphResult print_task_graph(
            task.first != TASK_GANG_ATTN_MERGE_MI300 &&
            task.first != TASK_GANG_MOE_W13_LINEAR_MI300 &&
            task.first != TASK_GANG_MOE_W2_LINEAR_MI300 &&
@@ -324,7 +336,7 @@ index 9dde169..0afc9db 100755
        for (size_t variant_id = 0; variant_id < task.second.size();
             variant_id++) {
 diff --git a/src/kernel/task_register.cc b/src/kernel/task_register.cc
-index a4e2602..37c2d87 100755
+index a4e2602..c8e0354 100755
 --- a/src/kernel/task_register.cc
 +++ b/src/kernel/task_register.cc
 @@ -15,6 +15,8 @@
@@ -364,7 +376,7 @@ index a4e2602..37c2d87 100755
    return register_task_variant(TASK_ARGMAX_REDUCE, code.to_string());
  }
  
-@@ -4583,5 +4593,319 @@ int TaskRegister::register_paged_attention_split_kv_hopper_task(
+@@ -4583,5 +4593,362 @@ int TaskRegister::register_paged_attention_split_kv_hopper_task(
                                 code.to_string());
  }
  
@@ -663,6 +675,49 @@ index a4e2602..37c2d87 100755
 +  code.e("    task_desc->output_ptrs[1],");  // scratch
 +  code.e("    tile_idx);");
 +  return register_task_variant(TASK_GANG_MOE_W2_SILU_MI300, code.to_string());
++}
++
++// params: [eps_bits]; inputs x [1, K] (whole), w_norm [K], W [N, K] (partitioned on dim 0
++// by the grid); outputs out [1, N] (partitioned on dim 1), scratch [grid, K] (partitioned
++// on dim 0: one row per task). O3 of docs/gpu-experiments/03-acceleration: the stock
++// per-tile linear (register_linear_task) with the input norm in its prologue. As there,
++// the per-task output size is the partitioned output's dim 1, the reduction size the
++// input's dim 1 and the output stride the full tensor's.
++int TaskRegister::register_linear_norm_mi300_task(
++    threadblock::Graph const &bgraph, std::vector<int> const &params) {
++  assert(params.size() == 1);
++  std::vector<tb::TBInputOp *> input_ops, output_ops;
++  int num_inputs = 3, num_outputs = 2;
++  assert(bgraph.operators.size() == (size_t)num_inputs + num_outputs);
++  split_io(bgraph, num_inputs, input_ops, output_ops);
++  assert(output_ops[0]->output_tensors[0].num_dims == 2);
++  int batch_size = output_ops[0]->output_tensors[0].dim[0];
++  int output_size = output_ops[0]->output_tensors[0].dim[1];   // this task's columns
++  assert(input_ops[0]->dtensor.num_dims == 2);
++  int reduction_size = input_ops[0]->dtensor.dim[1];           // K from x, not from the scratch
++  assert(batch_size == 1);
++  assert(input_ops[1]->dtensor.dim[0] == reduction_size);                                   // w_norm [K]
++  assert(input_ops[2]->dtensor.num_dims == 2 && input_ops[2]->dtensor.dim[1] == reduction_size); // W [N, K]
++  assert(input_ops[2]->dtensor.dim[0] == output_ops[0]->dtensor.dim[1]);                    // N
++  assert(output_ops[1]->dtensor.num_dims == 2 && output_ops[1]->dtensor.dim[1] == reduction_size);
++  assert(output_ops[1]->dtensor.dim[0] == (int)bgraph.grid_dim.x);                          // one scratch row per task
++  assert(output_ops[1]->input_map.x == 0);                                                  // partitioned on dim 0
++  assert(reduction_size % 256 == 0);                                                        // the small tile's KPerBlock
++  assert(output_ops[0]->dtensor.owner_op->op_type == type::KN_INPUT_OP);
++  kn::KNInputOp *kn_input_op = static_cast<kn::KNInputOp *>(output_ops[0]->dtensor.owner_op);
++  int output_stride = static_cast<int>(kn_input_op->input_strides[0]);
++  mirage::transpiler::CodeKeeper code;
++  code.inc_indent();
++  code.e("kernel::linear_norm_mi300_task_impl<bfloat16, $, $>(", batch_size, reduction_size);
++  code.e("    task_desc->input_ptrs[0],");    // x
++  code.e("    task_desc->input_ptrs[1],");    // w_norm
++  code.e("    task_desc->input_ptrs[2],");    // W (this task's rows)
++  code.e("    task_desc->output_ptrs[0],");   // out (this task's columns)
++  code.e("    task_desc->output_ptrs[1],");   // scratch (this task's row)
++  code.e("    runtime_config.qo_indptr_buffer[MPK_MAX_NUM_BATCHED_REQUESTS],");
++  code.e("    $, $,", output_size, output_stride);
++  code.e("    $);", float_literal(params[0]));   // eps
++  return register_task_variant(TASK_LINEAR_NORM_MI300, code.to_string());
 +}
 +
 +// params: [n]; input [1, n]; output [1, n]

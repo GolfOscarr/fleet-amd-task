@@ -35,6 +35,22 @@ void _execute_task(TaskDesc const *task_desc, RuntimeConfig const &runtime_confi
   } else if (task_desc->task_type == TASK_COPY_MI300 && task_desc->variant_id == 0) {
     kernel::copy_mi300_task_impl<bfloat16, 2048>(task_desc->input_ptrs[0], task_desc->output_ptrs[0]);
   }
+#ifdef MK_CK_LINEAR
+  // O3: the per-tile linear with the norm prologue at the model's dims (batch 1, K 2048); the
+  // qkva registration emits output_size 38 and stride 3648 (96 tasks), lm_head 256 and 102400
+  // (400 tasks); the dispatcher keys on type and variant, so both appear as variants 0 and 1.
+  else if (task_desc->task_type == TASK_LINEAR_NORM_MI300 && task_desc->variant_id == 0) {
+    kernel::linear_norm_mi300_task_impl<bfloat16, 1, 2048>(
+        task_desc->input_ptrs[0], task_desc->input_ptrs[1], task_desc->input_ptrs[2],
+        task_desc->output_ptrs[0], task_desc->output_ptrs[1],
+        runtime_config.qo_indptr_buffer[MPK_MAX_NUM_BATCHED_REQUESTS], 38, 3648, 1e-6f);
+  } else if (task_desc->task_type == TASK_LINEAR_NORM_MI300 && task_desc->variant_id == 1) {
+    kernel::linear_norm_mi300_task_impl<bfloat16, 1, 2048>(
+        task_desc->input_ptrs[0], task_desc->input_ptrs[1], task_desc->input_ptrs[2],
+        task_desc->output_ptrs[0], task_desc->output_ptrs[1],
+        runtime_config.qo_indptr_buffer[MPK_MAX_NUM_BATCHED_REQUESTS], 256, 102400, 1e-6f);
+  }
+#endif
 }
 
 __device__ __forceinline__

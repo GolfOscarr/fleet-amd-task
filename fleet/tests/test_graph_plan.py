@@ -272,6 +272,49 @@ def test_fuse_silu_default_off_leaves_the_plan_unchanged():
     assert plan_fs.n_ops == 300 and plan_fs.n_tasks == 1880 - 26 * 8
 
 
+def test_fuse_norm1_folds_the_input_norm_into_the_per_tile_linear():
+    """O3 (docs/gpu-experiments/03-acceleration): no L{l}.norm1 and no head.norm; qkva and lm_head are
+    the fused per-tile linear reading x_res, the norm weight and a per-task scratch; with O1 and O2
+    the graph has 246 operators; the chain holds."""
+    from fleet.graph_plan import grid_for_linear, REAL_DIMS as D
+    plan, calls = B.dry_run(layers=27, head=True, fuse_norm2=True, fuse_silu=True, fuse_norm1=True, tile_linears=True)
+    labels = [c.label for c in plan.calls]
+    assert not any(l.endswith(".norm1") for l in labels) and "head.norm" not in labels
+    assert plan.n_ops == 246 and plan.n_tasks == 5954 and not plan.chain_violations()
+    by = {c.label: c for c in plan.calls}
+    q = by["L5.qkva"]
+    assert q.method == "linear_norm_layer" and q.tasks == grid_for_linear(D.Q_OUT + D.KVA_OUT) == 96
+    assert q.args["input"] == "x_res" and q.args["w_norm"] == "w_norm1_5" and q.args["scratch"] == "qkva_scratch"
+    assert q.args["eps"] == G.RMS_EPS and by["L5.mla_prep"].args["qkva"] == "qkva"
+    lm = by["head.lm_head"]
+    assert lm.method == "linear_norm_layer" and lm.tasks == grid_for_linear(D.V) == 400
+    assert lm.args["input"] == "x_res" and lm.args["w_norm"] == "w_final_norm" and lm.args["scratch"] == "lm_scratch"
+    assert plan.tensors["qkva_scratch"].shape == (96, D.H) and plan.tensors["lm_scratch"].shape == (400, D.H)
+    # the recorded call: three inputs, two outputs, the stock linear's imaps plus the scratch on dim 0
+    rec = [c for c in calls if c["method"] == "linear_norm_mi300@new"]
+    assert len(rec) == 28
+    assert rec[0]["inputs"] == ["x_res", "w_norm1_0", "W_qkva_0", "qkva", "qkva_scratch"]
+    assert rec[0]["imaps"] == [[-1, -1, -1], [-1, -1, -1], [0, -1, -1], [1, -1, -1], [0, -1, -1]]
+    assert rec[0]["params"] == [G.float_bits(G.RMS_EPS)]
+    assert rec[-1]["inputs"] == ["x_res", "w_final_norm", "W_lm", "logits", "lm_scratch"]
+    # the fused linear is per-tile whether or not --tile-linears is set
+    plan_g, _ = B.dry_run(layers=27, head=True, fuse_norm2=True, fuse_silu=True, fuse_norm1=True)
+    assert plan_g.n_ops == 246 and plan_g.n_tasks == 1646 - 28 + 27 * (96 - 8) + (400 - 8)
+    assert {c.label: c.method for c in plan_g.calls}["L0.qkva"] == "linear_norm_layer"
+
+
+def test_fuse_norm1_default_off_and_debug_keep_the_stock_norms():
+    plan_off, calls_off = B.dry_run(layers=27, head=True)
+    assert plan_off.n_ops == 326 and "qkva_scratch" not in plan_off.tensors and "lm_scratch" not in plan_off.tensors
+    assert not any(c["method"] == "linear_norm_mi300@new" for c in calls_off)
+    # under --debug the stock norms stay (the snapshot wiring reads the copies)
+    plan_dbg, calls_dbg = B.dry_run(layers=27, head=True, debug=True, fuse_norm1=True)
+    plan_dbg0, _ = B.dry_run(layers=27, head=True, debug=True)
+    assert plan_dbg.n_ops == plan_dbg0.n_ops and not any(c["method"] == "linear_norm_mi300@new" for c in calls_dbg)
+    assert {c.label: c for c in plan_dbg.calls}["L1.norm1"].args["input"] == "dbg_x_res_0"
+    assert not plan_dbg.chain_violations()
+
+
 def test_probe_before_inserts_a_one_task_copy_and_rewires_the_consumer():
     """O5 (docs/gpu-experiments/03-acceleration): a copy of the chain's tensor in front of the
     named operator, which then reads the twin; one more operator and task, the chain intact."""

@@ -66,6 +66,7 @@ OUTPUT_ARGS = {
     "embed_layer": ["output"], "rmsnorm_layer": ["output"], "gang_linear_layer": ["output"],
     "gang_linear_with_residual_layer": ["output"], "gang_linear_silu_layer": ["output"],
     "linear_layer": ["output"], "linear_with_residual_layer": ["output"],
+    "linear_norm_layer": ["output", "scratch"],
     "mla_prep_layer": ["c_kv", "k_pe", "ql_nope", "q_pe"], "mla_attend_layer": ["partials", "scores"],
     "mla_merge_uv_layer": ["output"], "moe_router_layer": ["h", "topk_w", "routing", "mask", "logits", "route_log"],
     "gang_moe_w13_linear_layer": ["output"], "moe_silu_mul_layer": ["output"],
@@ -195,7 +196,8 @@ def grid_for_linear(size):
 
 def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head: bool = True,
                debug: bool = False, debug_scores: bool = False, tile_linears: bool = False,
-               attend_tasks: bool = False, fuse_norm2: bool = False, fuse_silu: bool = False) -> Plan:
+               attend_tasks: bool = False, fuse_norm2: bool = False, fuse_silu: bool = False,
+               fuse_norm1: bool = False) -> Plan:
     """debug_scores: the mla_attend kernel also writes the scaled pre-softmax scores
     [NH, s_max] FP32 (boundary B5); needs the MLA_ATTEND_DEBUG_SCORES build (MPK_DEBUG_SCORES=1).
     tile_linears: issue the four dense linears (qkva, o_proj, down, lm_head) as per-tile
@@ -207,7 +209,12 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
     keeps its norm (its consumer is the stock silu gang kernel).
     fuse_silu: the silu-mul folded into the expert down projection's prologue (O2): no
     L{l}.silu operator, w2 reads mid and computes its slot's activation row into a per-tile
-    scratch (w2_scratch [8 x tiles per XCD, I_MOE]) before the unchanged CK GEMM."""
+    scratch (w2_scratch [8 x tiles per XCD, I_MOE]) before the unchanged CK GEMM.
+    fuse_norm1: the input norm folded into the per-tile Q/KV projection and the final norm
+    into lm_head (O3): no L{l}.norm1 and no head.norm; the two linears are our linear_norm_mi300,
+    the stock per-tile linear with a prologue that normalises the row into a per-task scratch
+    row (qkva_scratch [96, H], lm_scratch [400, H]), so they are per-tile whether or not
+    tile_linears is set. Off under debug (the stock norms stay, and the snapshot wiring)."""
     d = dims
     assert 1 <= layers <= d.L
     assert d.H % 256 == 0                   # K of every CK linear (silent truncation otherwise)
@@ -217,6 +224,7 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
     assert d.V % ARGMAX_SLICES == 0         # argmax_partial: input.dim(1) // num_tasks, no assert in the API
     p = Plan(d, s_max, layers, head, debug)
     n_splits = p.n_splits
+    fuse1 = fuse_norm1 and not debug
     splits_per_xcd = -(-n_splits // XCDS)
 
     # ---- meta and shared tensors ------------------------------------------------
@@ -225,6 +233,10 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
     p.t("x_res", (1, d.H))
     p.t("h", (1, d.H))
     p.t("qkva", (1, d.Q_OUT + d.KVA_OUT))
+    if fuse1:
+        # one normalised row per task of the fused per-tile linear (the runtime offsets the
+        # scratch pointer by rows / grid x bid.x, so the row count is the grid)
+        p.t("qkva_scratch", (grid_for_linear(d.Q_OUT + d.KVA_OUT), d.H))
     p.t("ql_nope", (d.NH, d.D_C))
     p.t("q_pe", (d.NH, d.D_R))
     p.t("partials", (n_splits, d.NH, partials_row(d.D_C)), "f32")   # padded row, P2
@@ -272,16 +284,22 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
         # with the debug snapshots, the operator after a snapshot must read the copy (same values):
         # the runtime's chain rule, see OUTPUT_ARGS; the residual adds still read x_res
         x_in = f"dbg_x_res_{l - 1}" if debug and l > 0 else "x_res"
-        p.op("rmsnorm_layer", 1, label=f"L{l}.norm1", input=x_in, weight=f"w_norm1_{l}", output="h",
-             grid_dim=(1, 1, 1), block_dim=(256, 1, 1))
-        if tile_linears:
+        if fuse1:
             g = grid_for_linear(d.Q_OUT + d.KVA_OUT)
-            p.op("linear_layer", g, label=f"L{l}.qkva", input="h", weight=f"W_qkva_{l}",
-                 output="qkva", grid_dim=(g, 1, 1), block_dim=(256, 1, 1))
+            p.op("linear_norm_layer", g, status="new", label=f"L{l}.qkva", input=x_in, w_norm=f"w_norm1_{l}",
+                 weight=f"W_qkva_{l}", output="qkva", scratch="qkva_scratch", grid_dim=(g, 1, 1),
+                 block_dim=(256, 1, 1), eps=RMS_EPS)
         else:
-            p.op("gang_linear_layer", XCDS, gang_tiles(d.Q_OUT + d.KVA_OUT, TILE_N_QKVA), label=f"L{l}.qkva",
-                 input="h", weight=f"W_qkva_{l}", output="qkva", tile_n=TILE_N_QKVA,
-                 output_stride=d.Q_OUT + d.KVA_OUT)
+            p.op("rmsnorm_layer", 1, label=f"L{l}.norm1", input=x_in, weight=f"w_norm1_{l}", output="h",
+                 grid_dim=(1, 1, 1), block_dim=(256, 1, 1))
+            if tile_linears:
+                g = grid_for_linear(d.Q_OUT + d.KVA_OUT)
+                p.op("linear_layer", g, label=f"L{l}.qkva", input="h", weight=f"W_qkva_{l}",
+                     output="qkva", grid_dim=(g, 1, 1), block_dim=(256, 1, 1))
+            else:
+                p.op("gang_linear_layer", XCDS, gang_tiles(d.Q_OUT + d.KVA_OUT, TILE_N_QKVA), label=f"L{l}.qkva",
+                     input="h", weight=f"W_qkva_{l}", output="qkva", tile_n=TILE_N_QKVA,
+                     output_stride=d.Q_OUT + d.KVA_OUT)
         p.op("mla_prep_layer", 1, status="new", label=f"L{l}.mla_prep",
              qkva="qkva", w_kv_norm=f"w_kv_norm_{l}", w_uk=f"W_uk_{l}", cos="cos", sin="sin",
              c_kv=f"c_kv_{l}", k_pe=f"k_pe_{l}", ql_nope="ql_nope", q_pe="q_pe",
@@ -358,15 +376,22 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
         p.t("amax_v", (1, ARGMAX_SLICES))
         p.t("amax_i", (1, ARGMAX_SLICES), "i64")
         p.t("tok_out", (1, 1), "i64", "input", "meta:output_tokens")
-        p.op("rmsnorm_layer", 1, label="head.norm", input=f"dbg_x_res_{layers - 1}" if debug else "x_res",
-             weight="w_final_norm", output="h", grid_dim=(1, 1, 1), block_dim=(256, 1, 1))
-        if tile_linears:
+        if fuse1:
             g = grid_for_linear(d.V)
-            p.op("linear_layer", g, label="head.lm_head", input="h", weight="W_lm",
-                 output="logits", grid_dim=(g, 1, 1), block_dim=(256, 1, 1))
+            p.t("lm_scratch", (g, d.H))
+            p.op("linear_norm_layer", g, status="new", label="head.lm_head", input="x_res", w_norm="w_final_norm",
+                 weight="W_lm", output="logits", scratch="lm_scratch", grid_dim=(g, 1, 1),
+                 block_dim=(256, 1, 1), eps=RMS_EPS)
         else:
-            p.op("gang_linear_layer", XCDS, gang_tiles(d.V, TILE_N_LM), label="head.lm_head",
-                 input="h", weight="W_lm", output="logits", tile_n=TILE_N_LM, output_stride=d.V)
+            p.op("rmsnorm_layer", 1, label="head.norm", input=f"dbg_x_res_{layers - 1}" if debug else "x_res",
+                 weight="w_final_norm", output="h", grid_dim=(1, 1, 1), block_dim=(256, 1, 1))
+            if tile_linears:
+                g = grid_for_linear(d.V)
+                p.op("linear_layer", g, label="head.lm_head", input="h", weight="W_lm",
+                     output="logits", grid_dim=(g, 1, 1), block_dim=(256, 1, 1))
+            else:
+                p.op("gang_linear_layer", XCDS, gang_tiles(d.V, TILE_N_LM), label="head.lm_head",
+                     input="h", weight="W_lm", output="logits", tile_n=TILE_N_LM, output_stride=d.V)
         p.op("argmax_partial_layer", ARGMAX_SLICES, label="head.argmax_partial", input="logits", output=("amax_v", "amax_i"),
              grid_dim=(ARGMAX_SLICES, 1, 1), block_dim=(256, 1, 1))
         p.op("argmax_reduce_layer", 1, status="variant", note="writes tokens[step + 1]", label="head.argmax_reduce",

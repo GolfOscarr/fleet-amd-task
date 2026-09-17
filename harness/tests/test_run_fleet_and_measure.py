@@ -239,6 +239,8 @@ def test_pad_alloc_argument_and_run_name():
     assert run_fleet.run_name(a) == "L27_head_it32_tile_fn2_fs_nt_nts"
     a = p.parse_args(["--layers", "2", "--iters", "32", "--probe-before", "L0.o_proj", "--model-dir", "x"])
     assert run_fleet.run_name(a) == "L2_it32_probe_L0.o_proj"
+    a = p.parse_args(["--layers", "2", "--iters", "32", "--fuse-norm1", "--fuse-norm2", "--model-dir", "x"])
+    assert a.fuse_norm1 and run_fleet.run_name(a) == "L2_it32_fn1_fn2"     # O3
 
 
 def test_tensor_addresses_records_every_host_tensor():

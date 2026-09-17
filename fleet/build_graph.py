@@ -148,6 +148,26 @@ def gang_moe_w2_silu_linear_layer(mpk, input, weight, moe_routing_indices, moe_m
               "gang_moe_w2_silu_linear_mi300", [n_tiles, max_e, total])
 
 
+def linear_norm_layer(mpk, input, w_norm, weight, output, scratch, grid_dim, eps, block_dim=(256, 1, 1)):
+    """O3 (docs/gpu-experiments/03-acceleration): the stock per-tile linear with the input norm in
+    its prologue. Each of the grid_dim[0] tasks normalises the [1, K] input row into its own row of
+    scratch [grid, K] (partitioned on dim 0 by the grid, as the weight is) and runs the CK linear on
+    it; the imaps of the three linear tensors are the stock linear_layer's (input whole, weight on
+    dim 0, output on dim 1). Registration linear_norm_mi300: inputs x, w_norm, W; outputs out,
+    scratch; one param, the eps bits."""
+    assert input.num_dims == 2 and weight.num_dims == 2 and output.num_dims == 2 and scratch.num_dims == 2
+    assert w_norm.num_dims == 1 and w_norm.dim(0) == input.dim(1), (w_norm.shape, input.dim(1))
+    assert weight.dim(1) == input.dim(1), (weight.dim(1), input.dim(1))    # reduction
+    assert weight.dim(0) == output.dim(1), (weight.dim(0), output.dim(1))  # output size
+    assert output.dim(1) % grid_dim[0] == 0, (output.dim(1), grid_dim[0])
+    assert scratch.dim(0) == grid_dim[0] and scratch.dim(1) == input.dim(1), (scratch.shape, grid_dim)
+    assert input.dim(1) % 256 == 0, input.dim(1)                           # K of the CK small tile
+    _new_task(mpk, grid_dim, block_dim,
+              [(input, (-1, -1, -1), 1), (w_norm, (-1, -1, -1), -1), (weight, (0, -1, -1), 1),
+               (output, (1, -1, -1), -1), (scratch, (0, -1, -1), -1)],
+              "linear_norm_mi300", [G.float_bits(eps)])
+
+
 def copy_layer(mpk, input, output, grid_dim=(1, 1, 1), block_dim=(256, 1, 1)):
     """Debug builds only: snapshot of the residual after a layer (an identity task)."""
     assert input.num_dims == 2 and output.num_dims == 2 and input.dim(1) == output.dim(1)
@@ -160,6 +180,7 @@ NEW_LAYERS = {
     "mla_attend_layer": mla_attend_layer,
     "mla_merge_uv_layer": mla_merge_uv_layer,
     "gang_moe_w2_silu_linear_layer": gang_moe_w2_silu_linear_layer,
+    "linear_norm_layer": linear_norm_layer,
     "moe_router_layer": moe_router_layer,
     "copy_layer": copy_layer,
 }
@@ -298,13 +319,13 @@ def plan_json(plan):
 def build(packed, capture, meta, dims=REAL_DIMS, s_max=1056, layers=27, head=True, debug=False,
           stop_after=None, debug_scores=False, tile_linears=False, attend_tasks=False, num_workers=296, num_schedulers=8,
           profiler_tensor=None, align=0, workspaces=None, fuse_norm2=False, fuse_silu=False,
-          probe_before=None):
+          probe_before=None, fuse_norm1=False):
     """On the machine: construct the PersistentKernel, attach, issue, return (mpk, host tensors, plan)."""
     import torch
     import mirage as mi
 
     plan = G.build_plan(dims, s_max, layers, head, debug, debug_scores, tile_linears, attend_tasks, fuse_norm2,
-                        fuse_silu)
+                        fuse_silu, fuse_norm1)
     if probe_before:
         plan.insert_probe(probe_before)
     if stop_after:
@@ -489,9 +510,9 @@ class FakeMPK:
 
 def dry_run(dims=REAL_DIMS, s_max=1056, layers=27, head=True, debug=False, stop_after=None,
             debug_scores=False, tile_linears=False, attend_tasks=False, fuse_norm2=False, fuse_silu=False,
-            probe_before=None):
+            probe_before=None, fuse_norm1=False):
     plan = G.build_plan(dims, s_max, layers, head, debug, debug_scores, tile_linears, attend_tasks, fuse_norm2,
-                        fuse_silu)
+                        fuse_silu, fuse_norm1)
     if probe_before:
         plan.insert_probe(probe_before)
     if stop_after:
