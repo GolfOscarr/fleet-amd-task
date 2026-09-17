@@ -1,0 +1,9 @@
+# Round 3 finals: every lever kept (per-tile linears, nt weights, the three fusions, the MFMA attention,
+# the attention as regular per-split tasks), three times at 30, 31, 32 iterations; the gang attention
+# once for the reference; once without the event timing at 29 iterations (a distinct name) so the
+# megakernel's own FWD_PASS clock gives the uninstrumented number.
+--layers 27 --head --iters 30 --tile-linears --nt-weights --event-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend --attend-tasks table continue
+--layers 27 --head --iters 31 --tile-linears --nt-weights --event-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend --attend-tasks table continue
+--layers 27 --head --iters 32 --tile-linears --nt-weights --event-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend --attend-tasks table compare continue
+--layers 27 --head --iters 32 --tile-linears --nt-weights --event-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend table compare continue
+--layers 27 --head --iters 29 --tile-linears --nt-weights --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend --attend-tasks table compare continue
