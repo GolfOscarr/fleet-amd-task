@@ -88,16 +88,17 @@ Status: laptop part done 2026-09-17 (commit below on `local/round-3`). The kerne
 
 ## O4. Per-tile elementwise operators (2 h, only without O2)
 
-- [ ] `graph_plan.py --tile-moe`: `combine` at 64 tasks through the stock registration; the silu through `moe_silu_mul_tile_mi300` (our variant with the full-row stride)
-- [ ] the dry run; the wrappers' assertions; a test
-- [ ] VM: `L2_it32` event clock
+- [~] `graph_plan.py --tile-moe`: `combine` at 64 tasks through the stock registration; the silu through `moe_silu_mul_tile_mi300` (our variant with the full-row stride)
+- [~] the dry run; the wrappers' assertions; a test
+- [~] VM: `L2_it32` event clock
 
-Status:
+Status: skipped on the user's decision 2026-09-17: O2 (the silu into the w2 prologue) is in, so the per-tile elementwise fallback is not needed this round; the boxes stay unticked as a record.
 
 ## O8. The prefetch operator (8 h, only if time remains)
 
 - [x] `new_tasks.patch`, `runtime.cc`: the side-operator branch (`Graph::side_ops`; the side operator is registered right after its host, not before: the task-graph printer walks the operators in registration order with sequential task ids; its tasks join the host's last event range and so take the host's dependent event, trigger the end-of-graph event with `num_triggers` raised, and the chain stays on the host); `prefetch_layer` and `prefetch_moe_layer` in `build_graph.py`
 - [x] `prefetch_mi300.cuh` (a dense stripe; an active expert's part by `mask`, the index through the `expert_offset` metadata) and the two registrations (task types 193, 194); `graph_plan.py --prefetch`: three side operators per layer (the layer's `W_o` after `qkva`, the next layer's `W_qkva` after `o_proj`, the active experts' `W2` after `w13`, on the router's event as the doc asked, 8 slots x 32 parts); `build_graph.py`
+- [x] the two prefetch kernels in the suite (`prefetch`, `prefetch_moe`: the XOR of the streamed slice per wave, so the stripe and the expert (slot, part) indexing against `mask` are exact; dry-run here, 100 trials each on the VM in S3): O8 is usable on the machine once the suites pass and `tgcheck` passes on its first graph
 - [x] the plan's chain check, `insert_probe` and `measure.py`'s event names skip side operators; the host syntax check of the patched `graph.cc`, `runtime.cc` and `task_register.cc` with the ROCm clang is a step of `env/offline_gfx942/run.sh`; the offline compile of both tasks; `fleet/task_graph_check.py` reads a build's `task_graph_rank0.json` (a test against a model of the runtime's rules)
 - [ ] VM: `task_graph_check.py` PASS on the build; `L2_it32 --prefetch` compare; the event clock without and with E2 on the consuming linears
 

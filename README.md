@@ -74,11 +74,15 @@ XCDs ([`docs/design-doc/00-decisions.md`](docs/design-doc/00-decisions.md), D6).
 reached the required milestone and the end-to-end decode at 9.6 ms per
 token; round 3 (`docs/gpu-experiments/03-acceleration/`, branch
 `local/round-3`) is the acceleration toward the 4.5 ms production
-baseline: eight optimizations and the instruments to attribute the time,
-all as flags that are off by default, written and checked on the laptop
-(182 tests, the offline `gfx942` compile of every variant, a host
-syntax check of the patched runtime) and waiting for the VM sessions of
-its plan (`05-session-plan.md`). The design is in
+baseline: seven optimizations (the fused norms and silu, the probe, the
+streaming loads, the MFMA attention, the weight prefetch by side
+operators; the eighth, a fallback, skipped) and the instruments to
+attribute the time, all as flags that are off by default, written and
+checked on the laptop (183 tests, the offline `gfx942` compile of every
+variant, a host syntax check of the patched runtime, the suites extended
+to nine) and waiting for the VM session of its plan
+(`05-session-plan.md`: one session, gains first, the final number by
+about minute 60). The design is in
 [`docs/design-doc/`](docs/design-doc/README.md).
 
 | | |

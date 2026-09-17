@@ -172,7 +172,11 @@ directories, and compares every output with `numpy_ref.py` using
 `compare.py`'s metrics. Outputs are pre-filled with a sentinel so entries
 the kernel must leave alone (the other cache rows of `mla_prep`, the other
 slots of `route_log`, the columns beyond `step` of the debug scores) are
-checked too. Tests: the five kernels, `mla_attend_scores` (the
+checked too. Tests: the five kernels, the two prefetch tasks of O8
+(`prefetch`, `prefetch_moe`: the dummy output is the XOR of every word of
+the streamed slice per wave, so the stripe and the expert (slot, part)
+indexing against `mask` are checked exactly, and a slot past the active
+count must leave its row untouched), `mla_attend_scores` (the
 `-DMLA_ATTEND_DEBUG_SCORES` build's second output, B5), and
 `mla_attend_splits` (one split of 1056 rows versus 33 splits of 32,
 through both the attend and the merge kernel). Tolerances, argued in the

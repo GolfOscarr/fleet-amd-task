@@ -223,6 +223,9 @@ threshold), the ids, the event clock.
 
 ### O4. Per-tile elementwise operators as a fallback (C4)
 
+Skipped on the user's decision, 2026-09-17: O2 is in, so this fallback is
+not needed this round; the section stays as the design of the fallback.
+
 **Direction.** If O2 slips, spread `silu` over 66 tasks and `combine` over
 64 instead of 8 and 8, under `--tile-moe`. Worth up to 1 ms only if the
 cost is per task rather than per operator, which the empty-task ladder
