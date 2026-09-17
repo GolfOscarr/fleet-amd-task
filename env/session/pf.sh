@@ -1,15 +1,19 @@
 #!/usr/bin/env bash
-# The A4 fallback in one command: set the prefetch depth PF of the two attention kernels
+# The A4 fallback in one command: set the prefetch depth PF of the VALU attention kernel
 # (docs/gpu-experiments/02-validation/02-session-plan.md, row A4; 01-preparation.md, P6).
+# Round 3 (2026-09-17) restructured the merge's loads (ROWS_IN_FLIGHT and PF_W in
+# mla_merge_uv_mi300.cuh), so this toggle no longer touches the merge; it prints its constants.
 #
-#   bash env/session/pf.sh 1      # the old kernels: one load in flight
-#   bash env/session/pf.sh 4      # the P6 kernels (the default in the tree)
+#   bash env/session/pf.sh 1      # the old kernel: one load in flight
+#   bash env/session/pf.sh 4      # the P6 kernel (the default in the tree)
 #   bash env/session/pf.sh        # show the current values
 #
 # Then `laptop.sh push` and `laptop.sh start kernels`. ROOT can point at another tree (the tests).
 set -uo pipefail
 ROOT="${ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
-FILES=("$ROOT/fleet/tasks/mi300/mla_attend_mi300.cuh" "$ROOT/fleet/tasks/mi300/mla_merge_uv_mi300.cuh")
+FILES=("$ROOT/fleet/tasks/mi300/mla_attend_mi300.cuh")
+MERGE="$ROOT/fleet/tasks/mi300/mla_merge_uv_mi300.cuh"
+[ -f "$MERGE" ] && grep -nE '^  constexpr int (ROWS_IN_FLIGHT|PF_W) = [0-9]+;' "$MERGE" | sed 's/^/mla_merge_uv_mi300.cuh: /'
 want="${1:-}"
 for f in "${FILES[@]}"; do
   [ -f "$f" ] || { echo "missing $f"; exit 1; }

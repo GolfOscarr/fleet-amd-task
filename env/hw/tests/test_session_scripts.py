@@ -102,6 +102,21 @@ def test_queue_runs_records_and_continues(tree):
     assert (tmp / "record/runs/L8_head_it2/run.out").read_text().count("AcceleratorError") == 1
 
 
+def test_queue_keeps_the_earlier_record_of_a_rerun(tree):
+    """A run name that ran before keeps its earlier record directory beside the new one
+    (round 3, 2026-09-17: identical final rows overwrote one directory)."""
+    tmp, env = tree
+    q = tmp / "queue.txt"
+    q.write_text("--layers 2 --iters 1\n")
+    assert sh([str(SESSION / "queue.sh"), "run", str(q)], env).returncode == 0
+    first = (tmp / "record/runs/L2_it1/run.out").read_text()
+    assert sh([str(SESSION / "queue.sh"), "run", str(q)], env).returncode == 0
+    runs = sorted(d.name for d in (tmp / "record/runs").iterdir())
+    assert runs[0] == "L2_it1" and len(runs) == 2 and runs[1].startswith("L2_it1.prev-")
+    assert (tmp / "record/runs" / runs[1] / "run.out").read_text() == first
+    assert (tmp / "record/runs/L2_it1/run.out").exists()
+
+
 def test_queue_stops_on_fail_without_continue(tree):
     tmp, env = tree
     env["FAKE_FAULT_AT"] = "L7.w13"
@@ -325,14 +340,16 @@ def test_pf_toggle_sets_both_kernels(tmp_path):
     for f in ("mla_attend_mi300.cuh", "mla_merge_uv_mi300.cuh"):
         shutil.copy(ROOT / "fleet/tasks/mi300" / f, d / f)
     env = dict(os.environ, ROOT=str(tmp_path))
+    # round 3: the toggle sets the VALU attention's PF only and prints the merge's batch constants
     r = sh([str(SESSION / "pf.sh"), "1"], env)
-    assert r.returncode == 0 and r.stdout.count("PF = 1;") == 2, r.stdout + r.stderr
-    for f in d.iterdir():
-        assert "  constexpr int PF = 1;" in f.read_text() and "PF = 4;" not in f.read_text()
+    assert r.returncode == 0 and r.stdout.count("PF = 1;") == 1 and "ROWS_IN_FLIGHT" in r.stdout, r.stdout + r.stderr
+    att = d / "mla_attend_mi300.cuh"
+    assert "  constexpr int PF = 1;" in att.read_text() and "PF = 4;" not in att.read_text()
+    assert (d / "mla_merge_uv_mi300.cuh").read_text() == (ROOT / "fleet/tasks/mi300/mla_merge_uv_mi300.cuh").read_text()
     r = sh([str(SESSION / "pf.sh")], env)
-    assert r.returncode == 0 and r.stdout.count("PF = 1;") == 2
+    assert r.returncode == 0 and r.stdout.count("PF = 1;") == 1
     r = sh([str(SESSION / "pf.sh"), "4"], env)
-    assert r.returncode == 0 and all("  constexpr int PF = 4;" in f.read_text() for f in d.iterdir())
+    assert r.returncode == 0 and "  constexpr int PF = 4;" in att.read_text()
     assert sh([str(SESSION / "pf.sh"), "3"], env).returncode == 2
     # the tree itself is at 4 and untouched
     assert "  constexpr int PF = 4;" in (ROOT / "fleet/tasks/mi300/mla_attend_mi300.cuh").read_text()

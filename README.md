@@ -132,10 +132,12 @@ docs/
     02-validation/   the second round (2026-09-16): the preparation on the
                      laptop, the two-session plan on a 1x MI300X, its log,
                      results, lessons and the one-page summary (07)
-    03-acceleration/ the third round (prepared 2026-09-17): the ideas against
-                     the 4.5 ms target, the laptop and VM split, the local
+    03-acceleration/ the third round (2026-09-17): the ideas against the
+                     4.5 ms target, the laptop and VM split, the local
                      preparation and its checklist, the session plan and
-                     the rehearsal
+                     the rehearsal, the session log, the results (4.57 to
+                     4.60 ms per token) and the lessons with the next round
+                     ranked
   paper/             the Fleet paper
 repos/
   fleet-chiplet-megakernel/   ROCm/fleet-chiplet-megakernel (submodule)

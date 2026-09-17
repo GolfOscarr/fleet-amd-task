@@ -100,7 +100,7 @@ copies are in the earlier pull commits.
 | 10,250.7 (S5), 8,952.8 (S7), 10,223.6 (S6), 12,486.7 (S8), 4,988.4 (without the norm-1 fusion) | the record |
 | 8,904.0 (S9) and 5,006.2 (the per-head prep, 10:40) | read live; the name was rerun at 10:49 (4,983.9, in 2d59970) and later |
 | the S5 per-operator column (10,261 us) | the record, re-measured with the corrected naming |
-| the "last" per-operator column (4,713 us) and the exec counters (merge 28,739, router 34,425, prep 12,466, attention 15,578 cycles) | read live at 11:12 from `L27_head_it32_tile_fn1_fn2_fs_nt_mfma_wt` (`07`); the record's copy of that name holds the 10:45 run (merge 40,504, router 51,277: the old kernels), a copy the later pulls did not refresh, unresolved |
+| the "last" per-operator column (4,713 us) and the exec counters (merge 28,739, router 34,425, prep 12,466, attention 15,578 cycles) | read live at 11:12 from `L27_head_it32_tile_fn1_fn2_fs_nt_mfma_wt` (`07`); the record's copy of that name holds the 10:45 run (merge 40,504, router 51,277: the old kernels), a copy the later pulls did not refresh; since 2026-09-17 the queue moves an existing record directory aside (`<name>.prev-<utc>`) before a rerun writes it, so no run's files are lost again |
 | the 2-layer per-operator tables of S5 to S7 | the record, re-measured with the corrected naming |
 | the ladder, `ktime`, the suites, the checks | the record (`runs/E*`, `ktime/`, `kernel_tests*/`, `logs/`) |
 

@@ -114,9 +114,11 @@ in `env/hw/20260917/runs/` or the log row that read it.
     the stage's shell left `queue.sh`'s loop alive, and the finals ran
     beside the knob rows for eight minutes; every row of both queues in
     that window was discarded and the finals rerun.
-15. **Distinct names for repeated finals.** Three identical rows overwrite
-    one run directory; the record kept only the last. Running the repeats
-    at 30, 31 and 32 iterations kept all three.
+15. **Distinct names for repeated finals, and a record that never
+    overwrites.** Three identical rows overwrote one run directory and one
+    rerun's copy did not follow into the pulled record; the repeats at 30,
+    31 and 32 iterations kept all three, and the queue now moves an
+    existing record directory aside before a rerun writes it.
 16. **The plan's minute marks held because the rows were short and the
     rules were written.** The prepared levers' final was in hand at
     minute 47, the round's number at minute 100; the levers found on the
