@@ -151,6 +151,7 @@ __device__ GEMV_INLINE void
   using namespace dsv2;
   constexpr int BATCH = GEMV_BATCH;
   static_assert(K % (8 * WAVE) == 0, "16-byte loads, K / 64 elements per lane");
+  static_assert(K <= 4096, "a lane's K slice lives in registers (K / 64 values); layer 0's dense down (K 11,264) is not this kernel's");
   static_assert(BATCH >= 1 && BATCH <= WAVE && (BATCH & (BATCH - 1)) == 0,
                 "the butterfly reduces a power-of-two batch of rows");
   constexpr int CHUNKS = K / (8 * WAVE);      // 4 sixteen-byte loads per row per lane at K = 2048

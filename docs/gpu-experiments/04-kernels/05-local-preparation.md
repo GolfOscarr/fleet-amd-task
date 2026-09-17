@@ -196,7 +196,8 @@ residual, the head with the final norm; no scratch tensors.
   of `register_linear_norm_mi300_task`: params `[norm, residual,
   eps_bits]`; inputs `x [1, K]` whole, then `w_norm [K]` if norm, then
   `W [N, K]` partitioned on dim 0 by the grid, then `residual [1, N]`
-  whole if residual; output `out [1, N]` partitioned on dim 1; the task's
+  partitioned on dim 1 by the grid like the output if residual (the kernel
+  indexes it by the task-local row, as the stock gang residual linear does); output `out [1, N]` partitioned on dim 1; the task's
   row count is the output's dim 1 (`output_size` of the stock
   registration), the stride the full N, K from x; the emitted call passes
   the pointers in that order with `nullptr` for the absent ones.
@@ -204,9 +205,10 @@ residual, the head with the final norm; no scratch tensors.
   output, grid_dim, norm, residual_add, eps)` recording the tensors in
   the registration's order and calling `register_task("linear_gemv_mi300",
   [norm, residual, eps_bits])`; `OUTPUT_ARGS` gains it.
-- `graph_plan.py --gemv-linears`: the four call sites (`L{l}.qkva`,
-  `L{l}.o_proj`, `L0.down`, `head.lm_head`) become `linear_gemv_layer`
-  calls with the same labels and grids; the scratch tensors `qkva_scratch`
+- `graph_plan.py --gemv-linears`: three call sites (`L{l}.qkva`,
+  `L{l}.o_proj`, `head.lm_head`) become `linear_gemv_layer` calls; `L0.down`
+  stays the stock per-tile linear, since its K of 11,264 would put 176
+  values of the x slice in every lane (S4: layer 0 is a later pass) with the same labels and grids; the scratch tensors `qkva_scratch`
   and `lm_scratch` are not allocated; `--linear-grid N` overrides
   `grid_for_linear` for qkva and o_proj (N must divide the row count:
   3,648 by 96, 48, 32; 2,048 by 64, 32) and `--head-grid 320` for the
@@ -216,7 +218,7 @@ residual, the head with the final norm; no scratch tensors.
   and `graph_counts.py` a note.
 
 **Files.** `fleet/patches/new_tasks.patch` (the enum, the name map, the
-registration, the dispatcher case), `build_graph.py`, `graph_plan.py`,
+registration, the name branch of `Graph::register_task` in `src/kernel/graph.cc`), `build_graph.py`, `graph_plan.py`,
 `fleet/tests/test_graph_plan.py`, `docs/design-doc/sources/graph_counts.py`,
 `fleet/tasks/README.md` (the table row).
 

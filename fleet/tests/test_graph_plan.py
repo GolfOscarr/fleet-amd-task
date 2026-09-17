@@ -317,9 +317,10 @@ def test_fuse_norm1_default_off_and_debug_keep_the_stock_norms():
 
 # ---- the GEMV linear (docs/gpu-experiments/04-kernels, L2 and L5) --------------------------
 
-def test_gemv_linears_flips_the_four_dense_linears():
-    """L2: qkva, o_proj, layer 0's down and lm_head become one GEMV task type, with the input norm
-    and the residual add as its flags; no norm operator, no scratch tensor, and the chain holds."""
+def test_gemv_linears_flips_the_three_dense_linears():
+    """L2: qkva, o_proj and lm_head become one GEMV task type, with the input norm and the residual
+    add as its flags; layer 0's down (K 11,264) stays the stock per-tile linear; no norm operator,
+    no scratch tensor, and the chain holds."""
     from fleet.graph_plan import grid_for_linear, REAL_DIMS as D
     plan, calls = B.dry_run(layers=27, head=True, gemv_linears=True)
     labels = [c.label for c in plan.calls]
@@ -327,7 +328,7 @@ def test_gemv_linears_flips_the_four_dense_linears():
     assert "qkva_scratch" not in plan.tensors and "lm_scratch" not in plan.tensors
     assert not plan.chain_violations()
     by = {c.label: c for c in plan.calls}
-    for label in ("L5.qkva", "L5.o_proj", "L0.down", "head.lm_head"):
+    for label in ("L5.qkva", "L5.o_proj", "head.lm_head"):
         assert by[label].method == "linear_gemv_layer" and by[label].status == "new"
     q = by["L5.qkva"]
     assert q.tasks == grid_for_linear(D.Q_OUT + D.KVA_OUT) == 96 and q.args["input"] == "x_res"
@@ -337,8 +338,8 @@ def test_gemv_linears_flips_the_four_dense_linears():
     assert o.tasks == grid_for_linear(D.H) == 64 and o.args["input"] == "attn"
     assert o.args["residual"] == "x_res" and o.args["output"] == "x_res" and o.args["residual_add"]
     assert o.args["w_norm"] is None and not o.args["norm"]
-    dn = by["L0.down"]
-    assert dn.args["input"] == "act" and dn.args["weight"] == "W_down_pad" and dn.args["residual_add"]
+    dn = by["L0.down"]                      # the stock per-tile residual linear, K 11,264
+    assert dn.method == "linear_with_residual_layer" and dn.args["weight"] == "W_down_pad"
     lm = by["head.lm_head"]
     assert lm.tasks == grid_for_linear(D.V) == 400 and lm.args["w_norm"] == "w_final_norm" and lm.args["norm"]
     # the gate-up and the MoE linears stay gang, as under --tile-linears
@@ -347,14 +348,13 @@ def test_gemv_linears_flips_the_four_dense_linears():
     # the recorded calls: the registration's input order, the imaps of the fused per-tile linear
     # plus the residual partitioned like the output, and the three params
     rec = [c for c in calls if c["method"] == "linear_gemv_mi300@new"]
-    assert len(rec) == 27 + 27 + 1 + 1
+    assert len(rec) == 27 + 27 + 1
     assert rec[0]["inputs"] == ["x_res", "w_norm1_0", "W_qkva_0", "qkva"]
     assert rec[0]["imaps"] == [[-1, -1, -1], [-1, -1, -1], [0, -1, -1], [1, -1, -1]]
     assert rec[0]["params"] == [1, 0, G.float_bits(G.RMS_EPS)]
     assert rec[1]["inputs"] == ["attn", "W_o_0", "x_res", "x_res"]
     assert rec[1]["imaps"] == [[-1, -1, -1], [0, -1, -1], [1, -1, -1], [1, -1, -1]]
     assert rec[1]["params"] == [0, 1, G.float_bits(0.0)]
-    assert rec[2]["inputs"] == ["act", "W_down_pad", "x_res", "x_res"]      # layer 0's down
     assert rec[-1]["inputs"] == ["x_res", "w_final_norm", "W_lm", "logits"]
     assert rec[-1]["params"] == [1, 0, G.float_bits(G.RMS_EPS)]
 

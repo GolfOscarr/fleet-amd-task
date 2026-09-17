@@ -422,12 +422,11 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
             p.op("gang_linear_silu_layer", XCDS, n_weight_tiles // 2, label=f"L{l}.gate_up",
                  input="h", weight="W_gu_shuffled", output="act", tile_n=TILE_N_SILU,
                  output_stride=d.I_DENSE_PAD)
-            if gemv:
-                g = grid_for_linear(d.H)      # the page's override names qkva and o_proj only
-                p.op("linear_gemv_layer", g, status="new", label=f"L{l}.down", input="act", w_norm=None,
-                     weight="W_down_pad", residual="x_res", output="x_res", grid_dim=(g, 1, 1),
-                     block_dim=(256, 1, 1), norm=False, residual_add=True, eps=0.0)
-            elif tile_linears:
+            # layer 0's dense down projection stays on the stock per-tile linear under
+            # --gemv-linears: its K is I_DENSE_PAD (11,264), and the GEMV keeps a lane's K slice
+            # in registers (K / 64 values: 176 here, against 32 at K 2,048), which does not fit
+            # (docs/gpu-experiments/04-kernels/05-local-preparation.md, S4: layer 0 is a later pass)
+            if tile_linears or gemv:
                 g = grid_for_linear(d.H)
                 p.op("linear_with_residual_layer", g, label=f"L{l}.down", input="act", weight="W_down_pad",
                      residual="x_res", output="x_res", grid_dim=(g, 1, 1), block_dim=(256, 1, 1))
