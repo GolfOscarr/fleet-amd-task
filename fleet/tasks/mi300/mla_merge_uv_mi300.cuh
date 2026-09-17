@@ -42,8 +42,8 @@ __device__ __forceinline__ void
   static_assert(D_C % 16 == 0, "two lanes share a row of W_uv, 8 columns per load");
   constexpr int P_ROW = ((D_C + 1 + 3) / 4) * 4;   // padded partials row (P2); o in [0,D_C), lse at D_C
   static_assert(2 * D_V <= NUM_THREADS, "two threads per output element");
-  // W_uv rows of 8 in flight per thread (raw BF16 words, 4 registers each)
-  constexpr int PF_W = 16;
+  // W_uv rows of 8 in flight per thread (raw BF16 words, 4 registers each): the whole half row
+  constexpr int PF_W = 32;                       // the half row in one batch: one round trip
   static_assert((D_C / 2) % (8 * PF_W) == 0, "the W_uv half-row loop batches PF_W loads of 8");
 
   int xcd = tile_idx / tiles_per_xcd;
