@@ -138,6 +138,9 @@ docs/
                      the rehearsal, the session log, the results (4.57 to
                      4.60 ms per token) and the lessons with the next round
                      ranked
+    04-kernels/      the fourth round (started 2026-09-17): the ideas for a
+                     batch-1 GEMV linear in place of the CK tile, then the
+                     router and the merge
   paper/             the Fleet paper
 repos/
   fleet-chiplet-megakernel/   ROCm/fleet-chiplet-megakernel (submodule)
