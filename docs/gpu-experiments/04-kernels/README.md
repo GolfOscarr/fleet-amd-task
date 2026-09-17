@@ -10,10 +10,11 @@ separate item.
 
 | File | What |
 |---|---|
-| [`01-gemv-ideas.md`](01-gemv-ideas.md) | every idea for a batch-1 GEMV linear of our own in place of the CK tile: what bounds each linear today (the latency chain, the XCD's share of HBM, or between), the bytes-in-flight arithmetic, the kernel forms (VALU on raw words, packed dot2, MFMA from registers, direct-to-LDS staging), the load policy, the batch depth, the fused prologues without scratch rows; the shaping of w13 into one round per XCD and the rows per task; the integration, the VM rows, the routes not chosen; the stack (0.77 ms certain, 1.27 possible) and the decisions before the split |
+| [`01-gemv-ideas.md`](01-gemv-ideas.md) | every idea for a batch-1 GEMV linear of our own in place of the CK tile, double-checked against the source and the offline compiler (`env/offline_gfx942/gemv_probe/`): what bounds each linear today (the latency chain, the XCD's rate, or between), the bytes-in-flight arithmetic, the kernel forms (VALU on raw words, MFMA from registers, direct-to-LDS staging; the packed dot2 is not on gfx942), the load policy, the batch depth with its measured register cost, the fused prologues without scratch rows; w13 in one round per XCD and the rows per task; the integration, the VM rows, the routes not chosen; the stack (0.57 ms certain, 1.25 possible) and the decisions before the split |
+| [`02-local-gpu-split.md`](02-local-gpu-split.md) | the laptop items L1 to L9 (the kernel, its suite rows and offline variant, the task type and flag, the w2 and w13 forms, the head, the stream probe, the bit-diff, the session tooling, the gate) with deliverable, check, time box and the VM row each feeds; the VM rows G0 to G8 with PASS text and DECIDE rows; the budget; the dependency graph |
 
 ## Status
 
 | Date | State |
 |---|---|
-| 2026-09-17 | branch `local/round-4` made; the codebase and the round-3 record re-read; the ideas for the GEMV linear written (`01`); the local and GPU split is next; no VM |
+| 2026-09-17 | branch `local/round-4` made; the codebase and the round-3 record re-read; the ideas for the GEMV linear written, expanded and double-checked (`01`; the probe under `env/offline_gfx942/gemv_probe/` settled the dot2 question, the batch depth's control and its register cost); the laptop and VM split written (`02`); the router and merge ideas are next; no VM |
