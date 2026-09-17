@@ -36,6 +36,9 @@ provision at 09:35:09. The numbers are in `08-results.md`; the record is
 | 11:07 | 92 | | the vectorized norm helper and the restructured merge: 2 layers 488 us, the model 4,717.8 (worker timing on), **4,601.0 with the attention as regular tasks**; merge 20 to 13.7 us, router to 16, the fused tiles 21 to 18 |
 | 11:15 | 100 | | the finals: 4,599.5, 4,578.2, 4,589.3 us (regular attention), 4,618.1 (gang); the megakernel's own `FWD_PASS` clock without the event timing 4,584.0; ids PASS |
 | 11:24 | 109 | | the router at eight rows per lane, the merge's weight half row in one batch (suites PASS); the knob queue started; the record pulled ($14.90) |
+| 11:27 | 112 | S11 | the knob queue stopped after five rows (a misread of the wall clock, not a hang; the stop was incomplete, next row): `MPK_NO_COMPLETION_FENCE` and `MPK_NO_ACQUIRE_FENCE` both fail the step-0 compare (stale data), the first also no faster (626.8 against 618.3 us on the 2-layer graph); the CAS and sleep knobs not run |
+| 11:27 | 112 | | the finals with the deeper batches started while the knob queue's loop was still alive (the kill took the stage's shell, not the queue's): two graph runs at once until 11:35; every row of both queues in that window is discarded (the sleep knob rows, the first finals) |
+| 11:39 | 124 | | the finals rerun alone on the GPU (the row below) |
 
 ## What the measurements said, in order
 
@@ -89,6 +92,7 @@ provision at 09:35:09. The numbers are in `08-results.md`; the record is
 | the megakernel's JIT compiles the fork's copy of our task headers (`env/setup.sh` step 5b copies them); a kernel pushed mid-session does not reach a graph run until it is installed again; seven rows ran old kernels before this was seen (their exec counters were byte-for-byte the old ones while the standalone suite, which reads the pushed files, had passed with the new) | `env/session/common.sh` `fleet_env` installs the headers before every stage |
 | a queue file written after the push does not exist on the VM (`no queue file`) | push before `L start queue`; the `wait` should read the stage's own FAIL row, not only the queue's DONE |
 | an `until ... DONE <queue>` wait is satisfied by an earlier DONE line of the same file | count the DONE lines, or read the last line |
+| `kill` of the `vm.sh queue` shell leaves `queue.sh`'s loop alive: the next row starts after the current run is killed | kill the `queue.sh` process too (`pgrep -f 'queue.sh run'`), then `vm.sh kill --all`; the playbook's "never two graph runs at once" held for a reason |
 | `setup.sh` refuses a changed `new_tasks.patch` on a tree that holds the old one | `FULL=1 L push` (the pristine fork) before `L start setup`; setup then re-applies all three patches and rebuilds incrementally (73 s) |
 
 ## Rules applied (the plan's RULE rows)
@@ -102,10 +106,12 @@ provision at 09:35:09. The numbers are in `08-results.md`; the record is
 | T7 | 8,952.8 against 10,250.7 | MFMA attention on |
 | T8 | wiring PASS, 12,486.7 against 10,223.6 | prefetch off |
 | T4 | 2.3 to 2.9 us per operator at N = 1; 0.19 us per task at N = 296 | the kernels carry the time, not the runtime |
+| T5 | both fence knobs fail the compare; no completion fence 626.8 against 618.3 us | off; the CAS and sleep knobs untested |
 | S15 | the per-head prep, the batched loads, the regular attention (the user's go at minute 58) | the number went from 8,904 to about 4,590 |
 
 ## Not done
 
+- S11 beyond the fence knobs (the CAS and sleep knobs): the queue was stopped on a misread of the clock, and the fence results made the family unpromising.
 - S12 (the probes, the streaming loads): the corrected table made the
   probes' question moot; the streaming loads touch only the attention's
   second pass now.

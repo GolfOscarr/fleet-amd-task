@@ -104,7 +104,7 @@ __device__ __forceinline__ void
   // at a time cost 27 us per layer, a load round trip per expert); the rows are kept as raw
   // BF16 words (4 VGPRs per 8 elements) and converted on use, exact as load8's conversion;
   // the FMA order per expert is unchanged
-  constexpr int E_BATCH = 8;                    // 32 raw 16-byte words per lane: two round trips per wave
+  constexpr int E_BATCH = 4;                    // 16 raw 16-byte words per lane (8 measured 1% slower on the model: registers)
   static_assert(E_PER_WAVE % E_BATCH == 0, "the wave's experts split into whole batches");
   constexpr int LOADS = PER_LANE / 8;
   for (int e0 = wave * E_PER_WAVE; e0 < (wave + 1) * E_PER_WAVE; e0 += E_BATCH) {
