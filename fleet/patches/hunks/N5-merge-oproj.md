@@ -44,8 +44,7 @@ independent; the order here is the patch's file order.
   TASK_MLA_MERGE_OPROJ_MI300 = 207,    // regular: the merge with o_proj folded in, the last task summing the partials (N5)
 ```
 
-202 is free (200 to 229 lie between the fork's 199 and 230; 200 is N2's
-router and 201 N4's merge). Nothing else in this header changes: the
+207 is free (204 to 206 are N2's, N4's and L6's gang form after the first integration; 200 to 203 are the fork's scheduler task types).
 descriptor's 7 inputs and 6 outputs already hold this task's 5 and 3, the
 largest of the round.
 
@@ -98,7 +97,7 @@ after
     201: "TASK_MLA_MERGE_UV_TILE_MI300",
 
 ```python
-    202: "TASK_MLA_MERGE_OPROJ_MI300",
+    207: "TASK_MLA_MERGE_OPROJ_MI300",
 ```
 
 ## 5. The kernel include
