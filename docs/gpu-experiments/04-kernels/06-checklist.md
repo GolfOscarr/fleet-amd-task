@@ -37,10 +37,10 @@ Status: rows done 2026-09-18, commit 122220d (cherry-picked; wave 1, agent A). T
 
 ## L1c. The union, offline (1 h)
 
-- [ ] `mk_tu.cu`: `MK_GEMV` with the three instantiations as variants 0 to 2 of type 195; `run.sh`: `compile gemv`, `dev_gemv.s`
-- [ ] the compile exits 0; the worker line (VGPRs, AGPRs, scratch, spills) recorded here; the batch loop's `s_waitcnt vmcnt` sequence recorded here (32 loads in flight)
+- [x] `mk_tu.cu`: `MK_GEMV` with the three instantiations as variants 0 to 2 of type 195; `run.sh`: `compile gemv`, `dev_gemv.s`, and `w2ck` and `dev_kt.s` (the launcher's device code) besides
+- [x] the compile exits 0; the worker line (VGPRs, AGPRs, scratch, spills) recorded here; the batch loop's `s_waitcnt vmcnt` sequence recorded here (32 loads in flight)
 
-Status:
+Status: done 2026-09-18 (commits 5bbf16d, e75806d, the resources refreshed). The worker union (`resources.txt`): `ours` 256 VGPRs, 100 AGPRs, 8 spilled, scratch 64 bytes per lane (64 AGPRs before wave 1); `gemv` 256, 102 AGPRs, scratch 332 (the call's 67 callee-saved stores); `ckgang` (the w2 GEMV form) 256, 111, scratch 92 (its 22 saves); `w2ck` (the CK fallback) 256, 100; `mfma` 256, 126; `cklinear` 256, 104. Three forms were rejected on the way: the per-row guards (four loads in flight of 32), the first batch before the prologue (the union at 208 AGPRs; standalone 250, 238 and 244 against 172, 170 and 166) and the inlined body (222 AGPRs against 102). The batch loop's wait sequence at eight rows: `vmcnt(27) (26) (25) (24) (19) ... (0)` under `MLA_NT_STREAMS` (32 buffer loads per batch, consumed row by row); the plain build's call form makes 36 flat loads and waits `vmcnt(0)` per batch, so the graph rows run with `--nt-streams`. Standalone (`kernel_tests.log`, -O2, the call form): `k_linear_gemv` 248 VGPRs, 12 bytes of scratch.
 
 ## L2. The task type and the plan flag (5 h, with L5's grid options)
 
@@ -58,7 +58,9 @@ Status:
 - [x] phase 5: the initialisations and the slot writes over the lanes
 - [ ] `ROUTER_BATCH` and `ROUTER_STRIDED` as defines; the binaries in `vm.sh`; the `ktime` grid
 - [x] `check_syntax.sh`; the suite's `moe_router` rows dry run (ids, log, mask exact)
-- [ ] the offline build: `k_moe_router` (at most 180 VGPRs, no scratch) and the worker line recorded here; `run.sh` gains `dev_kt.s` and the router loop's wait sequence recorded here
+- [x] the offline build: `k_moe_router` (at most 180 VGPRs, no scratch) and the worker line recorded here; `run.sh` gains `dev_kt.s` and the router loop's wait sequence recorded here
+
+Offline (2026-09-18): `k_moe_router` 170 VGPRs, no scratch (238 with `ROUTER_PRELOAD=1`, 162 at four rows); the batch's waits `vmcnt(12) (10) (9) (8) (7)`, then `(15) (11) (10) ...` (32 loads per batch, consumed as they land); the union above.
 
 Status: kernel done 2026-09-18, commit ef10e6e on `local/round-4` (wave 1, agent B; cherry-picked). Two file-local helpers (`router_chunk`, `router_load_batch`); the initialisations run before the GEMV (one entry per thread, ordered against the slot writes by the GEMV's barrier) instead of after the top-k, which would race on the forced ids; the slot pick is an unrolled select so `ids[]` stays in registers. The batch and map defines (`ROUTER_BATCH` 4, 8, 16; `ROUTER_STRIDED`) compile under the host stub; the binaries in `vm.sh` and the `ktime` grid are open (the third box). Emulated numerics: logits within 2.5e-6 relative of the old order, ids and weights identical. Checks: 9 PASS, 184 tests, the suite's dry run. The offline line and the wait sequence follow with wave 1's compile.
 
@@ -67,7 +69,9 @@ Status: kernel done 2026-09-18, commit ef10e6e on `local/round-4` (wave 1, agent
 - [x] `mla_merge_uv_mi300.cuh`: `W_uv` batch 0 issued first (whole-row wave-loads, 16 per lane); the partials batch at `4 q` and `256 + 4 q` with `ROWS_IN_FLIGHT` = 9 and the lse words for q = 0; one barrier for `lse_s`, every thread's M, weights and total; the FMAs and `o_s` as today
 - [x] `W_uv` batch 1 issued when the partials registers are free; the lane's eight o values in registers; the FMAs, the butterfly over 16 rows, lanes 0 to 15 storing `attn`
 - [x] `check_syntax.sh`; the suite's `mla_merge_uv` rows dry run
-- [ ] the offline build: `k_mla_merge_uv` (at most 200 VGPRs) and the worker line recorded here; the wait sequence from `dev_kt.s`
+- [x] the offline build: `k_mla_merge_uv` (at most 200 VGPRs) and the worker line recorded here; the wait sequence from `dev_kt.s`
+
+Offline (2026-09-18): `k_mla_merge_uv` 166 VGPRs, no scratch (244 with `MERGE_W_PRELOAD=1`, 205 at a batch of 8 with it); the partials batch waits `vmcnt(0)` after the lse words (in-order completion: the batch is in flight together), the `W_uv` batches `vmcnt(11) (10) (9) ...`; the union above.
 
 Status: kernel done 2026-09-18, commit 60ad996 on `local/round-4` (wave 1, agent C; cherry-picked). The phases as the page orders them; the `W_uv` batches as a two-slot pipeline so `-DMERGE_W_BATCH=8` (four batches) issues and consumes them in a loop, the default 16 running the page's schedule; `ROWS_IN_FLIGHT` a literal 9 with a `static_assert` against `N_SPLITS_MAX` (33) because `pf.sh` greps the literal, `PF_W` gone (`pf.sh` prints one merge line; its test needs one). The total of the weights is summed in ascending j by every thread (deterministic; the divisor may differ in its last FP32 bit from round 3's wave sum, the suite compares `attn` against the reference within tolerance), 42 `expf` per thread. `W_uv` through `StreamSrc` (byte-identical without `MLA_NT_STREAMS`). A host emulation of the six phases with the butterfly's exact order was bit-exact against `numpy_ref.mla_merge_uv` on 128 of 128 outputs for three heads at batch 8, 16 and 32 (the agent's scratch script). LDS 10,496 bytes; about 153 raw registers in either phase. Checks: 11 PASS, 194 tests.
 
@@ -75,7 +79,9 @@ Status: kernel done 2026-09-18, commit 60ad996 on `local/round-4` (wave 1, agent
 
 - [x] `gang_moe_w2_silu_mi300.cuh`: the activation row into LDS; the GEMV over 64 rows with the 176-chunk map (three loads per lane, two for lanes 48 to 63); the scatter epilogue; the CK multiply kept under `MPK_W2_CK_TILE`
 - [ ] the suite row `gang_w2_gemv` (`-DKT_FAKE_XCD`, the `(32, 8)` launch); `numpy_ref.moe_w2`; `kernel_tests.py`
-- [ ] `check_syntax.sh` (done: the entry `gang_moe_w2_silu_mi300`, 11 PASS); `run.sh`: the `ckgang` variant on the GEMV form, `w2ck` on the CK form; the registers and the wait sequence recorded here
+- [x] `check_syntax.sh` (the entry `gang_moe_w2_silu_mi300`, 11 PASS); `run.sh`: the `ckgang` variant on the GEMV form, `w2ck` on the CK form; the registers and the wait sequence recorded here
+
+Offline (2026-09-18): both variants compile; the GEMV form's function (a `__noinline__` call) 248 VGPRs and 32 AGPRs with 92 bytes of scratch (its 22 callee-saved stores), its 24 loads per batch issued in sequence before one `vmcnt(0)` (flat loads in the plain build; the streaming build makes them buffer loads); `W2_BATCH=4` takes the union to 101 AGPRs and 64 bytes.
 
 Status: kernel done 2026-09-18, commit 69fe6b1 on `local/round-4` (wave 1, agent E; cherry-picked, the syntax-check entry merged with L1's). The default path includes no CK header: the XCD read is a local copy named `_gang_moe_w2_xcd_id` (the stock name would be a redefinition in the runtime unit), `-DKT_FAKE_XCD` takes the XCD from `blockIdx.y` there (the suite row of L4's agent must not add it again), `fast_silu` comes from the fork's header when on the include path and a local definition under the stub, and the BF16 rounding is a local round-to-nearest-even with the NaN quieting that reproduces `__float2bfloat16` bit for bit (the suite row and the B11 and B12 boundaries are the checks). A row past a short tile is loaded as the last valid row and its store dropped (no short tile at N = 2,048). Registers at `W2_BATCH` 8: 24 x-values, 96 raw words, 8 accumulators; LDS: the 2,816-byte row. The CK fallback path is unverified here (no CK headers on the laptop): the offline `w2ck` variant is its check. Checks: 11 PASS, 194 tests.
 
