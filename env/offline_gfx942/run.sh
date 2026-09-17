@@ -195,7 +195,7 @@ cat "$HERE/fences.txt"
 {
   echo "# Offline gfx942 compile, $(date -u +%Y-%m-%dT%H:%M:%SZ), $(cat "$WORK/out/hipcc.txt" | tr '\n' ' ')"
   echo "# fleet 51dce4f + gfx942.patch + new_tasks.patch + sched_xcd.patch; composable_kernel $CK_COMMIT; json $JSON_COMMIT"
-  for v in mk_ours mk_ckfmha mk_debugscores mk_ckgang mk_ntstreams mk_cklinear mk_mfma mk_timing mk_nocfence mk_noafence mk_nobcastcas mk_nolocalcas mk_sleep8 kernel_tests kernel_tests_debug kernel_tests_nt kernel_tests_mfma; do
+  for v in mk_ours mk_ckfmha mk_debugscores mk_ckgang mk_ntstreams mk_cklinear mk_mfma mk_gemv mk_w2ck mk_timing mk_nocfence mk_noafence mk_nobcastcas mk_nolocalcas mk_sleep8 kernel_tests kernel_tests_debug kernel_tests_nt kernel_tests_mfma; do
     echo; echo "## $v (hipcc exit $(cat "$WORK/out/$v.rc"))"
     grep -E "Function Name|    VGPRs:|AGPRs|SGPRs Spill|VGPRs Spill|LDS Size|ScratchSize|Occupancy" "$WORK/out/$v.log" \
       | sed 's/.*remark: *//; s/ \[-Rpass.*//; s/Function Name: //' | paste - - - - - - - - \

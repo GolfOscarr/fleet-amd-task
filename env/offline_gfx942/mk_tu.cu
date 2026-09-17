@@ -10,25 +10,26 @@
 #include "persistent_kernel.cuh"
 #ifdef MK_GEMV
 // L1c (docs/gpu-experiments/04-kernels/05-local-preparation.md): the GEMV linear's three forms
-// at the model's dims, keyed on the task type L2's patch will add (195); the header is not in
-// task_header.cuh until then, so it is included here
+// at the model's dims, on the task type L2's patch adds (TASK_LINEAR_GEMV_MI300 = 195). With
+// new_tasks.patch applied the enum carries the type and task_header.cuh includes the kernel, so
+// this aliases the real enum value; the include stays (the header is #pragma once, and it lets
+// the block still stand as the standalone check on an unpatched tree).
 #include "tasks/mi300/linear_gemv_mi300.cuh"
-#define MK_TASK_LINEAR_GEMV_MI300 ((TaskType)195)
-// L6: the stream probe beside it, on the types its hunk adds (197 regular, 203 gang; 198 is the
-// fork's TASK_HOPPER_TASK_END), with the same local-define treatment
+#define MK_TASK_LINEAR_GEMV_MI300 TASK_LINEAR_GEMV_MI300
+// L6: the stream probe beside it (TASK_STREAM_MI300 = 197 regular, TASK_STREAM_GANG_MI300 = 206
+// gang; the gang form took 206 because 200 to 203 are the fork's scheduler task types)
 #include "tasks/mi300/stream_mi300.cuh"
-#define MK_TASK_STREAM_MI300 ((TaskType)197)
-#define MK_TASK_STREAM_GANG_MI300 ((TaskType)203)
-// L4: the expert gate-up as the GEMV gang kernel, keyed on the task type its hunk file adds
-// (196); that header is not in task_header.cuh until then either
+#define MK_TASK_STREAM_MI300 TASK_STREAM_MI300
+#define MK_TASK_STREAM_GANG_MI300 TASK_STREAM_GANG_MI300
+// L4: the expert gate-up as the GEMV gang kernel (TASK_GANG_MOE_W13_GEMV_MI300 = 196)
 #include "tasks/mi300/gang_moe_w13_gemv_mi300.cuh"
-#define MK_TASK_GANG_MOE_W13_GEMV_MI300 ((TaskType)196)
-// N4: the merge as regular tasks, keyed on the type its hunk will add (201). The kernel's
-// header is the gang form's, which task_header.cuh already includes.
-#define MK_TASK_MLA_MERGE_UV_TILE_MI300 ((TaskType)201)
-// N2: the fused router in four tasks, keyed on the type its hunk will add (200); its kernel
-// header is the one-task router's, already included by task_header.cuh
-#define MK_TASK_MOE_ROUTER4_MI300 ((TaskType)200)
+#define MK_TASK_GANG_MOE_W13_GEMV_MI300 TASK_GANG_MOE_W13_GEMV_MI300
+// N4: the merge as regular tasks (TASK_MLA_MERGE_UV_TILE_MI300 = 205). The kernel's header is
+// the gang form's, which task_header.cuh already includes.
+#define MK_TASK_MLA_MERGE_UV_TILE_MI300 TASK_MLA_MERGE_UV_TILE_MI300
+// N2: the fused router in four tasks (TASK_MOE_ROUTER4_MI300 = 204); its kernel header is the
+// one-task router's, already included by task_header.cuh
+#define MK_TASK_MOE_ROUTER4_MI300 TASK_MOE_ROUTER4_MI300
 #endif
 
 using namespace mirage::runtime;
