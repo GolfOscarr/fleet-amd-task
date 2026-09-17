@@ -69,21 +69,19 @@ XCDs ([`docs/design-doc/00-decisions.md`](docs/design-doc/00-decisions.md), D6).
 
 ## Status
 
-**Two GPU rounds are done and the third is prepared.** Round 1
-(2026-09-15) brought the stack up on the MI300X; round 2 (2026-09-16)
-reached the required milestone and the end-to-end decode at 9.6 ms per
-token; round 3 (`docs/gpu-experiments/03-acceleration/`, branch
-`local/round-3`) is the acceleration toward the 4.5 ms production
-baseline: seven optimizations (the fused norms and silu, the probe, the
-streaming loads, the MFMA attention, the weight prefetch by side
-operators; the eighth, a fallback, skipped) and the instruments to
-attribute the time, all as flags that are off by default, written and
-checked on the laptop (183 tests, the offline `gfx942` compile of every
-variant, a host syntax check of the patched runtime, the suites extended
-to nine) and waiting for the VM session of its plan
-(`05-session-plan.md`: one session, gains first, the final number by
-about minute 60). The design is in
-[`docs/design-doc/`](docs/design-doc/README.md).
+**Three GPU rounds are done.** Round 1 (2026-09-15) brought the stack up
+on the MI300X; round 2 (2026-09-16) reached the required milestone and
+the end-to-end decode at 9.6 ms per token; round 3 (2026-09-17,
+`docs/gpu-experiments/03-acceleration/`, branch `gpu/round-3`) took the
+decode to **4.58 to 4.60 ms per token** on the runtime's event clock
+(4.58 by the megakernel's own report), the 32 ids equal to the
+reference's, against the 4.5 ms production baseline: the MFMA attention,
+the prep task split over the heads, the router, merge and norm loads
+batched, the attention as regular tasks, the three boundary fusions. The
+round also found that round 2's per-operator table named every gap after
+the wrong operator (`07-session-log.md`, finding 1); the remaining time
+is in the CK linears (2.7 ms), the boundaries (0.8 ms) and four small
+kernels (1.6 ms), `08-results.md`.
 
 | | |
 |---|---|
