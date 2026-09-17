@@ -15,7 +15,7 @@ for f in mla_prep_mi300 mla_attend_mi300 mla_attend_mfma_mi300 mla_merge_uv_mi30
   src="$KDIR/$f.cuh"
   # instantiate each template at the real dims so the bodies are parsed and type-checked
   case "$f" in
-    mla_prep_mi300) inst='kernel::mla_prep_mi300_task_impl<bfloat16,16,128,64,512>(0,0,0,0,0,0,0,0,0,0,1e-6f);' ;;
+    mla_prep_mi300) inst='kernel::mla_prep_mi300_task_impl<bfloat16,16,128,64,512>(0,0,0,0,0,0,0,0,0,0,1e-6f,0);' ;;
     mla_attend_mi300) inst='kernel::mla_attend_mi300_task_impl<bfloat16,16,512,64,1056>(0,0,0,0,0,0,0.1f,32,33,5,4,0,0);' ;;
     mla_attend_mfma_mi300) inst='kernel::mla_attend_mi300_task_impl<bfloat16,16,512,64,1056>(0,0,0,0,0,0,0.1f,32,33,5,4,0,0);' ;;   # O7: the MFMA kernel (the same signature; the wrapper's host path)
     mla_merge_uv_mi300) inst='kernel::mla_merge_uv_mi300_task_impl<bfloat16,16,128,512>(0,0,0,0,32,33,2,2,0,1,1,0);' ;;

@@ -100,21 +100,39 @@ __device__ __forceinline__ void
   for (int i = 0; i < PER_LANE; i += 8) {
     load8(h + lane * PER_LANE + i, hv + i);
   }
-  for (int e = wave * E_PER_WAVE; e < (wave + 1) * E_PER_WAVE; e++) {
-    T const *row = w_gate + (size_t)e * HIDDEN + lane * PER_LANE;
-    float acc = 0.0f;
+  // E_BATCH expert rows' loads in flight per lane before the first multiply (round 3: one row
+  // at a time cost 27 us per layer, a load round trip per expert); the rows are kept as raw
+  // BF16 words (4 VGPRs per 8 elements) and converted on use, exact as load8's conversion;
+  // the FMA order per expert is unchanged
+  constexpr int E_BATCH = 4;
+  static_assert(E_PER_WAVE % E_BATCH == 0, "the wave's experts split into whole batches");
+  constexpr int LOADS = PER_LANE / 8;
+  for (int e0 = wave * E_PER_WAVE; e0 < (wave + 1) * E_PER_WAVE; e0 += E_BATCH) {
+    uint4 raw[E_BATCH][LOADS];
 #pragma unroll
-    for (int i = 0; i < PER_LANE; i += 8) {
-      float w[8];
-      load8(row + i, w);
+    for (int u = 0; u < E_BATCH; u++) {
+      T const *row = w_gate + (size_t)(e0 + u) * HIDDEN + lane * PER_LANE;
 #pragma unroll
-      for (int k = 0; k < 8; k++) {
-        acc += hv[i + k] * w[k];
+      for (int i = 0; i < LOADS; i++) {
+        raw[u][i] = *reinterpret_cast<uint4 const *>(row + 8 * i);
       }
     }
-    acc = wave_sum(acc);
-    if (lane == 0) {
-      logit_s[e] = acc;
+#pragma unroll
+    for (int u = 0; u < E_BATCH; u++) {
+      float acc = 0.0f;
+#pragma unroll
+      for (int i = 0; i < LOADS; i++) {
+        unsigned const *words = reinterpret_cast<unsigned const *>(&raw[u][i]);
+#pragma unroll
+        for (int k = 0; k < 8; k++) {
+          unsigned bits = (k & 1) ? (words[k / 2] & 0xffff0000u) : (words[k / 2] << 16);
+          acc += hv[8 * i + k] * __uint_as_float(bits);
+        }
+      }
+      acc = wave_sum(acc);
+      if (lane == 0) {
+        logit_s[e0 + u] = acc;
+      }
     }
   }
   __syncthreads();
