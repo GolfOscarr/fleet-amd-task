@@ -208,3 +208,203 @@ def test_tile_linears_output_sizes_divide_the_grid():
 def test_tile_linears_keeps_the_chain_rule(head, debug):
     plan, _ = B.dry_run(layers=27, head=head, debug=debug, tile_linears=True)
     assert plan.chain_violations() == []
+
+
+def test_fuse_norm2_folds_the_post_attention_norm_into_the_router():
+    """O1 (docs/gpu-experiments/03-acceleration): no L{l}.norm2 in the MoE layers, the router
+    reads x_res and the norm weight and writes h; layer 0 keeps its norm; the chain holds."""
+    plan, calls = B.dry_run(layers=27, head=True, fuse_norm2=True)
+    labels = [c.label for c in plan.calls]
+    assert "L0.norm2" in labels and not any(l.endswith(".norm2") for l in labels if l != "L0.norm2")
+    assert plan.n_ops == 300 and plan.n_tasks == 1854 and not plan.chain_violations()
+    by = {c.label: c for c in plan.calls}
+    r = by["L5.router"]
+    assert r.args["input"] == "x_res" and r.args["w_norm"] == "w_norm2_5" and r.args["h"] == "h"
+    assert r.args["eps"] == G.RMS_EPS
+    # the recorded call: the fused registration with three inputs, six outputs and seven params
+    rec = [c for c in calls if c["method"] == "moe_router_norm_mi300@new"]
+    assert len(rec) == 26
+    assert rec[0]["inputs"] == ["x_res", "w_norm2_1", "W_gate_1", "h", "topk_w", "routing", "mask",
+                                "logits_router", "route_log"]
+    assert len(rec[0]["params"]) == 7 and rec[0]["params"][6] == G.float_bits(G.RMS_EPS)
+    # the gate-up still reads h, now written by the router (the chain's shared tensor)
+    assert by["L5.w13"].args["input"] == "h"
+
+
+def test_fuse_norm2_default_off_leaves_the_plan_unchanged():
+    plan_off, calls_off = B.dry_run(layers=27, head=True)
+    assert plan_off.n_ops == 326 and plan_off.n_tasks == 1880
+    assert not any(c["method"] == "moe_router_norm_mi300@new" for c in calls_off)
+    assert sum(c["method"] == "moe_router_mi300@new" for c in calls_off) == 26
+    r = {c.label: c for c in plan_off.calls}["L5.router"]
+    assert r.args["input"] == "h" and "w_norm" not in r.args and "h" not in r.args
+
+
+def test_fuse_silu_folds_the_silu_into_the_expert_down_projection():
+    """O2 (docs/gpu-experiments/03-acceleration): no L{l}.silu, w2 reads mid and a per-tile scratch;
+    with O1 the MoE layer has 10 operators and the graph 274."""
+    from fleet.graph_plan import REAL_DIMS as D, XCDS
+    plan, calls = B.dry_run(layers=27, head=True, fuse_norm2=True, fuse_silu=True)
+    labels = [c.label for c in plan.calls]
+    assert not any(l.endswith(".silu") for l in labels)
+    assert plan.n_ops == 274 and plan.n_tasks == 1854 - 26 * 8 and not plan.chain_violations()
+    by = {c.label: c for c in plan.calls}
+    w2 = by["L5.w2"]
+    assert w2.method == "gang_moe_w2_silu_linear_layer" and w2.tasks == XCDS
+    assert w2.args["input"] == "mid" and w2.args["output"] == "out8" and w2.args["scratch"] == "w2_scratch"
+    assert plan.tensors["w2_scratch"].shape == (XCDS * ((D.E_TOTAL + 7) // 8) * (D.H // 64), D.I_MOE)
+    assert "act8" not in plan.tensors
+    rec = [c for c in calls if c["method"] == "gang_moe_w2_silu_linear_mi300@new"]
+    assert len(rec) == 26
+    assert rec[0]["inputs"] == ["mid", "W2_1", "routing", "mask", "out8", "w2_scratch"]
+    assert rec[0]["params"] == [D.H // 64, (D.E_TOTAL + 7) // 8, ((D.E_TOTAL + 7) // 8) * (D.H // 64)]
+    # the stock w2's imaps, plus the whole scratch
+    assert rec[0]["imaps"] == [[-1, -1, -1], [-1, 1, -1], [-1, -1, -1], [-1, -1, -1], [-1, 2, -1], [-1, -1, -1]]
+    # the combine still reads out8, written by the fused w2 (the chain's shared tensor)
+    assert by["L5.combine"].args["input"] == "out8"
+
+
+def test_fuse_silu_default_off_leaves_the_plan_unchanged():
+    plan_off, calls_off = B.dry_run(layers=27, head=True)
+    assert plan_off.n_ops == 326 and "act8" in plan_off.tensors and "w2_scratch" not in plan_off.tensors
+    assert not any(c["method"] == "gang_moe_w2_silu_linear_mi300@new" for c in calls_off)
+    plan_fs, _ = B.dry_run(layers=27, head=True, fuse_silu=True)
+    assert plan_fs.n_ops == 300 and plan_fs.n_tasks == 1880 - 26 * 8
+
+
+def test_fuse_norm1_folds_the_input_norm_into_the_per_tile_linear():
+    """O3 (docs/gpu-experiments/03-acceleration): no L{l}.norm1 and no head.norm; qkva and lm_head are
+    the fused per-tile linear reading x_res, the norm weight and a per-task scratch; with O1 and O2
+    the graph has 246 operators; the chain holds."""
+    from fleet.graph_plan import grid_for_linear, REAL_DIMS as D
+    plan, calls = B.dry_run(layers=27, head=True, fuse_norm2=True, fuse_silu=True, fuse_norm1=True, tile_linears=True)
+    labels = [c.label for c in plan.calls]
+    assert not any(l.endswith(".norm1") for l in labels) and "head.norm" not in labels
+    assert plan.n_ops == 246 and plan.n_tasks == 5954 and not plan.chain_violations()
+    by = {c.label: c for c in plan.calls}
+    q = by["L5.qkva"]
+    assert q.method == "linear_norm_layer" and q.tasks == grid_for_linear(D.Q_OUT + D.KVA_OUT) == 96
+    assert q.args["input"] == "x_res" and q.args["w_norm"] == "w_norm1_5" and q.args["scratch"] == "qkva_scratch"
+    assert q.args["eps"] == G.RMS_EPS and by["L5.mla_prep"].args["qkva"] == "qkva"
+    lm = by["head.lm_head"]
+    assert lm.method == "linear_norm_layer" and lm.tasks == grid_for_linear(D.V) == 400
+    assert lm.args["input"] == "x_res" and lm.args["w_norm"] == "w_final_norm" and lm.args["scratch"] == "lm_scratch"
+    assert plan.tensors["qkva_scratch"].shape == (96, D.H) and plan.tensors["lm_scratch"].shape == (400, D.H)
+    # the recorded call: three inputs, two outputs, the stock linear's imaps plus the scratch on dim 0
+    rec = [c for c in calls if c["method"] == "linear_norm_mi300@new"]
+    assert len(rec) == 28
+    assert rec[0]["inputs"] == ["x_res", "w_norm1_0", "W_qkva_0", "qkva", "qkva_scratch"]
+    assert rec[0]["imaps"] == [[-1, -1, -1], [-1, -1, -1], [0, -1, -1], [1, -1, -1], [0, -1, -1]]
+    assert rec[0]["params"] == [G.float_bits(G.RMS_EPS)]
+    assert rec[-1]["inputs"] == ["x_res", "w_final_norm", "W_lm", "logits", "lm_scratch"]
+    # the fused linear is per-tile whether or not --tile-linears is set
+    plan_g, _ = B.dry_run(layers=27, head=True, fuse_norm2=True, fuse_silu=True, fuse_norm1=True)
+    assert plan_g.n_ops == 246 and plan_g.n_tasks == 1646 - 28 + 27 * (96 - 8) + (400 - 8)
+    assert {c.label: c.method for c in plan_g.calls}["L0.qkva"] == "linear_norm_layer"
+
+
+def test_fuse_norm1_default_off_and_debug_keep_the_stock_norms():
+    plan_off, calls_off = B.dry_run(layers=27, head=True)
+    assert plan_off.n_ops == 326 and "qkva_scratch" not in plan_off.tensors and "lm_scratch" not in plan_off.tensors
+    assert not any(c["method"] == "linear_norm_mi300@new" for c in calls_off)
+    # under --debug the stock norms stay (the snapshot wiring reads the copies)
+    plan_dbg, calls_dbg = B.dry_run(layers=27, head=True, debug=True, fuse_norm1=True)
+    plan_dbg0, _ = B.dry_run(layers=27, head=True, debug=True)
+    assert plan_dbg.n_ops == plan_dbg0.n_ops and not any(c["method"] == "linear_norm_mi300@new" for c in calls_dbg)
+    assert {c.label: c for c in plan_dbg.calls}["L1.norm1"].args["input"] == "dbg_x_res_0"
+    assert not plan_dbg.chain_violations()
+
+
+def test_prefetch_adds_side_operators_that_the_chain_rule_skips():
+    """O8 (docs/gpu-experiments/03-acceleration): --prefetch adds three side operators per layer
+    (the layer's W_o after qkva, the next layer's W_qkva after o_proj, the active experts' W2 after
+    w13), each registered right after its host; the chain of non-side operators is unchanged."""
+    from fleet.graph_plan import grid_for_linear, PREFETCH_PARTS, TOPK_TOTAL_SLOTS, REAL_DIMS as D
+    plan, calls = B.dry_run(layers=27, head=True, fuse_norm2=True, fuse_silu=True, fuse_norm1=True, prefetch=True)
+    base, _ = B.dry_run(layers=27, head=True, fuse_norm2=True, fuse_silu=True, fuse_norm1=True)
+    side = [c for c in plan.calls if c.side]
+    assert len(side) == 27 + 26 + 26 and plan.n_ops == 246 + len(side)
+    assert [c.label for c in plan.chain()] == [c.label for c in base.calls] and not plan.chain_violations()
+    labels = [c.label for c in plan.calls]
+    # each side operator directly follows its host
+    assert labels[labels.index("L3.prefetch_W_o") - 1] == "L3.qkva"
+    assert labels[labels.index("L3.prefetch_W_qkva_next") - 1] == "L3.o_proj"
+    assert labels[labels.index("L3.prefetch_W2") - 1] == "L3.w13"
+    assert "L26.prefetch_W_qkva_next" not in labels          # no next layer
+    by = {c.label: c for c in plan.calls}
+    assert by["L3.prefetch_W_o"].tasks == grid_for_linear(D.H) == 64 and by["L3.prefetch_W_o"].args["weight"] == "W_o_3"
+    assert by["L3.prefetch_W_qkva_next"].args["weight"] == "W_qkva_4"
+    assert by["L3.prefetch_W2"].tasks == TOPK_TOTAL_SLOTS * PREFETCH_PARTS and by["L3.prefetch_W2"].args["weight"] == "W2_3"
+    assert plan.tensors["pf_dummy_w2"].shape == (TOPK_TOTAL_SLOTS * PREFETCH_PARTS, 4)
+    # the recorded calls: the dense one partitions the weight and the dummy on dim 0, the expert one reads mask
+    rec = [c for c in calls if c["method"] == "prefetch_mi300@new"]
+    assert len(rec) == 53 and rec[0]["inputs"] == ["W_o_0", "pf_dummy_o"] and rec[0]["imaps"] == [[0, -1, -1], [0, -1, -1]]
+    rec = [c for c in calls if c["method"] == "prefetch_moe_mi300@new"]
+    assert len(rec) == 26 and rec[0]["inputs"] == ["W2_1", "mask", "pf_dummy_w2"] and rec[0]["params"] == [PREFETCH_PARTS]
+    # a probe before an operator whose predecessor carries side operators lands right before the operator
+    plan.insert_probe("L3.mla_prep")
+    labels = [c.label for c in plan.calls]
+    i = labels.index("L3.probe_mla_prep")
+    assert labels[i - 1] == "L3.prefetch_W_o" and labels[i + 1] == "L3.mla_prep" and not plan.chain_violations()
+    assert {c.label: c for c in plan.calls}["L3.mla_prep"].args["qkva"] == "qkva_probe"
+
+
+def test_probe_before_an_operator_with_a_pair_of_inputs():
+    """The argmax reduce reads (amax_v, amax_i); the probe rewires the pair's shared tensor."""
+    plan, _ = B.dry_run(layers=1, head=True, probe_before="head.argmax_reduce")
+    by = {c.label: c for c in plan.calls}
+    assert by["head.probe_argmax_reduce"].args["output"] == "amax_v_probe"
+    assert by["head.argmax_reduce"].args["input"] == ("amax_v_probe", "amax_i") and not plan.chain_violations()
+
+
+def test_prefetch_default_off_leaves_the_plan_unchanged():
+    plan, calls = B.dry_run(layers=27, head=True)
+    assert plan.n_ops == 326 and not any(c.side for c in plan.calls)
+    assert not any(c["method"].startswith("prefetch") for c in calls)
+    assert "pf_dummy_o" not in plan.tensors
+
+
+def test_empty_ladder_is_a_chain_of_copy_operators_with_one_event_per_boundary():
+    """I3 (docs/gpu-experiments/03-acceleration): M operators of N copy tasks over two [N, 256]
+    tensors; each reads its input whole and writes its own row (the output partitioned on dim 0),
+    so the boundary is one event with N triggers; with --spin the first operator's tasks print."""
+    from fleet.graph_plan import build_empty_plan, EMPTY_WIDTH
+    plan = build_empty_plan(ops=5, tasks=40, spin=1000)
+    assert plan.n_ops == 5 and plan.n_tasks == 200 and not plan.chain_violations()
+    assert plan.tensors["empty_a"].shape == (40, EMPTY_WIDTH) and plan.tensors["empty_a"].kind == "new"
+    assert [c.args["input"] for c in plan.calls] == ["empty_a", "empty_b", "empty_a", "empty_b", "empty_a"]
+    assert plan.calls[0].args["spin_print"] == 1 and all(c.args["spin_print"] == 0 for c in plan.calls[1:])
+    _, calls = B.dry_run(plan=plan)
+    rec = [c for c in calls if c["method"] == "copy_mi300@new"]
+    assert len(rec) == 5 and rec[0]["imaps"] == [[-1, -1, -1], [0, -1, -1]]     # whole in, a row out
+    assert rec[0]["params"] == [EMPTY_WIDTH, 1000, 1] and rec[1]["params"] == [EMPTY_WIDTH, 1000, 0]
+    # without spin the registration keeps its one parameter; a single task keeps the whole-tensor imaps
+    _, calls = B.dry_run(plan=build_empty_plan(ops=3, tasks=1))
+    rec = [c for c in calls if c["method"] == "copy_mi300@new"]
+    assert rec[0]["params"] == [EMPTY_WIDTH] and rec[0]["imaps"] == [[-1, -1, -1], [-1, -1, -1]]
+    # the model's copy operators are unchanged (a [1, H] snapshot, one parameter)
+    _, calls = B.dry_run(layers=2, head=False, debug=True)
+    rec = [c for c in calls if c["method"] == "copy_mi300@new"]
+    assert rec and rec[0]["params"] == [REAL_DIMS.H] and rec[0]["imaps"] == [[-1, -1, -1], [-1, -1, -1]]
+
+
+def test_probe_before_inserts_a_one_task_copy_and_rewires_the_consumer():
+    """O5 (docs/gpu-experiments/03-acceleration): a copy of the chain's tensor in front of the
+    named operator, which then reads the twin; one more operator and task, the chain intact."""
+    base, _ = B.dry_run(layers=2, head=True, tile_linears=True)
+    plan, calls = B.dry_run(layers=2, head=True, tile_linears=True, probe_before="L0.o_proj")
+    assert plan.n_ops == base.n_ops + 1 and plan.n_tasks == base.n_tasks + 1 and not plan.chain_violations()
+    i = plan.index_of("L0.probe_o_proj")
+    probe, o_proj = plan.calls[i], plan.calls[i + 1]
+    assert plan.calls[i - 1].label == "L0.mla_merge_uv" and o_proj.label == "L0.o_proj"
+    assert probe.method == "copy_layer" and probe.tasks == 1
+    assert probe.args["input"] == "attn" and probe.args["output"] == "attn_probe"
+    assert plan.tensors["attn_probe"].shape == plan.tensors["attn"].shape == (1, 2048)
+    assert o_proj.args["input"] == "attn_probe" and o_proj.args["residual"] == "x_res" and o_proj.args["output"] == "x_res"
+    rec = [c for c in calls if c["method"] == "copy_mi300@new"]
+    assert len(rec) == 1 and rec[0]["inputs"] == ["attn", "attn_probe"] and rec[0]["params"] == [2048]
+    # the probe composes with --stop-after (applied first) and refuses a tensor the copy cannot take
+    cut, _ = B.dry_run(layers=2, head=True, tile_linears=True, probe_before="L0.o_proj", stop_after="L0.o_proj")
+    assert [c.label for c in cut.calls][-2:] == ["L0.probe_o_proj", "L0.o_proj"]
+    with pytest.raises(AssertionError):
+        B.dry_run(layers=2, head=True, probe_before="L1.combine")      # out8 is [1, 8, 2048]

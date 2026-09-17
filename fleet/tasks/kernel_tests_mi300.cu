@@ -29,7 +29,7 @@
  * The defines are the ones persistent_kernel.py passes on its ROCm path.
  *
  * Usage: kernel_tests <test> <dir> [<dir> ...]
- *   test  mla_prep | mla_attend | mla_merge_uv | moe_router | copy
+ *   test  mla_prep | mla_attend | mla_merge_uv | moe_router | copy | prefetch | prefetch_moe
  *   dir   params.txt ("name value" per line, integers; floats as IEEE-754
  *         bit patterns) and one raw little-endian file <name>.bin per tensor
  *         of the test (BF16 as uint16, FP32, int32) in the order of the
@@ -46,6 +46,7 @@
 #include "tasks/mi300/mla_merge_uv_mi300.cuh"
 #include "tasks/mi300/moe_router_mi300.cuh"
 #include "tasks/mi300/copy_mi300.cuh"
+#include "tasks/mi300/prefetch_mi300.cuh"
 
 #include <cstdint>
 #include <cstdio>
@@ -70,6 +71,10 @@ constexpr int N_SLOTS = TOPK + N_FORCED;
 constexpr int N_TOTAL = N_EXPERTS + N_FORCED;
 constexpr int HEADS_PER_XCD = NH / XCDS;
 constexpr int P_ROW = ((D_C + 1 + 3) / 4) * 4;   // padded partials row (P2), matches the kernels
+// the prefetch suites (O8): a dense weight in PF_GRID stripes of PF_ROWS rows (a W_o-like [128, 2048]),
+// and an expert weight [N_TOTAL, PF_N, PF_K] whose active experts (mask) are streamed in PF_PARTS parts
+constexpr int PF_GRID = 4, PF_ROWS = 32;
+constexpr int PF_N = 32, PF_K = 256, PF_PARTS = 2;
 // What the worker kernel is launched with (persistent_kernel.cuh); a task
 // may use up to this much dynamic LDS.
 constexpr int SMEM_BYTES = mirage::runtime::MAX_DYNAMIC_SHARED_MEMORY_SIZE;
@@ -142,8 +147,10 @@ __global__ __launch_bounds__(256, 1) void k_mla_merge_uv(void const *partials,
       0, 1, 1, tile_idx);
 }
 
-__global__ __launch_bounds__(256, 1) void k_moe_router(void const *h,
+__global__ __launch_bounds__(256, 1) void k_moe_router(void const *x_res,
+                                                       void const *w_norm,
                                                        void const *w_gate,
+                                                       void *h,
                                                        void *topk_w,
                                                        void *routing,
                                                        void *mask,
@@ -151,15 +158,33 @@ __global__ __launch_bounds__(256, 1) void k_moe_router(void const *h,
                                                        void *route_log,
                                                        Meta meta,
                                                        int layer_index,
-                                                       float scaling) {
+                                                       float scaling,
+                                                       float eps) {
+  // the fused form (O1): NORM = true, the norm of x_res written to h and routed from LDS
   kernel::moe_router_mi300_task_impl<bf16, HIDDEN, N_EXPERTS, N_FORCED, TOPK, ROUTE_STEPS,
-                                     ROUTE_LAYERS>(
-      h, w_gate, topk_w, routing, mask, logits, route_log, meta.step[0], meta.prompt_length[0],
-      layer_index, scaling);
+                                     ROUTE_LAYERS, true>(
+      x_res, w_norm, w_gate, h, topk_w, routing, mask, logits, route_log, meta.step[0],
+      meta.prompt_length[0], layer_index, scaling, eps);
 }
 
-__global__ __launch_bounds__(256, 1) void k_copy(void const *x, void *y) {
-  kernel::copy_mi300_task_impl<bf16, HIDDEN>(x, y);
+// grid (PF_GRID): block b streams stripe b of w into row b of dummy [PF_GRID, 4] (one word per wave),
+// the pointers offset the way the runtime offsets them for a weight partitioned on dim 0
+__global__ __launch_bounds__(256, 1) void k_prefetch(void const *w, void *dummy) {
+  int b = blockIdx.x;
+  kernel::prefetch_mi300_task_impl<bf16, PF_ROWS, HIDDEN>(
+      static_cast<bf16 const *>(w) + (size_t)b * PF_ROWS * HIDDEN, static_cast<int *>(dummy) + b * 4);
+}
+
+// grid (N_SLOTS x PF_PARTS): block b is (slot b / PF_PARTS, part b % PF_PARTS) of the active experts in mask,
+// the index the runtime passes through the expert_offset metadata
+__global__ __launch_bounds__(256, 1) void k_prefetch_moe(void const *w, void const *mask, void *dummy) {
+  int b = blockIdx.x;
+  kernel::prefetch_moe_mi300_task_impl<bf16, N_TOTAL, PF_N, PF_K, PF_PARTS>(w, mask, static_cast<int *>(dummy) + b * 4, b);
+}
+
+__global__ __launch_bounds__(256, 1) void k_copy(void const *x, void *y, int spin) {
+  // spin > 0 (KT_SPIN, I2): the shader-clock spin after the copy, printed as a [SPIN] line
+  kernel::copy_mi300_task_impl<bf16, HIDDEN>(x, y, spin, spin > 0 ? 1 : 0);
 }
 
 // ---------------------------------------------------------------------------
@@ -210,9 +235,11 @@ static const Spec SPEC_MLA_MERGE_UV[] = {
     {"attn", (size_t)NH * D_V * 2, true},
 };
 
-static const Spec SPEC_MOE_ROUTER[] = {
-    {"h", (size_t)HIDDEN * 2, false},
+static const Spec SPEC_MOE_ROUTER[] = {   // the fused form, NORM = true (O1)
+    {"x_res", (size_t)HIDDEN * 2, false},
+    {"w_norm", (size_t)HIDDEN * 2, false},
     {"w_gate", (size_t)N_EXPERTS * HIDDEN * 2, false},
+    {"h", (size_t)HIDDEN * 2, true},
     {"topk_w", (size_t)N_SLOTS * 4, true},
     {"routing", (size_t)N_TOTAL * 4, true},
     {"mask", (size_t)(N_TOTAL + 1) * 4, true},
@@ -220,6 +247,15 @@ static const Spec SPEC_MOE_ROUTER[] = {
     {"route_log", (size_t)ROUTE_STEPS * ROUTE_LAYERS * N_SLOTS * 4, true},
 };
 
+static const Spec SPEC_PREFETCH[] = {
+    {"w", (size_t)PF_GRID * PF_ROWS * HIDDEN * 2, false},
+    {"dummy", (size_t)PF_GRID * 4 * 4, true},
+};
+static const Spec SPEC_PREFETCH_MOE[] = {
+    {"w", (size_t)N_TOTAL * PF_N * PF_K * 2, false},
+    {"mask", (size_t)(N_TOTAL + 1) * 4, false},
+    {"dummy", (size_t)N_SLOTS * PF_PARTS * 4 * 4, true},
+};
 static const Spec SPEC_COPY[] = {
     {"x", (size_t)HIDDEN * 2, false},
     {"y", (size_t)HIDDEN * 2, true},
@@ -473,9 +509,31 @@ void run_moe_router(std::string const &dir) {
   DeviceMeta m((int)param(p, "step"), (int)param(p, "prompt_length"));
   allow_full_lds(k_moe_router);
   hipLaunchKernelGGL(k_moe_router, dim3(1), dim3(256), SMEM_BYTES, 0,
-                     b.get("h"), b.get("w_gate"), b.get("topk_w"), b.get("routing"), b.get("mask"),
-                     b.get("logits"), b.get("route_log"), m.meta, (int)param(p, "layer_index"),
-                     float_from_bits(param(p, "scaling_bits")));
+                     b.get("x_res"), b.get("w_norm"), b.get("w_gate"), b.get("h"), b.get("topk_w"),
+                     b.get("routing"), b.get("mask"), b.get("logits"), b.get("route_log"), m.meta,
+                     (int)param(p, "layer_index"), float_from_bits(param(p, "scaling_bits")),
+                     float_from_bits(param(p, "eps_bits")));
+  finish_launch();
+  b.store_outputs();
+}
+
+void run_prefetch(std::string const &dir) {
+  (void)read_params(dir);
+  Buffers b{dir, specs_of(SPEC_PREFETCH), {}};
+  b.load();
+  allow_full_lds(k_prefetch);
+  hipLaunchKernelGGL(k_prefetch, dim3(PF_GRID), dim3(256), SMEM_BYTES, 0, b.get("w"), b.get("dummy"));
+  finish_launch();
+  b.store_outputs();
+}
+
+void run_prefetch_moe(std::string const &dir) {
+  (void)read_params(dir);
+  Buffers b{dir, specs_of(SPEC_PREFETCH_MOE), {}};
+  b.load();
+  allow_full_lds(k_prefetch_moe);
+  hipLaunchKernelGGL(k_prefetch_moe, dim3(N_SLOTS * PF_PARTS), dim3(256), SMEM_BYTES, 0,
+                     b.get("w"), b.get("mask"), b.get("dummy"));
   finish_launch();
   b.store_outputs();
 }
@@ -485,8 +543,13 @@ void run_copy(std::string const &dir) {
   Buffers b{dir, specs_of(SPEC_COPY), {}};
   b.load();
   allow_full_lds(k_copy);
-  hipLaunchKernelGGL(k_copy, dim3(1), dim3(256), SMEM_BYTES, 0, b.get("x"), b.get("y"));
+  hipLaunchKernelGGL(k_copy, dim3(1), dim3(256), SMEM_BYTES, 0, b.get("x"), b.get("y"), 0);
   finish_launch();
+  // KT_SPIN=n (I2): one more launch whose thread 0 spins n iterations and prints the clock deltas
+  if (char const *ks = std::getenv("KT_SPIN")) {
+    hipLaunchKernelGGL(k_copy, dim3(1), dim3(256), SMEM_BYTES, 0, b.get("x"), b.get("y"), std::atoi(ks));
+    finish_launch();
+  }
   b.store_outputs();
 }
 
@@ -494,7 +557,7 @@ void run_copy(std::string const &dir) {
 
 int main(int argc, char **argv) {
   if (argc < 3) {
-    std::fprintf(stderr, "usage: %s <mla_prep|mla_attend|mla_merge_uv|moe_router|copy> <dir>...\n",
+    std::fprintf(stderr, "usage: %s <mla_prep|mla_attend|mla_merge_uv|moe_router|copy|prefetch|prefetch_moe> <dir>...\n",
                  argv[0]);
     return 1;
   }
@@ -510,6 +573,10 @@ int main(int argc, char **argv) {
     run = run_moe_router;
   } else if (test == "copy") {
     run = run_copy;
+  } else if (test == "prefetch") {
+    run = run_prefetch;
+  } else if (test == "prefetch_moe") {
+    run = run_prefetch_moe;
   } else {
     std::fprintf(stderr, "unknown test %s\n", test.c_str());
     return 1;

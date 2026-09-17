@@ -104,6 +104,61 @@ def test_event_timing_iterations_and_ops():
     assert abs(by["opA"]["mean_us"] - 2.0) < 1e-9 and abs(by["end"]["mean_us"] - 3.0) < 1e-9
 
 
+def test_worker_timing_and_spin_parsers():
+    """I1 and I2: the runtime's per-worker lines and the spin line, in the exact printf formats."""
+    text = ("[WORKER_XCD] worker_id=0 block=0 xcd=0\n[WORKER_XCD] worker_id=1 block=1 xcd=1\n"
+            "[WORKER_XCD] worker_id=2 block=2 xcd=2\n"
+            "[SPIN] block=0 iters=1000 cycles=2100 ticks=100 x=123\n[SPIN] block=1 iters=1000 cycles=2000 ticks=100 x=5\n"
+            "[FWD_PASS] iter=1 time_ms=1.000 num_active_tokens=1\n"
+            "[TIMING] worker=0 tasks=10 poll_iters=5 dep_iters=7 poll_cycles=100 dep_cycles=4000 exec_cycles=21000 signal_cycles=300\n"
+            "[TASK_TIME] worker=0 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0\n"
+            "[TASK_TIME2] worker=0 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=21000/10 w2silu=0/0 lnorm=0/0 prefetch=0/0\n"
+            "[TIMING] worker=1 tasks=6 poll_iters=1 dep_iters=2 poll_cycles=10 dep_cycles=2000 exec_cycles=12600 signal_cycles=100\n"
+            "[TASK_TIME] worker=1 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0\n"
+            "[TASK_TIME2] worker=1 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=12600/6 w2silu=0/0 lnorm=0/0 prefetch=0/0\n"
+            "[TIMING] worker=2 tasks=0 poll_iters=900 dep_iters=0 poll_cycles=99999 dep_cycles=0 exec_cycles=0 signal_cycles=0\n")
+    w = measure.parse_worker_timing(text)
+    assert set(w) == {0, 1, 2} and w[0]["tasks"] == 10 and w[0]["xcd"] == 0 and w[1]["classes"]["copy"] == {"cycles": 12600, "count": 6}
+    spins = measure.parse_spin(text)
+    assert spins == [(0, 1000, 2100, 100), (1, 1000, 2000, 100)]
+    mhz = measure.sclk_mhz(spins)
+    assert mhz == 2100.0                                    # 2100 cycles over 100 ticks of 10 ns: the median of the two lines
+    s = measure.worker_timing_summary(w, iters=2, mhz=mhz)
+    assert s["workers_reporting"] == 3 and s["workers_with_tasks"] == 2 and s["tasks"] == 16
+    assert s["tasks_per_xcd"] == {"0": 10, "1": 6}
+    assert s["exec_cycles_per_task"] == 2100.0 and s["exec_us_per_task"] == 1.0
+    assert s["per_class"]["copy"] == {"count": 16, "cycles_per_task": 2100.0, "us_per_task": 1.0}
+    assert "attend" not in s["per_class"]                   # classes without tasks are left out
+    assert abs(s["dep_wait_us_per_iteration_per_busy_worker"] - (6000 / 2 / 2) / 2100.0) < 1e-9
+    # without a spin line the microseconds are absent, the cycles stay
+    s0 = measure.worker_timing_summary(w, iters=2, mhz=None)
+    assert s0["exec_us_per_task"] is None and s0["exec_cycles_per_task"] == 2100.0
+    # the report renders the rows and the class table
+    m = {"predicted": measure.PREDICTED, "worker_timing": dict(s, workers={})}
+    rep = measure.report_table(m)
+    assert "workers with tasks" in rep and "| copy | 16 | 2100 | 1.00 |" in rep
+
+
+def test_clock_log_parser_and_summary():
+    """I6: the queue's clock.log (blocks of a timestamp and the text of amd-smi metric --clock, the format
+    recorded in round 1) -> per-sample GFX and memory clocks and their medians."""
+    block = ("GPU: 0\n    CLOCK:\n        GFX_0:\n            CLK: {g0} MHz\n            MIN_CLK: 500 MHz\n"
+             "            MAX_CLK: 2100 MHz\n        GFX_1:\n            CLK: {g1} MHz\n            MAX_CLK: 2100 MHz\n"
+             "        MEM_0:\n            CLK: {m} MHz\n            MAX_CLK: 1300 MHz\n")
+    text = ("### 2026-09-18T10:00:00Z\n" + block.format(g0=131, g1=133, m=900)
+            + "### 2026-09-18T10:00:01Z\n" + block.format(g0=2100, g1=2050, m=1300)
+            + "### 2026-09-18T10:00:02Z\n" + block.format(g0=1900, g1=2100, m=1300))
+    s = measure.parse_clock_log(text)
+    assert len(s) == 3 and s[0]["gfx"] == [131.0, 133.0] and s[0]["mem"] == 900.0 and s[1]["t"] == "2026-09-18T10:00:01Z"
+    c = measure.clock_summary(s)
+    # per sample the median over the XCDs (the upper of two), then the median and max over the samples
+    assert c["samples"] == 3 and c["gfx_mhz_median"] == 2100.0 and c["gfx_mhz_max"] == 2100.0 and c["gfx_mhz_min"] == 133.0
+    assert c["mem_mhz_median"] == 1300.0
+    m = {"predicted": measure.PREDICTED, "clock": c}
+    assert "GFX clock from amd-smi" in measure.report_table(m)
+    assert measure.clock_summary(measure.parse_clock_log("")) == {"samples": 0}
+
+
 def test_pmc_and_trace_parsers(tmp_path):
     pmc = tmp_path / "pmc.csv"
     pmc.write_text("Dispatch_Id,Kernel_Name,TCC_BUBBLE_sum,TCC_EA0_RDREQ_sum,"
@@ -233,6 +288,30 @@ def test_pad_alloc_argument_and_run_name():
     assert a.pad_alloc == 0.0 and run_fleet.run_name(a) == "L27_head_it32"     # unchanged without the flag
     a = p.parse_args(["--layers", "2", "--iters", "32", "--tile-linears", "--model-dir", "x"])
     assert a.tile_linears and run_fleet.run_name(a) == "L2_it32_tile"
+    # round 3: the fusions, the probe and the streaming loads each name the run (O1, O2, O5, O6)
+    a = p.parse_args(["--layers", "27", "--head", "--iters", "32", "--tile-linears", "--fuse-norm2", "--fuse-silu",
+                      "--nt-weights", "--nt-streams", "--model-dir", "x"])
+    assert run_fleet.run_name(a) == "L27_head_it32_tile_fn2_fs_nt_nts"
+    a = p.parse_args(["--layers", "2", "--iters", "32", "--probe-before", "L0.o_proj", "--model-dir", "x"])
+    assert run_fleet.run_name(a) == "L2_it32_probe_L0.o_proj"
+    a = p.parse_args(["--layers", "2", "--iters", "32", "--fuse-norm1", "--fuse-norm2", "--model-dir", "x"])
+    assert a.fuse_norm1 and run_fleet.run_name(a) == "L2_it32_fn1_fn2"     # O3
+    a = p.parse_args(["--layers", "2", "--iters", "32", "--nt-streams", "--mfma-attend", "--model-dir", "x"])
+    assert a.mfma_attend and run_fleet.run_name(a) == "L2_it32_nts_mfma"   # O7
+    a = p.parse_args(["--layers", "2", "--iters", "32", "--prefetch", "--probe-before", "L1.o_proj", "--model-dir", "x"])
+    assert a.prefetch and run_fleet.run_name(a) == "L2_it32_pf_probe_L1.o_proj"   # O8
+    a = p.parse_args(["--layers", "2", "--iters", "32", "--worker-timing", "--model-dir", "x"])
+    assert a.worker_timing and run_fleet.run_name(a) == "L2_it32_wt"              # I1
+    a = p.parse_args(["--graph", "empty", "--ops", "100", "--tasks", "40", "--iters", "32", "--event-timing",
+                      "--worker-timing", "--spin", "1000", "--model-dir", "x"])
+    assert run_fleet.run_name(a) == "E100x40_spin1000_it32_wt"                    # I3
+    # the = form: a value starting with a dash is an option to argparse otherwise
+    a = p.parse_args(["--layers", "2", "--iters", "32", "--runtime-flags=-DMPK_NO_COMPLETION_FENCE",
+                      "--runtime-flags=-DMPK_POLL_SLEEP=8", "--model-dir", "x"])
+    assert a.runtime_flags == ["-DMPK_NO_COMPLETION_FENCE", "-DMPK_POLL_SLEEP=8"]
+    assert run_fleet.run_name(a) == "L2_it32_rf_nocompletionfence+pollsleep8"     # I4
+    assert run_fleet.runtime_flags_slug(["-DMPK_NO_BCAST_CAS"]) == "nobcastcas" and run_fleet.runtime_flags_slug([]) == ""
+    assert run_fleet.runtime_flags_slug(['"-DMPK_NO_BCAST_CAS"']) == "nobcastcas"   # a stray quote from a queue row
 
 
 def test_tensor_addresses_records_every_host_tensor():

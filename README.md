@@ -69,15 +69,25 @@ XCDs ([`docs/design-doc/00-decisions.md`](docs/design-doc/00-decisions.md), D6).
 
 ## Status
 
-**Discovery, design and the local harness are complete and reviewed;
-the GPU days have not started.** The design is in
-[`docs/design-doc/`](docs/design-doc/README.md); everything that runs
-without the MI300X is written, tested (66 tests) and, for the GPU code,
-compiled for `gfx942` offline with the ROCm 7.0 compiler.
+**Two GPU rounds are done and the third is prepared.** Round 1
+(2026-09-15) brought the stack up on the MI300X; round 2 (2026-09-16)
+reached the required milestone and the end-to-end decode at 9.6 ms per
+token; round 3 (`docs/gpu-experiments/03-acceleration/`, branch
+`local/round-3`) is the acceleration toward the 4.5 ms production
+baseline: seven optimizations (the fused norms and silu, the probe, the
+streaming loads, the MFMA attention, the weight prefetch by side
+operators; the eighth, a fallback, skipped) and the instruments to
+attribute the time, all as flags that are off by default, written and
+checked on the laptop (183 tests, the offline `gfx942` compile of every
+variant, a host syntax check of the patched runtime, the suites extended
+to nine) and waiting for the VM session of its plan
+(`05-session-plan.md`: one session, gains first, the final number by
+about minute 60). The design is in
+[`docs/design-doc/`](docs/design-doc/README.md).
 
 | | |
 |---|---|
-| Documentation | 5 discovery sets (41 files) + the design set (15 files, 1 script) + the two GPU sets under `docs/gpu-experiments/` (7 and 8 files: the bring-up of 2026-09-15, the validation of 2026-09-16) |
+| Documentation | 5 discovery sets (41 files) + the design set (15 files, 1 script) + the three GPU sets under `docs/gpu-experiments/` (the bring-up of 2026-09-15, the validation of 2026-09-16, the acceleration prepared on 2026-09-17: ideas, split, local preparation, checklist, session plan, rehearsal) |
 | Local harness | reference run and capture, comparison, weight packing, graph builder, four new kernels and their runtime glue, environment and measurement scripts (`harness/`, `fleet/`, `env/`) |
 | Offline gfx942 compile | the patched megakernel headers parse and our kernels compile and link, no spills; the cross-XCD fences lower as designed ([`env/offline_gfx942/`](env/offline_gfx942/README.md)) |
 | Next agent | how to reach the GPU and run on the VM: [`docs/gpu-experiments/01-bringup/06-agent-guide.md`](docs/gpu-experiments/01-bringup/06-agent-guide.md); round 2 in one page: [`docs/gpu-experiments/02-validation/07-summary.md`](docs/gpu-experiments/02-validation/07-summary.md), then its log, numbers and lessons in [`docs/gpu-experiments/02-validation/`](docs/gpu-experiments/02-validation/README.md) |
@@ -124,6 +134,10 @@ docs/
     02-validation/   the second round (2026-09-16): the preparation on the
                      laptop, the two-session plan on a 1x MI300X, its log,
                      results, lessons and the one-page summary (07)
+    03-acceleration/ the third round (prepared 2026-09-17): the ideas against
+                     the 4.5 ms target, the laptop and VM split, the local
+                     preparation and its checklist, the session plan and
+                     the rehearsal
   paper/             the Fleet paper
 repos/
   fleet-chiplet-megakernel/   ROCm/fleet-chiplet-megakernel (submodule)

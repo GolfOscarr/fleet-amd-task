@@ -1,0 +1,6 @@
+# Session D, row G9 (docs/gpu-experiments/03-acceleration/05-session-plan.md): the final number, every lever that
+# stayed on (edit to what G5 to G8 decided), three times for the spread, the last one with the compare; the three
+# clocks (event, FWD_PASS, host wall) are in report_table.md. The worker timing is off here: the measurement.
+--layers 27 --head --iters 32 --tile-linears --nt-weights --event-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend table continue
+--layers 27 --head --iters 32 --tile-linears --nt-weights --event-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend table continue
+--layers 27 --head --iters 32 --tile-linears --nt-weights --event-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend table compare continue

@@ -14,8 +14,9 @@ binary once per test over all trial directories, reads the outputs back and
 compares them with harness/numpy_ref.py output by output.
 
 Tests (--kernel selects; default all):
-  mla_prep, mla_attend, mla_merge_uv, moe_router, copy
-      n random trials each, one launch per trial
+  mla_prep, mla_attend, mla_merge_uv, moe_router, copy, prefetch, prefetch_moe
+      n random trials each, one launch per trial (the two prefetch suites, O8: the XOR of the
+      streamed slice per wave, so the stripe and the expert (slot, part) indexing are exact)
   mla_attend_scores   the -DMLA_ATTEND_DEBUG_SCORES build's second output (boundary B5)
   mla_attend_splits   one split of 1056 rows versus 33 splits of 32 rows through
                       both the attend and the merge kernel (isolates the merge)
@@ -457,7 +458,9 @@ def check_mla_merge_uv(t, p, exp, got):
 # --- moe_router -------------------------------------------------------------
 
 def tensors_moe_router(params):
-    return [T("h", "bf16", (D.H,)), T("w_gate", "bf16", (D.E, D.H)),
+    # the fused form (O1, docs/gpu-experiments/03-acceleration): the norm folded in, NORM = true
+    return [T("x_res", "bf16", (D.H,)), T("w_norm", "bf16", (D.H,)), T("w_gate", "bf16", (D.E, D.H)),
+            T("h", "bf16", (D.H,), True),
             T("topk_w", "f32", (N_SLOTS,), True), T("routing", "i32", (N_TOTAL,), True),
             T("mask", "i32", (N_TOTAL + 1,), True), T("logits", "f32", (D.E,), True),
             T("route_log", "i32", ROUTE_SHAPE, True)]
@@ -466,8 +469,10 @@ def tensors_moe_router(params):
 def make_moe_router(rng):
     p = {"step": random_step(rng), "prompt_length": common.N_PROMPT,
          "layer_index": int(rng.integers(0, ROUTE_SHAPE[1])),
-         "scaling_bits": G.float_bits(G.ROUTED_SCALING)}
-    t = {"h": bf16_normal(rng, (D.H,)), "w_gate": bf16_normal(rng, (D.E, D.H), D.H ** -0.5),
+         "scaling_bits": G.float_bits(G.ROUTED_SCALING), "eps_bits": G.float_bits(G.RMS_EPS)}
+    t = {"x_res": bf16_normal(rng, (D.H,), 4.0), "w_norm": bf16_normal(rng, (D.H,)),
+         "w_gate": bf16_normal(rng, (D.E, D.H), D.H ** -0.5),
+         "h": sentinel("bf16", (D.H,)),
          "topk_w": sentinel("f32", (N_SLOTS,)), "routing": sentinel("i32", (N_TOTAL,)),
          "mask": sentinel("i32", (N_TOTAL + 1,)), "logits": sentinel("f32", (D.E,)),
          "route_log": np.full(ROUTE_SHAPE, -1, np.int32)}
@@ -490,16 +495,18 @@ def route_log_expected(initial, p, mask):
 
 
 def ref_moe_router(t, p):
-    logits, topk_w, routing, mask = R.moe_router(t["h"], t["w_gate"], topk=D.TOPK, n_experts=D.E,
-                                                 forced=FORCED, scaling=bits_to_float(p["scaling_bits"]))
-    return {"topk_w": topk_w, "routing": routing, "mask": mask, "logits": logits,
+    h, logits, topk_w, routing, mask = R.moe_router_norm(
+        t["x_res"], t["w_norm"], t["w_gate"], eps=bits_to_float(p["eps_bits"]), topk=D.TOPK,
+        n_experts=D.E, forced=FORCED, scaling=bits_to_float(p["scaling_bits"]))
+    return {"h": h, "topk_w": topk_w, "routing": routing, "mask": mask, "logits": logits,
             "route_log": route_log_expected(t["route_log"], p, mask)}
 
 
 def check_moe_router(t, p, exp, got):
     """The GEMV with a tolerance; the selection exactly, derived from the kernel's own
     logits so that a near tie at the FP32 noise level cannot fail the exact checks."""
-    rows = [row_rel("logits", got["logits"], exp["logits"], F32_REL)]
+    rows = [row_rel("h", got["h"], exp["h"], BF16_REL),          # the folded norm (O1)
+            row_rel("logits", got["logits"], exp["logits"], F32_REL)]
     if not np.all(np.isfinite(got["logits"])):
         rows.append(row_exact("selection", got["mask"], exp["mask"], note="logits not finite"))
         return rows
@@ -518,6 +525,73 @@ def check_moe_router(t, p, exp, got):
     r["ok"] = bool(same or gap < NEAR_TIE)
     rows.append(r)
     return rows
+
+
+# --- prefetch (O8) ----------------------------------------------------------
+
+PF_GRID, PF_ROWS = 4, 32          # the launcher's constants: a W_o-like [128, 2048] in 4 stripes
+PF_N, PF_K, PF_PARTS = 32, 256, 2  # an expert weight [N_TOTAL, 32, 256], each active expert in 2 parts
+
+
+def xor_words_per_wave(slice_bf16):
+    """What prefetch_mi300.cuh's stream_chunks writes: the slice as 16-byte chunks, chunk c to thread
+    c mod 256, the XOR of every 32-bit word of a wave's chunks in dummy[wave] (int32)."""
+    words = np.ascontiguousarray(to_file(slice_bf16, "bf16")).reshape(-1).view(np.uint32)
+    chunks = words.reshape(-1, 4)
+    out = np.zeros(4, np.uint32)
+    for c in range(chunks.shape[0]):
+        w = (c % 256) // 64
+        out[w] ^= np.bitwise_xor.reduce(chunks[c])
+    return out.view(np.int32)
+
+
+def tensors_prefetch(params):
+    return [T("w", "bf16", (PF_GRID * PF_ROWS, D.H)), T("dummy", "i32", (PF_GRID, 4), True)]
+
+
+def make_prefetch(rng):
+    return {"w": bf16_normal(rng, (PF_GRID * PF_ROWS, D.H)), "dummy": sentinel("i32", (PF_GRID, 4))}, {}
+
+
+def ref_prefetch(t, p):
+    dummy = np.stack([xor_words_per_wave(t["w"][b * PF_ROWS:(b + 1) * PF_ROWS]) for b in range(PF_GRID)])
+    return {"dummy": dummy}
+
+
+def check_prefetch(t, p, exp, got):
+    return [row_exact("dummy", got["dummy"], exp["dummy"], "the XOR of every word of the stripe, per wave")]
+
+
+def tensors_prefetch_moe(params):
+    return [T("w", "bf16", (N_TOTAL, PF_N, PF_K)), T("mask", "i32", (N_TOTAL + 1,)),
+            T("dummy", "i32", (N_SLOTS * PF_PARTS, 4), True)]
+
+
+def make_prefetch_moe(rng):
+    n_active = int(rng.integers(1, N_SLOTS + 1))
+    ids = rng.choice(N_TOTAL, size=n_active, replace=False)
+    mask = np.full(N_TOTAL + 1, -1, np.int32)
+    mask[:n_active] = ids
+    mask[N_TOTAL] = n_active
+    return {"w": bf16_normal(rng, (N_TOTAL, PF_N, PF_K)), "mask": mask,
+            "dummy": sentinel("i32", (N_SLOTS * PF_PARTS, 4))}, {}
+
+
+def ref_prefetch_moe(t, p):
+    mask = t["mask"]
+    n_active = int(mask[N_TOTAL])
+    dummy = sentinel("i32", (N_SLOTS * PF_PARTS, 4))     # a slot past the active count leaves its row untouched
+    rows = PF_N // PF_PARTS
+    for b in range(N_SLOTS * PF_PARTS):
+        slot, part = b // PF_PARTS, b % PF_PARTS
+        if slot < n_active:
+            e = int(mask[slot])
+            dummy[b] = xor_words_per_wave(t["w"][e, part * rows:(part + 1) * rows])
+    return {"dummy": dummy}
+
+
+def check_prefetch_moe(t, p, exp, got):
+    return [row_exact("dummy", got["dummy"], exp["dummy"], "per (slot, part): the active expert's rows; sentinel past the count")]
 
 
 # --- copy -------------------------------------------------------------------
@@ -545,6 +619,8 @@ KERNELS = {
                            check_mla_merge_uv),
     "moe_router": Kernel("moe_router", tensors_moe_router, make_moe_router, ref_moe_router, check_moe_router),
     "copy": Kernel("copy", tensors_copy, make_copy, ref_copy, check_copy),
+    "prefetch": Kernel("prefetch", tensors_prefetch, make_prefetch, ref_prefetch, check_prefetch),
+    "prefetch_moe": Kernel("prefetch_moe", tensors_prefetch_moe, make_prefetch_moe, ref_prefetch_moe, check_prefetch_moe),
 }
 
 
@@ -716,6 +792,8 @@ TESTS = {
     "mla_merge_uv": lambda ctx: run_single(ctx, "mla_merge_uv", KERNELS["mla_merge_uv"]),
     "moe_router": lambda ctx: run_single(ctx, "moe_router", KERNELS["moe_router"]),
     "copy": lambda ctx: run_single(ctx, "copy", KERNELS["copy"]),
+    "prefetch": lambda ctx: run_single(ctx, "prefetch", KERNELS["prefetch"]),
+    "prefetch_moe": lambda ctx: run_single(ctx, "prefetch_moe", KERNELS["prefetch_moe"]),
     "mla_attend_scores": lambda ctx: run_single(ctx, "mla_attend_scores", KERNELS["mla_attend"],
                                                 make=make_mla_attend_scores, binary="debug"),
     "mla_attend_splits": lambda ctx: run_splits(ctx, "mla_attend_splits"),

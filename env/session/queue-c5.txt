@@ -1,0 +1,13 @@
+# Row G5 (docs/gpu-experiments/03-acceleration/05-session-plan.md): the three fusions, each alone on the 2-layer
+# graph with the boundary compare and on the model with the ids (O1 the router norm, O2 the silu into w2, O3 the
+# norm into the per-tile linear), then the three together. A lever stays on if its compare passes and the event
+# clock is lower than G2's; the rows are independent, so a lever that fails does not touch the others; the agent
+# removes a failed lever from the stacked rows here and in queue-d7/d8/d9 with queue_flag.py --remove.
+--layers 2 --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --fuse-norm2 table compare continue
+--layers 27 --head --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --fuse-norm2 table compare continue
+--layers 2 --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --fuse-silu table compare continue
+--layers 27 --head --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --fuse-silu table compare continue
+--layers 2 --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --fuse-norm1 table compare continue
+--layers 27 --head --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --fuse-norm1 table compare continue
+--layers 2 --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --fuse-norm2 --fuse-silu --fuse-norm1 table compare continue
+--layers 27 --head --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --fuse-norm2 --fuse-silu --fuse-norm1 table compare continue

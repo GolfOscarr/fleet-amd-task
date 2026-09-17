@@ -30,12 +30,19 @@
  *          about 22.3 KiB. The accumulator [NH, D_C] lives in registers:
  *          each thread owns NH/4 heads x 8 columns (32 floats).
  *
- * This is the VALU version (correctness first); the MFMA 16x16x16 version of
- * the kernel spec is the later optimization.
+ * This is the VALU version (correctness first, the reference implementation
+ * and the fallback). -DMLA_ATTEND_MFMA selects the matrix-core version of
+ * mla_attend_mfma_mi300.cuh (O7, docs/gpu-experiments/03-acceleration), the
+ * same template and signature, so the registration, the launcher and the
+ * offline unit are unchanged.
  */
 #pragma once
 #include "tasks/common/common_header.cuh"
 #include "tasks/mi300/mla_common_mi300.cuh"
+
+#ifdef MLA_ATTEND_MFMA
+#include "tasks/mi300/mla_attend_mfma_mi300.cuh"
+#else
 
 namespace kernel {
 
@@ -98,6 +105,7 @@ __device__ __forceinline__ void
   T const *q_pe = static_cast<T const *>(q_pe_ptr);
   T const *c_kv = static_cast<T const *>(c_kv_ptr);
   T const *k_pe = static_cast<T const *>(k_pe_ptr);
+  StreamSrc<T> c_kv_stream(c_kv);                     // O6: the p x V pass's loads
 
   extern __shared__ char smem[];
   T *ql_s = reinterpret_cast<T *>(smem);                                   // [NH][D_C]
@@ -217,12 +225,14 @@ __device__ __forceinline__ void
     }
     // rows in batches of PF: PF coalesced row loads in flight per thread; a short tail
     // (rows not a multiple of PF) is finished one row at a time. Same FP32 order per row.
+    // the row's last read: streams under -DMLA_NT_STREAMS (O6); the scores pass above keeps
+    // the default policy so this second read of the row hits the L2
     int p = 0;
     for (; p + PF <= rows; p += PF) {
       float v[PF][8];
 #pragma unroll
       for (int u = 0; u < PF; u++) {
-        load8(c_kv + (size_t)(r0 + p + u) * D_C + c0, v[u]);
+        load8_from(c_kv_stream, (size_t)(r0 + p + u) * D_C + c0, v[u]);
       }
 #pragma unroll
       for (int u = 0; u < PF; u++) {
@@ -238,7 +248,7 @@ __device__ __forceinline__ void
     }
     for (; p < rows; p++) {
       float v[8];
-      load8(c_kv + (size_t)(r0 + p) * D_C + c0, v);
+      load8_from(c_kv_stream, (size_t)(r0 + p) * D_C + c0, v);
 #pragma unroll
       for (int j = 0; j < HPT; j++) {
         float pv = p_s[(h0 + j) * TILE + p];
@@ -266,3 +276,5 @@ __device__ __forceinline__ void
 }
 
 } // namespace kernel
+
+#endif // MLA_ATTEND_MFMA

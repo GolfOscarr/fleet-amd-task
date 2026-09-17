@@ -236,6 +236,7 @@ documented as blocked. **Decide end of day 1.**
 - [x] Fleet-native ops vs remaining fallbacks — the stock gang and per-tile linears, norms, embed, argmax; ours: `mla_prep`, `mla_attend`, `mla_merge_uv`, `moe_router`, `copy` (`fleet/tasks/README.md`); no host fallback in the timed window
 - [x] Build/run instructions, setup scripts, profiling commands — `env/setup.sh`, `env/session/` (the VM stages, the queue, the laptop driver), `docs/gpu-experiments/01-bringup/06-agent-guide.md`, `docs/gpu-experiments/02-validation/02-session-plan.md`
 - [x] Known failures + recommended next steps — `OPEN-PROBLEMS.md`, `docs/gpu-experiments/02-validation/06-lessons.md` (eight items in the order of the expected gain); FP8 with arithmetic in `docs/acceleration/`
+- [ ] Round 3, the acceleration toward the 4.5 ms production baseline (prepared 2026-09-17 on `local/round-3`, `docs/gpu-experiments/03-acceleration/`): the fused norms and silu (326 to 246 operators), the MFMA attention, the weight prefetch by side operators, the streaming loads, the probe; the per-worker timing, the shader-clock spin, the empty-task ladder, the fence knobs and the clock sampler to attribute the time; all as off-by-default flags, checked on the laptop, the VM session planned (`05-session-plan.md`) and rehearsed; the run and its numbers are the open box
 
 ---
 

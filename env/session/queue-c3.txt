@@ -1,0 +1,16 @@
+# Session C, row G3 (docs/gpu-experiments/03-acceleration/02-local-gpu-split.md): the empty-task ladder (I3).
+# M operators of N copy tasks, no model; the event clock gives the per-operator gap, the worker timing the
+# per-task exec cycles and the placement over the XCDs, the spin the SCLK. No compare, no measure: 'table'.
+# The decision (G3): a per-operator cost above 10 us or a per-task cost above 1 us points at the runtime.
+--graph empty --ops 10 --tasks 1 --iters 32 --event-timing --worker-timing --spin 1000 table continue
+--graph empty --ops 10 --tasks 8 --iters 32 --event-timing --worker-timing --spin 1000 table continue
+--graph empty --ops 10 --tasks 40 --iters 32 --event-timing --worker-timing --spin 1000 table continue
+--graph empty --ops 10 --tasks 296 --iters 32 --event-timing --worker-timing --spin 1000 table continue
+--graph empty --ops 100 --tasks 1 --iters 32 --event-timing --worker-timing table continue
+--graph empty --ops 100 --tasks 8 --iters 32 --event-timing --worker-timing table continue
+--graph empty --ops 100 --tasks 40 --iters 32 --event-timing --worker-timing table continue
+--graph empty --ops 100 --tasks 296 --iters 32 --event-timing --worker-timing table continue
+--graph empty --ops 300 --tasks 1 --iters 32 --event-timing table continue
+--graph empty --ops 300 --tasks 8 --iters 32 --event-timing table continue
+--graph empty --ops 300 --tasks 40 --iters 32 --event-timing table continue
+--graph empty --ops 300 --tasks 296 --iters 32 --event-timing table continue

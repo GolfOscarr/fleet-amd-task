@@ -110,16 +110,67 @@ build_kernel_tests() {
   # shellcheck disable=SC2086
   [ -x fleet/tasks/build/kernel_tests_debug ] || run hipcc --offload-arch=gfx942 -O2 -std=c++17 $defs $inc \
       -DMLA_ATTEND_DEBUG_SCORES fleet/tasks/kernel_tests_mi300.cu -o fleet/tasks/build/kernel_tests_debug || return 1
+  # O6 (docs/gpu-experiments/03-acceleration): the streaming-loads build, for KT_TIME against the plain one
+  # shellcheck disable=SC2086
+  [ -x fleet/tasks/build/kernel_tests_nt ] || run hipcc --offload-arch=gfx942 -O2 -std=c++17 $defs $inc \
+      -DMLA_NT_STREAMS fleet/tasks/kernel_tests_mi300.cu -o fleet/tasks/build/kernel_tests_nt || return 1
+  # O7: the MFMA attention; run the suite against it with kernel_tests.py --bin fleet/tasks/build/kernel_tests_mfma
+  # shellcheck disable=SC2086
+  [ -x fleet/tasks/build/kernel_tests_mfma ] || run hipcc --offload-arch=gfx942 -O2 -std=c++17 $defs $inc \
+      -DMLA_ATTEND_MFMA fleet/tasks/kernel_tests_mi300.cu -o fleet/tasks/build/kernel_tests_mfma || return 1
+  # shellcheck disable=SC2086
+  [ -x fleet/tasks/build/kernel_tests_mfma_debug ] || run hipcc --offload-arch=gfx942 -O2 -std=c++17 $defs $inc \
+      -DMLA_ATTEND_MFMA -DMLA_ATTEND_DEBUG_SCORES fleet/tasks/kernel_tests_mi300.cu -o fleet/tasks/build/kernel_tests_mfma_debug || return 1
 }
 
+# kernels [variant]: the suites against fleet/tasks/build/kernel_tests (no argument) or against
+# kernel_tests_<variant> and kernel_tests_<variant>_debug (round 3: mfma for O7, nt for O6; the nt
+# build has no debug twin, so its scores suite runs on the plain debug binary)
 stage_kernels() {
   fleet_env
+  local variant="${1:-}" bin="fleet/tasks/build/kernel_tests" dbg="fleet/tasks/build/kernel_tests_debug" out="fleet/tasks/results"
   build_kernel_tests || { echo "kernel_tests did not build"; return 1; }
-  run python fleet/tasks/kernel_tests.py --n 100 || return 1
+  if [ -n "$variant" ]; then
+    bin="fleet/tasks/build/kernel_tests_$variant"
+    [ -x "fleet/tasks/build/kernel_tests_${variant}_debug" ] && dbg="fleet/tasks/build/kernel_tests_${variant}_debug"
+    out="fleet/tasks/results_$variant"
+  fi
+  run python fleet/tasks/kernel_tests.py --n 100 --bin "$bin" --bin-debug "$dbg" --out "$out/kernel_tests.json" || return 1
   [ "$DRY" = "1" ] && return 0
-  local fails; fails="$(grep -c '"FAIL"' fleet/tasks/results/kernel_tests.json || true)"
-  [ "$fails" = "0" ] || { echo "$fails suite(s) FAIL in fleet/tasks/results/kernel_tests.json"; return 1; }
-  record_copy fleet/tasks/results "$RECORD/kernel_tests"
+  local fails; fails="$(grep -c '"FAIL"' "$out/kernel_tests.json" || true)"
+  [ "$fails" = "0" ] || { echo "$fails suite(s) FAIL in $out/kernel_tests.json"; return 1; }
+  record_copy "$out" "$RECORD/kernel_tests${variant:+_$variant}"
+}
+
+# ktime [variant] [launches] [cache copies]: the standalone time of the attention and the merge grids
+# (KT_TIME, KT_COLD of fleet/tasks/README.md) on one trial directory, and the spin's [SPIN] line
+# (KT_SPIN, I2); round 3 compares the VALU, nt and mfma builds this way (G2, G7)
+stage_ktime() {
+  fleet_env
+  local variant="${1:-}" n="${2:-50}" cold="${3:-27}" bin="fleet/tasks/build/kernel_tests${1:+_$1}"
+  local dir="$LOGDIR/ktime_trial" out="$RECORD/ktime"; mkdir -p "$out"
+  build_kernel_tests || { echo "kernel_tests did not build"; return 1; }
+  [ -d "$dir/mla_attend" ] || run python fleet/tasks/kernel_tests.py --n 1 --kernel mla_attend --kernel mla_merge_uv --kernel copy --work-dir "$dir" --keep || return 1
+  [ "$DRY" = "1" ] && { echo "+ KT_TIME=$n KT_COLD=$cold $bin mla_attend $dir/mla_attend/*"; echo "+ KT_TIME=$n $bin mla_merge_uv $dir/mla_merge_uv/*"; echo "+ KT_SPIN=1000 $bin copy $dir/copy/*"; return 0; }
+  {
+    echo "### $(utc) $bin launches=$n cache_copies=$cold"
+    KT_TIME="$n" KT_COLD="$cold" "$bin" mla_attend "$dir"/mla_attend/* 2>&1 | grep -E "TIME|ok"
+    KT_TIME="$n" "$bin" mla_merge_uv "$dir"/mla_merge_uv/* 2>&1 | grep -E "TIME|ok"
+    KT_SPIN=1000 "$bin" copy "$dir"/copy/* 2>&1 | grep -E "SPIN|ok"
+  } | tee -a "$out/ktime${variant:+_$variant}.txt"
+}
+
+# tgcheck <run name>: the side operators' wiring in the run's task graph (O8, fleet/task_graph_check.py);
+# the JSON lives under the run's build/, which the record excludes, so only the verdict is kept
+stage_tgcheck() {
+  fleet_env
+  local name="${1:-}"; [ -n "$name" ] || { echo "usage: vm.sh tgcheck <run name>"; return 2; }
+  local tg="$FLEET_OUT/$name/build/task_graph_rank0.json"
+  if [ "$DRY" = "1" ]; then echo "+ python fleet/task_graph_check.py $tg > $FLEET_OUT/$name/task_graph_check.txt"; return 0; fi
+  [ -f "$tg" ] || { echo "no $tg"; return 1; }
+  python fleet/task_graph_check.py "$tg" | tee "$FLEET_OUT/$name/task_graph_check.txt"
+  mkdir -p "$RECORD/runs/$name" && cp "$FLEET_OUT/$name/task_graph_check.txt" "$RECORD/runs/$name/"
+  grep -q "^PASS" "$FLEET_OUT/$name/task_graph_check.txt"
 }
 
 stage_queue() { fleet_env; bash env/session/queue.sh run "$@"; }
@@ -246,7 +297,7 @@ main() {
     wait) stage_wait "${1:-}" "${2:-60}";;
     kill) stage_kill "${1:-}";;
     gdb) stage_gdb "$@";;
-    preflight|download|image|setup|hw|checks|reference|kernels|queue|bisect)
+    preflight|download|image|setup|hw|checks|reference|kernels|ktime|tgcheck|queue|bisect)
       local t0; t0=$(date +%s)
       grep -q " START $cmd" "$STATUS" 2>/dev/null || row "$STATUS" "START $cmd $*"
       if "stage_$cmd" "$@"; then row "$STATUS" "PASS $cmd $(( $(date +%s) - t0 ))s"

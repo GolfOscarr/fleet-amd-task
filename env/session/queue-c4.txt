@@ -1,0 +1,13 @@
+# Session C, row G4 (docs/gpu-experiments/03-acceleration/02-local-gpu-split.md): the fence knobs (I4), one at a time
+# on the 2-layer graph, each with the boundary compare (the ids alone would not catch a stale line): a knob that
+# passes the compare and cuts the event gaps stays on. The sleep at 8, 32 and 127 (the default is 1). Run after G3.
+# One define per --runtime-flags, in the = form (the queue splits a row on whitespace; no quotes; argparse
+# reads a value starting with a dash as an option unless it is attached with =).
+--layers 2 --iters 32 --event-timing --worker-timing --tile-linears table compare continue
+--layers 2 --iters 32 --event-timing --worker-timing --tile-linears --runtime-flags=-DMPK_NO_COMPLETION_FENCE table compare continue
+--layers 2 --iters 32 --event-timing --worker-timing --tile-linears --runtime-flags=-DMPK_NO_ACQUIRE_FENCE table compare continue
+--layers 2 --iters 32 --event-timing --worker-timing --tile-linears --runtime-flags=-DMPK_NO_BCAST_CAS table compare continue
+--layers 2 --iters 32 --event-timing --worker-timing --tile-linears --runtime-flags=-DMPK_NO_LOCAL_CAS table compare continue
+--layers 2 --iters 32 --event-timing --worker-timing --tile-linears --runtime-flags=-DMPK_POLL_SLEEP=8 table compare continue
+--layers 2 --iters 32 --event-timing --worker-timing --tile-linears --runtime-flags=-DMPK_POLL_SLEEP=32 table compare continue
+--layers 2 --iters 32 --event-timing --worker-timing --tile-linears --runtime-flags=-DMPK_POLL_SLEEP=127 table compare continue

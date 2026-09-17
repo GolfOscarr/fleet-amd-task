@@ -222,6 +222,26 @@ def moe_router(h, W_gate, *, topk=6, n_experts=64, forced=(64, 65), scaling=1.0)
     return logits, topk_w, routing, mask
 
 
+def moe_router_norm(x_res, w_norm, W_gate, *, eps=1e-6, topk=6, n_experts=64, forced=(64, 65),
+                    scaling=1.0):
+    """The router with the post-attention norm folded in (docs/gpu-experiments/03-acceleration,
+    O1; the kernel's NORM = true path): h = rmsnorm(x_res, w_norm), then moe_router on h.
+    Returns (h, logits, topk_w, routing, mask); h is the row the expert gate-up reads."""
+    h = rmsnorm(x_res, w_norm, eps)
+    logits, topk_w, routing, mask = moe_router(h, W_gate, topk=topk, n_experts=n_experts, forced=forced,
+                                               scaling=scaling)
+    return h, logits, topk_w, routing, mask
+
+
+def linear_norm(x, w_norm, W, eps=1e-6):
+    """The per-tile linear with the input norm in its prologue (docs/gpu-experiments/03-acceleration,
+    O3; the linear_norm_mi300 task): rmsnorm(x, w_norm) rounded to BF16, then W @ h with FP32
+    accumulation and one BF16 rounding of the result, as the CK linear does. Returns (h, out)."""
+    h = rmsnorm(x, w_norm, eps)
+    out = bf16(np.asarray(W, F32) @ h.astype(F32))
+    return h, out
+
+
 def moe_combine(out8, topk_w, x_res):
     """moe_mul_sum_add: x + sum_k w_k * out_k, FP32 accumulate, BF16 result."""
     acc = np.asarray(x_res, F32).copy()

@@ -66,7 +66,7 @@ row_guard() {
     echo "guard: --debug is the growth curve at step 0; it needs --iters 1 (got $iters)"; return 1; fi
   if [[ "$flags" == *compare* ]] && [ ! -f "$REF_DIR/ref_cache.safetensors" ]; then
     echo "guard: compare needs $REF_DIR/ref_cache.safetensors (run the reference stage first)"; return 1; fi
-  if [[ " ${args[*]} " != *" --stop-after "* ]] && [ ! -f "$REF_DIR/ref_cache.safetensors" ] && [ "$DRY" != "1" ]; then
+  if [[ " ${args[*]} " != *" --stop-after "* ]] && [[ " ${args[*]} " != *" --graph empty "* ]] && [ ! -f "$REF_DIR/ref_cache.safetensors" ] && [ "$DRY" != "1" ]; then
     echo "guard: run_fleet.py loads $REF_DIR/ref_cache.safetensors (run the reference stage first)"; return 1; fi
   if [[ "$flags" == *measure* ]] && [ "$DRY" != "1" ] && ! command -v "${PROFILER%% *}" >/dev/null 2>&1; then
     echo "guard: measure needs $PROFILER on PATH"; return 1; fi
@@ -81,8 +81,18 @@ run_graph() {
   local log="$LOGDIR/runs/$NAME.out" t0; t0=$(date +%s)
   echo "== $NAME: $RUN_FLEET ${args[*]} --model-dir $snap"
   if [ "$DRY" = "1" ]; then echo "+ $RUN_FLEET ${args[*]} --model-dir $snap > $log"; RESULT=PASS; RC=0; MPK=1; FAULT=0; FWD=0; WALL=0; return 0; fi
+  # I6 (docs/gpu-experiments/03-acceleration): the GFX and memory clocks sampled once a second from
+  # outside while the graph runs (amd-smi metric --clock; the round-1 VF read 131 MHz at idle), into
+  # clock.log beside the run for measure.py; never fails the row
+  local clock_pid="" clock_log="$LOGDIR/runs/$NAME.clock.log"
+  if command -v amd-smi >/dev/null 2>&1; then
+    ( while :; do echo "### $(utc)"; amd-smi metric --clock 2>/dev/null; sleep "${CLOCK_SAMPLE_S:-1}"; done ) > "$clock_log" 2>/dev/null &
+    clock_pid=$!
+  fi
   # shellcheck disable=SC2086
   $RUN_FLEET "${args[@]}" --model-dir "$snap" > "$log" 2>&1; RC=$?
+  if [ -n "$clock_pid" ]; then kill "$clock_pid" 2>/dev/null; wait "$clock_pid" 2>/dev/null || true; fi
+  [ -f "$clock_log" ] && [ -d "$FLEET_OUT/$NAME" ] && cp "$clock_log" "$FLEET_OUT/$NAME/clock.log" 2>/dev/null || true
   WALL=$(( $(date +%s) - t0 ))
   MPK="$(grep -c 'mpk()' "$log" || true)"
   FAULT="$(grep -c -E 'AcceleratorError|illegal|Memory access fault|HSA_STATUS_ERROR' "$log" || true)"

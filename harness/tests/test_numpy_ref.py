@@ -178,6 +178,51 @@ def test_router_matches_gate(step):
         assert routing[e] == k + 1
 
 
+def test_router_norm_matches_modules(step):
+    """O1: the norm folded into the router equals the tiny model's post-attention norm
+    followed by its gate (the norm as in test_rmsnorm_matches_module, the routing as in
+    test_router_matches_gate)."""
+    model, cap, cfg = step["model"], step["cap"], step["cfg"]
+    l = 1
+    layer = model.model.layers[l]
+    x = R.from_torch_bf16(cap.store[f"L{l}.B7.x_res_attn"]).reshape(-1)
+    w = R.from_torch_bf16(layer.post_attention_layernorm.weight)
+    W = R.from_torch_bf16(layer.mlp.gate.weight)
+    E, K = cfg.n_routed_experts, cfg.num_experts_per_tok
+    h, logits, topk_w, routing, mask = R.moe_router_norm(
+        x, w, W, eps=layer.post_attention_layernorm.variance_epsilon, topk=K, n_experts=E,
+        forced=(E, E + 1), scaling=cfg.routed_scaling_factor)
+    exp_h = R.from_torch_bf16(cap.store[f"L{l}.gate_in"]).reshape(-1)
+    assert rel(h, exp_h) < 2e-3, rel(h, exp_h)
+    # the same routing as the un-fused reference on the fused row
+    logits2, topk_w2, routing2, mask2 = R.moe_router(h, W, topk=K, n_experts=E, forced=(E, E + 1),
+                                                     scaling=cfg.routed_scaling_factor)
+    assert np.array_equal(logits, logits2) and np.array_equal(mask, mask2)
+    assert np.array_equal(routing, routing2) and np.array_equal(topk_w, topk_w2)
+    idx_ref, _, _ = cap.store[f"route.L{l}"]
+    assert sorted(mask[:K].tolist()) == sorted(idx_ref[0].tolist())
+
+
+def test_linear_norm_matches_modules(step):
+    """O3: the input norm folded into the per-tile Q projection equals the tiny model's
+    input_layernorm followed by its q_proj (the norm as in test_rmsnorm_matches_module; the
+    product one BF16 rounding away from the module's)."""
+    model, cap = step["model"], step["cap"]
+    for l in (0, 1):
+        layer = model.model.layers[l]
+        x = R.from_torch_bf16(cap.store[f"L{l}.layer_in"]).reshape(-1)
+        w = R.from_torch_bf16(layer.input_layernorm.weight)
+        W = R.from_torch_bf16(layer.self_attn.q_proj.weight)
+        h, q = R.linear_norm(x, w, W, layer.input_layernorm.variance_epsilon)
+        exp_h = R.from_torch_bf16(cap.store[f"L{l}.B1.norm1"]).reshape(-1)
+        exp_q = R.from_torch_bf16(cap.store[f"L{l}.B2.q"]).reshape(-1)
+        assert rel(h, exp_h) < 2e-3, rel(h, exp_h)
+        assert q.shape == exp_q.shape and rel(q, exp_q) < 4e-3, rel(q, exp_q)
+        # the same product on the module's own normalised row: the linear half alone
+        q2 = R.bf16(W @ exp_h)
+        assert rel(q2, exp_q) < 4e-3, rel(q2, exp_q)
+
+
 def test_router_tie_break_and_combine():
     h = np.ones(8, np.float32)
     W = np.zeros((4, 8), np.float32)

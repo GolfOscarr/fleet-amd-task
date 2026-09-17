@@ -40,9 +40,15 @@ choice of imap in `build_graph.py`.
 |---|---|---|---|---|---|
 | `mla_prep_mi300.cuh` | `TASK_MLA_PREP_MI300` (185), CU-task | 1 | `qkva [1,3648]`, `w_kv_norm [512]`, `W_uk [16,128,512]`, `cos [S_max,64]`, `sin [S_max,64]` | `c_kv [S_max,512]` (row `step`), `k_pe [S_max,64]` (row `step`), `ql_nope [16,512]`, `q_pe [16,64]` | `[nh, d_n, d_r, d_c]` |
 | `mla_attend_mi300.cuh` | `TASK_MLA_ATTEND_MI300` (186), gang | 8 x `tiles_per_xcd` | `ql_nope`, `q_pe`, `c_kv`, `k_pe` | `partials [n_splits,16,513]` FP32; optional second output: debug scores `[16,S_max]` FP32 | `[softmax_scale_bits, split, n_splits, tiles_per_xcd, nh, d_c, d_r]` |
+| `mla_attend_mfma_mi300.cuh` (build flag `-DMLA_ATTEND_MFMA`, selected from `mla_attend_mi300.cuh`; `--mfma-attend`, O7 of `docs/gpu-experiments/03-acceleration`) | the same task types as the VALU kernel | the same | the same | the same | the same; the scores and p x V on `v_mfma_f32_16x16x16_bf16`, the tile staged once in LDS |
 | `mla_merge_uv_mi300.cuh` | `TASK_MLA_MERGE_UV_MI300` (187), gang | 8 x `heads_per_xcd` | `partials`, `W_uv [16,128,512]` | `attn [1,2048]` | `[split, n_splits, tiles_per_xcd, nh, d_v, d_c]` |
 | `moe_router_mi300.cuh` | `TASK_MOE_ROUTER_MI300` (188), CU-task | 1 | `h [1,2048]`, `W_gate [64,2048]` | `topk_w [1,8]` FP32, `routing [66,1]` int32, `mask [67]` int32, `logits [1,64]` FP32, `route_log [32,26,8]` int32 | `[topk, n_experts, n_forced, scaling_bits, layer_index, hidden]` |
+| same file, `NORM = true` (registration `moe_router_norm_mi300`; `--fuse-norm2`, O1 of `docs/gpu-experiments/03-acceleration`) | `TASK_MOE_ROUTER_MI300` (188), CU-task | 1 | `x_res [1,2048]`, `w_norm [2048]`, `W_gate [64,2048]` | `h [1,2048]` (the normalised row, for the expert gate-up), then the five above | the six above and `eps_bits` |
+| `gang_moe_w2_silu_mi300.cuh` | `TASK_GANG_MOE_W2_SILU_MI300` (191), gang (registration `gang_moe_w2_silu_linear_mi300`; `--fuse-silu`, O2 of `docs/gpu-experiments/03-acceleration`) | 8 x 32 tiles | `mid [1,8,2816]` (gate then up per slot), `W2 [66,2048,1408]`, `routing`, `mask` | `out8 [1,8,2048]`, `w2_scratch [256,1408]` (one activation row per (XCD, tile)) | the stock w2's `[tiles_per_expert, max_experts_per_xcd, total_tiles_per_xcd]`; K from the weight |
 | `copy_mi300.cuh` | `TASK_COPY_MI300` (189), CU-task | 1 | `x [1,N]` | `y [1,N]` | `[N]` |
+| `prefetch_mi300.cuh` | `TASK_PREFETCH_MI300` (193), regular, a side operator (registration `prefetch_mi300`; `--prefetch`, O8 of `docs/gpu-experiments/03-acceleration`) | `grid_for_linear(N)` stripes | `W [N,K]` (the task's `N / grid` rows) | `dummy [grid,4]` int32 (the task's row: one XOR word per wave, so the loads are not elided) | none |
+| same file, `prefetch_moe_mi300_task_impl` | `TASK_PREFETCH_MOE_MI300` (194), regular, a side operator (registration `prefetch_moe_mi300`) | `8 x parts` | `W [E,N,K]` (whole), `mask [E+1]` | `dummy [8 x parts,4]` int32 | `[parts]`; the task's (slot, part) is its `bid.x` through the `expert_offset` metadata |
+| `linear_norm_mi300.cuh` | `TASK_LINEAR_NORM_MI300` (192), regular (registration `linear_norm_mi300`; `--fuse-norm1`, O3 of `docs/gpu-experiments/03-acceleration`) | `grid_for_linear(N)` tasks (96 for `qkva`, 400 for `lm_head`) | `x [1,2048]` (whole), `w_norm [2048]`, `W [N,2048]` (the task's `N / grid` rows) | `out [1,N]` (the task's columns), `scratch [grid,2048]` (the task's normalised row) | `[eps_bits]`; the output size and stride as the stock per-tile `linear` |
 
 Float parameters travel as IEEE-754 bit patterns (`register_task` takes
 ints); the registration turns them back into float literals in the emitted
@@ -95,6 +101,22 @@ id`, `mask[66] = 8`, unused mask entries `-1` (as the stock kernel; the
 consumers read only `mask[count]` and `mask[0..count)`); `route_log[step -
 (prompt_len - 1)][layer_index][slot] = id`. LDS 256 B.
 
+### Side operators (in `new_tasks.patch`, O8)
+
+An operator registered as `prefetch_mi300` or `prefetch_moe_mi300` is a
+*side operator* (`Graph::side_ops`): `register_mugraph` appends its tasks
+right behind the tasks of the operator registered before it (its host),
+extends the host's last launch event range over them so the end-of-loop
+pass gives them the host's dependent event (or makes them first tasks when
+the host is the graph's first operator), points their trigger at the
+end-of-graph event with `num_triggers` raised by their count, and leaves
+`pre_op` on the host, so the next operator still chains to the host. In
+the worker queues (task index modulo the worker count, FIFO per worker) the
+side tasks land on workers holding no host task and run when the host's
+event fires, concurrently with the host; after a gang host they run after
+each worker's tile share. `fleet/task_graph_check.py` verifies the wiring
+in a build's `task_graph_rank0.json`.
+
 ### Variants (in `new_tasks.patch`)
 
 - `embedding`, `input_source = 0`: the load of `tokens[step]` is an
@@ -102,6 +124,12 @@ consumers read only `mask[count]` and `mask[0..count)`); `route_log[step -
   __HIP_MEMORY_SCOPE_AGENT)`) on AMD, since the first task of an iteration
   runs no acquire and the id was written on another XCD
   (`03-synchronization.md`).
+- `copy_mi300`: `params [n, spin, print]` (I2 of `docs/gpu-experiments/03-acceleration`)
+  makes thread 0 run `spin` iterations of a dependent integer chain after the
+  copy and, with `print`, report `[SPIN] block=.. iters=.. cycles=.. ticks=..`
+  (the shader clock against the 100 MHz real-time clock; `measure.py` turns it
+  into the SCLK); with `[n]` alone the task is the plain copy. With a grid above
+  one the output is partitioned on dim 0 (the empty ladder of I3).
 - `argmax_reduce`: `argmax_reduce_layer(..., output_to_tokens=True)` adds a
   second parameter; the registration then also passes
   `runtime_config.tokens + runtime_config.step[0] + 1`, and the kernel
@@ -128,6 +156,7 @@ mkdir -p fleet/tasks/build && hipcc --offload-arch=gfx942 -O2 -std=c++17 \
   -I fleet -I $FLEET/include -I $FLEET/include/mirage/persistent_kernel \
   fleet/tasks/kernel_tests_mi300.cu -o fleet/tasks/build/kernel_tests
 # the debug-scores variant: the same line with -DMLA_ATTEND_DEBUG_SCORES -o fleet/tasks/build/kernel_tests_debug
+# the streaming-loads variant (O6): the same line with -DMLA_NT_STREAMS -o fleet/tasks/build/kernel_tests_nt
 ```
 
 `kernel_tests.py` is the driver:
@@ -143,7 +172,11 @@ directories, and compares every output with `numpy_ref.py` using
 `compare.py`'s metrics. Outputs are pre-filled with a sentinel so entries
 the kernel must leave alone (the other cache rows of `mla_prep`, the other
 slots of `route_log`, the columns beyond `step` of the debug scores) are
-checked too. Tests: the five kernels, `mla_attend_scores` (the
+checked too. Tests: the five kernels, the two prefetch tasks of O8
+(`prefetch`, `prefetch_moe`: the dummy output is the XOR of every word of
+the streamed slice per wave, so the stripe and the expert (slot, part)
+indexing against `mask` are checked exactly, and a slot past the active
+count must leave its row untouched), `mla_attend_scores` (the
 `-DMLA_ATTEND_DEBUG_SCORES` build's second output, B5), and
 `mla_attend_splits` (one split of 1056 rows versus 33 splits of 32,
 through both the attend and the merge kernel). Tolerances, argued in the
@@ -165,8 +198,12 @@ parameter tables of the two files against each other).
 ## Deliberately left for the GPU
 
 - The MFMA 16x16x16 version of `mla_attend` (phase B of
-  `docs/mla-decode/04-our-kernel-spec.md`); the VALU version is the
-  correctness baseline and the fallback.
+  `docs/mla-decode/04-our-kernel-spec.md`) is written (O7, 2026-09-17,
+  `-DMLA_ATTEND_MFMA`) and its lane arithmetic tested by emulation
+  (`fleet/tests/test_mfma_layout.py`), but the instruction has not run: the
+  suite binary `kernel_tests_mfma` (and `_mfma_debug` for the scores) is
+  the first VM row; the VALU version stays the correctness baseline and
+  the fallback.
 - The register budget of the megakernel after the union with these kernels
   (`-Rpass-analysis=kernel-resource-usage`, `OPEN-PROBLEMS.md` MAJ-4).
 - The imap and event verification of day 2: that the runtime creates one
@@ -187,6 +224,10 @@ The suite binary times a kernel's grid on request (round 2, 2026-09-16):
     KT_TIME=50 KT_COLD=27 fleet/tasks/build/kernel_tests mla_attend <dir>  # the launches rotate over 27 copies of the cache (cold L2)
 
 A trial directory comes from `python fleet/tasks/kernel_tests.py --n 1 --kernel mla_attend --work-dir <dir> --keep`.
+`KT_SPIN=1000 fleet/tasks/build/kernel_tests copy <dir>` adds a launch whose thread 0 spins 1,000 iterations and prints the
+`[SPIN]` line (I2: the SCLK standalone, against the same line from inside the graph).
+The other builds are timed the same way (`kernel_tests_nt` for O6, `kernel_tests_mfma` for O7); the suite runs against
+one of them with `kernel_tests.py --bin fleet/tasks/build/kernel_tests_mfma --bin-debug fleet/tasks/build/kernel_tests_mfma_debug`.
 On the MI300X the attention grid (8 x 5 tiles, step 1032) costs 34 us cold or warm and the merge grid 11.5 us,
 against 146 to 215 us and 46 to 61 us inside the megakernel (`docs/gpu-experiments/02-validation/04-results.md`). The `kernels`
 stage of `env/session/vm.sh` does not rebuild an existing binary: delete `fleet/tasks/build/kernel_tests*` first.

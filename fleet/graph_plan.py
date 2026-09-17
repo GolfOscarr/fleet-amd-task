@@ -23,6 +23,8 @@ N_FORCED = 2           # D6: experts 64, 65 at weight 1.0
 TOPK_TOTAL_SLOTS = 8
 SOFTMAX_SCALE = 0.1147213867929261
 ROUTED_SCALING = 1.0
+RMS_EPS = 1e-6                 # rms_norm_eps of config.json; the fused router's norm (O1)
+PREFETCH_PARTS = 32            # O8: tasks per active expert of the W2 prefetch (2048 rows / 32 = 64 rows, 180 KB each)
 
 
 def float_bits(x: float) -> int:
@@ -55,6 +57,9 @@ class Call:
     status: str = "reuse"         # reuse | variant | new
     note: str = ""
     label: str = ""               # "L{l}.<op>", "head.<op>", "prologue.embed": for --stop-after and dumps
+    side: bool = False            # a side operator (O8): registered right after the operator it accompanies;
+                                  # the runtime patch gives its tasks that operator's dependent event and keeps
+                                  # the chain on that operator, so it is skipped by the chain rule
 
 
 # Which argument names of each plan method are outputs (the rest are inputs). The
@@ -65,10 +70,13 @@ OUTPUT_ARGS = {
     "embed_layer": ["output"], "rmsnorm_layer": ["output"], "gang_linear_layer": ["output"],
     "gang_linear_with_residual_layer": ["output"], "gang_linear_silu_layer": ["output"],
     "linear_layer": ["output"], "linear_with_residual_layer": ["output"],
+    "linear_norm_layer": ["output", "scratch"],
+    "prefetch_layer": ["dummy"], "prefetch_moe_layer": ["dummy"],
     "mla_prep_layer": ["c_kv", "k_pe", "ql_nope", "q_pe"], "mla_attend_layer": ["partials", "scores"],
-    "mla_merge_uv_layer": ["output"], "moe_router_layer": ["topk_w", "routing", "mask", "logits", "route_log"],
+    "mla_merge_uv_layer": ["output"], "moe_router_layer": ["h", "topk_w", "routing", "mask", "logits", "route_log"],
     "gang_moe_w13_linear_layer": ["output"], "moe_silu_mul_layer": ["output"],
-    "gang_moe_w2_linear_layer": ["output"], "moe_mul_sum_add_layer": ["output"],
+    "gang_moe_w2_linear_layer": ["output"], "gang_moe_w2_silu_linear_layer": ["output", "scratch"],
+    "moe_mul_sum_add_layer": ["output"],
     "argmax_partial_layer": ["output"], "argmax_reduce_layer": ["output"], "copy_layer": ["output"],
 }
 
@@ -98,8 +106,12 @@ class Plan:
         self.tensors[name] = Tensor(name, tuple(shape), dtype, kind, source)
         return name
 
-    def op(self, method, tasks, tiles=0, status="reuse", note="", label="", **args):
-        self.calls.append(Call(method, args, tasks, tiles, status, note, label))
+    def op(self, method, tasks, tiles=0, status="reuse", note="", label="", side=False, **args):
+        self.calls.append(Call(method, args, tasks, tiles, status, note, label, side))
+
+    def chain(self):
+        """The operators the runtime chains: every call but the side operators (O8)."""
+        return [c for c in self.calls if not c.side]
 
     def index_of(self, label):
         for i, c in enumerate(self.calls):
@@ -112,11 +124,49 @@ class Plan:
         self.calls = self.calls[: self.index_of(stop_label) + 1]
         return self
 
+    def insert_probe(self, label):
+        """O5 (docs/gpu-experiments/03-acceleration/03-local-preparation.md): a one-task copy
+        operator in front of the labelled operator, so that operator's event gap is measured
+        with a one-task predecessor. The copy takes the [1, N] BF16 tensor the operator shares
+        with its predecessor (the chain's tensor) into a twin `<name>_probe`, and the operator
+        reads the twin; every other argument is unchanged. The label is `<prefix>.probe_<op>`.
+        Only a single-row BF16 tensor can be probed (the copy task's contract)."""
+        i = self.index_of(label)
+        assert i > 0, f"{label} has no predecessor to probe"
+        cur = self.calls[i]
+        assert not cur.side, f"{label} is a side operator"
+        j = i - 1
+        while j > 0 and self.calls[j].side:          # the predecessor in the chain, past its side operators
+            j -= 1
+        prev = self.calls[j]
+        outs = _tensor_args(prev, OUTPUT_ARGS[prev.method])
+        ins = _tensor_args(cur, [k for k in cur.args if k not in OUTPUT_ARGS[cur.method]])
+        shared = [n for n in ins & outs
+                  if len(self.tensors[n].shape) == 2 and self.tensors[n].shape[0] == 1
+                  and self.tensors[n].dtype == "bf16"]
+        assert shared, f"{label}: no [1, N] BF16 tensor shared with {prev.label} to probe ({sorted(ins & outs)})"
+        name = sorted(shared)[0]
+        twin = self.t(name + "_probe", self.tensors[name].shape)
+        prefix, op = label.split(".", 1)
+        probe = Call("copy_layer", dict(input=name, output=twin, grid_dim=(1, 1, 1), block_dim=(256, 1, 1)),
+                     1, 0, "new", f"probe before {label} (O5)", f"{prefix}.probe_{op}")
+        def rewire(k, v):
+            if k in OUTPUT_ARGS[cur.method]:
+                return v
+            if isinstance(v, (tuple, list)):          # a pair of inputs (argmax_reduce's values and indices)
+                return type(v)(twin if x == name else x for x in v)
+            return twin if v == name else v
+        args = {k: rewire(k, v) for k, v in cur.args.items()}
+        self.calls[i] = Call(cur.method, args, cur.tasks, cur.tiles, cur.status, cur.note, cur.label)
+        self.calls.insert(i, probe)
+        return self
+
     def chain_violations(self):
         """Consecutive operators that share no tensor from producer outputs to consumer inputs:
         the runtime rejects such a graph at registration. Empty for a valid plan."""
         bad = []
-        for prev, cur in zip(self.calls, self.calls[1:]):
+        chain = self.chain()
+        for prev, cur in zip(chain, chain[1:]):
             outs = _tensor_args(prev, OUTPUT_ARGS[prev.method])
             ins = _tensor_args(cur, [k for k in cur.args if k not in OUTPUT_ARGS[cur.method]])
             if not (outs & ins):
@@ -167,12 +217,31 @@ def grid_for_linear(size):
 
 def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head: bool = True,
                debug: bool = False, debug_scores: bool = False, tile_linears: bool = False,
-               attend_tasks: bool = False) -> Plan:
+               attend_tasks: bool = False, fuse_norm2: bool = False, fuse_silu: bool = False,
+               fuse_norm1: bool = False, prefetch: bool = False) -> Plan:
     """debug_scores: the mla_attend kernel also writes the scaled pre-softmax scores
     [NH, s_max] FP32 (boundary B5); needs the MLA_ATTEND_DEBUG_SCORES build (MPK_DEBUG_SCORES=1).
     tile_linears: issue the four dense linears (qkva, o_proj, down, lm_head) as per-tile
     linear_layer tasks over all workers instead of 8-task gangs (MAJ-7; docs/gpu-experiments/02-validation P5). The
-    silu-fused gate_up and the MoE linears stay gang (no drop-in non-gang equivalent)."""
+    silu-fused gate_up and the MoE linears stay gang (no drop-in non-gang equivalent).
+    fuse_norm2: in the MoE layers the post-attention norm is folded into the router
+    (docs/gpu-experiments/03-acceleration, O1): no L{l}.norm2 operator, the router reads x_res
+    and the norm weight and writes h for the expert gate-up (kernel NORM = true). Layer 0
+    keeps its norm (its consumer is the stock silu gang kernel).
+    fuse_silu: the silu-mul folded into the expert down projection's prologue (O2): no
+    L{l}.silu operator, w2 reads mid and computes its slot's activation row into a per-tile
+    scratch (w2_scratch [8 x tiles per XCD, I_MOE]) before the unchanged CK GEMM.
+    fuse_norm1: the input norm folded into the per-tile Q/KV projection and the final norm
+    into lm_head (O3): no L{l}.norm1 and no head.norm; the two linears are our linear_norm_mi300,
+    the stock per-tile linear with a prologue that normalises the row into a per-task scratch
+    row (qkva_scratch [96, H], lm_scratch [400, H]), so they are per-tile whether or not
+    tile_linears is set. Off under debug (the stock norms stay, and the snapshot wiring).
+    prefetch: the side operators of O8 (idea D1): each registered right after the operator it
+    accompanies and given, by the runtime patch, that operator's dependent event, so its tasks
+    run on the workers that hold none of that operator's tasks. Three per layer: after qkva
+    the layer's W_o (64 tasks), after o_proj the next layer's W_qkva (96 tasks), after w13 the
+    active experts' W2 (8 slots x PREFETCH_PARTS tasks, the ids from mask). Each task streams
+    its slice with ordinary loads into a dummy [grid, 4] int32 output."""
     d = dims
     assert 1 <= layers <= d.L
     assert d.H % 256 == 0                   # K of every CK linear (silent truncation otherwise)
@@ -182,6 +251,12 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
     assert d.V % ARGMAX_SLICES == 0         # argmax_partial: input.dim(1) // num_tasks, no assert in the API
     p = Plan(d, s_max, layers, head, debug)
     n_splits = p.n_splits
+    fuse1 = fuse_norm1 and not debug
+    if prefetch:
+        p.t("pf_dummy_o", (grid_for_linear(d.H), 4), "i32")
+        p.t("pf_dummy_qkva", (grid_for_linear(d.Q_OUT + d.KVA_OUT), 4), "i32")
+        if layers >= 2:
+            p.t("pf_dummy_w2", (TOPK_TOTAL_SLOTS * PREFETCH_PARTS, 4), "i32")
     splits_per_xcd = -(-n_splits // XCDS)
 
     # ---- meta and shared tensors ------------------------------------------------
@@ -190,6 +265,10 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
     p.t("x_res", (1, d.H))
     p.t("h", (1, d.H))
     p.t("qkva", (1, d.Q_OUT + d.KVA_OUT))
+    if fuse1:
+        # one normalised row per task of the fused per-tile linear (the runtime offsets the
+        # scratch pointer by rows / grid x bid.x, so the row count is the grid)
+        p.t("qkva_scratch", (grid_for_linear(d.Q_OUT + d.KVA_OUT), d.H))
     p.t("ql_nope", (d.NH, d.D_C))
     p.t("q_pe", (d.NH, d.D_R))
     p.t("partials", (n_splits, d.NH, partials_row(d.D_C)), "f32")   # padded row, P2
@@ -204,7 +283,11 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
         p.t("mask", (d.E_TOTAL + 1,), "i32")
         p.t("logits_router", (1, d.E), "f32")
         p.t("mid", (1, TOPK_TOTAL_SLOTS, 2 * d.I_MOE))
-        p.t("act8", (1, TOPK_TOTAL_SLOTS, d.I_MOE))
+        if fuse_silu:
+            # one row per (XCD, tile) of the w2 gang: max_experts_per_xcd x n_tiles tiles per XCD
+            p.t("w2_scratch", (XCDS * (-(-d.E_TOTAL // XCDS)) * (d.H // 64), d.I_MOE))
+        else:
+            p.t("act8", (1, TOPK_TOTAL_SLOTS, d.I_MOE))
         p.t("out8", (1, TOPK_TOTAL_SLOTS, d.H))
         p.t("route_log", (32, d.L - 1, TOPK_TOTAL_SLOTS), "i32")
     if debug:
@@ -222,7 +305,8 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
     for l in range(layers):
         p.t(f"w_norm1_{l}", (d.H,), kind="input", source=f"w_norm1_{l}")
         p.t(f"w_norm2_{l}", (d.H,), kind="input", source=f"w_norm2_{l}")
-        p.t(f"W_qkva_{l}", (d.Q_OUT + d.KVA_OUT, d.H), kind="input", source=f"W_qkva_{l}")
+        if f"W_qkva_{l}" not in p.tensors:     # the previous layer's prefetch may have declared it (O8)
+            p.t(f"W_qkva_{l}", (d.Q_OUT + d.KVA_OUT, d.H), kind="input", source=f"W_qkva_{l}")
         p.t(f"w_kv_norm_{l}", (d.D_C,), kind="input", source=f"w_kv_norm_{l}")
         p.t(f"W_uk_{l}", (d.NH, d.D_N, d.D_C), kind="input", source=f"W_uk_{l}")
         p.t(f"W_uv_{l}", (d.NH, d.D_V, d.D_C), kind="input", source=f"W_uv_{l}")
@@ -233,16 +317,26 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
         # with the debug snapshots, the operator after a snapshot must read the copy (same values):
         # the runtime's chain rule, see OUTPUT_ARGS; the residual adds still read x_res
         x_in = f"dbg_x_res_{l - 1}" if debug and l > 0 else "x_res"
-        p.op("rmsnorm_layer", 1, label=f"L{l}.norm1", input=x_in, weight=f"w_norm1_{l}", output="h",
-             grid_dim=(1, 1, 1), block_dim=(256, 1, 1))
-        if tile_linears:
+        if fuse1:
             g = grid_for_linear(d.Q_OUT + d.KVA_OUT)
-            p.op("linear_layer", g, label=f"L{l}.qkva", input="h", weight=f"W_qkva_{l}",
-                 output="qkva", grid_dim=(g, 1, 1), block_dim=(256, 1, 1))
+            p.op("linear_norm_layer", g, status="new", label=f"L{l}.qkva", input=x_in, w_norm=f"w_norm1_{l}",
+                 weight=f"W_qkva_{l}", output="qkva", scratch="qkva_scratch", grid_dim=(g, 1, 1),
+                 block_dim=(256, 1, 1), eps=RMS_EPS)
         else:
-            p.op("gang_linear_layer", XCDS, gang_tiles(d.Q_OUT + d.KVA_OUT, TILE_N_QKVA), label=f"L{l}.qkva",
-                 input="h", weight=f"W_qkva_{l}", output="qkva", tile_n=TILE_N_QKVA,
-                 output_stride=d.Q_OUT + d.KVA_OUT)
+            p.op("rmsnorm_layer", 1, label=f"L{l}.norm1", input=x_in, weight=f"w_norm1_{l}", output="h",
+                 grid_dim=(1, 1, 1), block_dim=(256, 1, 1))
+            if tile_linears:
+                g = grid_for_linear(d.Q_OUT + d.KVA_OUT)
+                p.op("linear_layer", g, label=f"L{l}.qkva", input="h", weight=f"W_qkva_{l}",
+                     output="qkva", grid_dim=(g, 1, 1), block_dim=(256, 1, 1))
+            else:
+                p.op("gang_linear_layer", XCDS, gang_tiles(d.Q_OUT + d.KVA_OUT, TILE_N_QKVA), label=f"L{l}.qkva",
+                     input="h", weight=f"W_qkva_{l}", output="qkva", tile_n=TILE_N_QKVA,
+                     output_stride=d.Q_OUT + d.KVA_OUT)
+        if prefetch:
+            g = grid_for_linear(d.H)
+            p.op("prefetch_layer", g, status="new", side=True, label=f"L{l}.prefetch_W_o",
+                 weight=f"W_o_{l}", dummy="pf_dummy_o", grid_dim=(g, 1, 1), block_dim=(256, 1, 1))
         p.op("mla_prep_layer", 1, status="new", label=f"L{l}.mla_prep",
              qkva="qkva", w_kv_norm=f"w_kv_norm_{l}", w_uk=f"W_uk_{l}", cos="cos", sin="sin",
              c_kv=f"c_kv_{l}", k_pe=f"k_pe_{l}", ql_nope="ql_nope", q_pe="q_pe",
@@ -262,8 +356,14 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
             p.op("gang_linear_with_residual_layer", XCDS, gang_tiles(d.H, TILE_N_O), label=f"L{l}.o_proj",
                  input="attn", weight=f"W_o_{l}", residual="x_res", output="x_res",
                  tile_n=TILE_N_O, output_stride=d.H)
-        p.op("rmsnorm_layer", 1, label=f"L{l}.norm2", input="x_res", weight=f"w_norm2_{l}", output="h",
-             grid_dim=(1, 1, 1), block_dim=(256, 1, 1))
+        if prefetch and l + 1 < layers:
+            g = grid_for_linear(d.Q_OUT + d.KVA_OUT)
+            p.t(f"W_qkva_{l + 1}", (d.Q_OUT + d.KVA_OUT, d.H), kind="input", source=f"W_qkva_{l + 1}")
+            p.op("prefetch_layer", g, status="new", side=True, label=f"L{l}.prefetch_W_qkva_next",
+                 weight=f"W_qkva_{l + 1}", dummy="pf_dummy_qkva", grid_dim=(g, 1, 1), block_dim=(256, 1, 1))
+        if not (fuse_norm2 and l > 0):
+            p.op("rmsnorm_layer", 1, label=f"L{l}.norm2", input="x_res", weight=f"w_norm2_{l}", output="h",
+                 grid_dim=(1, 1, 1), block_dim=(256, 1, 1))
         if l == 0:
             p.t("W_gu_shuffled", (2 * d.I_DENSE_PAD, d.H), kind="input", source="W_gu_shuffled_0")
             p.t("W_down_pad", (d.H, d.I_DENSE_PAD), kind="input", source="W_down_pad_0")
@@ -284,19 +384,30 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
             p.t(f"W_gate_{l}", (d.E, d.H), kind="input", source=f"W_gate_{l}")
             p.t(f"W13_{l}", (d.E_TOTAL, 2 * d.I_MOE, d.H), kind="input", source=f"W13_{l}")
             p.t(f"W2_{l}", (d.E_TOTAL, d.H, d.I_MOE), kind="input", source=f"W2_{l}")
+            router_io = (dict(input="x_res", w_norm=f"w_norm2_{l}", h="h", eps=RMS_EPS) if fuse_norm2
+                         else dict(input="h"))
             p.op("moe_router_layer", 1, status="new", label=f"L{l}.router",
-                 input="h", w_gate=f"W_gate_{l}", topk_w="topk_w", routing="routing", mask="mask",
+                 w_gate=f"W_gate_{l}", topk_w="topk_w", routing="routing", mask="mask",
                  logits="logits_router", route_log="route_log", layer_index=l - 1,
                  topk=d.TOPK, n_experts=d.E, n_forced=N_FORCED, scaling=ROUTED_SCALING,
-                 block_dim=(256, 1, 1))
+                 block_dim=(256, 1, 1), **router_io)
             p.op("gang_moe_w13_linear_layer", XCDS, (2 * d.I_MOE) // 64, label=f"L{l}.w13",
                  input="h", weight=f"W13_{l}", moe_routing_indices="routing", moe_mask="mask",
                  output="mid")
-            p.op("moe_silu_mul_layer", TOPK_TOTAL_SLOTS, label=f"L{l}.silu", input="mid", output="act8",
-                 grid_dim=(1, TOPK_TOTAL_SLOTS, 1), block_dim=(256, 1, 1))
-            p.op("gang_moe_w2_linear_layer", XCDS, d.H // 64, label=f"L{l}.w2",
-                 input="act8", weight=f"W2_{l}", moe_routing_indices="routing", moe_mask="mask",
-                 output="out8")
+            if prefetch:
+                p.op("prefetch_moe_layer", TOPK_TOTAL_SLOTS * PREFETCH_PARTS, status="new", side=True,
+                     label=f"L{l}.prefetch_W2", weight=f"W2_{l}", moe_mask="mask", dummy="pf_dummy_w2",
+                     parts=PREFETCH_PARTS, block_dim=(256, 1, 1))
+            if fuse_silu:
+                p.op("gang_moe_w2_silu_linear_layer", XCDS, d.H // 64, status="new", label=f"L{l}.w2",
+                     input="mid", weight=f"W2_{l}", moe_routing_indices="routing", moe_mask="mask",
+                     output="out8", scratch="w2_scratch")
+            else:
+                p.op("moe_silu_mul_layer", TOPK_TOTAL_SLOTS, label=f"L{l}.silu", input="mid", output="act8",
+                     grid_dim=(1, TOPK_TOTAL_SLOTS, 1), block_dim=(256, 1, 1))
+                p.op("gang_moe_w2_linear_layer", XCDS, d.H // 64, label=f"L{l}.w2",
+                     input="act8", weight=f"W2_{l}", moe_routing_indices="routing", moe_mask="mask",
+                     output="out8")
             p.op("moe_mul_sum_add_layer", d.H // 256, label=f"L{l}.combine", input="out8", weight="topk_w",
                  residual="x_res", output="x_res", grid_dim=(1, d.H // 256, 1), block_dim=(256, 1, 1))
         if debug:
@@ -311,20 +422,49 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
         p.t("amax_v", (1, ARGMAX_SLICES))
         p.t("amax_i", (1, ARGMAX_SLICES), "i64")
         p.t("tok_out", (1, 1), "i64", "input", "meta:output_tokens")
-        p.op("rmsnorm_layer", 1, label="head.norm", input=f"dbg_x_res_{layers - 1}" if debug else "x_res",
-             weight="w_final_norm", output="h", grid_dim=(1, 1, 1), block_dim=(256, 1, 1))
-        if tile_linears:
+        if fuse1:
             g = grid_for_linear(d.V)
-            p.op("linear_layer", g, label="head.lm_head", input="h", weight="W_lm",
-                 output="logits", grid_dim=(g, 1, 1), block_dim=(256, 1, 1))
+            p.t("lm_scratch", (g, d.H))
+            p.op("linear_norm_layer", g, status="new", label="head.lm_head", input="x_res", w_norm="w_final_norm",
+                 weight="W_lm", output="logits", scratch="lm_scratch", grid_dim=(g, 1, 1),
+                 block_dim=(256, 1, 1), eps=RMS_EPS)
         else:
-            p.op("gang_linear_layer", XCDS, gang_tiles(d.V, TILE_N_LM), label="head.lm_head",
-                 input="h", weight="W_lm", output="logits", tile_n=TILE_N_LM, output_stride=d.V)
+            p.op("rmsnorm_layer", 1, label="head.norm", input=f"dbg_x_res_{layers - 1}" if debug else "x_res",
+                 weight="w_final_norm", output="h", grid_dim=(1, 1, 1), block_dim=(256, 1, 1))
+            if tile_linears:
+                g = grid_for_linear(d.V)
+                p.op("linear_layer", g, label="head.lm_head", input="h", weight="W_lm",
+                     output="logits", grid_dim=(g, 1, 1), block_dim=(256, 1, 1))
+            else:
+                p.op("gang_linear_layer", XCDS, gang_tiles(d.V, TILE_N_LM), label="head.lm_head",
+                     input="h", weight="W_lm", output="logits", tile_n=TILE_N_LM, output_stride=d.V)
         p.op("argmax_partial_layer", ARGMAX_SLICES, label="head.argmax_partial", input="logits", output=("amax_v", "amax_i"),
              grid_dim=(ARGMAX_SLICES, 1, 1), block_dim=(256, 1, 1))
         p.op("argmax_reduce_layer", 1, status="variant", note="writes tokens[step + 1]", label="head.argmax_reduce",
              input=("amax_v", "amax_i"), output="tok_out", grid_dim=(1, 1, 1),
              block_dim=(256, 1, 1), output_to_tokens=True)
+    return p
+
+
+EMPTY_WIDTH = 256    # elements per row of the empty ladder's tensors (one 512-byte copy per task)
+
+
+def build_empty_plan(ops: int, tasks: int, spin: int = 0, dims: Dims = REAL_DIMS, s_max: int = 1056) -> Plan:
+    """I3 (docs/gpu-experiments/03-acceleration): the empty-task ladder, M operators of N copy
+    tasks alternating two [N, EMPTY_WIDTH] BF16 tensors. Every operator reads its input whole and
+    writes its own row of the output (partitioned on dim 0), so each boundary is one event with N
+    triggers: the per-operator cost of the runtime as a function of the task count, with the
+    per-task cost from the worker timing (I1). spin > 0: every task also runs the shader-clock
+    spin of I2; the first operator's tasks print their [SPIN] lines (one per task). No model, no
+    weights, no head: the plan has only the two workspaces."""
+    assert ops >= 1 and tasks >= 1
+    p = Plan(dims, s_max, 0, False, False)
+    p.t("empty_a", (tasks, EMPTY_WIDTH))
+    p.t("empty_b", (tasks, EMPTY_WIDTH))
+    for k in range(ops):
+        src, dst = ("empty_a", "empty_b") if k % 2 == 0 else ("empty_b", "empty_a")
+        p.op("copy_layer", tasks, status="new", label=f"E{k}.copy", input=src, output=dst,
+             grid_dim=(tasks, 1, 1), block_dim=(256, 1, 1), spin=spin, spin_print=1 if (spin and k == 0) else 0)
     return p
 
 

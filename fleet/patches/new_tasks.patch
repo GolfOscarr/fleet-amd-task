@@ -1,8 +1,32 @@
+diff --git a/include/mirage/kernel/graph.h b/include/mirage/kernel/graph.h
+index 7b261dc..00007d8 100644
+--- a/include/mirage/kernel/graph.h
++++ b/include/mirage/kernel/graph.h
+@@ -20,6 +20,7 @@
+ #include "mirage/kernel/operator.h"
+ #include "mirage/kernel/runtime.h"
+ #include "mirage/threadblock/graph.h"
++#include <unordered_set>
+ #include <vector>
+ 
+ namespace mirage {
+@@ -212,6 +213,11 @@ public:
+   // Gang task parameters: op -> n_tiles_per_xcd
+   std::unordered_map<mirage::kernel::KNOperator const *, int>
+       gang_task_tiles_per_xcd;
++  // Side operators (O8 of docs/gpu-experiments/03-acceleration): registered
++  // right after the operator they accompany; register_mugraph gives their
++  // tasks that operator's dependent event, keeps the chain on that operator
++  // and counts them into the end-of-graph event.
++  std::unordered_set<mirage::kernel::KNOperator const *> side_ops;
+ 
+   using OpType = KNOperator;
+   using TensorType = DTensor;
 diff --git a/include/mirage/kernel/task_register.h b/include/mirage/kernel/task_register.h
-index 2aab442..e1292f8 100755
+index 2aab442..fff24d4 100755
 --- a/include/mirage/kernel/task_register.h
 +++ b/include/mirage/kernel/task_register.h
-@@ -172,6 +172,19 @@ public:
+@@ -172,6 +172,28 @@ public:
                                       bool w13_linear);
    int register_moe_mul_sum_add_mi300_task(threadblock::Graph const &bgraph,
                                            std::vector<int> const &params);
@@ -16,28 +40,223 @@ index 2aab442..e1292f8 100755
 +  int register_mla_merge_uv_mi300_task(threadblock::Graph const &bgraph,
 +                                       std::vector<int> const &params);
 +  int register_moe_router_mi300_task(threadblock::Graph const &bgraph,
-+                                     std::vector<int> const &params);
++                                     std::vector<int> const &params,
++                                     bool norm = false);   // norm: moe_router_norm_mi300 (O1)
++  int register_gang_moe_w2_silu_mi300_task(threadblock::Graph const &bgraph,
++                                           std::vector<int> const &params);
 +  int register_copy_mi300_task(threadblock::Graph const &bgraph,
 +                               std::vector<int> const &params);
++  int register_linear_norm_mi300_task(threadblock::Graph const &bgraph,
++                                      std::vector<int> const &params);   // O3: the per-tile linear with the norm prologue
++  int register_prefetch_mi300_task(threadblock::Graph const &bgraph,
++                                   std::vector<int> const &params);      // O8: the side operators' prefetch tasks
++  int register_prefetch_moe_mi300_task(threadblock::Graph const &bgraph,
++                                       std::vector<int> const &params);
    // SM100 tasks
    int register_splitk_linear_sm100_task(threadblock::Graph const &bgraph,
                                          std::vector<int> const &params,
 diff --git a/include/mirage/persistent_kernel/persistent_kernel.cuh b/include/mirage/persistent_kernel/persistent_kernel.cuh
-index 9241ae6..7961830 100755
+index 28aade0..72ba67d 100755
 --- a/include/mirage/persistent_kernel/persistent_kernel.cuh
 +++ b/include/mirage/persistent_kernel/persistent_kernel.cuh
-@@ -232,7 +232,8 @@ __device__ __host__ __forceinline__ bool is_gang_task_type(TaskType t) {
+@@ -71,6 +71,11 @@
+   #define cudaGetLastError hipGetLastError
+   // cudaStream_t type alias
+   typedef hipStream_t cudaStream_t;
++  // I4 (docs/gpu-experiments/03-acceleration, the fence knobs): the s_sleep constant of the
++  // poll loops (here) and of the dependency wait (execute_worker); 0 to 127; default 1
++  #ifndef MPK_POLL_SLEEP
++  #define MPK_POLL_SLEEP 1
++  #endif
+   // __nanosleep is CUDA-specific; use AMD's s_sleep intrinsic for HIP
+   __device__ __forceinline__ void __nanosleep(unsigned int ns) {
+     // AMD GPU s_sleep: each unit is approximately 64 clock cycles
+@@ -80,7 +85,7 @@
+     // s_sleep argument must be a compile-time constant, so we use a small fixed value
+     // and loop if needed. This is still much better than a busy loop.
+     for (unsigned int i = 0; i < sleep_units; i++) {
+-      __builtin_amdgcn_s_sleep(1);  // Sleep for ~64 cycles
++      __builtin_amdgcn_s_sleep(MPK_POLL_SLEEP);  // Sleep for ~64 cycles per unit (I4: MPK_POLL_SLEEP)
+     }
+   }
+ #endif
+@@ -232,7 +237,9 @@ __device__ __host__ __forceinline__ bool is_gang_task_type(TaskType t) {
           t == TASK_GANG_KSPLIT_GEMM_MI300 || t == TASK_GANG_KSPLIT_FINALIZE_MI300 ||
           t == TASK_GANG_ATTN_SPLIT_KV_MI300 || t == TASK_GANG_ATTN_MERGE_MI300 ||
           t == TASK_GANG_MOE_W13_LINEAR_MI300 || t == TASK_GANG_MOE_W2_LINEAR_MI300 ||
 -         t == TASK_GANG_LINEAR_MSPLIT_MI300 || t == TASK_GANG_LINEAR_RES_MSPLIT_MI300;
 +         t == TASK_GANG_LINEAR_MSPLIT_MI300 || t == TASK_GANG_LINEAR_RES_MSPLIT_MI300 ||
-+         t == TASK_MLA_ATTEND_MI300 || t == TASK_MLA_MERGE_UV_MI300;
++         t == TASK_MLA_ATTEND_MI300 || t == TASK_MLA_MERGE_UV_MI300 ||
++         t == TASK_GANG_MOE_W2_SILU_MI300;
  }
  
  __device__ __forceinline__ bool is_termination_event(size_t event_loc,
+@@ -750,7 +757,13 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+     // Write this worker's XCD ID to shared map for scheduler to read
+     if (config.worker_xcd_map != nullptr) {
+       config.worker_xcd_map[worker_id] = block_xcd_id;
++#ifdef MPK_ENABLE_TIMING
++      // I1 (docs/gpu-experiments/03-acceleration): every worker's XCD, for the placement
++      // of the per-worker timing lines
++      if (true) {
++#else
+       if (worker_id < 8) {
++#endif
+         printf("[WORKER_XCD] worker_id=%d block=%d xcd=%d\n",
+                worker_id, (int)blockIdx.x, block_xcd_id);
+       }
+@@ -821,6 +834,10 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+   int linear_count = 0, linear_res_count = 0;
+   int attention_count = 0, rms_count = 0, silu_count = 0;
+   int fused_count = 0;
++  // I1 (docs/gpu-experiments/03-acceleration): our task classes: 0 prep, 1 attention (gang and
++  // per-split), 2 merge, 3 router, 4 copy, 5 fused w2, 6 fused linear, 7 prefetch (both)
++  unsigned long long ours_cycles[8] = {0, 0, 0, 0, 0, 0, 0, 0};
++  int ours_count[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+ #endif
+ 
+   while (true) {
+@@ -943,7 +960,9 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+           actual_counts = __atomic_load_n(
+               reinterpret_cast<unsigned long long*>(&config.all_event_counters[event_index]),
+               __ATOMIC_RELAXED);
+-#if defined(__HIP_PLATFORM_AMD__) || defined(MIRAGE_AMD_MI300)
++#if defined(MPK_NO_ACQUIRE_FENCE)
++          // I4 knob: no acquire after the dependency load (a probe; the boundary compare judges it)
++#elif defined(__HIP_PLATFORM_AMD__) || defined(MIRAGE_AMD_MI300)
+           // Agent-scope acquire fence (GPU-only, not system scope)
+           __builtin_amdgcn_fence(__ATOMIC_ACQUIRE, "agent");
+ #else
+@@ -956,13 +975,15 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+                   reinterpret_cast<unsigned long long*>(&config.all_event_counters[event_index]),
+                   __ATOMIC_RELAXED);
+ #if defined(__HIP_PLATFORM_AMD__) || defined(MIRAGE_AMD_MI300)
+-              __builtin_amdgcn_s_sleep(1);
++              __builtin_amdgcn_s_sleep(MPK_POLL_SLEEP);   // I4: MPK_POLL_SLEEP
+ #endif
+ #ifdef MPK_ENABLE_TIMING
+               total_dep_wait_iters++;
+ #endif
+             }
+-#if defined(__HIP_PLATFORM_AMD__) || defined(MIRAGE_AMD_MI300)
++#if defined(MPK_NO_ACQUIRE_FENCE)
++            // I4 knob: see above
++#elif defined(__HIP_PLATFORM_AMD__) || defined(MIRAGE_AMD_MI300)
+             __builtin_amdgcn_fence(__ATOMIC_ACQUIRE, "agent");
+ #else
+             __atomic_thread_fence(__ATOMIC_ACQUIRE);
+@@ -997,8 +1018,8 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+     if (task_desc->task_type == TASK_TERMINATE) {
+       // Terminate
+ #ifdef MPK_ENABLE_TIMING
+-      // Print timing stats before returning
+-      if (threadIdx.x == 0 && worker_id < 8) {
++      // Print timing stats before returning (I1: every worker, not the first eight)
++      if (threadIdx.x == 0) {
+         printf("[TIMING] worker=%d tasks=%d poll_iters=%d dep_iters=%d "
+                "poll_cycles=%llu dep_cycles=%llu exec_cycles=%llu signal_cycles=%llu\n",
+                worker_id, total_tasks_executed, total_poll_iters, total_dep_wait_iters,
+@@ -1007,6 +1028,11 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+                worker_id, linear_cycles, linear_count, linear_res_cycles, linear_res_count,
+                attention_cycles, attention_count, rms_cycles, rms_count, silu_cycles, silu_count,
+                fused_cycles, fused_count);
++        printf("[TASK_TIME2] worker=%d prep=%llu/%d attend=%llu/%d merge=%llu/%d router=%llu/%d copy=%llu/%d "
++               "w2silu=%llu/%d lnorm=%llu/%d prefetch=%llu/%d\n",
++               worker_id, ours_cycles[0], ours_count[0], ours_cycles[1], ours_count[1], ours_cycles[2], ours_count[2],
++               ours_cycles[3], ours_count[3], ours_cycles[4], ours_count[4], ours_cycles[5], ours_count[5],
++               ours_cycles[6], ours_count[6], ours_cycles[7], ours_count[7]);
+       }
+ #endif
+ #ifdef MPK_ENABLE_DEVICE_TASK_ACCUM
+@@ -1188,6 +1214,17 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+         case TASK_RMS_NORM: rms_cycles += task_time; rms_count++; break;
+         case TASK_SILU_MUL: silu_cycles += task_time; silu_count++; break;
+         case TASK_SILU_MUL_LINEAR_WITH_RESIDUAL: fused_cycles += task_time; fused_count++; break;
++        // I1: our classes
++        case TASK_MLA_PREP_MI300: ours_cycles[0] += task_time; ours_count[0]++; break;
++        case TASK_MLA_ATTEND_MI300:
++        case TASK_MLA_ATTEND_TILE_MI300: ours_cycles[1] += task_time; ours_count[1]++; break;
++        case TASK_MLA_MERGE_UV_MI300: ours_cycles[2] += task_time; ours_count[2]++; break;
++        case TASK_MOE_ROUTER_MI300: ours_cycles[3] += task_time; ours_count[3]++; break;
++        case TASK_COPY_MI300: ours_cycles[4] += task_time; ours_count[4]++; break;
++        case TASK_GANG_MOE_W2_SILU_MI300: ours_cycles[5] += task_time; ours_count[5]++; break;
++        case TASK_LINEAR_NORM_MI300: ours_cycles[6] += task_time; ours_count[6]++; break;
++        case TASK_PREFETCH_MI300:
++        case TASK_PREFETCH_MOE_MI300: ours_cycles[7] += task_time; ours_count[7]++; break;
+         default: break;
+       }
+     }
+@@ -1239,7 +1276,9 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+ 
+             if (local_count == needed_local) {
+               // Last worker/task on this XCD — flush + signal global
++#ifndef MPK_NO_COMPLETION_FENCE   // I4 knob: rely on the atomic alone (a probe; the compare judges it)
+               threadfence_gpu();
++#endif
+               // Gang: flush 1 (one task done). Non-gang: flush xcd_threshold.
+               int flush_amount = is_gang_task_type(task_desc->task_type)
+                                      ? 1 : xcd_threshold;
+@@ -1262,7 +1301,9 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+               get_task_iteration_num(task_ids[queue_pos]);
+ 
+           if (local_count == needed_local) {
++#ifndef MPK_NO_COMPLETION_FENCE   // I4 knob
+             threadfence_gpu();
++#endif
+             count = atom_add_release_gpu_u64(
+                 &config.all_event_counters[event_index], xcd_threshold);
+             event_fired =
+@@ -1276,7 +1317,9 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+ #endif
+         {
+           // Fallback: per-task fence + global atomic (NVIDIA, or uncounted events)
++#ifndef MPK_NO_COMPLETION_FENCE   // I4 knob
+           threadfence_gpu();
++#endif
+           count = atom_add_release_gpu_u64(
+               &config.all_event_counters[event_index], 1);
+           event_fired =
+@@ -1335,6 +1378,11 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+                                                  config.per_sched_queue_len],
+                   event_index);
+               threadfence_gpu();
++#ifdef MPK_NO_BCAST_CAS
++              // I4 knob: the in-order publish replaced by a store (a probe: with concurrent
++              // producers a later slot can be published before an earlier one)
++              st_relaxed_gpu_u64(&config.sched_queue_last_ready_event_id[sched_id], last_event_pos + 1);
++#else
+               size_t old;
+               do {
+                 old = atom_cas_release_gpu_u64(
+@@ -1342,6 +1390,7 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+                     last_event_pos,
+                     last_event_pos + 1);
+               } while (old != last_event_pos);
++#endif
+             } else {
+               // Same-XCD scheduler queue — use L2-local ops
+               size_t last_event_pos = atom_add_local_u64(
+@@ -1351,6 +1400,10 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+                                                  config.per_sched_queue_len],
+                   event_index);
+               fence_local();
++#ifdef MPK_NO_LOCAL_CAS
++              // I4 knob: the same-XCD queue's publish as a store (the same caveat)
++              st_local_u64(&config.sched_queue_last_ready_event_id[sched_id], last_event_pos + 1);
++#else
+               size_t old;
+               do {
+                 old = atom_cas_local_u64(
+@@ -1358,6 +1411,7 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+                     last_event_pos,
+                     last_event_pos + 1);
+               } while (old != last_event_pos);
++#endif
+             }
+           }
+ #ifdef MPK_ENABLE_PROFILING
 diff --git a/include/mirage/persistent_kernel/runtime_header.h b/include/mirage/persistent_kernel/runtime_header.h
-index f2dfe4e..e289a8c 100755
+index f2dfe4e..48e1d0b 100755
 --- a/include/mirage/persistent_kernel/runtime_header.h
 +++ b/include/mirage/persistent_kernel/runtime_header.h
 @@ -83,7 +83,7 @@ unsigned long long int const EVENT_INVALID_ID = 0x7ffffffffffffffe;
@@ -45,11 +264,11 @@ index f2dfe4e..e289a8c 100755
  
  int const MAX_INPUTS_PER_TASK = 7;
 -int const MAX_OUTPUTS_PER_TASK = 3;
-+int const MAX_OUTPUTS_PER_TASK = 5; // mla_prep writes 4, moe_router 5 (was 3)
++int const MAX_OUTPUTS_PER_TASK = 6; // mla_prep writes 4, moe_router 5, moe_router_norm 6 (was 3)
  // Increased to 304 to support full CU utilization on AMD MI300X (304 CUs)
  // and NVIDIA Blackwell (160+ SMs which uses 144 workers)
  int const MAX_NUM_WORKERS = 304;
-@@ -144,6 +144,13 @@ enum TaskType {
+@@ -144,6 +144,17 @@ enum TaskType {
    TASK_MOE_MUL_SUM_ADD_MI300 = 173,
    TASK_GANG_MOE_W13_LINEAR_MI300 = 174,
    TASK_GANG_MOE_W2_LINEAR_MI300 = 175,
@@ -57,9 +276,13 @@ index f2dfe4e..e289a8c 100755
 +  TASK_MLA_PREP_MI300 = 185,
 +  TASK_MLA_ATTEND_MI300 = 186,      // gang
 +  TASK_MLA_MERGE_UV_MI300 = 187,    // gang
-+  TASK_MLA_ATTEND_TILE_MI300 = 188, // regular: one task per split (session B, 2026-09-16)
++  TASK_MLA_ATTEND_TILE_MI300 = 190, // regular: one task per split (session B, 2026-09-16)
 +  TASK_MOE_ROUTER_MI300 = 188,
 +  TASK_COPY_MI300 = 189,
++  TASK_GANG_MOE_W2_SILU_MI300 = 191, // gang: the stock w2 with the silu-mul in its prologue (O2)
++  TASK_LINEAR_NORM_MI300 = 192,      // regular: the per-tile linear with the input norm in its prologue (O3)
++  TASK_PREFETCH_MI300 = 193,         // regular, side operator: streams a dense weight stripe (O8)
++  TASK_PREFETCH_MOE_MI300 = 194,     // regular, side operator: streams part of an active expert's weight (O8)
    // Hopper Tasks
    TASK_HOPPER_TASK_BEGIN = 150, // Hopper start placeholder, not a real task
    TASK_LINEAR_WITH_RESIDUAL_HOPPER = 151,
@@ -116,10 +339,10 @@ index 6963110..e144d30 100644
      }
    }
 diff --git a/include/mirage/persistent_kernel/tasks/mi300/task_header.cuh b/include/mirage/persistent_kernel/tasks/mi300/task_header.cuh
-index 9906f75..2d0e6ac 100755
+index 9906f75..140db6c 100755
 --- a/include/mirage/persistent_kernel/tasks/mi300/task_header.cuh
 +++ b/include/mirage/persistent_kernel/tasks/mi300/task_header.cuh
-@@ -49,3 +49,10 @@
+@@ -49,3 +49,13 @@
  #include "tasks/ampere/merge_splitkv.cuh"
  // Gang merge wrapper for split-KV CK FMHA (depends on merge_splitkv.cuh)
  #include "tasks/mi300/gang_attention_merge_mi300.cuh"
@@ -130,6 +353,9 @@ index 9906f75..2d0e6ac 100755
 +#include "tasks/mi300/mla_merge_uv_mi300.cuh"
 +#include "tasks/mi300/moe_router_mi300.cuh"
 +#include "tasks/mi300/copy_mi300.cuh"
++#include "tasks/mi300/gang_moe_w2_silu_mi300.cuh"
++#include "tasks/mi300/linear_norm_mi300.cuh"
++#include "tasks/mi300/prefetch_mi300.cuh"
 diff --git a/python/mirage/mpk/persistent_kernel.py b/python/mirage/mpk/persistent_kernel.py
 index 6830b64..86bdc9c 100644
 --- a/python/mirage/mpk/persistent_kernel.py
@@ -168,10 +394,10 @@ index 6830b64..86bdc9c 100644
      def sampling_sm100_layer(
          self,
 diff --git a/python/mirage/mpk/profiler_persistent.py b/python/mirage/mpk/profiler_persistent.py
-index f3f98ad..d780f61 100755
+index f3f98ad..a7e2f6f 100755
 --- a/python/mirage/mpk/profiler_persistent.py
 +++ b/python/mirage/mpk/profiler_persistent.py
-@@ -58,6 +58,11 @@ event_name_list = {
+@@ -58,6 +58,16 @@ event_name_list = {
      174: "TASK_GANG_MOE_W13_LINEAR_MI300",
      175: "TASK_GANG_MOE_W2_LINEAR_MI300",
      176: "TASK_DEVICE_LINEAR_MI300",
@@ -180,14 +406,19 @@ index f3f98ad..d780f61 100755
 +    187: "TASK_MLA_MERGE_UV_MI300",
 +    188: "TASK_MOE_ROUTER_MI300",
 +    189: "TASK_COPY_MI300",
++    190: "TASK_MLA_ATTEND_TILE_MI300",
++    191: "TASK_GANG_MOE_W2_SILU_MI300",
++    192: "TASK_LINEAR_NORM_MI300",
++    193: "TASK_PREFETCH_MI300",
++    194: "TASK_PREFETCH_MOE_MI300",
      177: "TASK_DEVICE_LINEAR_RES_MI300",
      150: "TASK_HOPPER_TASK_BEGIN",
      151: "TASK_LINEAR_WITH_RESIDUAL_HOPPER",
 diff --git a/src/kernel/graph.cc b/src/kernel/graph.cc
-index 97c4923..1935d5f 100755
+index 97c4923..7665420 100755
 --- a/src/kernel/graph.cc
 +++ b/src/kernel/graph.cc
-@@ -841,6 +841,36 @@ void Graph::register_task(char const *task_type, std::vector<int> params) {
+@@ -841,6 +841,69 @@ void Graph::register_task(char const *task_type, std::vector<int> params) {
          customized->bgraph, params);
      task_config[op] =
          std::make_tuple(3, 1, TASK_MOE_MUL_SUM_ADD_MI300, variant_id);
@@ -217,30 +448,78 @@ index 97c4923..1935d5f 100755
 +    assert(params.size() == 6);
 +    int variant_id = task_register->register_moe_router_mi300_task(customized->bgraph, params);
 +    task_config[op] = std::make_tuple(2, 5, TASK_MOE_ROUTER_MI300, variant_id);
-+  } else if (name == "copy_mi300") {
++  } else if (name == "moe_router_norm_mi300") {
++    // O1 (docs/gpu-experiments/03-acceleration): the post-attention norm folded in;
++    // inputs x_res, w_norm, W_gate; outputs h, topk_w, routing, mask, logits, route_log
++    assert(params.size() == 7);
++    int variant_id = task_register->register_moe_router_mi300_task(customized->bgraph, params, true);
++    task_config[op] = std::make_tuple(3, 6, TASK_MOE_ROUTER_MI300, variant_id);
++  } else if (name == "gang_moe_w2_silu_linear_mi300") {
++    // O2 (docs/gpu-experiments/03-acceleration): the stock gang w2 with the silu-mul in its
++    // prologue; inputs mid, W2, routing, mask; outputs out8, scratch; the stock w2's params
++    assert(params.size() == 3);
++    int variant_id = task_register->register_gang_moe_w2_silu_mi300_task(customized->bgraph, params);
++    task_config[op] = std::make_tuple(4, 2, TASK_GANG_MOE_W2_SILU_MI300, variant_id);
++    gang_task_tiles_per_xcd[op] = params[2]; // total_tiles_per_xcd
++  } else if (name == "linear_norm_mi300") {
++    // O3 (docs/gpu-experiments/03-acceleration): the stock per-tile linear with the input norm
++    // in its prologue; inputs x, w_norm, W; outputs out, scratch [grid, K]; params [eps_bits]
 +    assert(params.size() == 1);
++    int variant_id = task_register->register_linear_norm_mi300_task(customized->bgraph, params);
++    task_config[op] = std::make_tuple(3, 2, TASK_LINEAR_NORM_MI300, variant_id);
++  } else if (name == "prefetch_mi300") {
++    // O8 (docs/gpu-experiments/03-acceleration): a side operator streaming a dense weight
++    // stripe per task; input W [N, K] partitioned on dim 0, output dummy [grid, 4] int32
++    assert(params.size() == 0);
++    int variant_id = task_register->register_prefetch_mi300_task(customized->bgraph, params);
++    task_config[op] = std::make_tuple(1, 1, TASK_PREFETCH_MI300, variant_id);
++    side_ops.insert(op);
++  } else if (name == "prefetch_moe_mi300") {
++    // O8: a side operator streaming part of an active expert's weight per task; inputs
++    // W [E, N, K] whole and mask [E + 1]; output dummy [slots x parts, 4]; params [parts]
++    assert(params.size() == 1);
++    int variant_id = task_register->register_prefetch_moe_mi300_task(customized->bgraph, params);
++    task_config[op] = std::make_tuple(2, 1, TASK_PREFETCH_MOE_MI300, variant_id);
++    side_ops.insert(op);
++  } else if (name == "copy_mi300") {
++    assert(params.size() == 1 || params.size() == 3);   // [n] or [n, spin, print] (I2)
 +    int variant_id = task_register->register_copy_mi300_task(customized->bgraph, params);
 +    task_config[op] = std::make_tuple(1, 1, TASK_COPY_MI300, variant_id);
    } else {
      printf("Unsupported task name: %s\n", name.c_str());
      assert(false && "Unsupported task type");
 diff --git a/src/kernel/runtime.cc b/src/kernel/runtime.cc
-index 9dde169..5b6eb30 100755
+index 9dde169..3c0bb97 100755
 --- a/src/kernel/runtime.cc
 +++ b/src/kernel/runtime.cc
-@@ -397,7 +397,8 @@ void register_mugraph(
+@@ -184,6 +184,11 @@ void register_mugraph(
+   kn::KNCustomizedOp const *pre_op = nullptr;
+   std::map<dim3, TaskId, Dim3Comparator> pre_task_map;
+   std::unordered_set<size_t> nvshmem_events_idx;
++  // Side operators (O8 of docs/gpu-experiments/03-acceleration): the tasks that trigger the
++  // end-of-graph event beside the last operator's, and whether the operator the side
++  // operator accompanies (the one registered before it) is the graph's first
++  std::vector<TaskId> side_task_ids;
++  bool host_is_first = false;
+   for (auto const &op : graph.operators) {
+     if (op->op_type == type::KNOperatorType::KN_INPUT_OP) {
+       continue;
+@@ -397,7 +402,9 @@ void register_mugraph(
                task_type == TASK_MOE_W2_LINEAR_SM90 ||
                task_type == TASK_MOE_W13_LINEAR_MI300 ||
                task_type == TASK_MOE_W2_LINEAR_MI300 ||
 -              task_type == TASK_LINEAR_SILU_MI300) {
 +              task_type == TASK_LINEAR_SILU_MI300 ||
-+              task_type == TASK_MLA_ATTEND_TILE_MI300) {   // the split index of the regular attention task
++              task_type == TASK_MLA_ATTEND_TILE_MI300 ||   // the split index of the regular attention task
++              task_type == TASK_PREFETCH_MOE_MI300) {      // the (slot, part) index of the expert prefetch (O8)
              task.task_metadata.expert_offset =
                  (int)((bid.y << 16) | (bid.x & 0xFFFF));
            }
-@@ -416,7 +417,9 @@ void register_mugraph(
+@@ -415,8 +422,11 @@ void register_mugraph(
+               task_type == TASK_GANG_ATTN_MERGE_MI300 ||
                task_type == TASK_GANG_MOE_W13_LINEAR_MI300 ||
                task_type == TASK_GANG_MOE_W2_LINEAR_MI300 ||
++              task_type == TASK_GANG_MOE_W2_SILU_MI300 ||
                task_type == TASK_GANG_LINEAR_MSPLIT_MI300 ||
 -              task_type == TASK_GANG_LINEAR_RES_MSPLIT_MI300) {
 +              task_type == TASK_GANG_LINEAR_RES_MSPLIT_MI300 ||
@@ -249,7 +528,7 @@ index 9dde169..5b6eb30 100755
              auto it = graph.gang_task_tiles_per_xcd.find(op);
              assert(it != graph.gang_task_tiles_per_xcd.end() &&
                     "Gang task missing n_tiles_per_xcd");
-@@ -432,7 +435,9 @@ void register_mugraph(
+@@ -432,7 +442,9 @@ void register_mugraph(
              // Gang attention: each XCD processes a different tile range
              // bid.x = XCD index (0..7)
              else if (task_type == TASK_GANG_ATTN_SPLIT_KV_MI300 ||
@@ -260,7 +539,60 @@ index 9dde169..5b6eb30 100755
                task.task_metadata.n_tile_start = (uint16_t)(bid.x * tiles_per_xcd);
              } else if (task_type == TASK_GANG_KSPLIT_GEMM_MI300) {
                // K-split index = XCD index (bid.x)
-@@ -1536,6 +1541,12 @@ TaskGraphResult print_task_graph(
+@@ -496,6 +508,36 @@ void register_mugraph(
+         }
+       }
+     }
++    // Side operator (O8): its tasks go right behind its host's (the operator registered
++    // before it) and into the host's last event range, so the end-of-loop pass gives them
++    // the host's dependent event (first tasks when the host is the graph's first); they
++    // trigger the end-of-graph event; the chain stays on the host (pre_op, pre_output_ops
++    // and pre_task_map are left as they are). The printer walks the operators in
++    // registration order with sequential task ids, which this order preserves.
++    if (graph.side_ops.count(op) > 0) {
++      assert(pre_op != nullptr && "a side operator needs the operator it accompanies before it");
++      for (bid.x = 0; bid.x < bgraph.grid_dim.x; bid.x++) {
++        for (bid.y = 0; bid.y < bgraph.grid_dim.y; bid.y++) {
++          for (bid.z = 0; bid.z < bgraph.grid_dim.z; bid.z++) {
++            cur_task_map[bid] = all_tasks.size();
++            int offset = bid.x * bgraph.grid_dim.y * bgraph.grid_dim.z +
++                         bid.y * bgraph.grid_dim.z + bid.z;
++            side_task_ids.push_back(all_tasks.size());
++            if (host_is_first) {
++              first_tasks.push_back(all_tasks.size());
++            }
++            all_tasks.push_back(tasks[offset]);
++          }
++        }
++      }
++      if (!host_is_first) {
++        assert(!all_events.empty());
++        all_events.back().last_task_id = all_tasks.size();
++      }
++      all_task_maps.emplace(op, cur_task_map);
++      continue;
++    }
++    host_is_first = (pre_op == nullptr);
+     // Step 2: create events between operators
+     if (pre_op == nullptr) {
+       dim3 bid;
+@@ -587,8 +629,14 @@ void register_mugraph(
+           get_event_id(my_gpu_id, all_events.size(), false /*nvshmem_event*/);
+     }
+   }
++  // the side operators' tasks (O8) trigger the same event, counted alongside
++  for (TaskId t : side_task_ids) {
++    assert(all_tasks[t].trigger_event == EVENT_INVALID_ID);
++    all_tasks[t].trigger_event =
++        get_event_id(my_gpu_id, all_events.size(), false /*nvshmem_event*/);
++  }
+   all_events.push_back(
+-      EventDesc(EVENT_END_OF_TASK_GRAPH, pre_task_map.size(), 0, 0));
++      EventDesc(EVENT_END_OF_TASK_GRAPH, (int)(pre_task_map.size() + side_task_ids.size()), 0, 0));
+ 
+   // Prelaunch all tasks at the begining of an iteration
+   all_events[1].first_task_id = 2;
+@@ -1536,6 +1584,16 @@ TaskGraphResult print_task_graph(
        "TASK_GANG_LINEAR_MSPLIT_MI300";
    task_type_to_name[TASK_GANG_LINEAR_RES_MSPLIT_MI300] =
        "TASK_GANG_LINEAR_RES_MSPLIT_MI300";
@@ -270,12 +602,18 @@ index 9dde169..5b6eb30 100755
 +  task_type_to_name[TASK_MLA_ATTEND_TILE_MI300] = "TASK_MLA_ATTEND_TILE_MI300";
 +  task_type_to_name[TASK_MOE_ROUTER_MI300] = "TASK_MOE_ROUTER_MI300";
 +  task_type_to_name[TASK_COPY_MI300] = "TASK_COPY_MI300";
++  task_type_to_name[TASK_GANG_MOE_W2_SILU_MI300] = "TASK_GANG_MOE_W2_SILU_MI300";
++  task_type_to_name[TASK_LINEAR_NORM_MI300] = "TASK_LINEAR_NORM_MI300";
++  task_type_to_name[TASK_PREFETCH_MI300] = "TASK_PREFETCH_MI300";
++  task_type_to_name[TASK_PREFETCH_MOE_MI300] = "TASK_PREFETCH_MOE_MI300";
    task_type_to_name[TASK_GANG_LINEAR_SILU_MI300] =
        "TASK_GANG_LINEAR_SILU_MI300";
    task_type_to_name[TASK_GANG_RMS_NORM_MI300] =
-@@ -1579,7 +1590,9 @@ TaskGraphResult print_task_graph(
+@@ -1578,8 +1636,11 @@ TaskGraphResult print_task_graph(
+         task.first == TASK_GANG_ATTN_MERGE_MI300 ||
          task.first == TASK_GANG_MOE_W13_LINEAR_MI300 ||
          task.first == TASK_GANG_MOE_W2_LINEAR_MI300 ||
++        task.first == TASK_GANG_MOE_W2_SILU_MI300 ||
          task.first == TASK_GANG_LINEAR_MSPLIT_MI300 ||
 -        task.first == TASK_GANG_LINEAR_RES_MSPLIT_MI300)
 +        task.first == TASK_GANG_LINEAR_RES_MSPLIT_MI300 ||
@@ -284,9 +622,11 @@ index 9dde169..5b6eb30 100755
        continue;
      for (size_t variant_id = 0; variant_id < task.second.size(); variant_id++) {
        std::string cond = first_task ? "if" : "else if";
-@@ -1618,7 +1631,9 @@ TaskGraphResult print_task_graph(
+@@ -1617,8 +1678,11 @@ TaskGraphResult print_task_graph(
+           task.first != TASK_GANG_ATTN_MERGE_MI300 &&
            task.first != TASK_GANG_MOE_W13_LINEAR_MI300 &&
            task.first != TASK_GANG_MOE_W2_LINEAR_MI300 &&
++          task.first != TASK_GANG_MOE_W2_SILU_MI300 &&
            task.first != TASK_GANG_LINEAR_MSPLIT_MI300 &&
 -          task.first != TASK_GANG_LINEAR_RES_MSPLIT_MI300)
 +          task.first != TASK_GANG_LINEAR_RES_MSPLIT_MI300 &&
@@ -296,7 +636,7 @@ index 9dde169..5b6eb30 100755
        for (size_t variant_id = 0; variant_id < task.second.size();
             variant_id++) {
 diff --git a/src/kernel/task_register.cc b/src/kernel/task_register.cc
-index a4e2602..f831d65 100755
+index a4e2602..a97489d 100755
 --- a/src/kernel/task_register.cc
 +++ b/src/kernel/task_register.cc
 @@ -15,6 +15,8 @@
@@ -336,7 +676,7 @@ index a4e2602..f831d65 100755
    return register_task_variant(TASK_ARGMAX_REDUCE, code.to_string());
  }
  
-@@ -4583,5 +4593,263 @@ int TaskRegister::register_paged_attention_split_kv_hopper_task(
+@@ -4583,5 +4593,427 @@ int TaskRegister::register_paged_attention_split_kv_hopper_task(
                                 code.to_string());
  }
  
@@ -544,47 +884,206 @@ index a4e2602..f831d65 100755
 +}
 +
 +// params: [topk, n_experts, n_forced, scaling_bits, layer_index, hidden];
-+// inputs h, W_gate; outputs topk_w, routing, mask, logits, route_log
++// inputs h, W_gate; outputs topk_w, routing, mask, logits, route_log.
++// norm = true (moe_router_norm_mi300, O1 of docs/gpu-experiments/03-acceleration): the
++// post-attention norm folded in; params gain [eps_bits]; inputs x_res, w_norm, W_gate;
++// outputs h, topk_w, routing, mask, logits, route_log; the kernel's NORM template flag.
 +int TaskRegister::register_moe_router_mi300_task(
-+    threadblock::Graph const &bgraph, std::vector<int> const &params) {
-+  assert(params.size() == 6);
++    threadblock::Graph const &bgraph, std::vector<int> const &params, bool norm) {
++  assert(params.size() == (norm ? 7u : 6u));
 +  int topk = params[0], n_experts = params[1], n_forced = params[2];
 +  int layer_index = params[4], hidden = params[5];
 +  std::vector<tb::TBInputOp *> input_ops, output_ops;
-+  int num_inputs = 2, num_outputs = 5;
++  int num_inputs = norm ? 3 : 2, num_outputs = norm ? 6 : 5;
 +  assert(bgraph.operators.size() == (size_t)num_inputs + num_outputs);
 +  split_io(bgraph, num_inputs, input_ops, output_ops);
-+  assert(input_ops[0]->dtensor.dim[1] == hidden);
-+  assert(input_ops[1]->dtensor.dim[0] == n_experts && input_ops[1]->dtensor.dim[1] == hidden);
-+  assert(output_ops[0]->dtensor.dim[1] == topk + n_forced);
-+  assert(output_ops[1]->dtensor.dim[0] == n_experts + n_forced);
-+  assert(output_ops[2]->dtensor.dim[0] == n_experts + n_forced + 1);
-+  assert(output_ops[3]->dtensor.dim[1] == n_experts);
-+  assert(output_ops[4]->dtensor.num_dims == 3 && output_ops[4]->dtensor.dim[2] == topk + n_forced);
-+  int route_steps = output_ops[4]->dtensor.dim[0];
-+  int route_layers = output_ops[4]->dtensor.dim[1];
++  int in_gate = norm ? 2 : 1;     // W_gate's input slot
++  int out0 = norm ? 1 : 0;        // topk_w's output slot (h takes slot 0 when norm)
++  assert(input_ops[0]->dtensor.dim[1] == hidden);                       // h, or x_res
++  if (norm) {
++    assert(input_ops[1]->dtensor.dim[0] == hidden);                     // w_norm [hidden]
++    assert(output_ops[0]->dtensor.dim[1] == hidden);                    // h [1, hidden]
++  }
++  assert(input_ops[in_gate]->dtensor.dim[0] == n_experts && input_ops[in_gate]->dtensor.dim[1] == hidden);
++  assert(output_ops[out0 + 0]->dtensor.dim[1] == topk + n_forced);
++  assert(output_ops[out0 + 1]->dtensor.dim[0] == n_experts + n_forced);
++  assert(output_ops[out0 + 2]->dtensor.dim[0] == n_experts + n_forced + 1);
++  assert(output_ops[out0 + 3]->dtensor.dim[1] == n_experts);
++  assert(output_ops[out0 + 4]->dtensor.num_dims == 3 && output_ops[out0 + 4]->dtensor.dim[2] == topk + n_forced);
++  int route_steps = output_ops[out0 + 4]->dtensor.dim[0];
++  int route_layers = output_ops[out0 + 4]->dtensor.dim[1];
 +  mirage::transpiler::CodeKeeper code;
 +  code.inc_indent();
-+  code.e("kernel::moe_router_mi300_task_impl<bfloat16, $, $, $, $, $, $>(",
-+         hidden, n_experts, n_forced, topk, route_steps, route_layers);
-+  code.e("    task_desc->input_ptrs[0],");   // h
-+  code.e("    task_desc->input_ptrs[1],");   // W_gate
-+  code.e("    task_desc->output_ptrs[0],");  // topk_w
-+  code.e("    task_desc->output_ptrs[1],");  // routing
-+  code.e("    task_desc->output_ptrs[2],");  // mask
-+  code.e("    task_desc->output_ptrs[3],");  // logits (boundary B8)
-+  code.e("    task_desc->output_ptrs[4],");  // route_log
++  code.e("kernel::moe_router_mi300_task_impl<bfloat16, $, $, $, $, $, $, $>(",
++         hidden, n_experts, n_forced, topk, route_steps, route_layers, norm ? "true" : "false");
++  code.e("    task_desc->input_ptrs[0],");                                   // h, or x_res
++  code.e("    $,", norm ? "task_desc->input_ptrs[1]" : "nullptr");          // w_norm
++  code.e("    task_desc->input_ptrs[$],", in_gate);                          // W_gate
++  code.e("    $,", norm ? "task_desc->output_ptrs[0]" : "nullptr");         // h out
++  code.e("    task_desc->output_ptrs[$],", out0 + 0);  // topk_w
++  code.e("    task_desc->output_ptrs[$],", out0 + 1);  // routing
++  code.e("    task_desc->output_ptrs[$],", out0 + 2);  // mask
++  code.e("    task_desc->output_ptrs[$],", out0 + 3);  // logits (boundary B8)
++  code.e("    task_desc->output_ptrs[$],", out0 + 4);  // route_log
 +  code.e("    runtime_config.step[0],");
 +  code.e("    runtime_config.prompt_length[0],");   // row = step - (prompt_len - 1)
 +  code.e("    $,", layer_index);
-+  code.e("    $);", float_literal(params[3]));      // routed_scaling_factor
++  code.e("    $,", float_literal(params[3]));       // routed_scaling_factor
++  code.e("    $);", norm ? float_literal(params[6]) : std::string("0.0f"));   // eps
 +  return register_task_variant(TASK_MOE_ROUTER_MI300, code.to_string());
 +}
 +
-+// params: [n]; input [1, n]; output [1, n]
-+int TaskRegister::register_copy_mi300_task(
++// params: [tiles_per_expert, max_experts_per_xcd, total_tiles_per_xcd] (the stock w2's);
++// inputs mid [1, topk, 2K], W2 [E, N, K], routing, mask; outputs out8 [1, topk, N],
++// scratch [8 x total_tiles_per_xcd, K]. K comes from the weight: the input's last
++// dimension is 2K (O2, docs/gpu-experiments/03-acceleration/03-local-preparation.md).
++int TaskRegister::register_gang_moe_w2_silu_mi300_task(
++    threadblock::Graph const &bgraph, std::vector<int> const &params) {
++  assert(params.size() == 3);
++  int tiles_per_expert = params[0];
++  int total_tiles_per_xcd = params[2];
++  std::vector<tb::TBInputOp *> input_ops, output_ops;
++  int num_inputs = 4, num_outputs = 2;
++  assert(bgraph.operators.size() == (size_t)num_inputs + num_outputs);
++  split_io(bgraph, num_inputs, input_ops, output_ops);
++  assert(output_ops[0]->output_tensors[0].num_dims == 3);
++  int batch_size = output_ops[0]->output_tensors[0].dim[0];
++  int num_experts_per_tok = output_ops[0]->output_tensors[0].dim[1];
++  int output_size = output_ops[0]->output_tensors[0].dim[2];
++  assert(input_ops[1]->output_tensors[0].num_dims == 3);
++  int num_experts = input_ops[1]->output_tensors[0].dim[0];
++  int reduction_size = input_ops[1]->output_tensors[0].dim[2];      // K from the weight
++  assert(input_ops[0]->output_tensors[0].num_dims == 3);
++  int in_stride = input_ops[0]->dtensor.dim[2];                      // mid's slot stride, 2K
++  assert(in_stride == 2 * reduction_size);
++  assert(output_ops[1]->dtensor.num_dims == 2 && output_ops[1]->dtensor.dim[1] == reduction_size);
++  assert(output_ops[1]->dtensor.dim[0] == 8 * total_tiles_per_xcd);
++  assert(output_ops[0]->dtensor.owner_op->op_type == type::KN_INPUT_OP);
++  kn::KNInputOp *kn_out = static_cast<kn::KNInputOp *>(output_ops[0]->dtensor.owner_op);
++  int output_stride = static_cast<int>(kn_out->input_strides[1]);
++  int n_tiles = output_size / 64;
++  mirage::transpiler::CodeKeeper code;
++  code.inc_indent();
++  code.e("kernel::gang_moe_w2_silu_linear_kernel<bfloat16, $, $, $, $, $, $, $, $, $, $>(",
++         batch_size, output_size, output_stride, reduction_size, in_stride, num_experts,
++         num_experts_per_tok, tiles_per_expert, n_tiles, total_tiles_per_xcd);
++  code.e("    task_desc->input_ptrs[0],");   // mid
++  code.e("    task_desc->input_ptrs[1],");   // expert weights
++  code.e("    task_desc->input_ptrs[2],");   // routing indices
++  code.e("    task_desc->input_ptrs[3],");   // mask
++  code.e("    task_desc->output_ptrs[0],");  // out8
++  code.e("    task_desc->output_ptrs[1],");  // scratch
++  code.e("    tile_idx);");
++  return register_task_variant(TASK_GANG_MOE_W2_SILU_MI300, code.to_string());
++}
++
++// params: [eps_bits]; inputs x [1, K] (whole), w_norm [K], W [N, K] (partitioned on dim 0
++// by the grid); outputs out [1, N] (partitioned on dim 1), scratch [grid, K] (partitioned
++// on dim 0: one row per task). O3 of docs/gpu-experiments/03-acceleration: the stock
++// per-tile linear (register_linear_task) with the input norm in its prologue. As there,
++// the per-task output size is the partitioned output's dim 1, the reduction size the
++// input's dim 1 and the output stride the full tensor's.
++int TaskRegister::register_linear_norm_mi300_task(
 +    threadblock::Graph const &bgraph, std::vector<int> const &params) {
 +  assert(params.size() == 1);
++  std::vector<tb::TBInputOp *> input_ops, output_ops;
++  int num_inputs = 3, num_outputs = 2;
++  assert(bgraph.operators.size() == (size_t)num_inputs + num_outputs);
++  split_io(bgraph, num_inputs, input_ops, output_ops);
++  assert(output_ops[0]->output_tensors[0].num_dims == 2);
++  int batch_size = output_ops[0]->output_tensors[0].dim[0];
++  int output_size = output_ops[0]->output_tensors[0].dim[1];   // this task's columns
++  assert(input_ops[0]->dtensor.num_dims == 2);
++  int reduction_size = input_ops[0]->dtensor.dim[1];           // K from x, not from the scratch
++  assert(batch_size == 1);
++  assert(input_ops[1]->dtensor.dim[0] == reduction_size);                                   // w_norm [K]
++  assert(input_ops[2]->dtensor.num_dims == 2 && input_ops[2]->dtensor.dim[1] == reduction_size); // W [N, K]
++  assert(input_ops[2]->dtensor.dim[0] == output_ops[0]->dtensor.dim[1]);                    // N
++  assert(output_ops[1]->dtensor.num_dims == 2 && output_ops[1]->dtensor.dim[1] == reduction_size);
++  assert(output_ops[1]->dtensor.dim[0] == (int)bgraph.grid_dim.x);                          // one scratch row per task
++  assert(output_ops[1]->input_map.x == 0);                                                  // partitioned on dim 0
++  assert(reduction_size % 256 == 0);                                                        // the small tile's KPerBlock
++  assert(output_ops[0]->dtensor.owner_op->op_type == type::KN_INPUT_OP);
++  kn::KNInputOp *kn_input_op = static_cast<kn::KNInputOp *>(output_ops[0]->dtensor.owner_op);
++  int output_stride = static_cast<int>(kn_input_op->input_strides[0]);
++  mirage::transpiler::CodeKeeper code;
++  code.inc_indent();
++  code.e("kernel::linear_norm_mi300_task_impl<bfloat16, $, $>(", batch_size, reduction_size);
++  code.e("    task_desc->input_ptrs[0],");    // x
++  code.e("    task_desc->input_ptrs[1],");    // w_norm
++  code.e("    task_desc->input_ptrs[2],");    // W (this task's rows)
++  code.e("    task_desc->output_ptrs[0],");   // out (this task's columns)
++  code.e("    task_desc->output_ptrs[1],");   // scratch (this task's row)
++  code.e("    runtime_config.qo_indptr_buffer[MPK_MAX_NUM_BATCHED_REQUESTS],");
++  code.e("    $, $,", output_size, output_stride);
++  code.e("    $);", float_literal(params[0]));   // eps
++  return register_task_variant(TASK_LINEAR_NORM_MI300, code.to_string());
++}
++
++// O8 (docs/gpu-experiments/03-acceleration): the side operators' prefetch tasks.
++// params: []; input W [N, K] partitioned on dim 0 by the grid (the task's stripe of
++// N / grid rows); output dummy [grid, 4] int32 partitioned on dim 0 (one row per task).
++int TaskRegister::register_prefetch_mi300_task(
++    threadblock::Graph const &bgraph, std::vector<int> const &params) {
++  assert(params.size() == 0);
++  std::vector<tb::TBInputOp *> input_ops, output_ops;
++  int num_inputs = 1, num_outputs = 1;
++  assert(bgraph.operators.size() == (size_t)num_inputs + num_outputs);
++  split_io(bgraph, num_inputs, input_ops, output_ops);
++  int grid = (int)bgraph.grid_dim.x;
++  assert(input_ops[0]->dtensor.num_dims == 2 && input_ops[0]->input_map.x == 0);
++  int n = input_ops[0]->dtensor.dim[0], k = input_ops[0]->dtensor.dim[1];
++  assert(n % grid == 0);
++  int rows = n / grid;
++  assert(output_ops[0]->dtensor.num_dims == 2 && output_ops[0]->input_map.x == 0);
++  assert(output_ops[0]->dtensor.dim[0] == grid && output_ops[0]->dtensor.dim[1] == 4);
++  assert((rows * k * 2) % 16 == 0);
++  mirage::transpiler::CodeKeeper code;
++  code.inc_indent();
++  code.e("kernel::prefetch_mi300_task_impl<bfloat16, $, $>(", rows, k);
++  code.e("    task_desc->input_ptrs[0],");    // the stripe
++  code.e("    task_desc->output_ptrs[0]);");  // the task's dummy row
++  return register_task_variant(TASK_PREFETCH_MI300, code.to_string());
++}
++
++// params: [parts]; inputs W [E, N, K] (whole), mask [E + 1] int32; output dummy
++// [slots x parts, 4] int32 partitioned on dim 0; the task's (slot, part) is its bid.x,
++// passed through the expert_offset metadata (runtime.cc, the list the attention's
++// per-split task is in).
++int TaskRegister::register_prefetch_moe_mi300_task(
++    threadblock::Graph const &bgraph, std::vector<int> const &params) {
++  assert(params.size() == 1);
++  int parts = params[0];
++  std::vector<tb::TBInputOp *> input_ops, output_ops;
++  int num_inputs = 2, num_outputs = 1;
++  assert(bgraph.operators.size() == (size_t)num_inputs + num_outputs);
++  split_io(bgraph, num_inputs, input_ops, output_ops);
++  int grid = (int)bgraph.grid_dim.x;
++  assert(input_ops[0]->dtensor.num_dims == 3 && input_ops[0]->input_map.x == -1);
++  int e = input_ops[0]->dtensor.dim[0], n = input_ops[0]->dtensor.dim[1], k = input_ops[0]->dtensor.dim[2];
++  assert(input_ops[1]->dtensor.dim[0] == e + 1);
++  assert(parts > 0 && n % parts == 0 && grid % parts == 0);
++  assert(output_ops[0]->dtensor.num_dims == 2 && output_ops[0]->input_map.x == 0);
++  assert(output_ops[0]->dtensor.dim[0] == grid && output_ops[0]->dtensor.dim[1] == 4);
++  assert(((n / parts) * k * 2) % 16 == 0);
++  mirage::transpiler::CodeKeeper code;
++  code.inc_indent();
++  code.e("kernel::prefetch_moe_mi300_task_impl<bfloat16, $, $, $, $>(", e, n, k, parts);
++  code.e("    task_desc->input_ptrs[0],");    // the expert weight, whole
++  code.e("    task_desc->input_ptrs[1],");    // mask
++  code.e("    task_desc->output_ptrs[0],");   // the task's dummy row
++  code.e("    (int)(task_desc->task_metadata.expert_offset & 0xFFFF));");   // bid.x: slot x parts + part
++  return register_task_variant(TASK_PREFETCH_MOE_MI300, code.to_string());
++}
++
++// params: [n] or [n, spin, print] (I2 of docs/gpu-experiments/03-acceleration: spin > 0 makes
++// thread 0 run that many iterations of a dependent chain after the copy and, with print, report
++// the shader-clock and real-time deltas as a [SPIN] line); input [rows, n]; output [rows, n]
++// (the per-task pointers select the row when the output is partitioned on dim 0, the empty
++// ladder of I3)
++int TaskRegister::register_copy_mi300_task(
++    threadblock::Graph const &bgraph, std::vector<int> const &params) {
++  assert(params.size() == 1 || params.size() == 3);
 +  std::vector<tb::TBInputOp *> input_ops, output_ops;
 +  int num_inputs = 1, num_outputs = 1;
 +  assert(bgraph.operators.size() == (size_t)num_inputs + num_outputs);
@@ -594,7 +1093,12 @@ index a4e2602..f831d65 100755
 +  code.inc_indent();
 +  code.e("kernel::copy_mi300_task_impl<bfloat16, $>(", params[0]);
 +  code.e("    task_desc->input_ptrs[0],");
-+  code.e("    task_desc->output_ptrs[0]);");
++  if (params.size() == 3) {
++    code.e("    task_desc->output_ptrs[0],");
++    code.e("    $, $);", params[1], params[2]);   // spin iterations, print
++  } else {
++    code.e("    task_desc->output_ptrs[0]);");
++  }
 +  return register_task_variant(TASK_COPY_MI300, code.to_string());
 +}
 +

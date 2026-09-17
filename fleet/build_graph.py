@@ -100,30 +100,122 @@ def mla_merge_uv_layer(mpk, partials, w_uv, output, split, n_splits, block_dim=(
 
 
 def moe_router_layer(mpk, input, w_gate, topk_w, routing, mask, logits, route_log, layer_index,
-                     topk, n_experts, n_forced, scaling, block_dim=(256, 1, 1)):
-    """One task per MoE layer: FP32 GEMV, softmax, top-k, forced experts; also logs the routing."""
+                     topk, n_experts, n_forced, scaling, block_dim=(256, 1, 1),
+                     w_norm=None, h=None, eps=None):
+    """One task per MoE layer: FP32 GEMV, softmax, top-k, forced experts; also logs the routing.
+    With w_norm, h and eps (O1, docs/gpu-experiments/03-acceleration): the post-attention norm is
+    folded in; `input` is then x_res, and h [1, H] is written for the expert gate-up
+    (registration moe_router_norm_mi300: inputs x_res, w_norm, W_gate; outputs h, ...)."""
     assert w_gate.dim(0) == n_experts and routing.dim(0) == n_experts + n_forced
     assert mask.dim(0) == n_experts + n_forced + 1 and topk_w.dim(1) == topk + n_forced
     assert logits.dim(1) == n_experts
-    _new_task(mpk, (1, 1, 1), block_dim,
-              [(input, (-1, -1, -1), -1), (w_gate, (-1, -1, -1), -1),
-               (topk_w, (-1, -1, -1), -1), (routing, (-1, -1, -1), -1), (mask, (-1, -1, -1), -1),
-               (logits, (-1, -1, -1), -1), (route_log, (-1, -1, -1), -1)],
-              "moe_router_mi300",
-              [topk, n_experts, n_forced, G.float_bits(scaling), layer_index, input.dim(1)])
+    fused = w_norm is not None
+    assert fused == (h is not None) == (eps is not None), "w_norm, h and eps come together"
+    ins = [(input, (-1, -1, -1), -1)]
+    outs = []
+    params = [topk, n_experts, n_forced, G.float_bits(scaling), layer_index, input.dim(1)]
+    if fused:
+        assert w_norm.dim(0) == input.dim(1) and h.dim(1) == input.dim(1)
+        ins.append((w_norm, (-1, -1, -1), -1))
+        outs.append((h, (-1, -1, -1), -1))
+        params.append(G.float_bits(eps))
+    ins.append((w_gate, (-1, -1, -1), -1))
+    outs += [(topk_w, (-1, -1, -1), -1), (routing, (-1, -1, -1), -1), (mask, (-1, -1, -1), -1),
+             (logits, (-1, -1, -1), -1), (route_log, (-1, -1, -1), -1)]
+    _new_task(mpk, (1, 1, 1), block_dim, ins + outs,
+              "moe_router_norm_mi300" if fused else "moe_router_mi300", params)
 
 
-def copy_layer(mpk, input, output, grid_dim=(1, 1, 1), block_dim=(256, 1, 1)):
-    """Debug builds only: snapshot of the residual after a layer (an identity task)."""
+def gang_moe_w2_silu_linear_layer(mpk, input, weight, moe_routing_indices, moe_mask, output, scratch,
+                                  block_dim=(256, 1, 1)):
+    """O2 (docs/gpu-experiments/03-acceleration): the stock gang w2 with the silu-mul in its
+    prologue. input is mid [1, topk, 2K] (gate | up per slot); each tile writes its slot's
+    activation row into scratch [8 x tiles per XCD, K] and runs the CK GEMM on it. The imaps
+    and the three params are the stock gang_moe_w2_linear_layer's; K comes from the weight."""
+    assert input.num_dims == 3 and weight.num_dims == 3 and output.num_dims == 3 and scratch.num_dims == 2
+    k = weight.dim(2)
+    assert input.dim(2) == 2 * k and output.dim(2) == weight.dim(1) and scratch.dim(1) == k
+    assert weight.dim(1) % 64 == 0 and k % 128 == 0, weight.shape
+    assert moe_routing_indices.dim(0) == weight.dim(0) and moe_mask.dim(0) == weight.dim(0) + 1
+    n_tiles = weight.dim(1) // 64
+    max_e = (weight.dim(0) + 7) // 8
+    total = max_e * n_tiles
+    assert scratch.dim(0) == XCDS * total, (scratch.shape, XCDS * total)
+    _new_task(mpk, (XCDS, 1, 1), block_dim,
+              [(input, (-1, -1, -1), 2), (weight, (-1, 1, -1), 2),
+               (moe_routing_indices, (-1, -1, -1), -1), (moe_mask, (-1, -1, -1), -1),
+               (output, (-1, 2, -1), -1), (scratch, (-1, -1, -1), -1)],
+              "gang_moe_w2_silu_linear_mi300", [n_tiles, max_e, total])
+
+
+def linear_norm_layer(mpk, input, w_norm, weight, output, scratch, grid_dim, eps, block_dim=(256, 1, 1)):
+    """O3 (docs/gpu-experiments/03-acceleration): the stock per-tile linear with the input norm in
+    its prologue. Each of the grid_dim[0] tasks normalises the [1, K] input row into its own row of
+    scratch [grid, K] (partitioned on dim 0 by the grid, as the weight is) and runs the CK linear on
+    it; the imaps of the three linear tensors are the stock linear_layer's (input whole, weight on
+    dim 0, output on dim 1). Registration linear_norm_mi300: inputs x, w_norm, W; outputs out,
+    scratch; one param, the eps bits."""
+    assert input.num_dims == 2 and weight.num_dims == 2 and output.num_dims == 2 and scratch.num_dims == 2
+    assert w_norm.num_dims == 1 and w_norm.dim(0) == input.dim(1), (w_norm.shape, input.dim(1))
+    assert weight.dim(1) == input.dim(1), (weight.dim(1), input.dim(1))    # reduction
+    assert weight.dim(0) == output.dim(1), (weight.dim(0), output.dim(1))  # output size
+    assert output.dim(1) % grid_dim[0] == 0, (output.dim(1), grid_dim[0])
+    assert scratch.dim(0) == grid_dim[0] and scratch.dim(1) == input.dim(1), (scratch.shape, grid_dim)
+    assert input.dim(1) % 256 == 0, input.dim(1)                           # K of the CK small tile
+    _new_task(mpk, grid_dim, block_dim,
+              [(input, (-1, -1, -1), 1), (w_norm, (-1, -1, -1), -1), (weight, (0, -1, -1), 1),
+               (output, (1, -1, -1), -1), (scratch, (0, -1, -1), -1)],
+              "linear_norm_mi300", [G.float_bits(eps)])
+
+
+def prefetch_layer(mpk, weight, dummy, grid_dim, block_dim=(256, 1, 1)):
+    """O8 (docs/gpu-experiments/03-acceleration): a side operator streaming a dense weight [N, K]
+    in grid_dim[0] stripes (the weight partitioned on dim 0, as the per-tile linear's) into a dummy
+    [grid, 4] int32 (one row per task). Registration prefetch_mi300; the runtime patch attaches the
+    operator to the one registered before it."""
+    assert weight.num_dims == 2 and dummy.num_dims == 2
+    assert weight.dim(0) % grid_dim[0] == 0, (weight.shape, grid_dim)
+    assert dummy.dim(0) == grid_dim[0] and dummy.dim(1) == 4, (dummy.shape, grid_dim)
+    _new_task(mpk, grid_dim, block_dim, [(weight, (0, -1, -1), 1), (dummy, (0, -1, -1), -1)],
+              "prefetch_mi300", [])
+
+
+def prefetch_moe_layer(mpk, weight, moe_mask, dummy, parts, block_dim=(256, 1, 1)):
+    """O8: a side operator streaming the active experts' slabs of an expert weight [E, N, K]:
+    task (slot, part) reads rows [part N / parts, (part + 1) N / parts) of expert mask[slot];
+    grid slots x parts with slots = dummy rows / parts (the mask's slot capacity)."""
+    assert weight.num_dims == 3 and moe_mask.num_dims == 1 and dummy.num_dims == 2
+    assert moe_mask.dim(0) == weight.dim(0) + 1, (moe_mask.shape, weight.shape)
+    assert weight.dim(1) % parts == 0 and dummy.dim(0) % parts == 0 and dummy.dim(1) == 4
+    grid = dummy.dim(0)
+    _new_task(mpk, (grid, 1, 1), block_dim,
+              [(weight, (-1, -1, -1), -1), (moe_mask, (-1, -1, -1), -1), (dummy, (0, -1, -1), -1)],
+              "prefetch_moe_mi300", [parts])
+
+
+def copy_layer(mpk, input, output, grid_dim=(1, 1, 1), block_dim=(256, 1, 1), spin=0, spin_print=0):
+    """The identity task: a snapshot of the residual (--debug), the probe of O5, and the empty
+    ladder of I3. With grid_dim[0] > 1 the output is partitioned on dim 0 (one row per task; the
+    input is read whole, so the boundary before the operator is one event with all the producer's
+    triggers). spin > 0 (I2): the shader-clock spin after the copy, printed when spin_print."""
     assert input.num_dims == 2 and output.num_dims == 2 and input.dim(1) == output.dim(1)
-    _new_task(mpk, grid_dim, block_dim, [(input, (-1, -1, -1), -1), (output, (-1, -1, -1), -1)],
-              "copy_mi300", [input.dim(1)])
+    g = grid_dim[0]
+    out_map = (0, -1, -1) if g > 1 else (-1, -1, -1)
+    if g > 1:
+        assert output.dim(0) == g, (output.shape, grid_dim)
+    params = [input.dim(1)] + ([int(spin), int(bool(spin_print))] if spin else [])
+    _new_task(mpk, grid_dim, block_dim, [(input, (-1, -1, -1), -1), (output, out_map, -1)],
+              "copy_mi300", params)
 
 
 NEW_LAYERS = {
     "mla_prep_layer": mla_prep_layer,
     "mla_attend_layer": mla_attend_layer,
     "mla_merge_uv_layer": mla_merge_uv_layer,
+    "gang_moe_w2_silu_linear_layer": gang_moe_w2_silu_linear_layer,
+    "linear_norm_layer": linear_norm_layer,
+    "prefetch_layer": prefetch_layer,
+    "prefetch_moe_layer": prefetch_moe_layer,
     "moe_router_layer": moe_router_layer,
     "copy_layer": copy_layer,
 }
@@ -255,18 +347,24 @@ def plan_json(plan):
             "tensors": {n: {"shape": list(t.shape), "dtype": t.dtype, "kind": t.kind, "source": t.source}
                         for n, t in plan.tensors.items()},
             "calls": [{"method": c.method, "label": c.label, "status": c.status, "tasks": c.tasks,
-                       "tiles": c.tiles, "args": {k: (list(v) if isinstance(v, tuple) else v)
+                       "tiles": c.tiles, "side": c.side, "args": {k: (list(v) if isinstance(v, tuple) else v)
                                                   for k, v in c.args.items()}} for c in plan.calls]}
 
 
 def build(packed, capture, meta, dims=REAL_DIMS, s_max=1056, layers=27, head=True, debug=False,
           stop_after=None, debug_scores=False, tile_linears=False, attend_tasks=False, num_workers=296, num_schedulers=8,
-          profiler_tensor=None, align=0, workspaces=None):
-    """On the machine: construct the PersistentKernel, attach, issue, return (mpk, host tensors, plan)."""
+          profiler_tensor=None, align=0, workspaces=None, fuse_norm2=False, fuse_silu=False,
+          probe_before=None, fuse_norm1=False, prefetch=False, plan=None):
+    """On the machine: construct the PersistentKernel, attach, issue, return (mpk, host tensors, plan).
+    plan: a ready plan (the empty ladder of I3) instead of the model's."""
     import torch
     import mirage as mi
 
-    plan = G.build_plan(dims, s_max, layers, head, debug, debug_scores, tile_linears, attend_tasks)
+    if plan is None:
+        plan = G.build_plan(dims, s_max, layers, head, debug, debug_scores, tile_linears, attend_tasks, fuse_norm2,
+                            fuse_silu, fuse_norm1, prefetch)
+    if probe_before:
+        plan.insert_probe(probe_before)
     if stop_after:
         plan.truncate(stop_after)
     assert not plan.chain_violations(), f"the runtime would reject this graph: {plan.chain_violations()}"
@@ -448,8 +546,13 @@ class FakeMPK:
 
 
 def dry_run(dims=REAL_DIMS, s_max=1056, layers=27, head=True, debug=False, stop_after=None,
-            debug_scores=False, tile_linears=False, attend_tasks=False):
-    plan = G.build_plan(dims, s_max, layers, head, debug, debug_scores, tile_linears, attend_tasks)
+            debug_scores=False, tile_linears=False, attend_tasks=False, fuse_norm2=False, fuse_silu=False,
+            probe_before=None, fuse_norm1=False, prefetch=False, plan=None):
+    if plan is None:
+        plan = G.build_plan(dims, s_max, layers, head, debug, debug_scores, tile_linears, attend_tasks, fuse_norm2,
+                            fuse_silu, fuse_norm1, prefetch)
+    if probe_before:
+        plan.insert_probe(probe_before)
     if stop_after:
         plan.truncate(stop_after)
     assert not plan.chain_violations(), f"the runtime would reject this graph: {plan.chain_violations()}"

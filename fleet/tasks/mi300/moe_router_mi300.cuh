@@ -23,6 +23,17 @@
  * Work   : four waves own N_EXPERTS / 4 experts each; a lane reads HIDDEN / 64
  *          elements of a weight row with 16-byte loads; the softmax and the
  *          top-k run on wave 0 with one expert per lane (N_EXPERTS <= 64).
+ *
+ * NORM = true (docs/gpu-experiments/03-acceleration, O1: the post-attention
+ * norm folded into the router, registration moe_router_norm_mi300): the
+ * input is the residual x_res [1, HIDDEN] and w_norm [HIDDEN] is the norm
+ * weight; the task computes h = rmsnorm(x_res) in the reference's order
+ * (numpy_ref.rmsnorm: FP32 statistics, the normalized value rounded to BF16,
+ * then the BF16 weight multiply), writes it to the extra output h for the
+ * expert gate-up, and routes from the LDS copy of the same row. Math:
+ * numpy_ref.moe_router_norm. LDS then also holds h [HIDDEN] BF16 (4 KiB) and
+ * the reduction scratch. NORM = false is the original task: x is h, w_norm
+ * and h_out are unused (nullptr).
  */
 #pragma once
 #include "tasks/common/common_header.cuh"
@@ -31,10 +42,12 @@
 namespace kernel {
 
 template <typename T, int HIDDEN, int N_EXPERTS, int N_FORCED, int TOPK,
-          int ROUTE_STEPS, int ROUTE_LAYERS>
+          int ROUTE_STEPS, int ROUTE_LAYERS, bool NORM = false>
 __device__ __forceinline__ void
-    moe_router_mi300_task_impl(void const *h_ptr,
+    moe_router_mi300_task_impl(void const *x_ptr,
+                               void const *w_norm_ptr,
                                void const *w_gate_ptr,
+                               void *h_out_ptr,
                                void *topk_w_ptr,
                                void *routing_ptr,
                                void *mask_ptr,
@@ -43,17 +56,18 @@ __device__ __forceinline__ void
                                int step,
                                int prompt_len,
                                int layer_index,
-                               float scaling) {
+                               float scaling,
+                               float eps) {
   using namespace dsv2;
   static_assert(N_EXPERTS <= WAVE, "softmax and top-k hold one expert per lane");
   static_assert(N_EXPERTS % WAVES == 0, "experts split over the 4 waves");
   static_assert(HIDDEN % (WAVE * 8) == 0, "16-byte loads, HIDDEN / 64 per lane");
+  static_assert(!NORM || (HIDDEN * sizeof(T)) % 16 == 0, "the LDS copy of h keeps the logits 16-byte aligned");
   constexpr int N_SLOTS = TOPK + N_FORCED;
   constexpr int N_TOTAL = N_EXPERTS + N_FORCED;
   constexpr int E_PER_WAVE = N_EXPERTS / WAVES;
   constexpr int PER_LANE = HIDDEN / WAVE;
 
-  T const *h = static_cast<T const *>(h_ptr);
   T const *w_gate = static_cast<T const *>(w_gate_ptr);
   float *topk_w = static_cast<float *>(topk_w_ptr);
   int *routing = static_cast<int *>(routing_ptr);
@@ -62,9 +76,23 @@ __device__ __forceinline__ void
   int *route_log = static_cast<int *>(route_log_ptr);
 
   extern __shared__ char smem[];
-  float *logit_s = reinterpret_cast<float *>(smem);   // [N_EXPERTS]
+  // LDS: [h (NORM only, HIDDEN BF16)] [logits N_EXPERTS FP32] [red 4 FP32]
+  T *h_s = reinterpret_cast<T *>(smem);                                                 // [HIDDEN]
+  float *logit_s = reinterpret_cast<float *>(smem + (NORM ? HIDDEN * sizeof(T) : 0));  // [N_EXPERTS]
+  float *red = logit_s + N_EXPERTS;                                                     // [4]
   int tid = threadIdx.x;
   int wave = tid / WAVE, lane = tid % WAVE;
+
+  // the row the GEMV reads: h in global memory, or the normalized row in LDS
+  T const *h = static_cast<T const *>(x_ptr);
+  if constexpr (NORM) {
+    rmsnorm_row<T, HIDDEN>(static_cast<T const *>(x_ptr), static_cast<T const *>(w_norm_ptr),
+                           static_cast<T *>(h_out_ptr), eps, red, h_s);
+    __syncthreads();
+    h = h_s;
+  } else {
+    (void)w_norm_ptr; (void)h_out_ptr; (void)eps; (void)red;
+  }
 
   // FP32 dot products: wave -> E_PER_WAVE experts, lane -> PER_LANE elements
   float hv[PER_LANE];

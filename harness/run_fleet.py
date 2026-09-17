@@ -34,6 +34,7 @@ iterations they hold the last iteration's values and are dumped with a note.
 import argparse
 import json
 import os
+import re
 import sys
 import time
 from pathlib import Path
@@ -85,7 +86,7 @@ def boundary_dump(plan, host, tokens, n_prompt, dims, iters=1):
     lab = w.get("h")
     if lab and lab.endswith(".norm1"):
         put(f"L{layer_of(lab)}.B1.norm1", h["h"][0])
-    elif lab and lab.endswith(".norm2"):
+    elif lab and (lab.endswith(".norm2") or lab.endswith(".router")):   # the router writes h under --fuse-norm2 (O1)
         put(f"L{layer_of(lab)}.norm2", h["h"][0])
     elif lab == "head.norm":
         put("head.B14.norm", h["h"][0])
@@ -163,18 +164,50 @@ class StdoutToFile:
 
 def build_parser():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--layers", type=int, required=True)
+    ap.add_argument("--layers", type=int, default=None, help="layers of the model graph (required unless --graph empty)")
     ap.add_argument("--head", action="store_true")
     ap.add_argument("--iters", type=int, default=1)
     ap.add_argument("--debug", action="store_true")
     ap.add_argument("--stop-after", default=None, help="operator label, e.g. L1.o_proj (truncated graph)")
-    ap.add_argument("--model-dir", required=True, help="the checkpoint snapshot directory")
+    ap.add_argument("--model-dir", default=None, help="the checkpoint snapshot directory (required unless --graph empty)")
     ap.add_argument("--ref", default=str(common.REF_DIR))
     ap.add_argument("--out", default=None)
     ap.add_argument("--event-timing", action="store_true", help="compile with MPK_EVENT_TIMING=1")
     ap.add_argument("--nt-weights", action="store_true", help="USE_NT_WEIGHTS=1 (E2)")
     ap.add_argument("--attend-tasks", action="store_true",
                     help="mla_attend as one regular task per split instead of a gang task (session B, 2026-09-16)")
+    ap.add_argument("--fuse-norm1", action="store_true",
+                    help="the input norm folded into the per-tile Q/KV projection and the final norm into lm_head "
+                         "(O3, docs/gpu-experiments/03-acceleration); off under --debug")
+    ap.add_argument("--fuse-norm2", action="store_true",
+                    help="the post-attention norm folded into the router in the MoE layers (O1, docs/gpu-experiments/03-acceleration)")
+    ap.add_argument("--fuse-silu", action="store_true",
+                    help="the silu-mul folded into the expert down projection's prologue (O2, docs/gpu-experiments/03-acceleration)")
+    ap.add_argument("--probe-before", default=None, metavar="LABEL",
+                    help="a one-task copy operator in front of LABEL, e.g. L0.o_proj, so its event gap is measured "
+                         "with a one-task predecessor (O5, docs/gpu-experiments/03-acceleration)")
+    ap.add_argument("--nt-streams", action="store_true",
+                    help="-DMLA_NT_STREAMS: our kernels' cache streams (the attention's p x V loads, the merge's "
+                         "partials) with the stock linears' non-temporal policy (O6, docs/gpu-experiments/03-acceleration)")
+    ap.add_argument("--runtime-flags", action="append", default=[], metavar="DEFINE",
+                    help="an extra hipcc define for the runtime, repeatable, in the = form since the value starts with a "
+                         "dash: --runtime-flags=-DMPK_NO_COMPLETION_FENCE --runtime-flags=-DMPK_POLL_SLEEP=8 (I4, the fence "
+                         "knobs of docs/gpu-experiments/03-acceleration; one define per option so a queue row, split on "
+                         "whitespace, carries it); through MPK_EXTRA_HIPCC_FLAGS")
+    ap.add_argument("--worker-timing", action="store_true",
+                    help="compile with MPK_TIMING=1: every worker's [TIMING], [TASK_TIME] and [TASK_TIME2] lines "
+                         "in fwd_pass.log (I1, docs/gpu-experiments/03-acceleration)")
+    ap.add_argument("--graph", choices=["model", "empty"], default="model",
+                    help="empty: the empty-task ladder (I3), --ops operators of --tasks copy tasks, no model")
+    ap.add_argument("--ops", type=int, default=100, help="--graph empty: operators per iteration")
+    ap.add_argument("--tasks", type=int, default=8, help="--graph empty: tasks per operator")
+    ap.add_argument("--spin", type=int, default=0, help="--graph empty: the shader-clock spin per task (I2)")
+    ap.add_argument("--prefetch", action="store_true",
+                    help="the side operators of O8 (docs/gpu-experiments/03-acceleration): weight prefetches on the "
+                         "idle workers beside qkva, o_proj and w13 (needs the runtime patch's side-operator branch)")
+    ap.add_argument("--mfma-attend", action="store_true",
+                    help="-DMLA_ATTEND_MFMA: the attention on the matrix cores in place of the VALU kernel "
+                         "(O7, docs/gpu-experiments/03-acceleration)")
     ap.add_argument("--split", type=int, default=0,
                     help="positions per attention split (graph_plan.SPLIT, 32); more, smaller splits give more tiles, 64 at most")
     ap.add_argument("--debug-scores", action="store_true",
@@ -192,6 +225,18 @@ def build_parser():
     return ap
 
 
+def runtime_flags_slug(flags):
+    """A short tag of the --runtime-flags defines for the run name: -DMPK_NO_COMPLETION_FENCE -DMPK_POLL_SLEEP=8
+    -> nocompletionfence+pollsleep8 (the -D and MPK_ prefixes dropped, lowercased, no separators)."""
+    parts = []
+    for f in (flags if isinstance(flags, (list, tuple)) else flags.split()):
+        f = f.strip().strip('"').strip("'")
+        f = re.sub(r"^-D", "", f)
+        f = re.sub(r"^MPK_", "", f)
+        parts.append(re.sub(r"[^a-z0-9]", "", f.lower()))
+    return "+".join(x for x in parts if x)
+
+
 def run_name(args):
     """The run directory name under harness/fleet_out, from the arguments."""
     pad = f"_pad{args.pad_alloc:g}" if args.pad_alloc else ""
@@ -201,9 +246,67 @@ def run_name(args):
     nt = "_nt" if args.nt_weights else ""   # session B, 2026-09-16: the E2 runs overwrote their baselines
     sp = f"_s{args.split}" if args.split else ""
     at = "_at" if args.attend_tasks else ""
+    fn1 = "_fn1" if args.fuse_norm1 else ""
+    fn2 = "_fn2" if args.fuse_norm2 else ""
+    fs = "_fs" if args.fuse_silu else ""
+    probe = f"_probe_{args.probe_before}" if args.probe_before else ""
+    nts = "_nts" if args.nt_streams else ""
+    mf = "_mfma" if args.mfma_attend else ""
+    pf = "_pf" if args.prefetch else ""
+    wt = "_wt" if args.worker_timing else ""
+    rf = f"_rf_{runtime_flags_slug(args.runtime_flags)}" if args.runtime_flags else ""
+    if args.graph == "empty":      # I3: no layers, no head
+        return (f"E{args.ops}x{args.tasks}" + (f"_spin{args.spin}" if args.spin else "") + f"_it{args.iters}"
+                + wt + rf + al + ws + pad)
     return (f"L{args.layers}{'_head' if args.head else ''}_it{args.iters}"
             + (f"_{args.stop_after}" if args.stop_after else "") + ("_scores" if args.debug_scores else "")
-            + tile + at + nt + sp + al + ws + pad)
+            + tile + at + fn1 + fn2 + fs + pf + probe + nt + nts + mf + wt + rf + sp + al + ws + pad)
+
+
+def run_empty(args, out, prompt, n_prompt, s_max, t0, torch, B):
+    """I3: the empty-task ladder. No model, no weights, no reference: the plan's two workspaces, the
+    meta tensors, the run and the log; the record has the same files (ids are zeros)."""
+    import json as _json
+    from fleet import graph_plan as G
+    plan = G.build_empty_plan(args.ops, args.tasks, args.spin)
+    meta = B.make_meta(torch, s_max, prompt, n_prompt)
+    t1 = time.time()
+    mpk, host, plan = B.build({}, {}, meta, s_max=s_max, layers=0, head=False, align=args.align_alloc, plan=plan)
+    pj = B.plan_json(plan)
+    (out / "plan.json").write_text(_json.dumps(pj) + "\n")
+    mpk.compile(output_dir=str(out / "build"))
+    t_build = time.time() - t1
+    meta["step"].fill_(n_prompt - 2)
+    meta["num_new_tokens"].fill_(1)
+    meta["qo_indptr_buffer"].copy_(torch.tensor([0, 1], dtype=torch.int32, device="cuda"))
+    meta["tokens"][0, :n_prompt] = torch.tensor(prompt, dtype=torch.int64, device="cuda")
+    meta["tokens"][0, n_prompt:] = 0
+    torch.cuda.synchronize()
+    meta_out = {
+        "graph": "empty", "ops": args.ops, "tasks_per_op": args.tasks, "spin": args.spin, "iters": args.iters,
+        "s_max": s_max, "n_prompt": n_prompt, "worker_timing": args.worker_timing,
+        "plan_ops": len(pj["calls"]), "plan_tasks": sum(c["tasks"] for c in pj["calls"]),
+        "env": {k: os.environ.get(k) for k in ("MPK_EVENT_TIMING", "MPK_TIMING", "USE_GANG", "AMDGPU_TARGETS",
+                                                "MPK_EXTRA_HIPCC_FLAGS")},
+        "align_alloc": args.align_alloc, "addresses": tensor_addresses(host), "completed": False,
+    }
+    (out / "fleet_run_meta.json").write_text(_json.dumps(meta_out, indent=2) + "\n")
+    fwd_log = out / "fwd_pass.log"
+    fwd_log.write_text("")
+    t2 = time.time()
+    with StdoutToFile(fwd_log):
+        mpk()
+        torch.cuda.synchronize()
+    t_mpk = time.time() - t2
+    print(fwd_log.read_text()[-2000:])
+    if Path("event_timing.json").exists():
+        Path("event_timing.json").replace(out / "event_timing.json")
+    wall = {"mpk_wall_s": t_mpk, "iters": args.iters, "pack_s": 0.0, "build_s": t_build}
+    (out / "wall.json").write_text(_json.dumps(wall) + "\n")
+    (out / "fleet_output_ids.json").write_text(_json.dumps([0] * args.iters) + "\n")
+    meta_out.update({"timings_s": wall, "completed": True})
+    (out / "fleet_run_meta.json").write_text(_json.dumps(meta_out, indent=2) + "\n")
+    print(f"empty ladder {args.ops} x {args.tasks}; mpk() {t_mpk * 1e3:.1f} ms for {args.iters} iterations -> {out}")
 
 
 def tensor_addresses(host):
@@ -212,7 +315,10 @@ def tensor_addresses(host):
 
 
 def main():
-    args = build_parser().parse_args()
+    ap = build_parser()
+    args = ap.parse_args()
+    if args.graph == "model" and (args.layers is None or args.model_dir is None):
+        ap.error("--layers and --model-dir are required for the model graph (--graph empty needs neither)")
 
     import torch
     from safetensors.torch import load_file, save_file
@@ -224,8 +330,16 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     if args.event_timing:
         os.environ["MPK_EVENT_TIMING"] = "1"
+    if args.worker_timing:   # I1: the runtime's per-worker cycle counters (persistent_kernel.py: -DMPK_ENABLE_TIMING)
+        os.environ["MPK_TIMING"] = "1"
     if args.nt_weights:
         os.environ["USE_NT_WEIGHTS"] = "1"
+    if args.nt_streams:      # O6: our kernels' streaming loads; through the extra-flags hook of gfx942.patch
+        os.environ["MPK_EXTRA_HIPCC_FLAGS"] = (os.environ.get("MPK_EXTRA_HIPCC_FLAGS", "") + " -DMLA_NT_STREAMS").strip()
+    if args.mfma_attend:     # O7: the MFMA attention, the same hook
+        os.environ["MPK_EXTRA_HIPCC_FLAGS"] = (os.environ.get("MPK_EXTRA_HIPCC_FLAGS", "") + " -DMLA_ATTEND_MFMA").strip()
+    if args.runtime_flags:           # I4: the fence knobs, the same hook
+        os.environ["MPK_EXTRA_HIPCC_FLAGS"] = (os.environ.get("MPK_EXTRA_HIPCC_FLAGS", "") + " " + " ".join(args.runtime_flags)).strip()
     if args.split:
         import fleet.graph_plan as _G
         assert 0 < args.split and -(-1056 // args.split) <= 64, "mla_merge_uv merges at most 64 splits"
@@ -246,6 +360,8 @@ def main():
         pad = torch.empty(int(args.pad_alloc * 2 ** 30), dtype=torch.uint8, device="cuda")
         print(f"pad-alloc {args.pad_alloc:g} GiB at 0x{pad.data_ptr():x}")
     t0 = time.time()
+    if args.graph == "empty":
+        return run_empty(args, out, prompt, n_prompt, s_max, t0, torch, B)
     dims = Dims.from_config(json.loads((Path(args.model_dir) / "config.json").read_text()))
     if args.align_alloc:
         assert args.align_alloc >= 512 and args.align_alloc & (args.align_alloc - 1) == 0, "--align-alloc: power of two, >= 512"
@@ -254,7 +370,7 @@ def main():
         # the plan's tensors do not depend on --stop-after (it only cuts calls)
         from fleet import graph_plan as G
         pre_plan = G.build_plan(dims, s_max, args.layers, args.head, args.debug, args.debug_scores, args.tile_linears,
-                                args.attend_tasks)
+                                args.attend_tasks, args.fuse_norm2, args.fuse_silu, args.fuse_norm1, args.prefetch)
         workspaces = B.allocate_workspaces(torch, pre_plan, args.align_alloc)
         print(f"workspaces-first: {len(workspaces)} buffers allocated before the weights")
     packed = pack_all(args.model_dir, "cuda", dims, layers=args.layers, head=args.head or None)
@@ -276,7 +392,8 @@ def main():
     mpk, host, plan = B.build(packed, capture, meta, dims=dims, s_max=s_max, layers=args.layers,
                               head=args.head, debug=args.debug, stop_after=args.stop_after,
                               debug_scores=args.debug_scores, tile_linears=args.tile_linears,
-                              attend_tasks=args.attend_tasks,
+                              attend_tasks=args.attend_tasks, fuse_norm2=args.fuse_norm2, fuse_silu=args.fuse_silu,
+                              probe_before=args.probe_before, fuse_norm1=args.fuse_norm1, prefetch=args.prefetch,
                               align=args.align_alloc, workspaces=workspaces)
     pj = B.plan_json(plan)
     (out / "plan.json").write_text(json.dumps(pj) + "\n")
@@ -295,10 +412,12 @@ def main():
     meta_out = {
         "layers": args.layers, "head": args.head, "iters": args.iters, "debug": args.debug,
         "stop_after": args.stop_after, "s_max": s_max, "n_prompt": n_prompt, "tile_linears": args.tile_linears,
-        "attend_tasks": args.attend_tasks,
+        "attend_tasks": args.attend_tasks, "fuse_norm2": args.fuse_norm2, "fuse_silu": args.fuse_silu,
+        "probe_before": args.probe_before, "fuse_norm1": args.fuse_norm1, "mfma_attend": args.mfma_attend,
+        "prefetch": args.prefetch, "worker_timing": args.worker_timing, "runtime_flags": args.runtime_flags,
         "ops": len(pj["calls"]), "tasks": sum(c["tasks"] for c in pj["calls"]),
-        "env": {k: os.environ.get(k) for k in ("MPK_EVENT_TIMING", "USE_NT_WEIGHTS", "USE_GANG", "AMDGPU_TARGETS",
-                                                "MPK_DEBUG_SCORES")},
+        "env": {k: os.environ.get(k) for k in ("MPK_EVENT_TIMING", "MPK_TIMING", "USE_NT_WEIGHTS", "USE_GANG",
+                                                "AMDGPU_TARGETS", "MPK_DEBUG_SCORES", "MPK_EXTRA_HIPCC_FLAGS")},
         "pad_alloc_gb": args.pad_alloc, "pad_addr": int(pad.data_ptr()) if pad is not None else None,
         "align_alloc": args.align_alloc, "workspaces_first": args.workspaces_first,
         "addresses": tensor_addresses(host), "completed": False,
