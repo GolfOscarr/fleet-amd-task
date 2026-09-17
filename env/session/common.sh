@@ -49,6 +49,11 @@ fleet_env() {
   export PATH="$ROCM_PATH/bin:$ROCM_PATH/llvm/bin:$PATH"
   # shellcheck disable=SC1091
   [ -f "$ROOT/.venv-fleet/bin/activate" ] && source "$ROOT/.venv-fleet/bin/activate"
+  # the megakernel's JIT reads the fork's copy of our task headers (env/setup.sh step 5b), so a
+  # kernel pushed mid-session reaches a graph run only if it is installed again (round 3,
+  # 2026-09-17: a queue ran the old router and merge for seven rows); never fails the stage
+  local inc="$FLEET/include/mirage/persistent_kernel/tasks/mi300"
+  if [ "$DRY" != "1" ] && [ -d "$inc" ]; then cp "$ROOT"/fleet/tasks/mi300/*.cuh "$inc/" 2>/dev/null || true; fi
   return 0
 }
 
