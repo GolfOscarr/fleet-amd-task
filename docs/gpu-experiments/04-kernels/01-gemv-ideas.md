@@ -161,8 +161,13 @@ The router's loop: `uint4` words, `(k & 1) ? (w & 0xffff0000) : (w << 16)`,
   the same map.
   For R = 38 (qkva) the waves take 10, 10, 9, 9 rows; for R = 32, 8 each.
 - **The multiply.** Per row per lane: 32 conversions (a shift or a mask)
-  and 32 `v_fmac_f32`, then a 6-step `wave_sum`; the probe's disassembly
-  counts 512 FMAs and 555 conversions per wave per 16 rows. About 2 us of
+  and 32 `v_fmac_f32`, then the 64 lanes' partials reduced; the probe's
+  disassembly counts 512 FMAs and 555 conversions per wave per 16 rows.
+  A `wave_sum` per row is 96 shuffle-and-add steps per 16 rows (each
+  `__shfl_xor` a `ds_bpermute`, an LDS-pipeline op), a fifth of the FMA
+  count; the halving butterfly (lanes paired, the rows in flight halved
+  each step: 16 + 8 + 4 + 2 + 1 = 31 steps) is the form to build, and
+  leaves lane l holding row l's sum for a 32-byte store. About 2 us of
   VALU per 64-row tile at K = 2048 (1,067 ops x 4 cycles per wave64 op at
   2.1 GHz), on the same order as the memory time of the tile at the
   per-CU share (256 KB at 45 GB/s is 5.7 us; at 14.5 GB/s, 17.6 us), so it
