@@ -18,7 +18,7 @@ bash env/offline_gfx942/run.sh                                            # ever
 ## L1. The GEMV tile kernel (5 h)
 
 - [ ] `fleet/tasks/mi300/linear_gemv_mi300.cuh`: `linear_gemv_mi300_task_impl<T, K, NORM, RESIDUAL>(x, w_norm, W, residual, out, rows, o_stride, eps)`; the wave's rows (`ceil(rows / 4)`, the tail masked), batches of `GEMV_BATCH` = 8 under `#pragma unroll 1`, the K9 map (`8 l + 512 i`) for the rows and the x slice, the loads through `StreamSrc`
-- [ ] the first batch's loads and the residual chunk issued before the prologue; NORM through `rmsnorm_row` with `out = nullptr` and the LDS row; the null guard added to the helper
+- [ ] the first batch's loads and the residual's values (one 2-byte load per lane: the 38-row task's columns are not 16-byte aligned) issued before the prologue; NORM through `rmsnorm_row` with `out = nullptr` and the LDS row; the null guard added to the helper
 - [ ] the halving butterfly (`butterfly_sum` in `mla_common_mi300.cuh`), lane l < 8 holding row `r0 + l`; the epilogue (the residual add in FP32, `bf16r`, `nt_store`, the column tail)
 - [ ] 256 rows (the head) as eight batches per wave with the norm once
 - [ ] `check_syntax.sh` with the three instantiations
@@ -27,7 +27,7 @@ Status:
 
 ## L1b. The suite rows (3 h)
 
-- [ ] `k_linear_gemv` in `kernel_tests_mi300.cu` (`Meta.mode` 0, 1, 2; `Meta.rows`); `KT_TIME` and `KT_COLD` over 96 blocks of 38 rows
+- [ ] `k_linear_gemv`, `k_linear_gemv_norm`, `k_linear_gemv_res` in `kernel_tests_mi300.cu` with `rows` and `o_stride` as arguments; `KT_TIME` and `KT_COLD` (the weight's rotation) over 96 blocks of 38 rows
 - [ ] `kernel_tests.py`: `linear_gemv`, `linear_gemv_norm`, `linear_gemv_res` (tensors, make, ref, check); `RUNS`; the `--dry-run` passes
 - [ ] `numpy_ref.py`: the two one-line references; `test_numpy_ref` rows
 - [ ] `vm.sh`: the four binaries (`_gemv4`, `_gemv8`, `_gemv16`, `_gemv8s`) in the `kernels` stage; the `ktime` stage's `linear_gemv` grid
@@ -75,7 +75,6 @@ Status:
 
 - [ ] `gang_moe_w2_silu_mi300.cuh`: the activation row into LDS; the GEMV over 64 rows with the 176-chunk map (three loads per lane, two for lanes 48 to 63); the scatter epilogue; the CK multiply kept under `MPK_W2_CK_TILE`
 - [ ] the suite row `gang_w2_gemv` (`-DKT_FAKE_XCD`, the `(32, 8)` launch); `numpy_ref.moe_w2`; `kernel_tests.py`
-- [ ] `graph_plan.py`: the scratch tensor dropped under `--gemv-linears`
 - [ ] `check_syntax.sh`; `run.sh`: the `ckgang` variant on the GEMV form, `w2ck` on the CK form; the registers and the wait sequence recorded here
 
 Status:
@@ -83,7 +82,7 @@ Status:
 ## L4. The w13 form, one round per XCD (4 h)
 
 - [ ] `gang_moe_w13_gemv_mi300.cuh`: type 196 (gang); the expert decode; the tile's rows by arithmetic (`static_assert(4 * 77 + 33 * 76 == 2816)`); 19- or 20-row waves in batches of eight; x from `h` with the K9 map; the scatter epilogue
-- [ ] `new_tasks.patch`: the type in the gang lists and the MoE `n_tile_start` rule; `register_gang_moe_w13_gemv_mi300_task` with `tiles_per_expert` = 37; the dispatcher case in `_execute_gang_task`; regenerated
+- [ ] `new_tasks.patch`: the type in `is_gang_task_type`, in the runtime's gang list (the `tiles_per_xcd` lookup, `n_tile_start = 0`) and in the Python API's gang wrapper; `register_gang_moe_w13_gemv_mi300_task` with `tiles_per_expert` = 37 (the recorded count 9 x 37); the dispatcher case in `_execute_gang_task`; regenerated
 - [ ] `build_graph._gang_moe(tiles=...)`, `gang_moe_w13_gemv_layer`; `graph_plan.py --gemv-w13` with the worker-count assert; the counts
 - [ ] the range test (37 ranges cover 2,816 once); the suite row `gang_w13_gemv` (the `(37, 8)` launch); `numpy_ref.moe_w13`
 - [ ] `check_syntax.sh`; `mk_tu.cu` (the gang instantiation under `MK_GEMV`); the offline registers recorded here
@@ -115,7 +114,7 @@ Status:
 
 ## N2. The router in four tasks (4 h)
 
-- [ ] `moe_router_mi300.cuh`: `SPLIT` and `part`; the 16-expert batch before the norm; the logits to the tensor; the release, the counter, the last task's acquire, top-k, writes and reset
+- [ ] `moe_router_mi300.cuh`: `SPLIT` and `part`; the 16-expert batch before the norm; the logits to the tensor; the release fence, thread 0's acq-rel atomic at agent scope, the last task's acquire fence by every thread, top-k, writes and reset
 - [ ] `new_tasks.patch`: type 200 in the `expert_offset` list, `register_moe_router_norm4_mi300_task` (the counter input, grid 4), the dispatcher case; regenerated
 - [ ] `build_graph.py`; `graph_plan.py --router-tasks` (`router_counter`); the counts
 - [ ] the suite row `k_moe_router4` (four blocks, a zeroed counter, bit-exact against the one-task row)

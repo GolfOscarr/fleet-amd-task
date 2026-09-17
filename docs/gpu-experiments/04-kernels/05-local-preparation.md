@@ -63,9 +63,18 @@ flags. It replaces the CK tile whose K loop keeps one step in flight.
   NORM: `rmsnorm_row` runs first with `out = nullptr` (the helper gains
   the null guard; today it stores unconditionally) and `out_s` the LDS
   row, and the slice is read from LDS; plain: four `load8` from x.
-- The first batch's loads, and the residual's 16-byte chunk of the task's
-  columns for RESIDUAL, are issued before the prologue, so the norm's
-  round trip and reductions run under the batch's latency.
+- The first batch's loads, and the residual's values for RESIDUAL, are
+  issued before the prologue, so the norm's round trip and reductions run
+  under the batch's latency. The residual is read as one 2-byte load per
+  lane for the batch's rows (lanes 0 to 7 of each wave), not as a 16-byte
+  chunk: a 38-row task's column start is 76 bytes into the row, so its
+  output and residual pointers are 4-byte aligned at best (the stock
+  epilogue's packed 8-byte store has the same problem and falls back to
+  scalar stores for it; ours stores 2 bytes per lane always).
+- LDS: the norm's 4-float reduction buffer and the 4 KB row (`out_s`) at
+  the start of the dynamic LDS; nothing else. Rows past the wave's range
+  skip their loads (their registers stay zero) so the butterfly runs the
+  same instructions in every lane; only the stores are masked.
 - The multiply: per row per lane, 32 conversions and 32 `v_fmac_f32` in
   ascending k within the lane's four runs of eight; then the halving
   butterfly over the batch's rows: three steps in which lane l exchanges
@@ -97,17 +106,22 @@ variant of L1c.
 **Direction.** The first standalone tests of a linear in the suite (the CK
 tile never had one), and the cold-cache time of the tile at three depths.
 
-**Core approach.** `k_linear_gemv(x, w_norm, W, residual, out, Meta)` in
-`kernel_tests_mi300.cu` with `Meta.mode` selecting the instantiation
-(0 plain, 1 norm, 2 residual) and `Meta.rows` (38 by default; 256 for the
-head's form); `kernel_tests.py` gains `linear_gemv`, `linear_gemv_norm`,
+**Core approach.** Three wrappers in `kernel_tests_mi300.cu`,
+`k_linear_gemv`, `k_linear_gemv_norm` and `k_linear_gemv_res`, one per
+instantiation (the launcher's `Meta` holds `step` and `prompt_length`
+only and is not extended), each taking `rows` and `o_stride` as kernel
+arguments (38 and 3,648 by default; 256 and 102,400 for the head's row,
+32 and 2,048 for the residual's); `kernel_tests.py` gains `linear_gemv`, `linear_gemv_norm`,
 `linear_gemv_res` (a `Kernel` entry each: tensors, `make_`, `ref_`,
 `check_`) with references `bf16(x @ W.T)`, `numpy_ref.linear_norm`,
 `bf16(x @ W.T + res)` and a `row_bf16` check; `RUNS` gains the three.
 `KT_TIME` applies as to the merge (the launch covers 96 blocks of 38
-rows); the cold path rotates over `KT_COLD` copies of the 15 MB weight so
-the loads come from HBM (the launcher's rotation is written for the
-attention's cache today and gains the weight's case). The depth and the map are compile-time
+rows); the cold path rotates over `KT_COLD` copies of the 15 MB weight (the
+launcher's rotation is written for the attention's 1.2 MB cache today
+and gains the weight's case). Four copies defeat the XCD's 4 MB L2, not
+the 256 MB memory-side cache, as round 3's `ktime` did: the standalone
+number is L2-cold, and the graph's exec counter is the HBM number (the
+2x rule of `09-lessons.md`, lesson 6). The depth and the map are compile-time
 (`-DGEMV_BATCH=4|8|16`, `-DGEMV_STRIDED`): four suite binaries
 (`kernel_tests_gemv4`, `_gemv8`, `_gemv16`, `_gemv8s`) built by the
 `kernels` stage of `vm.sh` beside `_nt` and `_mfma`, and timed by the
@@ -155,7 +169,13 @@ residual, the head with the final norm; no scratch tensors.
 **Core approach.**
 
 - `TASK_LINEAR_GEMV_MI300 = 195` (regular) in the enum hunk and the name
-  map; `register_linear_gemv_mi300_task(bgraph, params)` after the pattern
+  map; the imaps as `linear_norm_layer`'s `_new_task` list
+  (`build_graph.py`, line 167: x `(-1, -1, -1)`, `w_norm` `(-1, -1, -1)`,
+  the weight `(0, -1, -1)`, the output `(1, -1, -1)`; the residual
+  `(-1, -1, -1)`), so the runtime hands each task its weight rows and its
+  output columns and the whole of the rest; at most 4 inputs and 1
+  output against the descriptor's 7 and 6 (the patch raised the outputs
+  from 3 for the router); `register_linear_gemv_mi300_task(bgraph, params)` after the pattern
   of `register_linear_norm_mi300_task`: params `[norm, residual,
   eps_bits]`; inputs `x [1, K]` whole, then `w_norm [K]` if norm, then
   `W [N, K]` partitioned on dim 0 by the grid, then `residual [1, N]`
@@ -212,11 +232,10 @@ GEMV loop, the activation row kept in LDS: no scratch write, no
   the butterfly's lanes, the stock scatter's addressing.
 - The CK multiply stays in the file under `MPK_W2_CK_TILE` (a define
   passed by `--runtime-flags`) as the one-flag fallback; the registration
-  keeps its scratch output until the plan drops it under `--gemv-linears`
-  (the tensor is then unused and can go in the same change).
+  and the plan keep the scratch output this round (700 KB, unused by the
+  GEMV form; dropping it is a registration change for a later pass).
 
-**Files.** `gang_moe_w2_silu_mi300.cuh`, `graph_plan.py` (the scratch under
-the flag), `kernel_tests_mi300.cu` and `kernel_tests.py` (a `gang_w2_gemv`
+**Files.** `gang_moe_w2_silu_mi300.cuh`, `kernel_tests_mi300.cu` and `kernel_tests.py` (a `gang_w2_gemv`
 row: the launcher passes `tile_idx = blockIdx.x` and, under `-DKT_FAKE_XCD`,
 the kernel takes its XCD from `blockIdx.y` instead of the hardware
 register, so a `(32, 8)` launch covers every (XCD, tile) pair
@@ -240,9 +259,17 @@ stream ends.
 **Core approach.**
 
 - `gang_moe_w13_gemv_mi300.cuh` (new), `TASK_GANG_MOE_W13_GEMV_MI300 =
-  196` (gang; added to the gang-type lists in `persistent_kernel.cuh`
-  and to the MoE gang rule in `runtime.cc` that sets `n_tile_start = 0`,
-  the hunks the fused w2 added for type 191). Template
+  196` (gang), added in the three places the fused w2 (191) was added:
+  `is_gang_task_type` in `persistent_kernel.cuh`; the gang list of
+  `runtime.cc` (lines 404 to 444) whose entries take their tile count
+  from `graph.gang_task_tiles_per_xcd[op]` and, in the default branch,
+  `n_tile_start = 0`; and the Python API's gang wrapper that records that
+  count (`gang_moe_w2_silu_linear_layer`'s pattern). The count recorded
+  is the stock rule's `max_experts_per_xcd x tiles_per_expert` (9 x 37 =
+  333 today's 9 x 44 = 396): the gang loop hands every worker 9 tiles,
+  and the kernel returns at once for the eight local expert indices past
+  the XCD's one active expert (`ae_idx >= num_activated_experts`, the
+  stock decode), as the stock w13 does today. Template
   `<T, N = 2816, K = 2048, NUM_EXPERTS = 66, NUM_TOPK = 8, TILES = 37>`;
   the expert decode of the stock w13 (`d_mask[NUM_EXPERTS]` active
   experts, `ae_idx = xcd + 8 * local`, one expert per XCD at eight
@@ -428,13 +455,19 @@ and the last-arriving task routes.
   experts `16 part .. 16 part + 15` (four rows per wave, one batch of 16
   loads per lane, issued before the norm), writes its 16 logits to the `logits` tensor, then all threads
   `__builtin_amdgcn_fence(__ATOMIC_RELEASE, "agent")`, a barrier, thread 0
-  `atomicAdd(counter, 1)` and broadcasts `old == 3` through LDS; the last
-  task's threads `__builtin_amdgcn_fence(__ATOMIC_ACQUIRE, "agent")`, wave
-  0 reads the 64 logits, runs the softmax and the top-k, the writes of
+  `__hip_atomic_fetch_add(counter, 1, __ATOMIC_ACQ_REL,
+  __HIP_MEMORY_SCOPE_AGENT)` and broadcasts `old == 3` through LDS; after
+  the barrier every thread of the last task executes
+  `__builtin_amdgcn_fence(__ATOMIC_ACQUIRE, "agent")` (the L1 and the
+  XCD's L2 lines invalidated for its own loads), wave 0 reads the 64
+  logits, runs the softmax and the top-k, the writes of
   N1's phase 5, and thread 0 stores `counter = 0`.
 - The registration `moe_router_norm4_mi300` (type 200): the fused
   router's three inputs plus `counter [1]` int32, its six outputs, params
-  `[..., part_count]`; grid `(4, 1, 1)`, every imap whole.
+  `[..., part_count]`; grid `(4, 1, 1)`, every imap whole; 4 inputs and 6
+  outputs against the descriptor's 7 and 6. The counter is a 1-D `[1]`
+  tensor, so `new_workspace` gives it a plain zeroed buffer (the
+  `ROW_SLACK` rows are for `[1, D]` activations only).
   `graph_plan.py --router-tasks` allocates `router_counter [1]` int32
   (zeroed at allocation, `build_graph.py` line 263) once for all layers
   and issues the four-task call; the counts (26 x 3 more tasks).
@@ -538,15 +571,18 @@ order with the residual into `x_res`.
   its chunk; the eight lanes of a row reduce by three xor steps (1, 2,
   4); the lane at the row's head writes `workspace[t][n]` (FP32); then
   a barrier, all threads `__builtin_amdgcn_fence(__ATOMIC_RELEASE,
-  "agent")`, thread 0 `atomicAdd(counter, 1)` and the broadcast of
-  `old == 31`; the last task: the acquire fence, thread t loads
+  "agent")`, thread 0's acq-rel atomic at agent scope (N2's form) and
+  the broadcast of `old == 31`; the last task: every thread's acquire
+  fence, thread t loads
   `workspace[0..31][8 t .. 8 t + 7]` (two batches of 32 loads) and sums
   them in order 0 to 31, adds `x_res[8 t ..]` in FP32, rounds and stores
   `x_res[8 t ..]` (16 bytes), thread 0 stores `counter = 0`.
 - The registration: inputs `partials, W_uv, W_o, x_res, counter`, outputs
   `x_res, attn, workspace [32, 2048]` FP32 (in-place `x_res` as
   `linear_with_residual` does), params `[split, n_splits, halves]`, grid
-  `(32, 1, 1)`, every imap whole. `graph_plan.py --merge-oproj` allocates
+  `(32, 1, 1)`, every imap whole; 5 inputs and 3 outputs against the
+  descriptor's 7 and 6; the workspace is 2-D `[32, 2048]`, not `[1, D]`,
+  so it is a plain zeroed buffer. `graph_plan.py --merge-oproj` allocates
   `oproj_ws` and `oproj_counter`, replaces `L{l}.mla_merge_uv` and
   `L{l}.o_proj` by one call labelled `L{l}.o_proj` (so `--stop-after` and
   the compare's `x_res` boundary keep their key; the `attn` boundary's
@@ -559,9 +595,7 @@ order with the residual into `x_res`.
 
 **Files.** `mla_merge_oproj_mi300.cuh`, `new_tasks.patch` (the type, the
 list, the registration, the dispatcher case), `build_graph.py`,
-`graph_plan.py` (the flag, the tensors, the labels), `harness/compare.py`
-(if its boundary list names the operator rather than the label: check),
-the tests, `kernel_tests_mi300.cu` and `kernel_tests.py` (a
+`graph_plan.py` (the flag, the tensors, the labels), the tests, `kernel_tests_mi300.cu` and `kernel_tests.py` (a
 `mla_merge_oproj` row: 32 blocks with `idx = blockIdx.x`, a zeroed
 counter; `x_res` against `numpy_ref` merge then o_proj with the residual
 within the linear tolerance, `attn` bit-exact against the merge row),
@@ -650,6 +684,25 @@ What was read in the source for this page and holds:
 - The free task-type values: 195 to 197 (below the fork's 198), 200 to
   229 (between its 199 and 230); the Hopper-range branch of the
   generated loader is under `MPK_ENABLE_TMA`.
+- The task descriptor holds 7 inputs and, with the patch, 6 outputs
+  (`runtime_header.h`, lines 85 and 86; `new_tasks.patch`, line 267):
+  every registration of this page fits (N5's 5 and 3 are the largest).
+- The runtime packs `bid.x` into the low 16 bits of `expert_offset` and
+  `bid.y` into the high 16 for the types in its list (`runtime.cc`, lines
+  391 to 402): the task index of N2, N4 and N5 is `bid.x`, as prep's head
+  and the attention tile's split are today.
+- `new_workspace` backs a `[1, D]` activation with `ROW_SLACK` rows and
+  every other shape with a plain zeroed buffer (`build_graph.py`, lines
+  250 to 264): the counters and the workspace are plain and zeroed.
+- The boundary dump keys a tensor by its name and the layer of its last
+  writer's label (`run_fleet.py`, `boundary_dump`, `layer_of`), not by
+  the operator's name, except the norm's `h`: N5's operator, labelled
+  `L{l}.o_proj`, keeps the `attn` and `x_res` rows and the `--stop-after`
+  label.
+- A gang task's tile count comes from `graph.gang_task_tiles_per_xcd`,
+  recorded by the Python API's gang wrapper, and the MoE gang types take
+  `n_tile_start = 0` (`runtime.cc`, lines 404 to 444): L4's wiring is
+  three additions, no new mechanism.
 
 What remains an assumption until the VM:
 
@@ -658,7 +711,6 @@ What remains an assumption until the VM:
 - That the compiler keeps the loads of a batch in flight inside the
   worker kernel as it does in the probe (L1c's wait sequence is the
   laptop's check; the exec counters the VM's).
-- That `harness/compare.py` keys its boundaries by label and last
-  writer, so N5's relabelling keeps the `x_res` row (to be read when N5
-  starts; the file's `thresholds` and class logic were not re-read for
-  this page).
+- That the per-XCD gang overhead (the broadcast, the per-XCD counters)
+  is the 3 us the w13 arithmetic assumes; G9's knob rows and G5's probe
+  bound it.
