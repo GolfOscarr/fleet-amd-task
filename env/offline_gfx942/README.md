@@ -99,3 +99,15 @@ batch depths and prints the registers and the `s_waitcnt vmcnt` sequence (the
 loads in flight per lane), and checks `v_dot2_f32_bf16` (gfx950 only). The
 results of 2026-09-17 are in `gemv_probe/results.txt`; the reading is in
 `docs/gpu-experiments/04-kernels/01-gemv-ideas.md`.
+
+## Round 4 variants (2026-09-18)
+
+`run.sh` also compiles `gemv` (`MK_GEMV`: the GEMV linear's three forms in
+the worker, keyed on the type L2's patch adds) and `w2ck` (the fused w2's CK
+path under `MPK_W2_CK_TILE`), disassembles `gemv` and `ckgang`, and writes
+`dev_kt.s`, the standalone launcher's device code, where `k_linear_gemv`,
+`k_moe_router` and `k_mla_merge_uv` are named kernels whose `s_waitcnt vmcnt`
+sequences show the loads in flight per batch. The probes under `gemv_probe/`
+(`gemv_probe.cu`, `bfly_probe.cu`, `order_probe.cu`) are single-kernel
+compiles of 30 s each; their findings are in `gemv_probe/results.txt` and in
+`docs/gpu-experiments/04-kernels/05-local-preparation.md` (the conventions).
