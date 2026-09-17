@@ -1,6 +1,9 @@
-# static instruction counts per function in the gfx942 assembly of mk_tu.cu (variant ours)
+# static instruction counts per function in the gfx942 assembly of mk_tu.cu
 # sc1 = agent scope (the cross-XCD fence the design relies on); sc0 sc1 = system scope
 # (printf/assert hostcall paths; a plain __threadfence() lowers to agent scope on this hipcc, env/hw/probes/fence_probe.cu, 2026-09-15); s_getreg_b32 = the HW_REG_XCC_ID read
+# variants: ours (the default build); nocfence and noafence (I4: the completion and the acquire fence knobs)
+
+## ours
 # function                                                    buffer_wbl2 sc0 sc1      buffer_wbl2 sc1      buffer_wbl2 sc0   buffer_inv sc0 sc1       buffer_inv sc1       buffer_inv sc0         s_getreg_b32              s_sleep
 __ockl_fprintf_append_string_n                                               12                    0                    0                    8                    0                    0                    0                    8
 __assert_fail                                                                48                    0                    0                   32                    0                    0                    0                   32
@@ -9,4 +12,26 @@ __ockl_printf_append_string_n                                                12 
 __ockl_printf_append_args                                                     6                    0                    0                    4                    0                    0                    0                    4
 _Z17persistent_kernelN6mirage7runtime13RuntimeConfigE                       198                    7                    0                  132                    2                    0                    5                  137
 _Z13worker_kernelN6mirage7runtime13RuntimeConfigE                           120                    4                    0                   80                    2                    0                    1                   82
+_Z16scheduler_kernelN6mirage7runtime13RuntimeConfigE                         78                    3                    0                   52                    0                    0                    2                   55
+
+## nocfence
+# function                                                    buffer_wbl2 sc0 sc1      buffer_wbl2 sc1      buffer_wbl2 sc0   buffer_inv sc0 sc1       buffer_inv sc1       buffer_inv sc0         s_getreg_b32              s_sleep
+__ockl_fprintf_append_string_n                                               12                    0                    0                    8                    0                    0                    0                    8
+__assert_fail                                                                48                    0                    0                   32                    0                    0                    0                   32
+__ockl_printf_begin                                                           6                    0                    0                    4                    0                    0                    0                    4
+__ockl_printf_append_string_n                                                12                    0                    0                    8                    0                    0                    0                    8
+__ockl_printf_append_args                                                     6                    0                    0                    4                    0                    0                    0                    4
+_Z17persistent_kernelN6mirage7runtime13RuntimeConfigE                       198                    5                    0                  132                    2                    0                    5                  137
+_Z13worker_kernelN6mirage7runtime13RuntimeConfigE                           120                    2                    0                   80                    2                    0                    1                   82
+_Z16scheduler_kernelN6mirage7runtime13RuntimeConfigE                         78                    3                    0                   52                    0                    0                    2                   55
+
+## noafence
+# function                                                    buffer_wbl2 sc0 sc1      buffer_wbl2 sc1      buffer_wbl2 sc0   buffer_inv sc0 sc1       buffer_inv sc1       buffer_inv sc0         s_getreg_b32              s_sleep
+__ockl_fprintf_append_string_n                                               12                    0                    0                    8                    0                    0                    0                    8
+__assert_fail                                                                48                    0                    0                   32                    0                    0                    0                   32
+__ockl_printf_begin                                                           6                    0                    0                    4                    0                    0                    0                    4
+__ockl_printf_append_string_n                                                12                    0                    0                    8                    0                    0                    0                    8
+__ockl_printf_append_args                                                     6                    0                    0                    4                    0                    0                    0                    4
+_Z17persistent_kernelN6mirage7runtime13RuntimeConfigE                       198                    7                    0                  132                    0                    0                    5                  137
+_Z13worker_kernelN6mirage7runtime13RuntimeConfigE                           120                    4                    0                   80                    0                    0                    1                   82
 _Z16scheduler_kernelN6mirage7runtime13RuntimeConfigE                         78                    3                    0                   52                    0                    0                    2                   55

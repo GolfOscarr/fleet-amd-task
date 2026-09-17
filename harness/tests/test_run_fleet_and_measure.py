@@ -139,6 +139,26 @@ def test_worker_timing_and_spin_parsers():
     assert "workers with tasks" in rep and "| copy | 16 | 2100 | 1.00 |" in rep
 
 
+def test_clock_log_parser_and_summary():
+    """I6: the queue's clock.log (blocks of a timestamp and the text of amd-smi metric --clock, the format
+    recorded in round 1) -> per-sample GFX and memory clocks and their medians."""
+    block = ("GPU: 0\n    CLOCK:\n        GFX_0:\n            CLK: {g0} MHz\n            MIN_CLK: 500 MHz\n"
+             "            MAX_CLK: 2100 MHz\n        GFX_1:\n            CLK: {g1} MHz\n            MAX_CLK: 2100 MHz\n"
+             "        MEM_0:\n            CLK: {m} MHz\n            MAX_CLK: 1300 MHz\n")
+    text = ("### 2026-09-18T10:00:00Z\n" + block.format(g0=131, g1=133, m=900)
+            + "### 2026-09-18T10:00:01Z\n" + block.format(g0=2100, g1=2050, m=1300)
+            + "### 2026-09-18T10:00:02Z\n" + block.format(g0=1900, g1=2100, m=1300))
+    s = measure.parse_clock_log(text)
+    assert len(s) == 3 and s[0]["gfx"] == [131.0, 133.0] and s[0]["mem"] == 900.0 and s[1]["t"] == "2026-09-18T10:00:01Z"
+    c = measure.clock_summary(s)
+    # per sample the median over the XCDs (the upper of two), then the median and max over the samples
+    assert c["samples"] == 3 and c["gfx_mhz_median"] == 2100.0 and c["gfx_mhz_max"] == 2100.0 and c["gfx_mhz_min"] == 133.0
+    assert c["mem_mhz_median"] == 1300.0
+    m = {"predicted": measure.PREDICTED, "clock": c}
+    assert "GFX clock from amd-smi" in measure.report_table(m)
+    assert measure.clock_summary(measure.parse_clock_log("")) == {"samples": 0}
+
+
 def test_pmc_and_trace_parsers(tmp_path):
     pmc = tmp_path / "pmc.csv"
     pmc.write_text("Dispatch_Id,Kernel_Name,TCC_BUBBLE_sum,TCC_EA0_RDREQ_sum,"
@@ -285,6 +305,13 @@ def test_pad_alloc_argument_and_run_name():
     a = p.parse_args(["--graph", "empty", "--ops", "100", "--tasks", "40", "--iters", "32", "--event-timing",
                       "--worker-timing", "--spin", "1000", "--model-dir", "x"])
     assert run_fleet.run_name(a) == "E100x40_spin1000_it32_wt"                    # I3
+    # the = form: a value starting with a dash is an option to argparse otherwise
+    a = p.parse_args(["--layers", "2", "--iters", "32", "--runtime-flags=-DMPK_NO_COMPLETION_FENCE",
+                      "--runtime-flags=-DMPK_POLL_SLEEP=8", "--model-dir", "x"])
+    assert a.runtime_flags == ["-DMPK_NO_COMPLETION_FENCE", "-DMPK_POLL_SLEEP=8"]
+    assert run_fleet.run_name(a) == "L2_it32_rf_nocompletionfence+pollsleep8"     # I4
+    assert run_fleet.runtime_flags_slug(["-DMPK_NO_BCAST_CAS"]) == "nobcastcas" and run_fleet.runtime_flags_slug([]) == ""
+    assert run_fleet.runtime_flags_slug(['"-DMPK_NO_BCAST_CAS"']) == "nobcastcas"   # a stray quote from a queue row
 
 
 def test_tensor_addresses_records_every_host_tensor():

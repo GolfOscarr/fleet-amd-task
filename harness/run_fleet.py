@@ -34,6 +34,7 @@ iterations they hold the last iteration's values and are dumped with a note.
 import argparse
 import json
 import os
+import re
 import sys
 import time
 from pathlib import Path
@@ -188,6 +189,11 @@ def build_parser():
     ap.add_argument("--nt-streams", action="store_true",
                     help="-DMLA_NT_STREAMS: our kernels' cache streams (the attention's p x V loads, the merge's "
                          "partials) with the stock linears' non-temporal policy (O6, docs/gpu-experiments/03-acceleration)")
+    ap.add_argument("--runtime-flags", action="append", default=[], metavar="DEFINE",
+                    help="an extra hipcc define for the runtime, repeatable, in the = form since the value starts with a "
+                         "dash: --runtime-flags=-DMPK_NO_COMPLETION_FENCE --runtime-flags=-DMPK_POLL_SLEEP=8 (I4, the fence "
+                         "knobs of docs/gpu-experiments/03-acceleration; one define per option so a queue row, split on "
+                         "whitespace, carries it); through MPK_EXTRA_HIPCC_FLAGS")
     ap.add_argument("--worker-timing", action="store_true",
                     help="compile with MPK_TIMING=1: every worker's [TIMING], [TASK_TIME] and [TASK_TIME2] lines "
                          "in fwd_pass.log (I1, docs/gpu-experiments/03-acceleration)")
@@ -219,6 +225,18 @@ def build_parser():
     return ap
 
 
+def runtime_flags_slug(flags):
+    """A short tag of the --runtime-flags defines for the run name: -DMPK_NO_COMPLETION_FENCE -DMPK_POLL_SLEEP=8
+    -> nocompletionfence+pollsleep8 (the -D and MPK_ prefixes dropped, lowercased, no separators)."""
+    parts = []
+    for f in (flags if isinstance(flags, (list, tuple)) else flags.split()):
+        f = f.strip().strip('"').strip("'")
+        f = re.sub(r"^-D", "", f)
+        f = re.sub(r"^MPK_", "", f)
+        parts.append(re.sub(r"[^a-z0-9]", "", f.lower()))
+    return "+".join(x for x in parts if x)
+
+
 def run_name(args):
     """The run directory name under harness/fleet_out, from the arguments."""
     pad = f"_pad{args.pad_alloc:g}" if args.pad_alloc else ""
@@ -236,12 +254,13 @@ def run_name(args):
     mf = "_mfma" if args.mfma_attend else ""
     pf = "_pf" if args.prefetch else ""
     wt = "_wt" if args.worker_timing else ""
+    rf = f"_rf_{runtime_flags_slug(args.runtime_flags)}" if args.runtime_flags else ""
     if args.graph == "empty":      # I3: no layers, no head
         return (f"E{args.ops}x{args.tasks}" + (f"_spin{args.spin}" if args.spin else "") + f"_it{args.iters}"
-                + wt + al + ws + pad)
+                + wt + rf + al + ws + pad)
     return (f"L{args.layers}{'_head' if args.head else ''}_it{args.iters}"
             + (f"_{args.stop_after}" if args.stop_after else "") + ("_scores" if args.debug_scores else "")
-            + tile + at + fn1 + fn2 + fs + pf + probe + nt + nts + mf + wt + sp + al + ws + pad)
+            + tile + at + fn1 + fn2 + fs + pf + probe + nt + nts + mf + wt + rf + sp + al + ws + pad)
 
 
 def run_empty(args, out, prompt, n_prompt, s_max, t0, torch, B):
@@ -319,6 +338,8 @@ def main():
         os.environ["MPK_EXTRA_HIPCC_FLAGS"] = (os.environ.get("MPK_EXTRA_HIPCC_FLAGS", "") + " -DMLA_NT_STREAMS").strip()
     if args.mfma_attend:     # O7: the MFMA attention, the same hook
         os.environ["MPK_EXTRA_HIPCC_FLAGS"] = (os.environ.get("MPK_EXTRA_HIPCC_FLAGS", "") + " -DMLA_ATTEND_MFMA").strip()
+    if args.runtime_flags:           # I4: the fence knobs, the same hook
+        os.environ["MPK_EXTRA_HIPCC_FLAGS"] = (os.environ.get("MPK_EXTRA_HIPCC_FLAGS", "") + " " + " ".join(args.runtime_flags)).strip()
     if args.split:
         import fleet.graph_plan as _G
         assert 0 < args.split and -(-1056 // args.split) <= 64, "mla_merge_uv merges at most 64 splits"
@@ -393,7 +414,7 @@ def main():
         "stop_after": args.stop_after, "s_max": s_max, "n_prompt": n_prompt, "tile_linears": args.tile_linears,
         "attend_tasks": args.attend_tasks, "fuse_norm2": args.fuse_norm2, "fuse_silu": args.fuse_silu,
         "probe_before": args.probe_before, "fuse_norm1": args.fuse_norm1, "mfma_attend": args.mfma_attend,
-        "prefetch": args.prefetch, "worker_timing": args.worker_timing,
+        "prefetch": args.prefetch, "worker_timing": args.worker_timing, "runtime_flags": args.runtime_flags,
         "ops": len(pj["calls"]), "tasks": sum(c["tasks"] for c in pj["calls"]),
         "env": {k: os.environ.get(k) for k in ("MPK_EVENT_TIMING", "MPK_TIMING", "USE_NT_WEIGHTS", "USE_GANG",
                                                 "AMDGPU_TARGETS", "MPK_DEBUG_SCORES", "MPK_EXTRA_HIPCC_FLAGS")},

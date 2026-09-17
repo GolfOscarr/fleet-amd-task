@@ -85,6 +85,12 @@ compile cklinear -DMK_CK_LINEAR=1 || ok=1
 compile mfma -DMLA_ATTEND_MFMA=1 || ok=1
 # I1: the worker timing build (MPK_TIMING=1 of persistent_kernel.py): the per-worker prints of our hunk
 compile timing -DMPK_ENABLE_TIMING=1 || ok=1
+# I4: the fence knobs (run_fleet.py --runtime-flags), each alone; the two fence knobs are also disassembled below
+compile nocfence -DMPK_NO_COMPLETION_FENCE=1 || ok=1
+compile noafence -DMPK_NO_ACQUIRE_FENCE=1 || ok=1
+compile nobcastcas -DMPK_NO_BCAST_CAS=1 || ok=1
+compile nolocalcas -DMPK_NO_LOCAL_CAS=1 || ok=1
+compile sleep8 -DMPK_POLL_SLEEP=8 || ok=1
 
 # The patched host sources of the runtime (O8, docs/gpu-experiments/03-acceleration: the
 # side-operator branch of register_mugraph; also every registration our patch adds), parsed
@@ -118,41 +124,56 @@ done
 
 # The gfx942 assembly of the "ours" variant, for the fence question (MAJ-3):
 # does __builtin_amdgcn_fence(..., "agent") lower to buffer_wbl2 sc1 on
-# release and buffer_inv sc1 on acquire? Counted per kernel into fences.txt.
-docker run --rm --platform linux/amd64 \
-  -v "$WORK/fleet:/fleet" -v "$WORK/ck:/ck" -v "$WORK/json:/json" -v "$HERE:/here" -v "$WORK/out:/out" \
-  "$IMAGE" bash -c "
-    hipcc -S -x hip /here/mk_tu.cu --offload-device-only -o /out/dev_ours.s \
-      -O3 -std=c++17 --offload-arch=gfx942 \
-      -I/fleet/include -I/fleet/include/mirage/persistent_kernel \
-      -I/fleet/deps/rocblas/include -I/ck/include -I/opt/rocm/include -I/json/include \
-      -DCK_TILE_FMHA_FWD_FAST_EXP2=1 -DMAX_WORKER_PER_SCHEDULER=38 -DMIRAGE_USE_CUTLASS_KERNEL=0 \
-      -D__HIP_PLATFORM_AMD__=1 -DMIRAGE_AMD_MI300 -DMIRAGE_BACKEND_USE_ROCM -DMPK_TARGET_CC=94 \
-      -DMPK_MAX_NUM_BATCHED_REQUESTS=1 -DMPK_MAX_NUM_BATCHED_TOKENS=1 -DMPK_MAX_NUM_PAGES=1 \
-      -DMPK_PAGE_SIZE=64 -DMPK_MAX_SEQ_LENGTH=1056 -DMODE_ONLINE -DMPK_PROFILING_NUM_ITERS=0 \
-      -DMPK_ENABLE_GANG_TASKS > /out/dev_ours.log 2>&1"
-python3 - "$WORK/out/dev_ours.s" > "$HERE/fences.txt" <<'PYEOF'
-import re, sys, collections
-lines = open(sys.argv[1]).read().splitlines()
-fn, counts = "(none)", collections.defaultdict(collections.Counter)
+# release and buffer_inv sc1 on acquire? Counted per kernel into fences.txt;
+# the same table for the two fence knobs of I4 (nocfence, noafence), so the
+# sites each knob removes are read as the drop in the sc1 counts.
+disasm() {
+  local variant="$1"; shift
+  docker run --rm --platform linux/amd64 \
+    -v "$WORK/fleet:/fleet" -v "$WORK/ck:/ck" -v "$WORK/json:/json" -v "$HERE:/here" -v "$WORK/out:/out" \
+    "$IMAGE" bash -c "
+      hipcc -S -x hip /here/mk_tu.cu --offload-device-only -o /out/dev_$variant.s \
+        -O3 -std=c++17 --offload-arch=gfx942 \
+        -I/fleet/include -I/fleet/include/mirage/persistent_kernel \
+        -I/fleet/deps/rocblas/include -I/ck/include -I/opt/rocm/include -I/json/include \
+        -DCK_TILE_FMHA_FWD_FAST_EXP2=1 -DMAX_WORKER_PER_SCHEDULER=38 -DMIRAGE_USE_CUTLASS_KERNEL=0 \
+        -D__HIP_PLATFORM_AMD__=1 -DMIRAGE_AMD_MI300 -DMIRAGE_BACKEND_USE_ROCM -DMPK_TARGET_CC=94 \
+        -DMPK_MAX_NUM_BATCHED_REQUESTS=1 -DMPK_MAX_NUM_BATCHED_TOKENS=1 -DMPK_MAX_NUM_PAGES=1 \
+        -DMPK_PAGE_SIZE=64 -DMPK_MAX_SEQ_LENGTH=1056 -DMODE_ONLINE -DMPK_PROFILING_NUM_ITERS=0 \
+        -DMPK_ENABLE_GANG_TASKS $* > /out/dev_$variant.log 2>&1"
+}
+disasm ours
+disasm nocfence -DMPK_NO_COMPLETION_FENCE=1
+disasm noafence -DMPK_NO_ACQUIRE_FENCE=1
+python3 - "$WORK/out" > "$HERE/fences.txt" <<'PYEOF'
+import re, sys, collections, os
+out = sys.argv[1]
 kinds = ("buffer_wbl2 sc0 sc1", "buffer_wbl2 sc1", "buffer_wbl2 sc0", "buffer_inv sc0 sc1",
          "buffer_inv sc1", "buffer_inv sc0", "s_getreg_b32", "s_sleep")
-for l in lines:
-    m = re.match(r"^([_A-Za-z][\w.$@]*):", l)
-    if m and not m.group(1).startswith(".L"):
-        fn = m.group(1)
-        continue
-    t = l.strip()
-    for k in kinds:
-        if t.startswith(k) and not (k.endswith("sc0") and t.startswith(k + " sc1")):
-            counts[fn][k] += 1
-            break
-print("# static instruction counts per function in the gfx942 assembly of mk_tu.cu (variant ours)")
+print("# static instruction counts per function in the gfx942 assembly of mk_tu.cu")
 print("# sc1 = agent scope (the cross-XCD fence the design relies on); sc0 sc1 = system scope")
 print("# (printf/assert hostcall paths; a plain __threadfence() lowers to agent scope on this hipcc, env/hw/probes/fence_probe.cu, 2026-09-15); s_getreg_b32 = the HW_REG_XCC_ID read")
-print(f"# {'function':<58} " + " ".join(f"{k:>20}" for k in kinds))
-for f, c in counts.items():
-    print(f"{f[:58]:<58} " + " ".join(f"{c.get(k, 0):>20}" for k in kinds))
+print("# variants: ours (the default build); nocfence and noafence (I4: the completion and the acquire fence knobs)")
+for variant in ("ours", "nocfence", "noafence"):
+    path = os.path.join(out, f"dev_{variant}.s")
+    if not os.path.exists(path):
+        print(f"\n## {variant}: no assembly"); continue
+    fn, counts = "(none)", collections.defaultdict(collections.Counter)
+    for l in open(path).read().splitlines():
+        m = re.match(r"^([_A-Za-z][\w.$@]*):", l)
+        if m and not m.group(1).startswith(".L"):
+            fn = m.group(1)
+            continue
+        t = l.strip()
+        for k in kinds:
+            if t.startswith(k) and not (k.endswith("sc0") and t.startswith(k + " sc1")):
+                counts[fn][k] += 1
+                break
+    print(f"\n## {variant}")
+    print(f"# {'function':<58} " + " ".join(f"{k:>20}" for k in kinds))
+    for f, c in counts.items():
+        if "kernel" in f or "printf" in f or "assert" in f:
+            print(f"{f[:58]:<58} " + " ".join(f"{c.get(k, 0):>20}" for k in kinds))
 PYEOF
 cat "$HERE/fences.txt"
 
@@ -160,7 +181,7 @@ cat "$HERE/fences.txt"
 {
   echo "# Offline gfx942 compile, $(date -u +%Y-%m-%dT%H:%M:%SZ), $(cat "$WORK/out/hipcc.txt" | tr '\n' ' ')"
   echo "# fleet 51dce4f + gfx942.patch + new_tasks.patch + sched_xcd.patch; composable_kernel $CK_COMMIT; json $JSON_COMMIT"
-  for v in mk_ours mk_ckfmha mk_debugscores mk_ckgang mk_ntstreams mk_cklinear mk_mfma mk_timing kernel_tests kernel_tests_debug kernel_tests_nt kernel_tests_mfma; do
+  for v in mk_ours mk_ckfmha mk_debugscores mk_ckgang mk_ntstreams mk_cklinear mk_mfma mk_timing mk_nocfence mk_noafence mk_nobcastcas mk_nolocalcas mk_sleep8 kernel_tests kernel_tests_debug kernel_tests_nt kernel_tests_mfma; do
     echo; echo "## $v (hipcc exit $(cat "$WORK/out/$v.rc"))"
     grep -E "Function Name|    VGPRs:|AGPRs|SGPRs Spill|VGPRs Spill|LDS Size|ScratchSize|Occupancy" "$WORK/out/$v.log" \
       | sed 's/.*remark: *//; s/ \[-Rpass.*//; s/Function Name: //' | paste - - - - - - - - \

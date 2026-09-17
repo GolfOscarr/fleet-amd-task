@@ -1,4 +1,4 @@
-# Offline gfx942 compile, 2026-09-17T04:21:42Z, HIP version: 7.0.51831-a3e329ad8 AMD clang version 20.0.0git (https://github.com/RadeonOpenCompute/llvm-project roc-7.0.0 25314 f4087f6b428f0e6f575ebac8a8a724dab123d06e) 7.0.0 
+# Offline gfx942 compile, 2026-09-17T04:39:11Z, HIP version: 7.0.51831-a3e329ad8 AMD clang version 20.0.0git (https://github.com/RadeonOpenCompute/llvm-project roc-7.0.0 25314 f4087f6b428f0e6f575ebac8a8a724dab123d06e) 7.0.0 
 # fleet 51dce4f + gfx942.patch + new_tasks.patch + sched_xcd.patch; composable_kernel d8ee107a47d8485dbcffc79eb08e4f7c39ea6335; json 8c391e04fe4195d8be862c97f38cfe10e2a3472e
 
 ## mk_ours (hipcc exit 0)
@@ -55,6 +55,41 @@ _Z11init_kernelN6mirage7runtime13RuntimeConfigE            VGPRs: 51    AGPRs: 0
 _Z14prepare_kernelN6mirage7runtime13RuntimeConfigEi        VGPRs: 51    AGPRs: 0   ScratchSize [bytes/lane]: 64 Occupancy [waves/SIMD]: 8 SGPRs Spill: 0    VGPRs Spill: 0    LDS Size [bytes/block]: 0
 _Z17persistent_kernelN6mirage7runtime13RuntimeConfigE      VGPRs: 256   AGPRs: 25  ScratchSize [bytes/lane]: 576 Occupancy [waves/SIMD]: 1 SGPRs Spill: 170  VGPRs Spill: 8    LDS Size [bytes/block]: 2520
 _Z13worker_kernelN6mirage7runtime13RuntimeConfigE          VGPRs: 256   AGPRs: 21  ScratchSize [bytes/lane]: 64 Occupancy [waves/SIMD]: 1 SGPRs Spill: 96   VGPRs Spill: 0    LDS Size [bytes/block]: 2512
+_Z16scheduler_kernelN6mirage7runtime13RuntimeConfigE       VGPRs: 59    AGPRs: 0   ScratchSize [bytes/lane]: 608 Occupancy [waves/SIMD]: 7 SGPRs Spill: 31   VGPRs Spill: 0    LDS Size [bytes/block]: 0
+
+## mk_nocfence (hipcc exit 0)
+_Z11init_kernelN6mirage7runtime13RuntimeConfigE            VGPRs: 51    AGPRs: 0   ScratchSize [bytes/lane]: 64 Occupancy [waves/SIMD]: 8 SGPRs Spill: 0    VGPRs Spill: 0    LDS Size [bytes/block]: 0
+_Z14prepare_kernelN6mirage7runtime13RuntimeConfigEi        VGPRs: 51    AGPRs: 0   ScratchSize [bytes/lane]: 64 Occupancy [waves/SIMD]: 8 SGPRs Spill: 0    VGPRs Spill: 0    LDS Size [bytes/block]: 0
+_Z17persistent_kernelN6mirage7runtime13RuntimeConfigE      VGPRs: 246   AGPRs: 0   ScratchSize [bytes/lane]: 576 Occupancy [waves/SIMD]: 2 SGPRs Spill: 187  VGPRs Spill: 0    LDS Size [bytes/block]: 2520
+_Z13worker_kernelN6mirage7runtime13RuntimeConfigE          VGPRs: 246   AGPRs: 0   ScratchSize [bytes/lane]: 64 Occupancy [waves/SIMD]: 2 SGPRs Spill: 123  VGPRs Spill: 0    LDS Size [bytes/block]: 2512
+_Z16scheduler_kernelN6mirage7runtime13RuntimeConfigE       VGPRs: 59    AGPRs: 0   ScratchSize [bytes/lane]: 608 Occupancy [waves/SIMD]: 7 SGPRs Spill: 31   VGPRs Spill: 0    LDS Size [bytes/block]: 0
+
+## mk_noafence (hipcc exit 0)
+_Z11init_kernelN6mirage7runtime13RuntimeConfigE            VGPRs: 51    AGPRs: 0   ScratchSize [bytes/lane]: 64 Occupancy [waves/SIMD]: 8 SGPRs Spill: 0    VGPRs Spill: 0    LDS Size [bytes/block]: 0
+_Z14prepare_kernelN6mirage7runtime13RuntimeConfigEi        VGPRs: 51    AGPRs: 0   ScratchSize [bytes/lane]: 64 Occupancy [waves/SIMD]: 8 SGPRs Spill: 0    VGPRs Spill: 0    LDS Size [bytes/block]: 0
+_Z17persistent_kernelN6mirage7runtime13RuntimeConfigE      VGPRs: 246   AGPRs: 0   ScratchSize [bytes/lane]: 576 Occupancy [waves/SIMD]: 2 SGPRs Spill: 187  VGPRs Spill: 0    LDS Size [bytes/block]: 2520
+_Z13worker_kernelN6mirage7runtime13RuntimeConfigE          VGPRs: 246   AGPRs: 0   ScratchSize [bytes/lane]: 64 Occupancy [waves/SIMD]: 2 SGPRs Spill: 123  VGPRs Spill: 0    LDS Size [bytes/block]: 2512
+_Z16scheduler_kernelN6mirage7runtime13RuntimeConfigE       VGPRs: 59    AGPRs: 0   ScratchSize [bytes/lane]: 608 Occupancy [waves/SIMD]: 7 SGPRs Spill: 31   VGPRs Spill: 0    LDS Size [bytes/block]: 0
+
+## mk_nobcastcas (hipcc exit 0)
+_Z11init_kernelN6mirage7runtime13RuntimeConfigE            VGPRs: 51    AGPRs: 0   ScratchSize [bytes/lane]: 64 Occupancy [waves/SIMD]: 8 SGPRs Spill: 0    VGPRs Spill: 0    LDS Size [bytes/block]: 0
+_Z14prepare_kernelN6mirage7runtime13RuntimeConfigEi        VGPRs: 51    AGPRs: 0   ScratchSize [bytes/lane]: 64 Occupancy [waves/SIMD]: 8 SGPRs Spill: 0    VGPRs Spill: 0    LDS Size [bytes/block]: 0
+_Z17persistent_kernelN6mirage7runtime13RuntimeConfigE      VGPRs: 246   AGPRs: 0   ScratchSize [bytes/lane]: 576 Occupancy [waves/SIMD]: 2 SGPRs Spill: 189  VGPRs Spill: 0    LDS Size [bytes/block]: 2520
+_Z13worker_kernelN6mirage7runtime13RuntimeConfigE          VGPRs: 246   AGPRs: 0   ScratchSize [bytes/lane]: 64 Occupancy [waves/SIMD]: 2 SGPRs Spill: 107  VGPRs Spill: 0    LDS Size [bytes/block]: 2512
+_Z16scheduler_kernelN6mirage7runtime13RuntimeConfigE       VGPRs: 59    AGPRs: 0   ScratchSize [bytes/lane]: 608 Occupancy [waves/SIMD]: 7 SGPRs Spill: 31   VGPRs Spill: 0    LDS Size [bytes/block]: 0
+
+## mk_nolocalcas (hipcc exit 0)
+_Z11init_kernelN6mirage7runtime13RuntimeConfigE            VGPRs: 51    AGPRs: 0   ScratchSize [bytes/lane]: 64 Occupancy [waves/SIMD]: 8 SGPRs Spill: 0    VGPRs Spill: 0    LDS Size [bytes/block]: 0
+_Z14prepare_kernelN6mirage7runtime13RuntimeConfigEi        VGPRs: 51    AGPRs: 0   ScratchSize [bytes/lane]: 64 Occupancy [waves/SIMD]: 8 SGPRs Spill: 0    VGPRs Spill: 0    LDS Size [bytes/block]: 0
+_Z17persistent_kernelN6mirage7runtime13RuntimeConfigE      VGPRs: 254   AGPRs: 0   ScratchSize [bytes/lane]: 576 Occupancy [waves/SIMD]: 2 SGPRs Spill: 213  VGPRs Spill: 0    LDS Size [bytes/block]: 2520
+_Z13worker_kernelN6mirage7runtime13RuntimeConfigE          VGPRs: 254   AGPRs: 0   ScratchSize [bytes/lane]: 64 Occupancy [waves/SIMD]: 2 SGPRs Spill: 81   VGPRs Spill: 0    LDS Size [bytes/block]: 2512
+_Z16scheduler_kernelN6mirage7runtime13RuntimeConfigE       VGPRs: 59    AGPRs: 0   ScratchSize [bytes/lane]: 608 Occupancy [waves/SIMD]: 7 SGPRs Spill: 31   VGPRs Spill: 0    LDS Size [bytes/block]: 0
+
+## mk_sleep8 (hipcc exit 0)
+_Z11init_kernelN6mirage7runtime13RuntimeConfigE            VGPRs: 51    AGPRs: 0   ScratchSize [bytes/lane]: 64 Occupancy [waves/SIMD]: 8 SGPRs Spill: 0    VGPRs Spill: 0    LDS Size [bytes/block]: 0
+_Z14prepare_kernelN6mirage7runtime13RuntimeConfigEi        VGPRs: 51    AGPRs: 0   ScratchSize [bytes/lane]: 64 Occupancy [waves/SIMD]: 8 SGPRs Spill: 0    VGPRs Spill: 0    LDS Size [bytes/block]: 0
+_Z17persistent_kernelN6mirage7runtime13RuntimeConfigE      VGPRs: 246   AGPRs: 0   ScratchSize [bytes/lane]: 576 Occupancy [waves/SIMD]: 2 SGPRs Spill: 187  VGPRs Spill: 0    LDS Size [bytes/block]: 2520
+_Z13worker_kernelN6mirage7runtime13RuntimeConfigE          VGPRs: 246   AGPRs: 0   ScratchSize [bytes/lane]: 64 Occupancy [waves/SIMD]: 2 SGPRs Spill: 123  VGPRs Spill: 0    LDS Size [bytes/block]: 2512
 _Z16scheduler_kernelN6mirage7runtime13RuntimeConfigE       VGPRs: 59    AGPRs: 0   ScratchSize [bytes/lane]: 608 Occupancy [waves/SIMD]: 7 SGPRs Spill: 31   VGPRs Spill: 0    LDS Size [bytes/block]: 0
 
 ## kernel_tests (hipcc exit 0)

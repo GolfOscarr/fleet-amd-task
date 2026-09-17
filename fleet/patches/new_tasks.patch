@@ -56,10 +56,31 @@ index 2aab442..fff24d4 100755
    int register_splitk_linear_sm100_task(threadblock::Graph const &bgraph,
                                          std::vector<int> const &params,
 diff --git a/include/mirage/persistent_kernel/persistent_kernel.cuh b/include/mirage/persistent_kernel/persistent_kernel.cuh
-index 28aade0..3e3ef32 100755
+index 28aade0..72ba67d 100755
 --- a/include/mirage/persistent_kernel/persistent_kernel.cuh
 +++ b/include/mirage/persistent_kernel/persistent_kernel.cuh
-@@ -232,7 +232,9 @@ __device__ __host__ __forceinline__ bool is_gang_task_type(TaskType t) {
+@@ -71,6 +71,11 @@
+   #define cudaGetLastError hipGetLastError
+   // cudaStream_t type alias
+   typedef hipStream_t cudaStream_t;
++  // I4 (docs/gpu-experiments/03-acceleration, the fence knobs): the s_sleep constant of the
++  // poll loops (here) and of the dependency wait (execute_worker); 0 to 127; default 1
++  #ifndef MPK_POLL_SLEEP
++  #define MPK_POLL_SLEEP 1
++  #endif
+   // __nanosleep is CUDA-specific; use AMD's s_sleep intrinsic for HIP
+   __device__ __forceinline__ void __nanosleep(unsigned int ns) {
+     // AMD GPU s_sleep: each unit is approximately 64 clock cycles
+@@ -80,7 +85,7 @@
+     // s_sleep argument must be a compile-time constant, so we use a small fixed value
+     // and loop if needed. This is still much better than a busy loop.
+     for (unsigned int i = 0; i < sleep_units; i++) {
+-      __builtin_amdgcn_s_sleep(1);  // Sleep for ~64 cycles
++      __builtin_amdgcn_s_sleep(MPK_POLL_SLEEP);  // Sleep for ~64 cycles per unit (I4: MPK_POLL_SLEEP)
+     }
+   }
+ #endif
+@@ -232,7 +237,9 @@ __device__ __host__ __forceinline__ bool is_gang_task_type(TaskType t) {
           t == TASK_GANG_KSPLIT_GEMM_MI300 || t == TASK_GANG_KSPLIT_FINALIZE_MI300 ||
           t == TASK_GANG_ATTN_SPLIT_KV_MI300 || t == TASK_GANG_ATTN_MERGE_MI300 ||
           t == TASK_GANG_MOE_W13_LINEAR_MI300 || t == TASK_GANG_MOE_W2_LINEAR_MI300 ||
@@ -70,7 +91,7 @@ index 28aade0..3e3ef32 100755
  }
  
  __device__ __forceinline__ bool is_termination_event(size_t event_loc,
-@@ -750,7 +752,13 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+@@ -750,7 +757,13 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
      // Write this worker's XCD ID to shared map for scheduler to read
      if (config.worker_xcd_map != nullptr) {
        config.worker_xcd_map[worker_id] = block_xcd_id;
@@ -84,7 +105,7 @@ index 28aade0..3e3ef32 100755
          printf("[WORKER_XCD] worker_id=%d block=%d xcd=%d\n",
                 worker_id, (int)blockIdx.x, block_xcd_id);
        }
-@@ -821,6 +829,10 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+@@ -821,6 +834,10 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
    int linear_count = 0, linear_res_count = 0;
    int attention_count = 0, rms_count = 0, silu_count = 0;
    int fused_count = 0;
@@ -95,7 +116,36 @@ index 28aade0..3e3ef32 100755
  #endif
  
    while (true) {
-@@ -997,8 +1009,8 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+@@ -943,7 +960,9 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+           actual_counts = __atomic_load_n(
+               reinterpret_cast<unsigned long long*>(&config.all_event_counters[event_index]),
+               __ATOMIC_RELAXED);
+-#if defined(__HIP_PLATFORM_AMD__) || defined(MIRAGE_AMD_MI300)
++#if defined(MPK_NO_ACQUIRE_FENCE)
++          // I4 knob: no acquire after the dependency load (a probe; the boundary compare judges it)
++#elif defined(__HIP_PLATFORM_AMD__) || defined(MIRAGE_AMD_MI300)
+           // Agent-scope acquire fence (GPU-only, not system scope)
+           __builtin_amdgcn_fence(__ATOMIC_ACQUIRE, "agent");
+ #else
+@@ -956,13 +975,15 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+                   reinterpret_cast<unsigned long long*>(&config.all_event_counters[event_index]),
+                   __ATOMIC_RELAXED);
+ #if defined(__HIP_PLATFORM_AMD__) || defined(MIRAGE_AMD_MI300)
+-              __builtin_amdgcn_s_sleep(1);
++              __builtin_amdgcn_s_sleep(MPK_POLL_SLEEP);   // I4: MPK_POLL_SLEEP
+ #endif
+ #ifdef MPK_ENABLE_TIMING
+               total_dep_wait_iters++;
+ #endif
+             }
+-#if defined(__HIP_PLATFORM_AMD__) || defined(MIRAGE_AMD_MI300)
++#if defined(MPK_NO_ACQUIRE_FENCE)
++            // I4 knob: see above
++#elif defined(__HIP_PLATFORM_AMD__) || defined(MIRAGE_AMD_MI300)
+             __builtin_amdgcn_fence(__ATOMIC_ACQUIRE, "agent");
+ #else
+             __atomic_thread_fence(__ATOMIC_ACQUIRE);
+@@ -997,8 +1018,8 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
      if (task_desc->task_type == TASK_TERMINATE) {
        // Terminate
  #ifdef MPK_ENABLE_TIMING
@@ -106,7 +156,7 @@ index 28aade0..3e3ef32 100755
          printf("[TIMING] worker=%d tasks=%d poll_iters=%d dep_iters=%d "
                 "poll_cycles=%llu dep_cycles=%llu exec_cycles=%llu signal_cycles=%llu\n",
                 worker_id, total_tasks_executed, total_poll_iters, total_dep_wait_iters,
-@@ -1007,6 +1019,11 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+@@ -1007,6 +1028,11 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
                 worker_id, linear_cycles, linear_count, linear_res_cycles, linear_res_count,
                 attention_cycles, attention_count, rms_cycles, rms_count, silu_cycles, silu_count,
                 fused_cycles, fused_count);
@@ -118,7 +168,7 @@ index 28aade0..3e3ef32 100755
        }
  #endif
  #ifdef MPK_ENABLE_DEVICE_TASK_ACCUM
-@@ -1188,6 +1205,17 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+@@ -1188,6 +1214,17 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
          case TASK_RMS_NORM: rms_cycles += task_time; rms_count++; break;
          case TASK_SILU_MUL: silu_cycles += task_time; silu_count++; break;
          case TASK_SILU_MUL_LINEAR_WITH_RESIDUAL: fused_cycles += task_time; fused_count++; break;
@@ -136,6 +186,75 @@ index 28aade0..3e3ef32 100755
          default: break;
        }
      }
+@@ -1239,7 +1276,9 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+ 
+             if (local_count == needed_local) {
+               // Last worker/task on this XCD — flush + signal global
++#ifndef MPK_NO_COMPLETION_FENCE   // I4 knob: rely on the atomic alone (a probe; the compare judges it)
+               threadfence_gpu();
++#endif
+               // Gang: flush 1 (one task done). Non-gang: flush xcd_threshold.
+               int flush_amount = is_gang_task_type(task_desc->task_type)
+                                      ? 1 : xcd_threshold;
+@@ -1262,7 +1301,9 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+               get_task_iteration_num(task_ids[queue_pos]);
+ 
+           if (local_count == needed_local) {
++#ifndef MPK_NO_COMPLETION_FENCE   // I4 knob
+             threadfence_gpu();
++#endif
+             count = atom_add_release_gpu_u64(
+                 &config.all_event_counters[event_index], xcd_threshold);
+             event_fired =
+@@ -1276,7 +1317,9 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+ #endif
+         {
+           // Fallback: per-task fence + global atomic (NVIDIA, or uncounted events)
++#ifndef MPK_NO_COMPLETION_FENCE   // I4 knob
+           threadfence_gpu();
++#endif
+           count = atom_add_release_gpu_u64(
+               &config.all_event_counters[event_index], 1);
+           event_fired =
+@@ -1335,6 +1378,11 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+                                                  config.per_sched_queue_len],
+                   event_index);
+               threadfence_gpu();
++#ifdef MPK_NO_BCAST_CAS
++              // I4 knob: the in-order publish replaced by a store (a probe: with concurrent
++              // producers a later slot can be published before an earlier one)
++              st_relaxed_gpu_u64(&config.sched_queue_last_ready_event_id[sched_id], last_event_pos + 1);
++#else
+               size_t old;
+               do {
+                 old = atom_cas_release_gpu_u64(
+@@ -1342,6 +1390,7 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+                     last_event_pos,
+                     last_event_pos + 1);
+               } while (old != last_event_pos);
++#endif
+             } else {
+               // Same-XCD scheduler queue — use L2-local ops
+               size_t last_event_pos = atom_add_local_u64(
+@@ -1351,6 +1400,10 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+                                                  config.per_sched_queue_len],
+                   event_index);
+               fence_local();
++#ifdef MPK_NO_LOCAL_CAS
++              // I4 knob: the same-XCD queue's publish as a store (the same caveat)
++              st_local_u64(&config.sched_queue_last_ready_event_id[sched_id], last_event_pos + 1);
++#else
+               size_t old;
+               do {
+                 old = atom_cas_local_u64(
+@@ -1358,6 +1411,7 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+                     last_event_pos,
+                     last_event_pos + 1);
+               } while (old != last_event_pos);
++#endif
+             }
+           }
+ #ifdef MPK_ENABLE_PROFILING
 diff --git a/include/mirage/persistent_kernel/runtime_header.h b/include/mirage/persistent_kernel/runtime_header.h
 index f2dfe4e..48e1d0b 100755
 --- a/include/mirage/persistent_kernel/runtime_header.h

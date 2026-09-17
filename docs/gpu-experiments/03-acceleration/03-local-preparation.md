@@ -494,7 +494,12 @@ source settled: the placement over XCDs is read back from every worker's
 worker p modulo the worker count), and the ladder's copy reads its input
 whole and writes one row per task so that each boundary is one event with
 N triggers rather than N per-task chains. The queue for G3 is
-`env/session/queue-c3.txt`.
+`env/session/queue-c3.txt`. I4 and I6 followed the same day (the knobs in
+`new_tasks.patch`, not `gfx942.patch`; two CAS knobs rather than one, since
+the broadcast queue takes only the begin event after the prelaunch and the
+per-event publishes go to the same-XCD queue; the queue for G4 is
+`env/session/queue-c4.txt`; the clock sampler in the queue's run step). I5
+was skipped on the user's decision: no time for the vLLM dependencies.
 
 | Item | Direction | Core approach | Files |
 |---|---|---|---|

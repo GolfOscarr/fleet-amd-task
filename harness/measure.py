@@ -124,6 +124,43 @@ def worker_timing_summary(w, iters=None, mhz=None):
     return out
 
 
+def parse_clock_log(text: str):
+    """I6: the clock.log the queue writes beside a run (blocks of `### <utc>` then the text of
+    amd-smi metric --clock) -> [{"t": utc, "gfx": [CLK of GFX_0, GFX_1, ...], "mem": CLK of MEM_0}]."""
+    samples = []
+    for block in re.split(r"^### ", text, flags=re.M)[1:]:
+        lines = block.splitlines()
+        t, body = lines[0].strip(), lines[1:]
+        gfx, mem, section = [], None, None
+        for line in body:
+            s = line.strip()
+            m = re.match(r"^(GFX_\d+|MEM_\d+|[A-Z][A-Z_0-9]*)\s*:?\s*$", s)
+            if m:
+                section = m.group(1)
+                continue
+            m2 = re.match(r"^CLK\s*:\s*(-?[\d.]+)", s)
+            if m2 and section:
+                if section.startswith("GFX_"):
+                    gfx.append(float(m2.group(1)))
+                elif section == "MEM_0" and mem is None:
+                    mem = float(m2.group(1))
+        samples.append({"t": t, "gfx": gfx, "mem": mem})
+    return samples
+
+
+def clock_summary(samples):
+    """The median and the maximum of the per-sample GFX clock (the median over the XCDs) and the
+    memory clock, over the samples with a reading."""
+    gfx = sorted(sorted(s["gfx"])[len(s["gfx"]) // 2] for s in samples if s["gfx"])
+    mem = sorted(s["mem"] for s in samples if s["mem"] is not None)
+    out = {"samples": len(samples)}
+    if gfx:
+        out.update({"gfx_mhz_median": gfx[len(gfx) // 2], "gfx_mhz_max": gfx[-1], "gfx_mhz_min": gfx[0]})
+    if mem:
+        out.update({"mem_mhz_median": mem[len(mem) // 2], "mem_mhz_max": mem[-1]})
+    return out
+
+
 def parse_fwd_pass(text: str):
     """[(iter, time_ms, num_active_tokens)] in file order."""
     return [(int(a), float(b), int(c)) for a, b, c in FWD_RE.findall(text)]
@@ -322,6 +359,9 @@ def measure(run_dir: Path, kernel_trace=None, pmc=None, kernel_filter=DEFAULT_KE
         if wt:
             m["worker_timing"] = worker_timing_summary(wt, iters, mhz)
             m["worker_timing"]["workers"] = {str(k): wt[k] for k in sorted(wt)}
+    cl = run_dir / "clock.log"                         # I6
+    if cl.exists():
+        m["clock"] = clock_summary(parse_clock_log(cl.read_text()))
     et = run_dir / "event_timing.json"
     plan = json.loads((run_dir / "plan.json").read_text()) if (run_dir / "plan.json").exists() else None
     if et.exists():
@@ -393,6 +433,10 @@ def report_table(m):
                  ("exec cycles per task, busy workers", "", f(wt.get("exec_cycles_per_task"))),
                  ("exec us per task (at the spin's SCLK)", "", f(wt.get("exec_us_per_task"), 2)),
                  ("dep-wait us per iteration per busy worker", "", f(wt.get("dep_wait_us_per_iteration_per_busy_worker"), 2))]
+    if g("clock"):
+        rows += [("GFX clock from amd-smi during the run, median / max (MHz)", "2100 max (D2 of round 1)",
+                  f"{f(g('clock', 'gfx_mhz_median'), 0)} / {f(g('clock', 'gfx_mhz_max'), 0)} over {g('clock', 'samples')} samples"),
+                 ("memory clock from amd-smi, median (MHz)", "", f(g("clock", "mem_mhz_median"), 0))]
     lines = ["# Measurement report", "", "| Quantity | Predicted | Measured |", "|---|---|---|"]
     lines += [f"| {a} | {b} | {c} |" for a, b, c in rows]
     classes = (g("worker_timing", "per_class") or {})
