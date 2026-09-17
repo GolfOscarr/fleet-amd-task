@@ -35,6 +35,54 @@ __device__ __forceinline__ void st(T *p, float x) {
   *p = static_cast<T>(x);
 }
 
+// Streaming loads (docs/gpu-experiments/03-acceleration, O6; -DMLA_NT_STREAMS): the
+// policy the stock linears give their weight loads under -DMPK_NT_WEIGHT_LOADS,
+// CK's amd_buffer_coherence_enum value 18 on gfx942 (bit 4 = sc1, bit 1 = nt:
+// device-scope, non-temporal), issued as raw buffer loads so the compiler keeps
+// tracking the loads' completion. A StreamSrc holds the tensor's base and, on the
+// device with the builtins, its buffer resource; load8_from / ldf_from read at an
+// element offset. Without MLA_NT_STREAMS (or on the host syntax check, which has
+// no builtins) they are the plain loads, so the math is the same either way.
+#if defined(MLA_NT_STREAMS) && defined(__HIP_DEVICE_COMPILE__) && \
+    __has_builtin(__builtin_amdgcn_raw_buffer_load_b128) && __has_builtin(__builtin_amdgcn_make_buffer_rsrc)
+#define MLA_STREAM_LOADS 1
+constexpr int STREAM_AUX = 18;                       // sc1 nt
+constexpr int BUFFER_RSRC_WORD3 = 0x00020000;        // CK_TILE_BUFFER_RESOURCE_3RD_DWORD for gfx9
+template <typename T>
+struct StreamSrc {
+  T const *base;
+  __amdgpu_buffer_rsrc_t rsrc;
+  __device__ __forceinline__ explicit StreamSrc(T const *p)
+      : base(p), rsrc(__builtin_amdgcn_make_buffer_rsrc(const_cast<T *>(p), 0, 0xFFFFFFFFu, BUFFER_RSRC_WORD3)) {}
+};
+template <typename T>
+__device__ __forceinline__ void load8_from(StreamSrc<T> const &s, size_t elem, float out[8]) {
+  static_assert(sizeof(T) == 2, "8 x 16-bit values per 16-byte load");
+  typedef unsigned int u32x4 __attribute__((ext_vector_type(4)));
+  u32x4 raw = __builtin_amdgcn_raw_buffer_load_b128(s.rsrc, (unsigned)(elem * sizeof(T)), 0, STREAM_AUX);
+  T const *v = reinterpret_cast<T const *>(&raw);
+#pragma unroll
+  for (int k = 0; k < 8; k++) {
+    out[k] = static_cast<float>(v[k]);
+  }
+}
+__device__ __forceinline__ float ldf_from(StreamSrc<float> const &s, size_t elem) {
+  unsigned int raw = __builtin_amdgcn_raw_buffer_load_b32(s.rsrc, (unsigned)(elem * sizeof(float)), 0, STREAM_AUX);
+  return __uint_as_float(raw);
+}
+#else
+template <typename T>
+struct StreamSrc {
+  T const *base;
+  __device__ __forceinline__ explicit StreamSrc(T const *p) : base(p) {}
+};
+template <typename T>
+__device__ __forceinline__ void load8_from(StreamSrc<T> const &s, size_t elem, float out[8]);
+__device__ __forceinline__ float ldf_from(StreamSrc<float> const &s, size_t elem) {
+  return s.base[elem];
+}
+#endif
+
 // 16-byte load of 8 BF16 values as floats (dwordx4 per lane).
 template <typename T>
 __device__ __forceinline__ void load8(T const *src, float out[8]) {
@@ -45,6 +93,13 @@ __device__ __forceinline__ void load8(T const *src, float out[8]) {
     out[k] = static_cast<float>(v[k]);
   }
 }
+
+#ifndef MLA_STREAM_LOADS
+template <typename T>
+__device__ __forceinline__ void load8_from(StreamSrc<T> const &s, size_t elem, float out[8]) {
+  load8(s.base + elem, out);
+}
+#endif
 
 __device__ __forceinline__ float wave_sum(float x) {
 #pragma unroll

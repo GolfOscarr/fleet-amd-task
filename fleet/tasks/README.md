@@ -130,6 +130,7 @@ mkdir -p fleet/tasks/build && hipcc --offload-arch=gfx942 -O2 -std=c++17 \
   -I fleet -I $FLEET/include -I $FLEET/include/mirage/persistent_kernel \
   fleet/tasks/kernel_tests_mi300.cu -o fleet/tasks/build/kernel_tests
 # the debug-scores variant: the same line with -DMLA_ATTEND_DEBUG_SCORES -o fleet/tasks/build/kernel_tests_debug
+# the streaming-loads variant (O6): the same line with -DMLA_NT_STREAMS -o fleet/tasks/build/kernel_tests_nt
 ```
 
 `kernel_tests.py` is the driver:

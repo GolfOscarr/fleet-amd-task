@@ -57,6 +57,7 @@ __device__ __forceinline__ void
   }
   float const *partials = static_cast<float const *>(partials_ptr)
       - (size_t)xcd * partials_xcd_offset_rows * NH * P_ROW;
+  StreamSrc<float> partials_stream(partials);         // O6: the partials are read once per iteration
   T const *w_uv = static_cast<T const *>(w_uv_ptr)
       + (size_t)(w_uv_local ? t : h) * D_V * D_C;
   T *attn = static_cast<T *>(attn_ptr) + (size_t)(out_local ? t : h) * D_V;
@@ -74,7 +75,7 @@ __device__ __forceinline__ void
     live = WAVE;   // unreachable when the asserts hold; never read past the wave
   }
   if (tid < WAVE) {
-    float lse = (lane < live) ? partials[((size_t)lane * NH + h) * P_ROW + D_C] : -INFINITY;
+    float lse = (lane < live) ? ldf_from(partials_stream, ((size_t)lane * NH + h) * P_ROW + D_C) : -INFINITY;
     float M = wave_max(lse);
     float w = (lane < live) ? expf(lse - M) : 0.0f;
     w_s[lane] = w;
@@ -94,7 +95,7 @@ __device__ __forceinline__ void
       float v[PF];
 #pragma unroll
       for (int u = 0; u < PF; u++) {
-        v[u] = partials[((size_t)(j + u) * NH + h) * P_ROW + c];
+        v[u] = ldf_from(partials_stream, ((size_t)(j + u) * NH + h) * P_ROW + c);
       }
 #pragma unroll
       for (int u = 0; u < PF; u++) {
@@ -102,7 +103,7 @@ __device__ __forceinline__ void
       }
     }
     for (; j < live; j++) {
-      o += w_s[j] * partials[((size_t)j * NH + h) * P_ROW + c];
+      o += w_s[j] * ldf_from(partials_stream, ((size_t)j * NH + h) * P_ROW + c);
     }
     o_s[c] = bf16r(o * inv_tot);
   }

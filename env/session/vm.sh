@@ -110,6 +110,10 @@ build_kernel_tests() {
   # shellcheck disable=SC2086
   [ -x fleet/tasks/build/kernel_tests_debug ] || run hipcc --offload-arch=gfx942 -O2 -std=c++17 $defs $inc \
       -DMLA_ATTEND_DEBUG_SCORES fleet/tasks/kernel_tests_mi300.cu -o fleet/tasks/build/kernel_tests_debug || return 1
+  # O6 (docs/gpu-experiments/03-acceleration): the streaming-loads build, for KT_TIME against the plain one
+  # shellcheck disable=SC2086
+  [ -x fleet/tasks/build/kernel_tests_nt ] || run hipcc --offload-arch=gfx942 -O2 -std=c++17 $defs $inc \
+      -DMLA_NT_STREAMS fleet/tasks/kernel_tests_mi300.cu -o fleet/tasks/build/kernel_tests_nt || return 1
 }
 
 stage_kernels() {

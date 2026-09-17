@@ -182,6 +182,9 @@ def build_parser():
     ap.add_argument("--probe-before", default=None, metavar="LABEL",
                     help="a one-task copy operator in front of LABEL, e.g. L0.o_proj, so its event gap is measured "
                          "with a one-task predecessor (O5, docs/gpu-experiments/03-acceleration)")
+    ap.add_argument("--nt-streams", action="store_true",
+                    help="-DMLA_NT_STREAMS: our kernels' cache streams (the attention's p x V loads, the merge's "
+                         "partials) with the stock linears' non-temporal policy (O6, docs/gpu-experiments/03-acceleration)")
     ap.add_argument("--split", type=int, default=0,
                     help="positions per attention split (graph_plan.SPLIT, 32); more, smaller splits give more tiles, 64 at most")
     ap.add_argument("--debug-scores", action="store_true",
@@ -211,9 +214,10 @@ def run_name(args):
     fn2 = "_fn2" if args.fuse_norm2 else ""
     fs = "_fs" if args.fuse_silu else ""
     probe = f"_probe_{args.probe_before}" if args.probe_before else ""
+    nts = "_nts" if args.nt_streams else ""
     return (f"L{args.layers}{'_head' if args.head else ''}_it{args.iters}"
             + (f"_{args.stop_after}" if args.stop_after else "") + ("_scores" if args.debug_scores else "")
-            + tile + at + fn2 + fs + probe + nt + sp + al + ws + pad)
+            + tile + at + fn2 + fs + probe + nt + nts + sp + al + ws + pad)
 
 
 def tensor_addresses(host):
@@ -236,6 +240,8 @@ def main():
         os.environ["MPK_EVENT_TIMING"] = "1"
     if args.nt_weights:
         os.environ["USE_NT_WEIGHTS"] = "1"
+    if args.nt_streams:      # O6: our kernels' streaming loads; through the extra-flags hook of gfx942.patch
+        os.environ["MPK_EXTRA_HIPCC_FLAGS"] = (os.environ.get("MPK_EXTRA_HIPCC_FLAGS", "") + " -DMLA_NT_STREAMS").strip()
     if args.split:
         import fleet.graph_plan as _G
         assert 0 < args.split and -(-1056 // args.split) <= 64, "mla_merge_uv merges at most 64 splits"
@@ -310,7 +316,7 @@ def main():
         "probe_before": args.probe_before,
         "ops": len(pj["calls"]), "tasks": sum(c["tasks"] for c in pj["calls"]),
         "env": {k: os.environ.get(k) for k in ("MPK_EVENT_TIMING", "USE_NT_WEIGHTS", "USE_GANG", "AMDGPU_TARGETS",
-                                                "MPK_DEBUG_SCORES")},
+                                                "MPK_DEBUG_SCORES", "MPK_EXTRA_HIPCC_FLAGS")},
         "pad_alloc_gb": args.pad_alloc, "pad_addr": int(pad.data_ptr()) if pad is not None else None,
         "align_alloc": args.align_alloc, "workspaces_first": args.workspaces_first,
         "addresses": tensor_addresses(host), "completed": False,

@@ -54,13 +54,13 @@ Status: laptop part done 2026-09-17 (commit below on `local/round-3`). `Plan.ins
 
 ## O6. Non-temporal loads for our cache streams (2 h)
 
-- [ ] `mla_common_mi300.cuh`: `load8_nt` (the raw buffer load with coherence 18, or the inline `sc1 nt` form; whichever the disassembly honours)
-- [ ] `mla_attend_mi300.cuh`: the p x V pass loads under `-DMLA_NT_STREAMS`; `mla_merge_uv_mi300.cuh`: the partials loads
-- [ ] `run_fleet.py --nt-streams` passes the define through `MPK_EXTRA_HIPCC_FLAGS`; the suite builds with and without
-- [ ] the offline compile: the `nt` bit on the loads in the disassembly, no other change in the code
+- [x] `mla_common_mi300.cuh`: `load8_nt` (the raw buffer load with coherence 18, or the inline `sc1 nt` form; whichever the disassembly honours)
+- [x] `mla_attend_mi300.cuh`: the p x V pass loads under `-DMLA_NT_STREAMS`; `mla_merge_uv_mi300.cuh`: the partials loads
+- [x] `run_fleet.py --nt-streams` passes the define through `MPK_EXTRA_HIPCC_FLAGS`; the suite builds with and without
+- [x] the offline compile: the `nt` bit on the loads in the disassembly, no other change in the code
 - [ ] VM: suites unchanged; `L2_it32` event clock with and without
 
-Status:
+Status: laptop part done 2026-09-17 (commit below on `local/round-3`). `StreamSrc`, `load8_from` and `ldf_from` in `mla_common_mi300.cuh`: raw buffer loads with CK's policy value 18 (the assembler prints it `nt sc1`) through `__builtin_amdgcn_raw_buffer_load_b128/_b32` and `__builtin_amdgcn_make_buffer_rsrc`, the idiom CK itself uses; plain loads without the define or on the host. Applied to the attention's p x V pass (the row's second and last read; the scores pass keeps the default so that read hits L2) and to the merge's three partials reads. `run_fleet.py --nt-streams` sets `-DMLA_NT_STREAMS` through `MPK_EXTRA_HIPCC_FLAGS` (suffix `_nts`, the flags in the run meta); `vm.sh` builds a third suite binary `kernel_tests_nt` for `KT_TIME` against the plain one; `run.sh` gained the `ntstreams` variant and the `_nt` launcher. Disassembly of the worker: without the define 0 loads carry `nt sc1` (the runtime's own 4 `global_load_dwordx2 nt` are in both builds), with it 10 `buffer_load_dwordx4` (the attention) and 12 `buffer_load_dword` (the merge) carry `nt sc1`; the worker union 230 VGPRs with the define. Checks: 161 tests (the run-name test extended), check_syntax 7 PASS, preflight 8 PASS, the offline compile of all eight variants exit 0.
 
 ## O3. The input norm as a prologue of the per-tile linear (5 h)
 

@@ -77,19 +77,22 @@ compile debugscores -DMLA_ATTEND_DEBUG_SCORES=1 || ok=1
 # O2 (docs/gpu-experiments/03-acceleration): the fused w2 gang task instantiates CK's small-tile
 # GEMM pipeline for gfx942 offline; the day-1 build had done that on the VM only.
 compile ckgang -DMK_CK_GANG=1 || ok=1
+# O6: our kernels' cache streams with the stock linears' non-temporal policy (raw buffer loads, sc1 nt)
+compile ntstreams -DMLA_NT_STREAMS=1 || ok=1
 
 # The standalone kernel-test launcher (fleet/tasks/kernel_tests_mi300.cu),
 # with the build line of fleet/tasks/README.md, both variants; it links to an
 # executable, so this is the day-2 binary minus the run.
-for v in "" "-DMLA_ATTEND_DEBUG_SCORES"; do
+for spec in ":" "_debug:-DMLA_ATTEND_DEBUG_SCORES" "_nt:-DMLA_NT_STREAMS"; do
+  sfx="${spec%%:*}"; v="${spec#*:}"
   docker run --rm --platform linux/amd64 -v "$ROOT:/w" -v "$WORK/fleet:/fleet" -v "$WORK/out:/out" "$IMAGE" bash -c "
     cd /w && hipcc --offload-arch=gfx942 -O2 -std=c++17 \
       -D__HIP_PLATFORM_AMD__=1 -DMIRAGE_AMD_MI300 -DMIRAGE_BACKEND_USE_ROCM -DMPK_TARGET_CC=94 -DMODE_ONLINE $v \
       -I fleet -I /fleet/include -I /fleet/include/mirage/persistent_kernel \
-      -Rpass-analysis=kernel-resource-usage fleet/tasks/kernel_tests_mi300.cu -o /out/kernel_tests${v:+_debug} \
-      > /out/kernel_tests${v:+_debug}.log 2>&1; echo \$? > /out/kernel_tests${v:+_debug}.rc"
-  rc=$(cat "$WORK/out/kernel_tests${v:+_debug}.rc")
-  echo "kernel_tests launcher${v:+ (debug scores)}: hipcc exit $rc, errors: $(grep -c 'error:' "$WORK/out/kernel_tests${v:+_debug}.log" || true)"
+      -Rpass-analysis=kernel-resource-usage fleet/tasks/kernel_tests_mi300.cu -o /out/kernel_tests$sfx \
+      > /out/kernel_tests$sfx.log 2>&1; echo \$? > /out/kernel_tests$sfx.rc"
+  rc=$(cat "$WORK/out/kernel_tests$sfx.rc")
+  echo "kernel_tests launcher${sfx:+ ($v)}: hipcc exit $rc, errors: $(grep -c 'error:' "$WORK/out/kernel_tests$sfx.log" || true)"
   [ "$rc" = 0 ] || ok=1
 done
 
@@ -137,7 +140,7 @@ cat "$HERE/fences.txt"
 {
   echo "# Offline gfx942 compile, $(date -u +%Y-%m-%dT%H:%M:%SZ), $(cat "$WORK/out/hipcc.txt" | tr '\n' ' ')"
   echo "# fleet 51dce4f + gfx942.patch + new_tasks.patch + sched_xcd.patch; composable_kernel $CK_COMMIT; json $JSON_COMMIT"
-  for v in mk_ours mk_ckfmha mk_debugscores mk_ckgang kernel_tests kernel_tests_debug; do
+  for v in mk_ours mk_ckfmha mk_debugscores mk_ckgang mk_ntstreams kernel_tests kernel_tests_debug kernel_tests_nt; do
     echo; echo "## $v (hipcc exit $(cat "$WORK/out/$v.rc"))"
     grep -E "Function Name|    VGPRs:|AGPRs|SGPRs Spill|VGPRs Spill|LDS Size|ScratchSize|Occupancy" "$WORK/out/$v.log" \
       | sed 's/.*remark: *//; s/ \[-Rpass.*//; s/Function Name: //' | paste - - - - - - - - \
