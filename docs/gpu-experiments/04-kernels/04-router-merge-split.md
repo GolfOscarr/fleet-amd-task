@@ -5,7 +5,7 @@ The same rules as `02-local-gpu-split.md`: no minute of VM time for work
 the laptop can do; every item a deliverable, a laptop check, a time box
 and the VM row it feeds; every VM row its PASS text and its decision. The
 rows here join the GEMV session (`02`, G0 to G9) in one session plan
-(`05`), after the GEMV rows: the router and merge changes are independent
+(`07`), after the GEMV rows: the router and merge changes are independent
 of the GEMV ones and are measured on the same 2-layer graph.
 
 ## Local part
@@ -17,7 +17,7 @@ of the GEMV ones and are measured on the same 2-layer graph.
 | **N3. The merge, one level deeper** (M1, M2, M3) | `mla_merge_uv_mi300.cuh`: the lse words loaded with the partials batch and reduced through one barrier; the `W_uv` rows as whole wave-loads (32 per wave, the first 16 issued before the partials batch, the next 16 after its loads), the eight o values per lane in registers, the rows' sums by the halving butterfly; the partials map at `4 q` and `256 + 4 q`; the `ROWS_IN_FLIGHT` and `PF_W` constants replaced by `MERGE_W_BATCH` (16) | `check_syntax.sh`; the suite's `mla_merge_uv` rows (the o partials bit-exact against `merge_partials`, `attn` within tolerance); the offline `k_mla_merge_uv` line (VGPRs at most 200) and the `vmcnt` sequence; `ktime` | 5 h | H3 |
 | **N4. The merge as regular tasks** (M6, M4) | a second registration `mla_merge_uv_tile_mi300` (type 201) with whole-tensor imaps, the head (and the half, `HALVES = 1 or 2`) from `expert_offset`; `graph_plan.py --merge-tasks [--merge-halves 2]`, the `per_tile` pattern of the attention; the counts | the dry run; `task_graph_check.py`; a test on the plan | 3 h | H4 |
 | **N5. The merge with o_proj folded in** (M5) | `mla_merge_oproj_mi300.cuh` (type 202): N3's merge, then the task's `W_o` slice streamed (16 or 8 lanes per row), the partial vector to the workspace `[32, 2048]` FP32, the release, the counter, the last task's fixed-order sum with the residual into `x_res` and the reset; `attn` still written; the registration with inputs `partials, W_uv, W_o, x_res, counter` and outputs `x_res, attn, workspace`; `graph_plan.py --merge-oproj` drops `L{l}.o_proj` and moves its label's boundary to the new operator; `numpy_ref` unchanged (the math is o_proj's) | `check_syntax.sh`; a suite row that launches 32 blocks and checks `x_res` against `numpy_ref` o_proj with residual within the linear tolerance and `attn` bit-exact against the merge row; the dry run's counts and the compare's boundary list; the offline variant's registers | 8 h | H5 |
-| **N6. The tooling** | the rows below as `queue-g1.txt` (H1 to H4) and `queue-g2.txt` (H5); the session plan `05` gains the section; the rehearsal regenerated | the queue-file tests; the rehearsal | 1 h | every H row |
+| **N6. The tooling** | the rows below as `queue-g1.txt` (H1 to H4) and `queue-g2.txt` (H5); the session plan `07` gains the section; the rehearsal regenerated | the queue-file tests; the rehearsal | 1 h | every H row |
 
 About 25 hours; N1 and N3 (9 h) are the certain part.
 
