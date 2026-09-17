@@ -24,7 +24,7 @@ us of exec, the merge 20 to 13.7), and still about twice their potential:
 | the merge's loads are batched, so they are efficient | the partials phase reads two 16-byte words per lane 32 bytes apart (`row + q * 8` and `+ 4`), half a line per instruction; the `W_uv` phase gives two lanes to a row (`v = tid >> 1`), so a wave-load touches 32 rows, 16 bytes each: 32 to 64 lines per KB; the lse read is one 4-byte word per lane 33 KB apart (`((size_t)lane * NH + h) * P_ROW + D_C`) | M3 (the coalesced maps) and M1 (the lse read folded into the partials batch) |
 | a "last task" reduction needs a counter the plan initialises | every `new` tensor of the plan is a `torch.zeros` buffer attached as an input (`build_graph.py`, line 263), so a counter starts at zero and the last task resets it; the fork's own `splitk_linear_res_atomic_kernel` (`linear_ck_mi300.cuh`, lines 889 to 920) is the pattern: an agent-scope release fence, `atomicAdd`, `is_last`, the reduction, the reset | R5 and M5 reuse it; the fork's reader has no acquire fence before it reads the other tasks' data, and ours adds one (`__builtin_amdgcn_fence(__ATOMIC_ACQUIRE, "agent")`: `buffer_inv sc1`, cheap) |
 | the merge as regular tasks needs new pointer rules | the attention already has the switch (`per_tile=attend_tasks` in `graph_plan.py`, `mla_attend_tile_mi300` in `build_graph.py`) and prep takes its task index from `expert_offset`; with whole-tensor imaps a regular merge task needs neither `xcd_offset_dim0` nor the `local` flags of the gang registration | M6 is a flag and a second registration, not a new mechanism |
-| a wave sum per row is negligible (M3, and K1 of `01`) | `__shfl_xor` lowers to `ds_bpermute`, so 32 wave sums per wave are 192 LDS-pipeline steps against 256 FMAs; the halving butterfly does the same reduction in 63 | M3 and K1 use the butterfly; the GEMV page notes it |
+| a wave sum per row is negligible (M3, and K1 of `01`) | `__shfl_xor` lowers to `ds_bpermute`, so 32 wave sums per wave are 192 LDS-pipeline steps against 256 FMAs; the halving butterfly does the same reduction in 32 | M3 and K1 use the butterfly; the GEMV page notes it |
 | M5's lane map, "16 lanes per row, 64 loads per lane" | 16 lanes per row is the whole-head form (128 loads per lane); the half-head form is 8 lanes per row and 64 loads | corrected, and the VALU term of the `W_o` phase counted (about 1.5 us per half head) |
 | the router and merge are register-light | the refreshed offline build (2026-09-17 evening, `resources.txt`): `k_moe_router` 124 VGPRs, `k_mla_merge_uv` 114, `k_mla_prep` 137, the VALU attention 122 to 124, the MFMA attention 160 plus 32 AGPRs (before round 3: 75, 75, 63, 90); the worker union 256 VGPRs, 64 AGPRs, 8 spilled (249 and none before round 3) | the union's owner is the MFMA attention plus the runtime's own registers, not these two; a router or merge at up to about 160 VGPRs does not raise it, and every depth is still read on the union's line (`01`, I3) |
 
@@ -189,9 +189,11 @@ replaces the first as it is consumed. Worth about 3 to 4 us per head.
   sums reduced. Thirty-two wave sums per wave would be 192 shuffle-and-add
   steps against 256 FMA instructions, not negligible (`__shfl_xor` lowers
   to `ds_bpermute`, an LDS-pipeline op); the halving butterfly is the
-  form: each step pairs lanes and halves the rows in flight (32 + 16 + 8
-  + 4 + 2 + 1 = 63 steps for 32 rows), leaving lane l with row l's sum
-  for l < 32, which stores the 32 results as 64 contiguous bytes. Every
+  form: at each of five steps a lane exchanges half of its live row sums
+  with a partner lane and adds (16 + 8 + 4 + 2 + 1 = 31 shuffles), then
+  one single-value step: 32 shuffles for 32 rows, leaving lane l with
+  row l's sum for l < 32, which stores the 32 results as 64 contiguous
+  bytes. Every
   wave-load 8 full lines against 32 to 64 today.
 
 Free; the products unchanged; the per-output summation order changes
