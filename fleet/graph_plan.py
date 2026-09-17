@@ -28,6 +28,8 @@ PREFETCH_PARTS = 32            # O8: tasks per active expert of the W2 prefetch 
 NUM_WORKERS = 296              # build_graph.build's default; it is not passed to build_plan, so the
                                # tile count of L4 is checked against the constant here
 W13_GEMV_TILES = NUM_WORKERS // XCDS   # 37: one w13 tile per worker of an XCD (S1 of 01-gemv-ideas.md)
+OPROJ_HALVES = 2               # N5: the merge with o_proj folded in is always one task per half head
+                               # (32 tasks, 128 bytes of W_o per row per task); --merge-halves does not apply
 
 
 def w13_tile_rows(tile: int, n: int = 2 * REAL_DIMS.I_MOE, tiles: int = W13_GEMV_TILES):
@@ -91,7 +93,9 @@ OUTPUT_ARGS = {
     "linear_gemv_layer": ["output"],
     "prefetch_layer": ["dummy"], "prefetch_moe_layer": ["dummy"],
     "mla_prep_layer": ["c_kv", "k_pe", "ql_nope", "q_pe"], "mla_attend_layer": ["partials", "scores"],
-    "mla_merge_uv_layer": ["output"], "mla_merge_uv_tile_layer": ["output"], "moe_router_layer": ["h", "topk_w", "routing", "mask", "logits", "route_log"],
+    "mla_merge_uv_layer": ["output"], "mla_merge_uv_tile_layer": ["output"],
+    "mla_merge_oproj_layer": ["output", "attn", "workspace"],
+    "moe_router_layer": ["h", "topk_w", "routing", "mask", "logits", "route_log"],
     "moe_router_norm4_layer": ["h", "topk_w", "routing", "mask", "logits", "route_log"],
     "gang_moe_w13_linear_layer": ["output"], "gang_moe_w13_gemv_layer": ["output"],
     "moe_silu_mul_layer": ["output"],
@@ -259,7 +263,7 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
                attend_tasks: bool = False, fuse_norm2: bool = False, fuse_silu: bool = False,
                fuse_norm1: bool = False, prefetch: bool = False, gemv_linears: bool = False,
                linear_grid: int = None, head_grid: int = None, gemv_w13: bool = False, merge_tasks: bool = False,
-               merge_halves: int = 1, router_tasks: bool = False) -> Plan:
+               merge_halves: int = 1, router_tasks: bool = False, merge_oproj: bool = False) -> Plan:
     """debug_scores: the mla_attend kernel also writes the scaled pre-softmax scores
     [NH, s_max] FP32 (boundary B5); needs the MLA_ATTEND_DEBUG_SCORES build (MPK_DEBUG_SCORES=1).
     tile_linears: issue the four dense linears (qkva, o_proj, down, lm_head) as per-tile
@@ -293,6 +297,17 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
     L{l}.norm2 operator; the router reads x_res and the norm weight and writes h) and it adds one
     tensor, router_counter [1] int32, shared by every layer and zeroed at allocation. Three more
     tasks per MoE layer; off under debug, as fuse_norm1 and gemv_linears are.
+    merge_oproj: the merge with o_proj folded into it (N5 of docs/gpu-experiments/04-kernels, M5):
+    for every layer the merge and the o_proj operators become one operator of NH * OPROJ_HALVES
+    (32) regular tasks labelled L{l}.o_proj, so --stop-after and the compare's x_res boundary keep
+    their key and the attn boundary's last writer is the same operator. Each task merges its head,
+    stores its 64 attn values and multiplies them by its 128-byte slice of every row of W_o into a
+    partial vector; the last task to arrive sums the 32 partials, adds the residual and stores
+    x_res in place. It adds two tensors, oproj_ws [32, H] FP32 and oproj_counter [1] int32, both
+    shared by every layer and zeroed at allocation. One operator fewer per layer; the tasks drop by
+    64 + 8 - 32 where o_proj is the per-tile or GEMV form (--tile-linears, --gemv-linears) and rise
+    by 32 - 8 - 8 where it is the 8-task gang. It overrides --merge-tasks (its merge is the tile
+    form at two halves), and it needs no other flag.
     merge_tasks, merge_halves: the merge as NH * merge_halves regular tasks with whole-tensor
     imaps instead of the 8-task gang (N4 of docs/gpu-experiments/04-kernels, M6 and M4): the
     head and the half come from the task index, and with merge_halves 2 each task multiplies
@@ -359,6 +374,11 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
     p.t("q_pe", (d.NH, d.D_R))
     p.t("partials", (n_splits, d.NH, partials_row(d.D_C)), "f32")   # padded row, P2
     p.t("attn", (1, d.NH * d.D_V))
+    if merge_oproj:
+        # N5: the 32 tasks' partial vectors and their arrival counter, one pair for all the layers
+        # (the chain serialises them, and the last task of each resets the counter to zero)
+        p.t("oproj_ws", (d.NH * OPROJ_HALVES, d.H), "f32")
+        p.t("oproj_counter", (1,), "i32")
     p.t("cos", (s_max, d.D_R), kind="input", source="capture:cos")
     p.t("sin", (s_max, d.D_R), kind="input", source="capture:sin")
     if layers >= 1:
@@ -441,26 +461,35 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
              ql_nope="ql_nope", q_pe="q_pe", c_kv=f"c_kv_{l}", k_pe=f"k_pe_{l}",
              partials="partials", softmax_scale=SOFTMAX_SCALE, split=SPLIT, n_splits=n_splits,
              **({"scores": "scores"} if debug_scores else {}))
-        if merge_tasks:
+        if merge_oproj:
+            # N5: one operator for the merge and o_proj together, with o_proj's label, so
+            # --stop-after and the x_res boundary keep their key and attn's last writer is this
+            # operator, whose layer the dump's layer_of reads off the same label
+            p.op("mla_merge_oproj_layer", d.NH * OPROJ_HALVES, status="new", label=f"L{l}.o_proj",
+                 partials="partials", w_uv=f"W_uv_{l}", w_o=f"W_o_{l}", residual="x_res",
+                 counter="oproj_counter", output="x_res", attn="attn", workspace="oproj_ws",
+                 split=SPLIT, n_splits=n_splits, halves=OPROJ_HALVES)
+        elif merge_tasks:
             p.op("mla_merge_uv_tile_layer", d.NH * merge_halves, status="new",
                  label=f"L{l}.mla_merge_uv", partials="partials", w_uv=f"W_uv_{l}", output="attn",
                  split=SPLIT, n_splits=n_splits, halves=merge_halves)
         else:
             p.op("mla_merge_uv_layer", XCDS, d.NH // XCDS, status="new", label=f"L{l}.mla_merge_uv",
                  partials="partials", w_uv=f"W_uv_{l}", output="attn", split=SPLIT, n_splits=n_splits)
-        if gemv:
-            g = linear_grid_for(d.H, linear_grid, strict=False)
-            p.op("linear_gemv_layer", g, status="new", label=f"L{l}.o_proj", input="attn", w_norm=None,
-                 weight=f"W_o_{l}", residual="x_res", output="x_res", grid_dim=(g, 1, 1),
-                 block_dim=(256, 1, 1), norm=False, residual_add=True, eps=0.0)
-        elif tile_linears:
-            g = grid_for_linear(d.H)
-            p.op("linear_with_residual_layer", g, label=f"L{l}.o_proj", input="attn", weight=f"W_o_{l}",
-                 residual="x_res", output="x_res", grid_dim=(g, 1, 1), block_dim=(256, 1, 1))
-        else:
-            p.op("gang_linear_with_residual_layer", XCDS, gang_tiles(d.H, TILE_N_O), label=f"L{l}.o_proj",
-                 input="attn", weight=f"W_o_{l}", residual="x_res", output="x_res",
-                 tile_n=TILE_N_O, output_stride=d.H)
+        if not merge_oproj:                            # N5 issued the layer's o_proj with its merge
+            if gemv:
+                g = linear_grid_for(d.H, linear_grid, strict=False)
+                p.op("linear_gemv_layer", g, status="new", label=f"L{l}.o_proj", input="attn", w_norm=None,
+                     weight=f"W_o_{l}", residual="x_res", output="x_res", grid_dim=(g, 1, 1),
+                     block_dim=(256, 1, 1), norm=False, residual_add=True, eps=0.0)
+            elif tile_linears:
+                g = grid_for_linear(d.H)
+                p.op("linear_with_residual_layer", g, label=f"L{l}.o_proj", input="attn", weight=f"W_o_{l}",
+                     residual="x_res", output="x_res", grid_dim=(g, 1, 1), block_dim=(256, 1, 1))
+            else:
+                p.op("gang_linear_with_residual_layer", XCDS, gang_tiles(d.H, TILE_N_O), label=f"L{l}.o_proj",
+                     input="attn", weight=f"W_o_{l}", residual="x_res", output="x_res",
+                     tile_n=TILE_N_O, output_stride=d.H)
         if prefetch and l + 1 < layers:
             g = grid_for_linear(d.Q_OUT + d.KVA_OUT)
             p.t(f"W_qkva_{l + 1}", (d.Q_OUT + d.KVA_OUT, d.H), kind="input", source=f"W_qkva_{l + 1}")

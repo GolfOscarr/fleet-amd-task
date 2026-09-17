@@ -79,9 +79,21 @@
 
 namespace kernel {
 
+// The floats of dynamic LDS the body below uses (lse_s, o_s, red_s), so a caller that adds
+// its own scratch after them reads the layout from one place (N5, mla_merge_oproj_mi300.cuh).
+template <int D_C>
+__device__ __host__ constexpr int mla_merge_uv_lds_floats() {
+  return dsv2::WAVE + D_C + (NUM_THREADS / ((D_C / 2) / 4)) * D_C;   // lse_s, o_s, GROUPS x red_s
+}
+
 // The shared body: head h's merge, and the W_uv rows of the half `half` (HALVES = 1: the
 // whole head). The three pointers are already offset to the head by the caller, so the two
 // entry points below differ only in how they find h and the half.
+//
+// attn_s (N5): when it is not null, the half's attn values are also written to it as floats,
+// at the index the half's own columns have (wave * W_ROWS_PER_WAVE + ...), so the caller can
+// multiply them by its W_o slice without reading `attn` back. The same BF16-rounded float the
+// store writes, so the two forms are the same number.
 template <typename T, int NH, int D_V, int D_C, int HALVES>
 __device__ __forceinline__ void
     mla_merge_uv_head(float const *partials,
@@ -91,7 +103,8 @@ __device__ __forceinline__ void
                       int split,
                       int n_splits,
                       int h,
-                      int half) {
+                      int half,
+                      float *attn_s = nullptr) {
   using namespace dsv2;
   static_assert(sizeof(T) == 2, "the raw-word conversion below is BF16's");
   static_assert(D_C == 8 * WAVE, "one row of W_uv is exactly one wave-load");
@@ -293,7 +306,11 @@ __device__ __forceinline__ void
     }
     float sum = butterfly_sum<W_BATCH>(rs);
     if (lane < W_BATCH) {
-      st(attn + w_row0 + b * W_BATCH + lane, bf16r(sum));
+      float v = bf16r(sum);
+      st(attn + w_row0 + b * W_BATCH + lane, v);
+      if (attn_s != nullptr) {                        // N5: the half's values, at the half's own index
+        attn_s[wave * W_ROWS_PER_WAVE + b * W_BATCH + lane] = v;
+      }
     }
   }
 #else
@@ -326,7 +343,11 @@ __device__ __forceinline__ void
       }
       float sum = butterfly_sum<W_BATCH>(rs);
       if (lane < W_BATCH) {
-        st(attn + w_row0 + b * W_BATCH + lane, bf16r(sum));
+        float v = bf16r(sum);
+        st(attn + w_row0 + b * W_BATCH + lane, v);
+        if (attn_s != nullptr) {                      // N5: the half's values, at the half's own index
+          attn_s[wave * W_ROWS_PER_WAVE + b * W_BATCH + lane] = v;
+        }
       }
     }
   }

@@ -174,6 +174,16 @@ def mla_merge_uv(partials, W_uv, step, *, split=32, d_c=None):
     return bf16(attn.reshape(-1))
 
 
+def mla_merge_oproj(partials, W_uv, W_o, x_res, step, *, split=32, d_c=None):
+    """N5: the merge with o_proj folded in. Returns (attn, x_res).
+
+    attn is mla_merge_uv's, unchanged (the kernel still writes it, so the boundary keeps its
+    row); the output row is bf16(x_res + attn @ W_o^T) with FP32 accumulation and the residual
+    added before the one rounding, the arithmetic of linear_residual at W_o [H, H] row-major."""
+    attn = mla_merge_uv(partials, W_uv, step, split=split, d_c=d_c)
+    return attn, linear_residual(attn, W_o, x_res)
+
+
 def attention_reference_decompressed(q_nope, q_pe, c_kv, k_pe, W_uk, W_uv, step, softmax_scale):
     """The reference's arithmetic (decompressed keys and values) for the same
     token, used to bound the reassociation error: k_nope = W_uk @ c, v = W_uv @ c

@@ -28,8 +28,9 @@ def host_buffers(plan_json, fill):
     return h
 
 
-def dump(layers, head, stop_after=None, iters=1, debug=False, debug_scores=False):
-    plan, _ = B.dry_run(REAL_DIMS, 1024 + iters, layers, head, debug, stop_after, debug_scores)
+def dump(layers, head, stop_after=None, iters=1, debug=False, debug_scores=False, **flags):
+    plan, _ = B.dry_run(REAL_DIMS, 1024 + iters, layers, head, debug, stop_after, debug_scores,
+                        **flags)
     pj = B.plan_json(plan)
     h = host_buffers(pj, lambda i: float(i % 7 + 1))
     h["mask"] = torch.tensor([5, 2, 9, 1, 40, 63, 64, 65, 8] + [-1] * 58, dtype=torch.int32)
@@ -47,6 +48,19 @@ def test_dump_after_o_proj_of_layer1():
     assert b["L1.B2.q"].shape == (3072,) and b["L1.B7.x_res_attn"].shape == (2048,)
     assert torch.equal(b["L1.B3.c_kv"], h["c_kv_1"][1023])
     assert all(common.boundary_class(k) for k in keys)
+
+
+def test_dump_after_the_folded_o_proj_of_layer1():
+    """N5: with --merge-oproj one operator writes attn and x_res, and it carries o_proj's label,
+    so the B6 and B7 rows of the layer are keyed exactly as they are without the flag."""
+    b, _, h = dump(layers=2, head=False, stop_after="L1.o_proj", merge_oproj=True)
+    keys = {k for k in b if ".B" in k}
+    assert keys == {"L1.B1.norm1", "L1.B2.q", "L1.B4.q_pe", "L1.B6.attn", "L1.B7.x_res_attn",
+                    "L0.B3.c_kv", "L0.B3.k_pe", "L1.B3.c_kv", "L1.B3.k_pe"}
+    assert torch.equal(b["L1.B6.attn"], h["attn"][0]) and b["L1.B7.x_res_attn"].shape == (2048,)
+    assert all(common.boundary_class(k) for k in keys)
+    plain, _, _ = dump(layers=2, head=False, stop_after="L1.o_proj")
+    assert set(plain) == set(b)
 
 
 def test_dump_full_layer1_and_head():
@@ -375,6 +389,18 @@ def test_pad_alloc_argument_and_run_name():
     assert run_fleet.run_name(a) == "L27_head_it32_gv_hg320_w13"
     a = p.parse_args(["--layers", "2", "--iters", "32", "--model-dir", "x"])
     assert not a.gemv_w13 and run_fleet.run_name(a) == "L2_it32"
+    # the merge and router splits and the folded o_proj, in that order after the GEMV suffixes
+    # (N4, N2 and N5 of docs/gpu-experiments/04-kernels)
+    a = p.parse_args(["--layers", "27", "--head", "--iters", "32", "--merge-tasks",
+                      "--merge-halves", "2", "--router-tasks", "--model-dir", "x"])
+    assert run_fleet.run_name(a) == "L27_head_it32_mt_mh2_rt"
+    a = p.parse_args(["--layers", "27", "--head", "--iters", "32", "--merge-oproj", "--model-dir", "x"])
+    assert a.merge_oproj and run_fleet.run_name(a) == "L27_head_it32_mo"
+    a = p.parse_args(["--layers", "27", "--head", "--iters", "32", "--gemv-linears", "--gemv-w13",
+                      "--router-tasks", "--merge-oproj", "--model-dir", "x"])
+    assert run_fleet.run_name(a) == "L27_head_it32_gv_w13_rt_mo"
+    a = p.parse_args(["--layers", "2", "--iters", "32", "--model-dir", "x"])
+    assert not a.merge_oproj and run_fleet.run_name(a) == "L2_it32"
 
 
 def test_tensor_addresses_records_every_host_tensor():

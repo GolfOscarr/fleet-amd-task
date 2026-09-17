@@ -6,7 +6,7 @@
                                 [--event-timing] [--nt-weights] [--pad-alloc GB] [--align-alloc BYTES]
                                 [--workspaces-first] [--tile-linears] [--attend-tasks] [--split N]
                                 [--gemv-linears [--linear-grid N] [--head-grid N]] [--gemv-w13]
-                                [--merge-tasks [--merge-halves N]] [--router-tasks]
+                                [--merge-tasks [--merge-halves N]] [--router-tasks] [--merge-oproj]
     python harness/run_fleet.py --graph stream --ops M --tasks N --kb K [--gang] [--iters K] [--event-timing]
 
 --align-alloc BYTES re-bases every weight, capture and workspace on an aligned address and
@@ -252,6 +252,11 @@ def build_parser():
                          "arrive reading the 64 logits back and routing (N2, docs/gpu-experiments/04-kernels); "
                          "the fused router's split form, so those layers lose their norm operator as with "
                          "--fuse-norm2; off under --debug")
+    ap.add_argument("--merge-oproj", action="store_true",
+                    help="fold o_proj into the merge: one operator of 32 regular tasks per layer, "
+                         "labelled L{l}.o_proj, whose last-arriving task sums the partial vectors "
+                         "into x_res (N5, docs/gpu-experiments/04-kernels); it replaces both the "
+                         "merge and the o_proj operator, and overrides --merge-tasks")
     ap.add_argument("--align-alloc", type=int, default=0, metavar="BYTES",
                     help="re-base every weight, capture and workspace on a BYTES-aligned address (power of two; "
                          "the M4 fault candidates, docs/gpu-experiments/02-validation)")
@@ -297,6 +302,7 @@ def run_name(args):
     mt = "_mt" if args.merge_tasks else ""                          # N4 of docs/gpu-experiments/04-kernels
     mh = f"_mh{args.merge_halves}" if args.merge_halves != 1 else ""
     rt = "_rt" if args.router_tasks else ""                         # N2 of docs/gpu-experiments/04-kernels
+    mo = "_mo" if args.merge_oproj else ""                          # N5 of docs/gpu-experiments/04-kernels
     if args.graph == "empty":      # I3: no layers, no head
         return (f"E{args.ops}x{args.tasks}" + (f"_spin{args.spin}" if args.spin else "") + f"_it{args.iters}"
                 + wt + rf + al + ws + pad)
@@ -306,7 +312,7 @@ def run_name(args):
     return (f"L{args.layers}{'_head' if args.head else ''}_it{args.iters}"
             + (f"_{args.stop_after}" if args.stop_after else "") + ("_scores" if args.debug_scores else "")
             + tile + at + fn1 + fn2 + fs + pf + probe + nt + nts + mf + wt + rf + sp + al + ws + pad
-            + gv + lg + hg + w13 + mt + mh + rt)
+            + gv + lg + hg + w13 + mt + mh + rt + mo)
 
 
 def run_empty(args, out, prompt, n_prompt, s_max, t0, torch, B):
@@ -426,7 +432,8 @@ def main():
         pre_plan = G.build_plan(dims, s_max, args.layers, args.head, args.debug, args.debug_scores, args.tile_linears,
                                 args.attend_tasks, args.fuse_norm2, args.fuse_silu, args.fuse_norm1, args.prefetch,
                                 args.gemv_linears, args.linear_grid, args.head_grid, args.gemv_w13,
-                                args.merge_tasks, args.merge_halves, args.router_tasks)
+                                args.merge_tasks, args.merge_halves, args.router_tasks,
+                                args.merge_oproj)
         workspaces = B.allocate_workspaces(torch, pre_plan, args.align_alloc)
         print(f"workspaces-first: {len(workspaces)} buffers allocated before the weights")
     packed = pack_all(args.model_dir, "cuda", dims, layers=args.layers, head=args.head or None)
@@ -453,7 +460,7 @@ def main():
                               gemv_linears=args.gemv_linears, linear_grid=args.linear_grid, head_grid=args.head_grid,
                               gemv_w13=args.gemv_w13,
                               merge_tasks=args.merge_tasks, merge_halves=args.merge_halves,
-                              router_tasks=args.router_tasks,
+                              router_tasks=args.router_tasks, merge_oproj=args.merge_oproj,
                               align=args.align_alloc, workspaces=workspaces)
     pj = B.plan_json(plan)
     (out / "plan.json").write_text(json.dumps(pj) + "\n")
@@ -478,7 +485,7 @@ def main():
         "gemv_linears": args.gemv_linears, "linear_grid": args.linear_grid, "head_grid": args.head_grid,
         "gemv_w13": args.gemv_w13,
         "merge_tasks": args.merge_tasks, "merge_halves": args.merge_halves,
-        "router_tasks": args.router_tasks,
+        "router_tasks": args.router_tasks, "merge_oproj": args.merge_oproj,
         "ops": len(pj["calls"]), "tasks": sum(c["tasks"] for c in pj["calls"]),
         "env": {k: os.environ.get(k) for k in ("MPK_EVENT_TIMING", "MPK_TIMING", "USE_NT_WEIGHTS", "USE_GANG",
                                                 "AMDGPU_TARGETS", "MPK_DEBUG_SCORES", "MPK_EXTRA_HIPCC_FLAGS")},

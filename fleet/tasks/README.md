@@ -43,6 +43,7 @@ choice of imap in `build_graph.py`.
 | `mla_attend_mfma_mi300.cuh` (build flag `-DMLA_ATTEND_MFMA`, selected from `mla_attend_mi300.cuh`; `--mfma-attend`, O7 of `docs/gpu-experiments/03-acceleration`) | the same task types as the VALU kernel | the same | the same | the same | the same; the scores and p x V on `v_mfma_f32_16x16x16_bf16`, the tile staged once in LDS |
 | `mla_merge_uv_mi300.cuh` | `TASK_MLA_MERGE_UV_MI300` (187), gang | 8 x `heads_per_xcd` | `partials`, `W_uv [16,128,512]` | `attn [1,2048]` | `[split, n_splits, tiles_per_xcd, nh, d_v, d_c]` |
 | same file, `mla_merge_uv_tile_mi300_task_impl` | `TASK_MLA_MERGE_UV_TILE_MI300` (201), regular (registration `mla_merge_uv_tile_mi300`; `--merge-tasks [--merge-halves 2]`, N4 of `docs/gpu-experiments/04-kernels`; the enum, the name maps, the `expert_offset` list, the registration and the dispatcher branch are the blocks of `fleet/patches/hunks/N4-merge-tile.md`, to be added to `new_tasks.patch` on the fork) | `nh x halves` tasks (16 or 32) | `partials`, `W_uv` (both whole) | `attn [1,2048]` (whole) | `[split, n_splits, halves]`; the task's (head, half) is its `bid.x` through the `expert_offset` metadata (`h = idx / halves`, `half = idx % halves`) |
+| `mla_merge_oproj_mi300.cuh` | `TASK_MLA_MERGE_OPROJ_MI300` (207), regular (registration `mla_merge_oproj_mi300`; `--merge-oproj`, N5 of `docs/gpu-experiments/04-kernels`; the enum, the name maps, the `expert_offset` list, the include, the registration and the dispatcher branch are the blocks of `fleet/patches/hunks/N5-merge-oproj.md`, to be added to `new_tasks.patch` on the fork) | `nh x halves` tasks (32 at halves 2) | `partials`, `W_uv`, `W_o [2048,2048]`, `x_res [1,2048]`, `counter [1]` int32 (all whole) | `x_res [1,2048]` (written in place by the last task to arrive), `attn [1,2048]`, `workspace [nh x halves,2048]` FP32 (all whole) | `[split, n_splits, halves]`; the task's (head, half) is its `bid.x` through the `expert_offset` metadata |
 | `moe_router_mi300.cuh` | `TASK_MOE_ROUTER_MI300` (188), CU-task | 1 | `h [1,2048]`, `W_gate [64,2048]` | `topk_w [1,8]` FP32, `routing [66,1]` int32, `mask [67]` int32, `logits [1,64]` FP32, `route_log [32,26,8]` int32 | `[topk, n_experts, n_forced, scaling_bits, layer_index, hidden]` |
 | same file, `NORM = true` (registration `moe_router_norm_mi300`; `--fuse-norm2`, O1 of `docs/gpu-experiments/03-acceleration`) | `TASK_MOE_ROUTER_MI300` (188), CU-task | 1 | `x_res [1,2048]`, `w_norm [2048]`, `W_gate [64,2048]` | `h [1,2048]` (the normalised row, for the expert gate-up), then the five above | the six above and `eps_bits` |
 | same file, `SPLIT = 4` (registration `moe_router_norm4_mi300`; `--router-tasks`, N2 of `docs/gpu-experiments/04-kernels`; the enum, the name maps, the `expert_offset` list, the registration and the dispatcher branch are the blocks of `fleet/patches/hunks/N2-router4.md`, to be added to `new_tasks.patch` on the fork) | `TASK_MOE_ROUTER4_MI300` (200), regular | 4 | `x_res [1,2048]`, `w_norm [2048]`, `W_gate [64,2048]`, `counter [1]` int32 (all whole) | the fused form's six (all whole) | the fused form's seven; the task's part is its `bid.x` through the `expert_offset` metadata |
@@ -105,6 +106,26 @@ matching 64 columns of `attn`. A row's lane sums are reduced by
 `butterfly_sum<MERGE_W_BATCH>` in both forms and the batch constant does
 not change with `halves`, so the two write the same bits (the suite's
 `mla_merge_uv_tile` rows check it against the gang launch).
+
+### `mla_merge_oproj`
+
+N5: the same merge with o_proj folded into it, `halves = 2` always (32
+tasks). Phases 1 to 3 are the regular form's body, which also leaves the
+task's 64 `attn` values in LDS; then each task streams its 128-byte slice of
+every row of `W_o [2048, 2048]` (eight lanes per row, eight rows per
+wave-load, batches of `OPROJ_BATCH` wave-loads under `#pragma unroll 1`),
+reduces each row over its eight lanes by three xor steps and writes the row's
+partial into `workspace[idx]` as FP32. Then the counter pattern of the
+four-task router: a barrier, an agent-scope release fence in every thread,
+thread 0's acq-rel add and the broadcast of "last" through LDS. The last task
+runs an acquire fence, and thread `t` sums the 32 partials of its eight
+columns in ascending task order, adds `x_res` in FP32, rounds once and stores
+the eight values in place; thread 0 resets the counter. `attn` is still
+written, so the boundary keeps its row, and it is the same float the
+`--merge-tasks --merge-halves 2` form writes; `x_res` is a new FP32 order (32
+partial sums of 64 terms), deterministic, of the GEMV linear's class. The
+suite's `mla_merge_oproj` row checks both, and that the counter comes back at
+zero.
 
 ### `moe_router`
 
@@ -209,7 +230,11 @@ tasks of 38 rows, so the batch round-robin over the waves and the clamped
 last batch both appear in the expected XOR words), `mla_attend_scores` (the
 `-DMLA_ATTEND_DEBUG_SCORES` build's second output, B5), and
 `mla_attend_splits` (one split of 1056 rows versus 33 splits of 32,
-through both the attend and the merge kernel), and the three forms of the
+through both the attend and the merge kernel), `mla_merge_oproj` (N5: the
+folded operator's 32 tasks beside the 32-task merge on the same inputs, so
+`attn` is compared bit for bit and `x_res` against `numpy_ref.mla_merge_oproj`
+within the BF16 row tolerance, with the counter back at zero), and the three
+forms of the
 GEMV linear (L1: `linear_gemv`, `linear_gemv_norm` and `linear_gemv_res`,
 one launch per grid of tasks, so the split of the weight's rows and the
 output's columns over the tasks is checked with the arithmetic), and the two

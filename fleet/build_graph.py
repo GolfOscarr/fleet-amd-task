@@ -123,6 +123,44 @@ def mla_merge_uv_tile_layer(mpk, partials, w_uv, output, split, n_splits, halves
               "mla_merge_uv_tile_mi300", [split, n_splits, halves])
 
 
+def mla_merge_oproj_layer(mpk, partials, w_uv, w_o, residual, counter, output, attn, workspace,
+                          split, n_splits, halves=2, block_dim=(256, 1, 1)):
+    """N5 (M5 of docs/gpu-experiments/04-kernels/03-router-merge-ideas.md): the merge with o_proj
+    folded in, nh * halves regular tasks with every tensor whole and the task index from
+    expert_offset (head h = idx // halves, half = idx % halves), as mla_merge_uv_tile_layer takes
+    it. A task merges its head, stores its d_v / halves attn values and multiplies them by its
+    slice of every row of W_o [hidden, hidden] into row idx of the workspace; the last task to
+    arrive sums the rows, adds the residual in FP32 and writes x_res in place, then resets the
+    counter (a [1] int32 tensor of the plan, zeroed at allocation).
+
+    residual and output are the same tensor, x_res, as they are for the stock residual linear
+    (graph_plan.linear_with_residual_layer names it twice too). Registration
+    mla_merge_oproj_mi300: inputs partials, W_uv, W_o, x_res, counter; outputs x_res, attn,
+    workspace; params [split, n_splits, halves]."""
+    nh, d_v, d_c = w_uv.dim(0), w_uv.dim(1), w_uv.dim(2)
+    hidden = attn.dim(1)                               # W_o's K is the attn row: nh * d_v
+    assert halves in (1, 2), halves
+    assert hidden == nh * d_v and partials.dim(2) == G.partials_row(d_c)
+    assert d_c % 256 == 0, "K of the W_uv product must be a multiple of 256"
+    assert n_splits <= 64, "mla_merge_uv merges one split per lane of one wavefront"
+    assert d_v % (4 * halves) == 0, (d_v, halves)      # the merge's static_assert: the four waves' rows
+    assert w_o.num_dims == 2 and w_o.dim(0) == hidden and w_o.dim(1) == hidden, w_o.shape
+    assert (d_v // halves) % 8 == 0, (d_v, halves)     # the kernel's static_assert: whole 16-byte chunks
+    assert hidden % (4 * 8) == 0, hidden               # the four waves take whole groups of eight rows
+    assert hidden % (8 * 256) == 0, hidden             # the last task's thread owns eight columns
+    assert residual is output, "x_res is the residual and the output of this operator"
+    assert output.num_dims == 2 and output.dim(0) == 1 and output.dim(1) == hidden, output.shape
+    assert counter.num_dims == 1 and counter.dim(0) == 1, counter.shape
+    assert workspace.num_dims == 2 and workspace.dim(0) == nh * halves and workspace.dim(1) == hidden, \
+        workspace.shape
+    _new_task(mpk, (nh * halves, 1, 1), block_dim,
+              [(partials, (-1, -1, -1), -1), (w_uv, (-1, -1, -1), -1), (w_o, (-1, -1, -1), -1),
+               (output, (-1, -1, -1), -1), (counter, (-1, -1, -1), -1),
+               (output, (-1, -1, -1), -1), (attn, (-1, -1, -1), -1),
+               (workspace, (-1, -1, -1), -1)],
+              "mla_merge_oproj_mi300", [split, n_splits, halves])
+
+
 def moe_router_layer(mpk, input, w_gate, topk_w, routing, mask, logits, route_log, layer_index,
                      topk, n_experts, n_forced, scaling, block_dim=(256, 1, 1),
                      w_norm=None, h=None, eps=None):
@@ -373,6 +411,7 @@ NEW_LAYERS = {
     "mla_attend_layer": mla_attend_layer,
     "mla_merge_uv_layer": mla_merge_uv_layer,
     "mla_merge_uv_tile_layer": mla_merge_uv_tile_layer,
+    "mla_merge_oproj_layer": mla_merge_oproj_layer,
     "gang_moe_w2_silu_linear_layer": gang_moe_w2_silu_linear_layer,
     "gang_moe_w13_gemv_layer": gang_moe_w13_gemv_layer,
     "linear_norm_layer": linear_norm_layer,
@@ -521,7 +560,8 @@ def build(packed, capture, meta, dims=REAL_DIMS, s_max=1056, layers=27, head=Tru
           stop_after=None, debug_scores=False, tile_linears=False, attend_tasks=False, num_workers=296, num_schedulers=8,
           profiler_tensor=None, align=0, workspaces=None, fuse_norm2=False, fuse_silu=False,
           probe_before=None, fuse_norm1=False, prefetch=False, gemv_linears=False, linear_grid=None,
-          head_grid=None, gemv_w13=False, merge_tasks=False, merge_halves=1, router_tasks=False, plan=None):
+          head_grid=None, gemv_w13=False, merge_tasks=False, merge_halves=1, router_tasks=False,
+          merge_oproj=False, plan=None):
     """On the machine: construct the PersistentKernel, attach, issue, return (mpk, host tensors, plan).
     plan: a ready plan (the empty ladder of I3) instead of the model's."""
     import torch
@@ -530,7 +570,7 @@ def build(packed, capture, meta, dims=REAL_DIMS, s_max=1056, layers=27, head=Tru
     if plan is None:
         plan = G.build_plan(dims, s_max, layers, head, debug, debug_scores, tile_linears, attend_tasks, fuse_norm2,
                             fuse_silu, fuse_norm1, prefetch, gemv_linears, linear_grid, head_grid, gemv_w13,
-                            merge_tasks, merge_halves, router_tasks)
+                            merge_tasks, merge_halves, router_tasks, merge_oproj)
     assert not gemv_w13 or num_workers // G.XCDS == G.W13_GEMV_TILES, \
         f"--gemv-w13 wants {G.W13_GEMV_TILES} workers per XCD, not {num_workers // G.XCDS}"   # L4
     if probe_before:
@@ -717,11 +757,12 @@ class FakeMPK:
 def dry_run(dims=REAL_DIMS, s_max=1056, layers=27, head=True, debug=False, stop_after=None,
             debug_scores=False, tile_linears=False, attend_tasks=False, fuse_norm2=False, fuse_silu=False,
             probe_before=None, fuse_norm1=False, prefetch=False, gemv_linears=False, linear_grid=None,
-            head_grid=None, gemv_w13=False, merge_tasks=False, merge_halves=1, router_tasks=False, plan=None):
+            head_grid=None, gemv_w13=False, merge_tasks=False, merge_halves=1, router_tasks=False,
+            merge_oproj=False, plan=None):
     if plan is None:
         plan = G.build_plan(dims, s_max, layers, head, debug, debug_scores, tile_linears, attend_tasks, fuse_norm2,
                             fuse_silu, fuse_norm1, prefetch, gemv_linears, linear_grid, head_grid, gemv_w13,
-                            merge_tasks, merge_halves, router_tasks)
+                            merge_tasks, merge_halves, router_tasks, merge_oproj)
     if probe_before:
         plan.insert_probe(probe_before)
     if stop_after:
@@ -761,6 +802,9 @@ def main():
     ap.add_argument("--router-tasks", action="store_true",
                     help="the MoE router as four regular tasks, the last one routing "
                          "(N2, docs/gpu-experiments/04-kernels)")
+    ap.add_argument("--merge-oproj", action="store_true",
+                    help="the merge with o_proj folded in: one operator of 32 regular tasks per "
+                         "layer, labelled L{l}.o_proj (N5, docs/gpu-experiments/04-kernels)")
     ap.add_argument("--out", default=None)
     # L6: the stream probe's plan, on the empty ladder's machinery (--graph empty is not built here:
     # its plan has no model arithmetic to check, and run_fleet.py builds it on the machine)
@@ -784,7 +828,7 @@ def main():
                               args.debug_scores, args.tile_linears, gemv_linears=args.gemv_linears,
                               linear_grid=args.linear_grid, head_grid=args.head_grid, gemv_w13=args.gemv_w13,
                               merge_tasks=args.merge_tasks, merge_halves=args.merge_halves,
-                              router_tasks=args.router_tasks)
+                              router_tasks=args.router_tasks, merge_oproj=args.merge_oproj)
     s = G.summary(plan)
     print(json.dumps({k: v for k, v in s.items()}, indent=None))
     print(f"{len(calls)} calls recorded; task types: {sorted(set(c['task_type'] for c in calls))}")

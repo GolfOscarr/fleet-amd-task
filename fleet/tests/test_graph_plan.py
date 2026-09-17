@@ -633,6 +633,81 @@ def test_merge_tasks_keeps_the_chain_rule(head, layers, halves):
     assert plan.chain_violations() == []
 
 
+def test_merge_oproj_folds_o_proj_into_the_merge():
+    """N5: --merge-oproj replaces the merge and the o_proj operators of every layer by one
+    operator of 32 regular tasks, labelled L{l}.o_proj so --stop-after and the x_res boundary keep
+    their key; it allocates the partial workspace and the arrival counter once."""
+    from fleet.graph_plan import REAL_DIMS as D
+    base, _ = B.dry_run(layers=27, head=True)
+    plan, calls = B.dry_run(layers=27, head=True, merge_oproj=True)
+    labels = [c.label for c in plan.calls]
+    assert not any(l.endswith(".mla_merge_uv") for l in labels)
+    assert [l for l in labels if l.endswith(".o_proj")] == [f"L{i}.o_proj" for i in range(27)]
+    assert plan.n_ops == base.n_ops - 27 == 299
+    # the gang o_proj (8 tasks) and the gang merge (8) become one operator of 32
+    assert plan.n_tasks == base.n_tasks + 27 * (32 - 8 - 8) == 2285 + 27 * 16
+    assert not plan.chain_violations()
+    assert plan.tensors["oproj_ws"].shape == (D.NH * G.OPROJ_HALVES, D.H)
+    assert plan.tensors["oproj_ws"].dtype == "f32" and plan.tensors["oproj_ws"].kind == "new"
+    assert plan.tensors["oproj_counter"].shape == (1,) and plan.tensors["oproj_counter"].dtype == "i32"
+    assert plan.tensors["oproj_counter"].kind == "new"      # a zeroed buffer at allocation
+    m = {c.label: c for c in plan.calls}["L5.o_proj"]
+    assert m.method == "mla_merge_oproj_layer" and m.status == "new"
+    assert m.tasks == D.NH * G.OPROJ_HALVES == 32 and m.args["halves"] == G.OPROJ_HALVES
+    assert m.args["partials"] == "partials" and m.args["w_uv"] == "W_uv_5" and m.args["w_o"] == "W_o_5"
+    assert m.args["residual"] == m.args["output"] == "x_res"
+    assert m.args["attn"] == "attn" and m.args["workspace"] == "oproj_ws"
+    assert m.args["counter"] == "oproj_counter"
+    assert (m.args["split"], m.args["n_splits"]) == (G.SPLIT, plan.n_splits)
+    # the recorded call: five whole inputs (x_res fourth, the counter fifth), three whole outputs
+    rec = [c for c in calls if c["method"] == "mla_merge_oproj_mi300@new"]
+    assert len(rec) == 27
+    assert not any(c["method"] in ("mla_merge_uv_mi300@new", "mla_merge_uv_tile_mi300@new")
+                   for c in calls)
+    assert rec[0]["inputs"] == ["partials", "W_uv_0", "W_o_0", "x_res", "oproj_counter",
+                                "x_res", "attn", "oproj_ws"]
+    assert rec[0]["imaps"] == [[-1, -1, -1]] * 8            # every tensor whole
+    assert rec[0]["params"] == [G.SPLIT, plan.n_splits, G.OPROJ_HALVES]
+    assert rec[0]["grid_dim"] == (32, 1, 1)
+    # attn's and x_res's last writer is this operator, whose label carries the layer
+    assert {c.label for c in plan.calls if "attn" in c.args.values()} >= {"L5.o_proj"}
+
+
+def test_merge_oproj_under_the_per_tile_and_gemv_o_proj():
+    """The task drop is 64 + 8 - 32 wherever o_proj is the per-tile or the GEMV form, and the
+    flag overrides --merge-tasks (its merge is the tile form at two halves)."""
+    for flags in ({"gemv_linears": True}, {"tile_linears": True}):
+        base, _ = B.dry_run(layers=27, head=True, **flags)
+        plan, _ = B.dry_run(layers=27, head=True, merge_oproj=True, **flags)
+        assert plan.n_ops == base.n_ops - 27
+        assert plan.n_tasks == base.n_tasks - 27 * (64 + 8 - 32)
+        assert not plan.chain_violations()
+        assert not any(c.label.endswith(".mla_merge_uv") for c in plan.calls)
+    over, calls = B.dry_run(layers=27, head=True, merge_oproj=True, merge_tasks=True, merge_halves=2)
+    alone, _ = B.dry_run(layers=27, head=True, merge_oproj=True)
+    assert over.n_ops == alone.n_ops and over.n_tasks == alone.n_tasks
+    assert not any(c["method"] == "mla_merge_uv_tile_mi300@new" for c in calls)
+
+
+def test_merge_oproj_default_off_leaves_the_plan_unchanged():
+    plan_off, calls_off = B.dry_run(layers=27, head=True)
+    assert "oproj_ws" not in plan_off.tensors and "oproj_counter" not in plan_off.tensors
+    assert not any(c["method"] == "mla_merge_oproj_mi300@new" for c in calls_off)
+    assert sum(c["method"] == "mla_merge_uv_mi300@new" for c in calls_off) == 27
+
+
+@pytest.mark.parametrize("head,layers", [(True, 27), (False, 2), (True, 1)])
+def test_merge_oproj_keeps_the_chain_rule(head, layers):
+    plan, calls = B.dry_run(layers=layers, head=head, merge_oproj=True, gemv_linears=True,
+                            router_tasks=True, gemv_w13=True, fuse_silu=True)
+    assert plan.chain_violations() == []
+    assert sum(c["method"] == "mla_merge_oproj_mi300@new" for c in calls) == layers
+    # --stop-after keeps working on the label the folded operator carries
+    stopped, _ = B.dry_run(layers=layers, head=head, merge_oproj=True,
+                           stop_after=f"L{layers - 1}.o_proj")
+    assert stopped.calls[-1].label == f"L{layers - 1}.o_proj"
+
+
 def test_prefetch_adds_side_operators_that_the_chain_rule_skips():
     """O8 (docs/gpu-experiments/03-acceleration): --prefetch adds three side operators per layer
     (the layer's W_o after qkva, the next layer's W_qkva after o_proj, the active experts' W2 after

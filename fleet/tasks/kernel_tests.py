@@ -33,6 +33,11 @@ Tests (--kernel selects; default all):
   mla_merge_uv_tile, mla_merge_uv_tile2
       the merge as 16 or 32 regular tasks (N4, docs/gpu-experiments/04-kernels), each trial run
       through both launches: the reference check of the gang row, plus attn bit for bit against it
+  mla_merge_oproj
+      the merge with o_proj folded in (N5, docs/gpu-experiments/04-kernels): 32 regular tasks with
+      a zeroed counter, each trial run through the tile launch as well, so attn is checked bit for
+      bit against the 32-task merge and x_res against numpy_ref's merge then o_proj with the
+      residual; the counter must come back at zero
   moe_router4
       the router as four tasks with a zeroed counter (N2), each trial run through both launches:
       the reference check of the one-task row, plus every output bit for bit against it
@@ -92,6 +97,7 @@ N_TOTAL = D.E + G.N_FORCED                               # 66
 W13_N = 2 * D.I_MOE                                      # 2816: the expert's gate and up rows
 W13_TILES = G.W13_GEMV_TILES                             # 37 (L4: one tile per worker of an XCD)
 W2_TILES = D.H // 64                                     # 32 tiles per expert of the fused w2
+OPROJ_HALVES = G.OPROJ_HALVES                            # 2 (N5: one task per half head, 32 in all)
 GANG_EXPERTS = 8                                         # the expert slabs a gang trial file holds
 ROUTE_SHAPE = (common.N_STEPS, D.L - 1, G.TOPK_TOTAL_SLOTS)   # [32, 26, 8] (graph_plan.py)
 FORCED = tuple(range(D.E, D.E + G.N_FORCED))
@@ -479,6 +485,42 @@ def check_mla_merge_uv(t, p, exp, got):
     return [row_bf16("attn", got["attn"], exp["attn"])]
 
 
+# --- mla_merge_oproj (N5) ---------------------------------------------------
+
+# The merge with o_proj folded in: the tile row's tensors plus W_o [H, H], the residual x_res
+# (read and written in place), the arrival counter and the [32, H] FP32 workspace the 32 tasks
+# write their partial vectors into. The workspace is not read back (only the kernel's own last
+# task reads it; x_res is the sum of every row of it).
+
+def tensors_mla_merge_oproj(params):
+    return [T("partials", "f32", (params["n_splits"], D.NH, P_ROW)),
+            T("w_uv", "bf16", (D.NH, D.D_V, D.D_C)), T("w_o", "bf16", (D.H, D.H)),
+            T("x_res", "bf16", (D.H,), True), T("counter", "i32", (1,), True),
+            T("attn", "bf16", (D.NH * D.D_V,), True),
+            T("workspace", "f32", (D.NH * OPROJ_HALVES, D.H))]
+
+
+def make_mla_merge_oproj(rng):
+    t, p = make_mla_merge_uv(rng)
+    t["w_o"] = bf16_normal(rng, (D.H, D.H), D.H ** -0.5)
+    t["x_res"] = bf16_normal(rng, (D.H,))
+    t["counter"] = np.zeros(1, np.int32)
+    t["workspace"] = np.zeros((D.NH * OPROJ_HALVES, D.H), F32)
+    return t, p
+
+
+def ref_mla_merge_oproj(t, p):
+    attn, x_res = R.mla_merge_oproj(t["partials"], t["w_uv"], t["w_o"], t["x_res"], p["step"],
+                                    split=p["split"], d_c=D.D_C)
+    return {"attn": attn, "x_res": x_res, "counter": np.zeros(1, np.int32)}
+
+
+def check_mla_merge_oproj(t, p, exp, got):
+    return [row_bf16("attn", got["attn"], exp["attn"]),
+            row_bf16("x_res", got["x_res"], exp["x_res"]),
+            row_exact("counter", got["counter"], exp["counter"], "the last task resets it")]
+
+
 # --- moe_router -------------------------------------------------------------
 
 def tensors_moe_router(params):
@@ -827,6 +869,9 @@ KERNELS = {
     # N4: the same tensors and the same reference, launched as NH * halves regular tasks
     "mla_merge_uv_tile": Kernel("mla_merge_uv_tile", tensors_mla_merge_uv, make_mla_merge_uv,
                                 ref_mla_merge_uv, check_mla_merge_uv),
+    # N5: the merge with o_proj folded in, 32 tasks and a last-task reduction into x_res
+    "mla_merge_oproj": Kernel("mla_merge_oproj", tensors_mla_merge_oproj, make_mla_merge_oproj,
+                              ref_mla_merge_oproj, check_mla_merge_oproj),
     "moe_router": Kernel("moe_router", tensors_moe_router, make_moe_router, ref_moe_router, check_moe_router),
     "moe_router4": Kernel("moe_router4", tensors_moe_router4, make_moe_router4, ref_moe_router4,
                           check_moe_router4),
@@ -1036,6 +1081,35 @@ def run_merge_tile(ctx, name, halves):
     return summarize(name, rows)
 
 
+def run_merge_oproj(ctx, name):
+    """N5: the merge with o_proj folded in, against numpy_ref and against the 32-task merge on the
+    same partials and W_uv. The merge phases are the tile form's at two halves, so attn is the same
+    float; x_res is a new accumulation order (32 partial sums of 64 terms) and takes the BF16 row
+    tolerance the GEMV linear's output takes."""
+    rng = trial_rng(ctx, name)
+    tile, oproj = KERNELS["mla_merge_uv_tile"], KERNELS["mla_merge_oproj"]
+    trials = []
+    for i in range(ctx.n):
+        base = ctx.work / name / f"{i:03d}"
+        tensors, p = make_mla_merge_oproj(rng)
+        write_trial(base / "tile", tile,
+                    {k: tensors[k] for k in ("partials", "w_uv", "attn")},
+                    dict(p, halves=OPROJ_HALVES))
+        write_trial(base / "oproj", oproj, tensors, p)
+        trials.append(base)
+    run_binary(ctx.binary, tile, [b / "tile" for b in trials])
+    run_binary(ctx.binary, oproj, [b / "oproj" for b in trials])
+    rows = []
+    for base in trials:
+        _, _, g = read_trial(base / "tile", tile)
+        t, p, k = read_trial(base / "oproj", oproj)
+        r = oproj.check(t, p, oproj.reference(t, p), k)
+        r.append(row_exact(f"attn: the folded operator vs the {D.NH * OPROJ_HALVES}-task merge",
+                           k["attn"], g["attn"]))
+        rows.append(r)
+    return summarize(name, rows)
+
+
 def run_router4(ctx, name):
     """N2: the router over four tasks against the one-task kernel on the same inputs. A logit's
     lane chain and its butterfly are the batch constant's in both forms, so every output matches
@@ -1068,6 +1142,7 @@ TESTS = {
     "mla_merge_uv": lambda ctx: run_single(ctx, "mla_merge_uv", KERNELS["mla_merge_uv"]),
     "mla_merge_uv_tile": lambda ctx: run_merge_tile(ctx, "mla_merge_uv_tile", 1),
     "mla_merge_uv_tile2": lambda ctx: run_merge_tile(ctx, "mla_merge_uv_tile2", 2),
+    "mla_merge_oproj": lambda ctx: run_merge_oproj(ctx, "mla_merge_oproj"),
     "moe_router": lambda ctx: run_single(ctx, "moe_router", KERNELS["moe_router"]),
     "moe_router4": lambda ctx: run_router4(ctx, "moe_router4"),
     "copy": lambda ctx: run_single(ctx, "copy", KERNELS["copy"]),

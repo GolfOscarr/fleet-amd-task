@@ -152,6 +152,36 @@ def test_attend_merge_against_reference_attention(step):
         assert rel(dec, ref_attn) < 1e-2 and rel(dec_scores, ref_scores) < 1e-2
 
 
+def test_merge_oproj_lands_on_the_attention_and_residual_boundaries(step):
+    """N5: mla_merge_oproj is the merge of mla_merge_uv followed by the residual output
+    projection, the two references the folded operator replaces, so its returns are the model's
+    B6 attention output and its B7 residual within the reassociation tolerance."""
+    d = dims(step["cfg"])
+    P, s_max = step["P"], step["s_max"]
+    scale = float(step["model"].model.layers[0].self_attn.softmax_scale)
+    for l in (0, 1):
+        layer = step["model"].model.layers[l]
+        qkva, w_kv_norm, W_uk, W_uv, cos_row, sin_row = layer_inputs(step, l)
+        c_row, k_pe_row, ql_nope, q_pe = R.mla_prep(qkva, w_kv_norm, W_uk, cos_row, sin_row, **d)
+        c_prefill, k_prefill = step["rows"][l]
+        c_kv = np.zeros((s_max, d["d_c"]), np.float32)
+        k_pe = np.zeros((s_max, d["d_r"]), np.float32)
+        c_kv[:P] = R.from_torch_bf16(c_prefill)
+        k_pe[:P] = R.from_torch_bf16(k_prefill)
+        c_kv[P], k_pe[P] = c_row, k_pe_row
+        partials = R.mla_attend(ql_nope, q_pe, c_kv, k_pe, P, scale, split=4)
+        W_o = R.from_torch_bf16(layer.self_attn.o_proj.weight)
+        res = R.from_torch_bf16(step["cap"].store[f"L{l}.layer_in"]).reshape(-1)
+        attn, x_res = R.mla_merge_oproj(partials, W_uv, W_o, res, P, split=4)
+        assert np.array_equal(attn, R.mla_merge_uv(partials, W_uv, P, split=4))
+        assert np.array_equal(x_res, R.linear_residual(attn, W_o, res))
+        ref_attn = R.from_torch_bf16(step["cap"].store[f"L{l}.B6.attn"]).reshape(-1)
+        ref_x = R.from_torch_bf16(step["cap"].store[f"L{l}.B7.x_res_attn"]).reshape(-1)
+        e_a, e_x = rel(attn, ref_attn), rel(x_res, ref_x)
+        print(f"layer {l}: merge with o_proj folded in, rel_err attn {e_a:.3e}, x_res {e_x:.3e}")
+        assert e_a < 3e-2 and e_x < 3e-2
+
+
 def test_router_matches_gate(step):
     model, cap, cfg = step["model"], step["cap"], step["cfg"]
     l = 1

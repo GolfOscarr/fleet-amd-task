@@ -32,7 +32,8 @@
  * (XCD, tile) pair. The defines are the ones persistent_kernel.py passes on its ROCm path.
  *
  * Usage: kernel_tests <test> <dir> [<dir> ...]
- *   test  mla_prep | mla_attend | mla_merge_uv | mla_merge_uv_tile | moe_router | moe_router4
+ *   test  mla_prep | mla_attend | mla_merge_uv | mla_merge_uv_tile | mla_merge_oproj
+ *         | moe_router | moe_router4
  *         | copy | prefetch | prefetch_moe | stream
  *         | linear_gemv | linear_gemv_norm | linear_gemv_res
  *         | gang_w13_gemv | gang_w2_gemv (the -DKT_FAKE_XCD build only)
@@ -50,6 +51,7 @@
 #include "tasks/mi300/mla_prep_mi300.cuh"
 #include "tasks/mi300/mla_attend_mi300.cuh"
 #include "tasks/mi300/mla_merge_uv_mi300.cuh"
+#include "tasks/mi300/mla_merge_oproj_mi300.cuh"
 #include "tasks/mi300/moe_router_mi300.cuh"
 #include "tasks/mi300/copy_mi300.cuh"
 #include "tasks/mi300/prefetch_mi300.cuh"
@@ -80,6 +82,7 @@ constexpr int QKVA = NH * (D_N + D_R) + D_C + D_R;
 constexpr int N_SLOTS = TOPK + N_FORCED;
 constexpr int N_TOTAL = N_EXPERTS + N_FORCED;
 constexpr int HEADS_PER_XCD = NH / XCDS;
+constexpr int OPROJ_HALVES = 2;                  // N5: the merge with o_proj folded in is one task per half head
 constexpr int P_ROW = ((D_C + 1 + 3) / 4) * 4;   // padded partials row (P2), matches the kernels
 // the prefetch suites (O8): a dense weight in PF_GRID stripes of PF_ROWS rows (a W_o-like [128, 2048]),
 // and an expert weight [N_TOTAL, PF_N, PF_K] whose active experts (mask) are streamed in PF_PARTS parts
@@ -194,6 +197,25 @@ __global__ __launch_bounds__(256, 1) void k_mla_merge_uv_tile(void const *partia
     kernel::mla_merge_uv_tile_mi300_task_impl<bf16, NH, D_V, D_C, 1>(
         partials, w_uv, attn, meta.step[0], split, n_splits, (int)blockIdx.x);
   }
+}
+
+// N5: the merge with o_proj folded in, grid (NH * OPROJ_HALVES): every tensor whole and the task
+// index, which the runtime passes through expert_offset, is blockIdx.x. x_res is an input and an
+// output of the operator (the same buffer either way), and the counter is a [1] int32 the driver
+// pre-fills with zero and reads back (the last task resets it).
+__global__ __launch_bounds__(256, 1) void k_mla_merge_oproj(void const *partials,
+                                                            void const *w_uv,
+                                                            void const *w_o,
+                                                            void *x_res,
+                                                            void *counter,
+                                                            void *attn,
+                                                            void *workspace,
+                                                            Meta meta,
+                                                            int split,
+                                                            int n_splits) {
+  kernel::mla_merge_oproj_mi300_task_impl<bf16, NH, D_V, D_C, HIDDEN, OPROJ_HALVES>(
+      partials, w_uv, w_o, x_res, counter, attn, workspace, meta.step[0], split, n_splits,
+      (int)blockIdx.x);
 }
 
 __global__ __launch_bounds__(256, 1) void k_moe_router(void const *x_res,
@@ -372,6 +394,19 @@ static const Spec SPEC_MLA_MERGE_UV_TILE[] = {
     {"partials", 0, false},  // n_splits * NH * P_ROW * 4, from params
     {"w_uv", (size_t)NH * D_V * D_C * 2, false},
     {"attn", (size_t)NH * D_V * 2, true},
+};
+
+// N5: the merge's tensors plus W_o, x_res (read and written in place), the arrival counter (the
+// driver writes it as zero and reads it back, so its reset is checked) and the partial workspace,
+// which the kernel writes and only its own last task reads
+static const Spec SPEC_MLA_MERGE_OPROJ[] = {
+    {"partials", 0, false},  // n_splits * NH * P_ROW * 4, from params
+    {"w_uv", (size_t)NH * D_V * D_C * 2, false},
+    {"w_o", (size_t)HIDDEN * HIDDEN * 2, false},
+    {"x_res", (size_t)HIDDEN * 2, true},
+    {"counter", 4, true},
+    {"attn", (size_t)NH * D_V * 2, true},
+    {"workspace", (size_t)NH * OPROJ_HALVES * HIDDEN * 4, false},
 };
 
 static const Spec SPEC_MOE_ROUTER[] = {   // the fused form, NORM = true (O1)
@@ -726,6 +761,38 @@ void run_mla_merge_uv_tile(std::string const &dir) {
   b.store_outputs();
 }
 
+// N5: the same params as the tile row (halves is the kernel's template constant, 2); the grid is
+// NH * OPROJ_HALVES and the counter starts at zero
+void run_mla_merge_oproj(std::string const &dir) {
+  Params p = read_params(dir);
+  int split = (int)param(p, "split");
+  int n_splits = (int)param(p, "n_splits");
+  Buffers b{dir, specs_of(SPEC_MLA_MERGE_OPROJ), {}};
+  b.specs[0].bytes = (size_t)n_splits * NH * P_ROW * 4;
+  b.load();
+  DeviceMeta m((int)param(p, "step"), (int)param_or(p, "prompt_length", 0));
+  allow_full_lds(k_mla_merge_oproj);
+  hipLaunchKernelGGL(k_mla_merge_oproj, dim3(NH * OPROJ_HALVES), dim3(256), SMEM_BYTES, 0,
+                     b.get("partials"), b.get("w_uv"), b.get("w_o"), b.get("x_res"),
+                     b.get("counter"), b.get("attn"), b.get("workspace"), m.meta, split, n_splits);
+  finish_launch();
+  if (char const *kt = std::getenv("KT_TIME")) {
+    int n = std::atoi(kt);
+    hipEvent_t t0, t1;
+    hipEventCreate(&t0); hipEventCreate(&t1);
+    hipEventRecord(t0, 0);
+    for (int i = 0; i < n; i++) {
+      hipLaunchKernelGGL(k_mla_merge_oproj, dim3(NH * OPROJ_HALVES), dim3(256), SMEM_BYTES, 0,
+                         b.get("partials"), b.get("w_uv"), b.get("w_o"), b.get("x_res"),
+                         b.get("counter"), b.get("attn"), b.get("workspace"), m.meta, split, n_splits);
+    }
+    hipEventRecord(t1, 0); hipEventSynchronize(t1);
+    float ms = 0; hipEventElapsedTime(&ms, t0, t1);
+    std::fprintf(stderr, "TIME mla_merge_oproj launches=%d mean_us=%.2f\n", n, ms * 1000.0f / n);
+  }
+  b.store_outputs();
+}
+
 void run_moe_router(std::string const &dir) {
   Params p = read_params(dir);
   Buffers b{dir, specs_of(SPEC_MOE_ROUTER), {}};
@@ -937,7 +1004,7 @@ void run_copy(std::string const &dir) {
 int main(int argc, char **argv) {
   if (argc < 3) {
     std::fprintf(stderr,
-                 "usage: %s <mla_prep|mla_attend|mla_merge_uv|mla_merge_uv_tile|moe_router|moe_router4|copy|prefetch"
+                 "usage: %s <mla_prep|mla_attend|mla_merge_uv|mla_merge_uv_tile|mla_merge_oproj|moe_router|moe_router4|copy|prefetch"
                  "|prefetch_moe|stream|linear_gemv|linear_gemv_norm|linear_gemv_res|gang_w13_gemv|gang_w2_gemv> <dir>...\n",
                  argv[0]);
     return 1;
@@ -952,6 +1019,8 @@ int main(int argc, char **argv) {
     run = run_mla_merge_uv;
   } else if (test == "mla_merge_uv_tile") {
     run = run_mla_merge_uv_tile;
+  } else if (test == "mla_merge_oproj") {
+    run = run_mla_merge_oproj;
   } else if (test == "moe_router") {
     run = run_moe_router;
   } else if (test == "moe_router4") {

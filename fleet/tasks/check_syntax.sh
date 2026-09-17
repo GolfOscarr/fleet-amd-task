@@ -11,7 +11,7 @@ KDIR="$ROOT/fleet/tasks/mi300"
 CXX="${CXX:-clang++}"
 # "tasks/mi300/<name>.cuh" resolves under fleet/ (fleet/tasks/mi300), "tasks/common/..." under the stub
 fail=0
-for f in mla_prep_mi300 mla_attend_mi300 mla_attend_mfma_mi300 mla_merge_uv_mi300 moe_router_mi300 copy_mi300 prefetch_mi300 linear_gemv_mi300 stream_mi300 gang_moe_w2_silu_mi300 gang_moe_w13_gemv_mi300; do
+for f in mla_prep_mi300 mla_attend_mi300 mla_attend_mfma_mi300 mla_merge_uv_mi300 mla_merge_oproj_mi300 moe_router_mi300 copy_mi300 prefetch_mi300 linear_gemv_mi300 stream_mi300 gang_moe_w2_silu_mi300 gang_moe_w13_gemv_mi300; do
   src="$KDIR/$f.cuh"
   # instantiate each template at the real dims so the bodies are parsed and type-checked
   case "$f" in
@@ -20,6 +20,8 @@ for f in mla_prep_mi300 mla_attend_mi300 mla_attend_mfma_mi300 mla_merge_uv_mi30
     mla_attend_mfma_mi300) inst='kernel::mla_attend_mi300_task_impl<bfloat16,16,512,64,1056>(0,0,0,0,0,0,0.1f,32,33,5,4,0,0);' ;;   # O7: the MFMA kernel (the same signature; the wrapper's host path)
     # the gang form, then N4's regular one at a whole head and at a half (the two HALVES)
     mla_merge_uv_mi300) inst='kernel::mla_merge_uv_mi300_task_impl<bfloat16,16,128,512>(0,0,0,0,32,33,2,2,0,1,1,0); kernel::mla_merge_uv_tile_mi300_task_impl<bfloat16,16,128,512,1>(0,0,0,0,32,33,0); kernel::mla_merge_uv_tile_mi300_task_impl<bfloat16,16,128,512,2>(0,0,0,0,32,33,0);' ;;
+    # N5: the merge with o_proj folded in, one task per (head, half)
+    mla_merge_oproj_mi300) inst='kernel::mla_merge_oproj_mi300_task_impl<bfloat16,16,128,512,2048,2>(0,0,0,0,0,0,0,0,32,33,0);' ;;
     # the plain and the fused one-task forms, then N2's four-task split of the fused one
     moe_router_mi300) inst='kernel::moe_router_mi300_task_impl<bfloat16,2048,64,2,6,32,26,false>(0,0,0,0,0,0,0,0,0,0,0,0,1.0f,0.0f); kernel::moe_router_mi300_task_impl<bfloat16,2048,64,2,6,32,26,true>(0,0,0,0,0,0,0,0,0,0,0,0,1.0f,1e-6f); kernel::moe_router_mi300_task_impl<bfloat16,2048,64,2,6,32,26,true,4>(0,0,0,0,0,0,0,0,0,0,0,0,1.0f,1e-6f,0,0);' ;;
     copy_mi300) inst='kernel::copy_mi300_task_impl<bfloat16,2048>(0,0); kernel::copy_mi300_task_impl<bfloat16,256>(0,0,1000,1);' ;;

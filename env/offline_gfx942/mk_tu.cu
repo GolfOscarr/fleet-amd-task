@@ -30,6 +30,11 @@
 // N2: the fused router in four tasks (TASK_MOE_ROUTER4_MI300 = 204); its kernel header is the
 // one-task router's, already included by task_header.cuh
 #define MK_TASK_MOE_ROUTER4_MI300 TASK_MOE_ROUTER4_MI300
+// N5: the merge with o_proj folded in, keyed on the type its hunk adds (207; 200 to 203 are the
+// fork's scheduler task types, found at the first integration); its header is not in
+// task_header.cuh until then, so it is included here
+#include "tasks/mi300/mla_merge_oproj_mi300.cuh"
+#define MK_TASK_MLA_MERGE_OPROJ_MI300 ((TaskType)207)
 #endif
 
 using namespace mirage::runtime;
@@ -107,6 +112,16 @@ void _execute_task(TaskDesc const *task_desc, RuntimeConfig const &runtime_confi
     // --merge-halves 2: 32 tasks of a half head (the W_uv rows 64 half .. 64 half + 63)
     kernel::mla_merge_uv_tile_mi300_task_impl<bfloat16, 16, 128, 512, 2>(
         task_desc->input_ptrs[0], task_desc->input_ptrs[1], task_desc->output_ptrs[0],
+        runtime_config.step[0], 32, 33,
+        (int)(task_desc->task_metadata.expert_offset & 0xFFFF));
+  } else if (task_desc->task_type == MK_TASK_MLA_MERGE_OPROJ_MI300 && task_desc->variant_id == 0) {
+    // N5, --merge-oproj: the merge with o_proj folded in, 32 tasks of a half head; x_res is input 3
+    // and output 0 (the same buffer), the counter input 4 (the emitted call of
+    // fleet/patches/hunks/N5-merge-oproj.md)
+    kernel::mla_merge_oproj_mi300_task_impl<bfloat16, 16, 128, 512, 2048, 2>(
+        task_desc->input_ptrs[0], task_desc->input_ptrs[1], task_desc->input_ptrs[2],
+        task_desc->output_ptrs[0], task_desc->input_ptrs[4],
+        task_desc->output_ptrs[1], task_desc->output_ptrs[2],
         runtime_config.step[0], 32, 33,
         (int)(task_desc->task_metadata.expert_offset & 0xFFFF));
   } else if (task_desc->task_type == MK_TASK_MOE_ROUTER4_MI300 && task_desc->variant_id == 0) {
