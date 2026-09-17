@@ -42,6 +42,7 @@ choice of imap in `build_graph.py`.
 | `mla_attend_mi300.cuh` | `TASK_MLA_ATTEND_MI300` (186), gang | 8 x `tiles_per_xcd` | `ql_nope`, `q_pe`, `c_kv`, `k_pe` | `partials [n_splits,16,513]` FP32; optional second output: debug scores `[16,S_max]` FP32 | `[softmax_scale_bits, split, n_splits, tiles_per_xcd, nh, d_c, d_r]` |
 | `mla_attend_mfma_mi300.cuh` (build flag `-DMLA_ATTEND_MFMA`, selected from `mla_attend_mi300.cuh`; `--mfma-attend`, O7 of `docs/gpu-experiments/03-acceleration`) | the same task types as the VALU kernel | the same | the same | the same | the same; the scores and p x V on `v_mfma_f32_16x16x16_bf16`, the tile staged once in LDS |
 | `mla_merge_uv_mi300.cuh` | `TASK_MLA_MERGE_UV_MI300` (187), gang | 8 x `heads_per_xcd` | `partials`, `W_uv [16,128,512]` | `attn [1,2048]` | `[split, n_splits, tiles_per_xcd, nh, d_v, d_c]` |
+| same file, `mla_merge_uv_tile_mi300_task_impl` | `TASK_MLA_MERGE_UV_TILE_MI300` (201), regular (registration `mla_merge_uv_tile_mi300`; `--merge-tasks [--merge-halves 2]`, N4 of `docs/gpu-experiments/04-kernels`; the enum, the name maps, the `expert_offset` list, the registration and the dispatcher branch are the blocks of `fleet/patches/hunks/N4-merge-tile.md`, to be added to `new_tasks.patch` on the fork) | `nh x halves` tasks (16 or 32) | `partials`, `W_uv` (both whole) | `attn [1,2048]` (whole) | `[split, n_splits, halves]`; the task's (head, half) is its `bid.x` through the `expert_offset` metadata (`h = idx / halves`, `half = idx % halves`) |
 | `moe_router_mi300.cuh` | `TASK_MOE_ROUTER_MI300` (188), CU-task | 1 | `h [1,2048]`, `W_gate [64,2048]` | `topk_w [1,8]` FP32, `routing [66,1]` int32, `mask [67]` int32, `logits [1,64]` FP32, `route_log [32,26,8]` int32 | `[topk, n_experts, n_forced, scaling_bits, layer_index, hidden]` |
 | same file, `NORM = true` (registration `moe_router_norm_mi300`; `--fuse-norm2`, O1 of `docs/gpu-experiments/03-acceleration`) | `TASK_MOE_ROUTER_MI300` (188), CU-task | 1 | `x_res [1,2048]`, `w_norm [2048]`, `W_gate [64,2048]` | `h [1,2048]` (the normalised row, for the expert gate-up), then the five above | the six above and `eps_bits` |
 | `gang_moe_w2_silu_mi300.cuh` | `TASK_GANG_MOE_W2_SILU_MI300` (191), gang (registration `gang_moe_w2_silu_linear_mi300`; `--fuse-silu`, O2 of `docs/gpu-experiments/03-acceleration`) | 8 x 32 tiles | `mid [1,8,2816]` (gate then up per slot), `W2 [66,2048,1408]`, `routing`, `mask` | `out8 [1,8,2048]`, `w2_scratch [256,1408]` (one activation row per (XCD, tile)) | the stock w2's `[tiles_per_expert, max_experts_per_xcd, total_tiles_per_xcd]`; K from the weight |
@@ -94,6 +95,15 @@ Head `h = xcd * heads_per_xcd + t`; live splits `ceil((step + 1) / split)`;
 `M = max lse_j`, `w_j = exp(lse_j - M)`, `o = sum w_j o_j / sum w_j`; `o`
 rounded to BF16; `attn[h] = o @ W_uv[h]^T` with FP32 accumulation, two
 lanes per output element. LDS about 2.3 KiB.
+
+The regular form (N4) shares that body. It takes `h = idx / halves` and
+`half = idx % halves` from the task index instead of the gang tile decode
+and reads every tensor whole; with `halves = 2` it merges the whole head
+and multiplies only the `W_uv` rows `64 half .. 64 half + 63`, storing the
+matching 64 columns of `attn`. A row's lane sums are reduced by
+`butterfly_sum<MERGE_W_BATCH>` in both forms and the batch constant does
+not change with `halves`, so the two write the same bits (the suite's
+`mla_merge_uv_tile` rows check it against the gang launch).
 
 ### `moe_router`
 

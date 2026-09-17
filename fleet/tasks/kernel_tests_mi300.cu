@@ -32,7 +32,8 @@
  * (XCD, tile) pair. The defines are the ones persistent_kernel.py passes on its ROCm path.
  *
  * Usage: kernel_tests <test> <dir> [<dir> ...]
- *   test  mla_prep | mla_attend | mla_merge_uv | moe_router | copy | prefetch | prefetch_moe | stream
+ *   test  mla_prep | mla_attend | mla_merge_uv | mla_merge_uv_tile | moe_router | copy
+ *         | prefetch | prefetch_moe | stream
  *         | linear_gemv | linear_gemv_norm | linear_gemv_res
  *         | gang_w13_gemv | gang_w2_gemv (the -DKT_FAKE_XCD build only)
  *   dir   params.txt ("name value" per line, integers; floats as IEEE-754
@@ -174,6 +175,25 @@ __global__ __launch_bounds__(256, 1) void k_mla_merge_uv(void const *partials,
   kernel::mla_merge_uv_mi300_task_impl<bf16, NH, D_V, D_C>(
       partials, w_uv_xcd, attn_xcd, meta.step[0], split, n_splits, HEADS_PER_XCD, HEADS_PER_XCD,
       0, 1, 1, tile_idx);
+}
+
+// N4: the regular form, grid (NH * halves): every tensor whole and the task index, which the
+// runtime passes through expert_offset, is blockIdx.x. `halves` is a kernel argument (the
+// launcher's Meta is not extended), so the two instantiations stand behind one launch.
+__global__ __launch_bounds__(256, 1) void k_mla_merge_uv_tile(void const *partials,
+                                                              void const *w_uv,
+                                                              void *attn,
+                                                              Meta meta,
+                                                              int split,
+                                                              int n_splits,
+                                                              int halves) {
+  if (halves == 2) {
+    kernel::mla_merge_uv_tile_mi300_task_impl<bf16, NH, D_V, D_C, 2>(
+        partials, w_uv, attn, meta.step[0], split, n_splits, (int)blockIdx.x);
+  } else {
+    kernel::mla_merge_uv_tile_mi300_task_impl<bf16, NH, D_V, D_C, 1>(
+        partials, w_uv, attn, meta.step[0], split, n_splits, (int)blockIdx.x);
+  }
 }
 
 __global__ __launch_bounds__(256, 1) void k_moe_router(void const *x_res,
@@ -320,6 +340,13 @@ static const Spec SPEC_MLA_ATTEND[] = {
 static const Spec SPEC_MLA_ATTEND_SCORES = {"scores", (size_t)NH * S_MAX * 4, true};
 
 static const Spec SPEC_MLA_MERGE_UV[] = {
+    {"partials", 0, false},  // n_splits * NH * P_ROW * 4, from params
+    {"w_uv", (size_t)NH * D_V * D_C * 2, false},
+    {"attn", (size_t)NH * D_V * 2, true},
+};
+
+// N4: the regular launch reads the same three tensors; `halves` is a params.txt entry
+static const Spec SPEC_MLA_MERGE_UV_TILE[] = {
     {"partials", 0, false},  // n_splits * NH * P_ROW * 4, from params
     {"w_uv", (size_t)NH * D_V * D_C * 2, false},
     {"attn", (size_t)NH * D_V * 2, true},
@@ -631,6 +658,37 @@ void run_mla_merge_uv(std::string const &dir) {
   b.store_outputs();
 }
 
+// N4: the same tensors as mla_merge_uv, plus the params entry `halves`; the grid is NH * halves
+void run_mla_merge_uv_tile(std::string const &dir) {
+  Params p = read_params(dir);
+  int split = (int)param(p, "split");
+  int n_splits = (int)param(p, "n_splits");
+  int halves = (int)param_or(p, "halves", 1);
+  Buffers b{dir, specs_of(SPEC_MLA_MERGE_UV_TILE), {}};
+  b.specs[0].bytes = (size_t)n_splits * NH * P_ROW * 4;
+  b.load();
+  DeviceMeta m((int)param(p, "step"), (int)param_or(p, "prompt_length", 0));
+  allow_full_lds(k_mla_merge_uv_tile);
+  hipLaunchKernelGGL(k_mla_merge_uv_tile, dim3(NH * halves), dim3(256), SMEM_BYTES, 0,
+                     b.get("partials"), b.get("w_uv"), b.get("attn"), m.meta, split, n_splits, halves);
+  finish_launch();
+  if (char const *kt = std::getenv("KT_TIME")) {
+    int n = std::atoi(kt);
+    hipEvent_t t0, t1;
+    hipEventCreate(&t0); hipEventCreate(&t1);
+    hipEventRecord(t0, 0);
+    for (int i = 0; i < n; i++) {
+      hipLaunchKernelGGL(k_mla_merge_uv_tile, dim3(NH * halves), dim3(256), SMEM_BYTES, 0,
+                         b.get("partials"), b.get("w_uv"), b.get("attn"), m.meta, split, n_splits, halves);
+    }
+    hipEventRecord(t1, 0); hipEventSynchronize(t1);
+    float ms = 0; hipEventElapsedTime(&ms, t0, t1);
+    std::fprintf(stderr, "TIME mla_merge_uv_tile launches=%d halves=%d mean_us=%.2f\n", n, halves,
+                 ms * 1000.0f / n);
+  }
+  b.store_outputs();
+}
+
 void run_moe_router(std::string const &dir) {
   Params p = read_params(dir);
   Buffers b{dir, specs_of(SPEC_MOE_ROUTER), {}};
@@ -826,7 +884,7 @@ void run_copy(std::string const &dir) {
 int main(int argc, char **argv) {
   if (argc < 3) {
     std::fprintf(stderr,
-                 "usage: %s <mla_prep|mla_attend|mla_merge_uv|moe_router|copy|prefetch|prefetch_moe"
+                 "usage: %s <mla_prep|mla_attend|mla_merge_uv|mla_merge_uv_tile|moe_router|copy|prefetch|prefetch_moe"
                  "|stream|linear_gemv|linear_gemv_norm|linear_gemv_res|gang_w13_gemv|gang_w2_gemv> <dir>...\n",
                  argv[0]);
     return 1;
@@ -839,6 +897,8 @@ int main(int argc, char **argv) {
     run = run_mla_attend;
   } else if (test == "mla_merge_uv") {
     run = run_mla_merge_uv;
+  } else if (test == "mla_merge_uv_tile") {
+    run = run_mla_merge_uv_tile;
   } else if (test == "moe_router") {
     run = run_moe_router;
   } else if (test == "copy") {

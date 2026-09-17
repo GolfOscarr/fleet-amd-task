@@ -103,6 +103,26 @@ def mla_merge_uv_layer(mpk, partials, w_uv, output, split, n_splits, block_dim=(
               "mla_merge_uv_mi300", [split, n_splits, nh // XCDS, nh, d_v, d_c])
 
 
+def mla_merge_uv_tile_layer(mpk, partials, w_uv, output, split, n_splits, halves=1,
+                            block_dim=(256, 1, 1)):
+    """N4 (M6 and M4 of docs/gpu-experiments/04-kernels/03-router-merge-ideas.md): the merge as
+    nh * halves regular tasks instead of the 8 x (nh / 8) gang, every tensor whole and the task
+    index from expert_offset (head h = idx // halves, half = idx % halves), as
+    mla_attend_tile_mi300 stands beside mla_attend_mi300. With halves = 2 a task merges the whole
+    head and multiplies only its half of W_uv, so the partials traffic doubles and the W_uv phase
+    halves. Registration mla_merge_uv_tile_mi300: inputs partials, W_uv; output attn; params
+    [split, n_splits, halves]."""
+    nh, d_v, d_c = w_uv.dim(0), w_uv.dim(1), w_uv.dim(2)
+    assert halves in (1, 2), halves
+    assert output.dim(1) == nh * d_v and partials.dim(2) == G.partials_row(d_c)
+    assert d_c % 256 == 0, "K of the W_uv product must be a multiple of 256"
+    assert n_splits <= 64, "mla_merge_uv merges one split per lane of one wavefront"
+    assert d_v % (4 * halves) == 0, (d_v, halves)   # the kernel's static_assert: the four waves' rows
+    _new_task(mpk, (nh * halves, 1, 1), block_dim,
+              [(partials, (-1, -1, -1), -1), (w_uv, (-1, -1, -1), -1), (output, (-1, -1, -1), -1)],
+              "mla_merge_uv_tile_mi300", [split, n_splits, halves])
+
+
 def moe_router_layer(mpk, input, w_gate, topk_w, routing, mask, logits, route_log, layer_index,
                      topk, n_experts, n_forced, scaling, block_dim=(256, 1, 1),
                      w_norm=None, h=None, eps=None):
@@ -326,6 +346,7 @@ NEW_LAYERS = {
     "mla_prep_layer": mla_prep_layer,
     "mla_attend_layer": mla_attend_layer,
     "mla_merge_uv_layer": mla_merge_uv_layer,
+    "mla_merge_uv_tile_layer": mla_merge_uv_tile_layer,
     "gang_moe_w2_silu_linear_layer": gang_moe_w2_silu_linear_layer,
     "gang_moe_w13_gemv_layer": gang_moe_w13_gemv_layer,
     "linear_norm_layer": linear_norm_layer,
@@ -473,7 +494,7 @@ def build(packed, capture, meta, dims=REAL_DIMS, s_max=1056, layers=27, head=Tru
           stop_after=None, debug_scores=False, tile_linears=False, attend_tasks=False, num_workers=296, num_schedulers=8,
           profiler_tensor=None, align=0, workspaces=None, fuse_norm2=False, fuse_silu=False,
           probe_before=None, fuse_norm1=False, prefetch=False, gemv_linears=False, linear_grid=None,
-          head_grid=None, gemv_w13=False, plan=None):
+          head_grid=None, gemv_w13=False, merge_tasks=False, merge_halves=1, plan=None):
     """On the machine: construct the PersistentKernel, attach, issue, return (mpk, host tensors, plan).
     plan: a ready plan (the empty ladder of I3) instead of the model's."""
     import torch
@@ -481,7 +502,8 @@ def build(packed, capture, meta, dims=REAL_DIMS, s_max=1056, layers=27, head=Tru
 
     if plan is None:
         plan = G.build_plan(dims, s_max, layers, head, debug, debug_scores, tile_linears, attend_tasks, fuse_norm2,
-                            fuse_silu, fuse_norm1, prefetch, gemv_linears, linear_grid, head_grid, gemv_w13)
+                            fuse_silu, fuse_norm1, prefetch, gemv_linears, linear_grid, head_grid, gemv_w13,
+                            merge_tasks, merge_halves)
     assert not gemv_w13 or num_workers // G.XCDS == G.W13_GEMV_TILES, \
         f"--gemv-w13 wants {G.W13_GEMV_TILES} workers per XCD, not {num_workers // G.XCDS}"   # L4
     if probe_before:
@@ -668,10 +690,11 @@ class FakeMPK:
 def dry_run(dims=REAL_DIMS, s_max=1056, layers=27, head=True, debug=False, stop_after=None,
             debug_scores=False, tile_linears=False, attend_tasks=False, fuse_norm2=False, fuse_silu=False,
             probe_before=None, fuse_norm1=False, prefetch=False, gemv_linears=False, linear_grid=None,
-            head_grid=None, gemv_w13=False, plan=None):
+            head_grid=None, gemv_w13=False, merge_tasks=False, merge_halves=1, plan=None):
     if plan is None:
         plan = G.build_plan(dims, s_max, layers, head, debug, debug_scores, tile_linears, attend_tasks, fuse_norm2,
-                            fuse_silu, fuse_norm1, prefetch, gemv_linears, linear_grid, head_grid, gemv_w13)
+                            fuse_silu, fuse_norm1, prefetch, gemv_linears, linear_grid, head_grid, gemv_w13,
+                            merge_tasks, merge_halves)
     if probe_before:
         plan.insert_probe(probe_before)
     if stop_after:
@@ -703,6 +726,11 @@ def main():
     ap.add_argument("--gemv-w13", action="store_true",
                     help="the expert gate-up as the GEMV gang task, 37 tiles per XCD "
                          "(L4, docs/gpu-experiments/04-kernels)")
+    ap.add_argument("--merge-tasks", action="store_true",
+                    help="the merge as NH x halves regular tasks instead of the 8-task gang "
+                         "(N4, docs/gpu-experiments/04-kernels)")
+    ap.add_argument("--merge-halves", type=int, default=1, metavar="N",
+                    help="--merge-tasks: 1 (a whole head per task) or 2 (a half of its W_uv rows)")
     ap.add_argument("--out", default=None)
     # L6: the stream probe's plan, on the empty ladder's machinery (--graph empty is not built here:
     # its plan has no model arithmetic to check, and run_fleet.py builds it on the machine)
@@ -724,7 +752,8 @@ def main():
     else:
         plan, calls = dry_run(REAL_DIMS, args.s_max, args.layers, not args.no_head, args.debug, args.stop_after,
                               args.debug_scores, args.tile_linears, gemv_linears=args.gemv_linears,
-                              linear_grid=args.linear_grid, head_grid=args.head_grid, gemv_w13=args.gemv_w13)
+                              linear_grid=args.linear_grid, head_grid=args.head_grid, gemv_w13=args.gemv_w13,
+                              merge_tasks=args.merge_tasks, merge_halves=args.merge_halves)
     s = G.summary(plan)
     print(json.dumps({k: v for k, v in s.items()}, indent=None))
     print(f"{len(calls)} calls recorded; task types: {sorted(set(c['task_type'] for c in calls))}")

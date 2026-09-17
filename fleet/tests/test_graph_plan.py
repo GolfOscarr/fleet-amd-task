@@ -544,6 +544,47 @@ def test_gemv_w13_keeps_the_chain_rule(head, layers):
     # one layer is the dense MLP alone: the flag then changes nothing
     assert sum(c["method"] == "gang_moe_w13_gemv_mi300@new" for c in calls) == max(layers - 1, 0)
 
+def test_merge_tasks_issues_the_merge_as_regular_tasks():
+    """N4: --merge-tasks turns the 8-task merge gang into 16 regular tasks (32 with
+    --merge-halves 2) with whole-tensor imaps, the operator keeping its label and its tensors."""
+    from fleet.graph_plan import REAL_DIMS as D
+    base, _ = B.dry_run(layers=27, head=True)
+    for halves, per_layer in ((1, 16), (2, 32)):
+        plan, calls = B.dry_run(layers=27, head=True, merge_tasks=True, merge_halves=halves)
+        by = {c.label: c for c in plan.calls}
+        m = by["L5.mla_merge_uv"]
+        assert m.method == "mla_merge_uv_tile_layer" and m.status == "new"
+        assert m.tasks == per_layer == D.NH * halves and m.args["halves"] == halves
+        assert m.args["partials"] == "partials" and m.args["w_uv"] == "W_uv_5" and m.args["output"] == "attn"
+        assert plan.n_ops == base.n_ops == 326
+        assert plan.n_tasks == base.n_tasks + 27 * (per_layer - 8) == 2285 + 27 * (per_layer - 8)
+        assert not plan.chain_violations()
+        # the recorded call: three whole tensors and the three params the registration reads
+        rec = [c for c in calls if c["method"] == "mla_merge_uv_tile_mi300@new"]
+        assert len(rec) == 27 and not any(c["method"] == "mla_merge_uv_mi300@new" for c in calls)
+        assert rec[0]["inputs"] == ["partials", "W_uv_0", "attn"]
+        assert rec[0]["imaps"] == [[-1, -1, -1], [-1, -1, -1], [-1, -1, -1]]
+        assert rec[0]["params"] == [G.SPLIT, plan.n_splits, halves]
+        assert rec[0]["grid_dim"] == (per_layer, 1, 1)
+
+
+def test_merge_tasks_default_off_and_the_halves_are_checked():
+    plan_off, calls_off = B.dry_run(layers=27, head=True)
+    assert not any(c["method"] == "mla_merge_uv_tile_mi300@new" for c in calls_off)
+    assert sum(c["method"] == "mla_merge_uv_mi300@new" for c in calls_off) == 27
+    assert {c.label: c.tasks for c in plan_off.calls}["L5.mla_merge_uv"] == 8
+    with pytest.raises(AssertionError):
+        B.dry_run(layers=1, head=False, merge_tasks=True, merge_halves=3)
+    with pytest.raises(AssertionError):
+        B.dry_run(layers=1, head=False, merge_halves=2)                  # only under the flag
+
+
+@pytest.mark.parametrize("head,layers,halves", [(True, 27, 1), (False, 2, 2), (True, 1, 2)])
+def test_merge_tasks_keeps_the_chain_rule(head, layers, halves):
+    plan, _ = B.dry_run(layers=layers, head=head, merge_tasks=True, merge_halves=halves,
+                        gemv_linears=True, fuse_norm2=True, fuse_silu=True)
+    assert plan.chain_violations() == []
+
 
 def test_prefetch_adds_side_operators_that_the_chain_rule_skips():
     """O8 (docs/gpu-experiments/03-acceleration): --prefetch adds three side operators per layer

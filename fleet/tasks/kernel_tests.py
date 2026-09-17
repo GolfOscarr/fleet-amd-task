@@ -30,6 +30,9 @@ Tests (--kernel selects; default all):
       eight active experts' weight slabs (the model's 66 would be 761 MB of W13), so the mask
       names the ids 0 to 7 rather than the router's own eight; the kernels read the ids from
       the mask, so nothing else changes.
+  mla_merge_uv_tile, mla_merge_uv_tile2
+      the merge as 16 or 32 regular tasks (N4, docs/gpu-experiments/04-kernels), each trial run
+      through both launches: the reference check of the gang row, plus attn bit for bit against it
   mla_attend_scores   the -DMLA_ATTEND_DEBUG_SCORES build's second output (boundary B5)
   mla_attend_splits   one split of 1056 rows versus 33 splits of 32 rows through
                       both the attend and the merge kernel (isolates the merge)
@@ -796,6 +799,9 @@ KERNELS = {
     "mla_attend": Kernel("mla_attend", tensors_mla_attend, make_mla_attend, ref_mla_attend, check_mla_attend),
     "mla_merge_uv": Kernel("mla_merge_uv", tensors_mla_merge_uv, make_mla_merge_uv, ref_mla_merge_uv,
                            check_mla_merge_uv),
+    # N4: the same tensors and the same reference, launched as NH * halves regular tasks
+    "mla_merge_uv_tile": Kernel("mla_merge_uv_tile", tensors_mla_merge_uv, make_mla_merge_uv,
+                                ref_mla_merge_uv, check_mla_merge_uv),
     "moe_router": Kernel("moe_router", tensors_moe_router, make_moe_router, ref_moe_router, check_moe_router),
     "copy": Kernel("copy", tensors_copy, make_copy, ref_copy, check_copy),
     "prefetch": Kernel("prefetch", tensors_prefetch, make_prefetch, ref_prefetch, check_prefetch),
@@ -977,10 +983,38 @@ def run_splits(ctx, name):
     return summarize(name, rows)
 
 
+def run_merge_tile(ctx, name, halves):
+    """N4: the merge as NH * halves regular tasks against the gang launch on the same inputs.
+    A row of attn is reduced by the same butterfly over the same lane sums in both forms, so
+    the two agree bit for bit; the reference check of the gang row applies to the tile row
+    unchanged."""
+    rng = trial_rng(ctx, name)
+    gang, tile = KERNELS["mla_merge_uv"], KERNELS["mla_merge_uv_tile"]
+    trials = []
+    for i in range(ctx.n):
+        base = ctx.work / name / f"{i:03d}"
+        tensors, p = make_mla_merge_uv(rng)
+        write_trial(base / "gang", gang, tensors, p)
+        write_trial(base / "tile", tile, tensors, dict(p, halves=halves))
+        trials.append(base)
+    run_binary(ctx.binary, gang, [b / "gang" for b in trials])
+    run_binary(ctx.binary, tile, [b / "tile" for b in trials])
+    rows = []
+    for base in trials:
+        t, p, g = read_trial(base / "gang", gang)
+        _, pt, k = read_trial(base / "tile", tile)
+        r = tile.check(t, pt, tile.reference(t, pt), k)
+        r.append(row_exact(f"attn: {D.NH * halves} tasks vs the gang", k["attn"], g["attn"]))
+        rows.append(r)
+    return summarize(name, rows)
+
+
 TESTS = {
     "mla_prep": lambda ctx: run_single(ctx, "mla_prep", KERNELS["mla_prep"]),
     "mla_attend": lambda ctx: run_single(ctx, "mla_attend", KERNELS["mla_attend"]),
     "mla_merge_uv": lambda ctx: run_single(ctx, "mla_merge_uv", KERNELS["mla_merge_uv"]),
+    "mla_merge_uv_tile": lambda ctx: run_merge_tile(ctx, "mla_merge_uv_tile", 1),
+    "mla_merge_uv_tile2": lambda ctx: run_merge_tile(ctx, "mla_merge_uv_tile2", 2),
     "moe_router": lambda ctx: run_single(ctx, "moe_router", KERNELS["moe_router"]),
     "copy": lambda ctx: run_single(ctx, "copy", KERNELS["copy"]),
     "prefetch": lambda ctx: run_single(ctx, "prefetch", KERNELS["prefetch"]),

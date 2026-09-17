@@ -23,6 +23,9 @@
 // (196); that header is not in task_header.cuh until then either
 #include "tasks/mi300/gang_moe_w13_gemv_mi300.cuh"
 #define MK_TASK_GANG_MOE_W13_GEMV_MI300 ((TaskType)196)
+// N4: the merge as regular tasks, keyed on the type its hunk will add (201). The kernel's
+// header is the gang form's, which task_header.cuh already includes.
+#define MK_TASK_MLA_MERGE_UV_TILE_MI300 ((TaskType)201)
 #endif
 
 using namespace mirage::runtime;
@@ -89,6 +92,19 @@ void _execute_task(TaskDesc const *task_desc, RuntimeConfig const &runtime_confi
     kernel::linear_gemv_mi300_task_impl<bfloat16, 2048, true, false>(
         task_desc->input_ptrs[0], task_desc->input_ptrs[1], task_desc->input_ptrs[2], nullptr,
         task_desc->output_ptrs[0], 256, 102400, 1e-6f);
+  } else if (task_desc->task_type == MK_TASK_MLA_MERGE_UV_TILE_MI300 && task_desc->variant_id == 0) {
+    // N4, --merge-tasks: 16 regular tasks of a whole head, every tensor whole, the task index
+    // from expert_offset (the emitted call of fleet/patches/hunks/N4-merge-tile.md)
+    kernel::mla_merge_uv_tile_mi300_task_impl<bfloat16, 16, 128, 512, 1>(
+        task_desc->input_ptrs[0], task_desc->input_ptrs[1], task_desc->output_ptrs[0],
+        runtime_config.step[0], 32, 33,
+        (int)(task_desc->task_metadata.expert_offset & 0xFFFF));
+  } else if (task_desc->task_type == MK_TASK_MLA_MERGE_UV_TILE_MI300 && task_desc->variant_id == 1) {
+    // --merge-halves 2: 32 tasks of a half head (the W_uv rows 64 half .. 64 half + 63)
+    kernel::mla_merge_uv_tile_mi300_task_impl<bfloat16, 16, 128, 512, 2>(
+        task_desc->input_ptrs[0], task_desc->input_ptrs[1], task_desc->output_ptrs[0],
+        runtime_config.step[0], 32, 33,
+        (int)(task_desc->task_metadata.expert_offset & 0xFFFF));
 #endif
   }
   // L6: the stream probe's regular form, the two rows of G5 (152 KB over 96 tasks, qkva's shape,

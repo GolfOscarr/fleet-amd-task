@@ -91,7 +91,7 @@ OUTPUT_ARGS = {
     "linear_gemv_layer": ["output"],
     "prefetch_layer": ["dummy"], "prefetch_moe_layer": ["dummy"],
     "mla_prep_layer": ["c_kv", "k_pe", "ql_nope", "q_pe"], "mla_attend_layer": ["partials", "scores"],
-    "mla_merge_uv_layer": ["output"], "moe_router_layer": ["h", "topk_w", "routing", "mask", "logits", "route_log"],
+    "mla_merge_uv_layer": ["output"], "mla_merge_uv_tile_layer": ["output"], "moe_router_layer": ["h", "topk_w", "routing", "mask", "logits", "route_log"],
     "gang_moe_w13_linear_layer": ["output"], "gang_moe_w13_gemv_layer": ["output"],
     "moe_silu_mul_layer": ["output"],
     "gang_moe_w2_linear_layer": ["output"], "gang_moe_w2_silu_linear_layer": ["output", "scratch"],
@@ -257,7 +257,8 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
                debug: bool = False, debug_scores: bool = False, tile_linears: bool = False,
                attend_tasks: bool = False, fuse_norm2: bool = False, fuse_silu: bool = False,
                fuse_norm1: bool = False, prefetch: bool = False, gemv_linears: bool = False,
-               linear_grid: int = None, head_grid: int = None, gemv_w13: bool = False) -> Plan:
+               linear_grid: int = None, head_grid: int = None, gemv_w13: bool = False, merge_tasks: bool = False,
+               merge_halves: int = 1) -> Plan:
     """debug_scores: the mla_attend kernel also writes the scaled pre-softmax scores
     [NH, s_max] FP32 (boundary B5); needs the MLA_ATTEND_DEBUG_SCORES build (MPK_DEBUG_SCORES=1).
     tile_linears: issue the four dense linears (qkva, o_proj, down, lm_head) as per-tile
@@ -285,6 +286,11 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
     site whose K is not H: 11,264, so a row is 22 sixteen-byte loads per lane instead of 4 and a
     batch of 8 rows is 704 VGPRs of raw words; -DGEMV_BATCH=2 is the knob if the VM's A/B finds
     it spilling (the kernel's body is a call, so the worker union does not carry those registers).
+    merge_tasks, merge_halves: the merge as NH * merge_halves regular tasks with whole-tensor
+    imaps instead of the 8-task gang (N4 of docs/gpu-experiments/04-kernels, M6 and M4): the
+    head and the half come from the task index, and with merge_halves 2 each task multiplies
+    half of its head's W_uv rows after merging the whole head. The operator keeps its label and
+    its tensors, so only the task count moves (16 or 32 per layer against 8).
     linear_grid, head_grid: the task count of qkva and o_proj, and of lm_head, under gemv_linears
     (--linear-grid, --head-grid; L2 and L5): grid_for_linear's heuristic otherwise, and also where
     linear_grid does not divide the operator's row count (linear_grid_for). Layer 0's down keeps
@@ -317,6 +323,8 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
         # of build_graph.build and never reaches the plan, so the constant is what is checked.
         assert NUM_WORKERS // XCDS == W13_GEMV_TILES == 37, (NUM_WORKERS, W13_GEMV_TILES)
         assert sum(w13_tile_rows(t, 2 * d.I_MOE)[1] for t in range(W13_GEMV_TILES)) == 2 * d.I_MOE
+    assert merge_halves in (1, 2), merge_halves
+    assert merge_halves == 1 or merge_tasks, "--merge-halves applies to --merge-tasks"
     assert linear_grid is None or gemv_linears, "--linear-grid applies to --gemv-linears"
     assert head_grid is None or gemv_linears, "--head-grid applies to --gemv-linears"
     assert linear_grid is None or (d.Q_OUT + d.KVA_OUT) % linear_grid == 0 or d.H % linear_grid == 0, \
@@ -421,8 +429,13 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
              ql_nope="ql_nope", q_pe="q_pe", c_kv=f"c_kv_{l}", k_pe=f"k_pe_{l}",
              partials="partials", softmax_scale=SOFTMAX_SCALE, split=SPLIT, n_splits=n_splits,
              **({"scores": "scores"} if debug_scores else {}))
-        p.op("mla_merge_uv_layer", XCDS, d.NH // XCDS, status="new", label=f"L{l}.mla_merge_uv",
-             partials="partials", w_uv=f"W_uv_{l}", output="attn", split=SPLIT, n_splits=n_splits)
+        if merge_tasks:
+            p.op("mla_merge_uv_tile_layer", d.NH * merge_halves, status="new",
+                 label=f"L{l}.mla_merge_uv", partials="partials", w_uv=f"W_uv_{l}", output="attn",
+                 split=SPLIT, n_splits=n_splits, halves=merge_halves)
+        else:
+            p.op("mla_merge_uv_layer", XCDS, d.NH // XCDS, status="new", label=f"L{l}.mla_merge_uv",
+                 partials="partials", w_uv=f"W_uv_{l}", output="attn", split=SPLIT, n_splits=n_splits)
         if gemv:
             g = linear_grid_for(d.H, linear_grid, strict=False)
             p.op("linear_gemv_layer", g, status="new", label=f"L{l}.o_proj", input="attn", w_norm=None,

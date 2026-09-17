@@ -34,9 +34,22 @@
  *       halving butterfly (butterfly_sum<MERGE_W_BATCH>, which leaves row r's
  *       total in lane r), and the lanes below the batch store attn as BF16.
  *
+ *
+ * Two entry points share that body (N4, M6 and M4 of 03-router-merge-ideas.md):
+ *   mla_merge_uv_mi300_task_impl  the gang task above, its tile decode unchanged.
+ *   mla_merge_uv_tile_mi300_task_impl<..., HALVES>  one regular task per (head, half),
+ *       every tensor whole and the index from expert_offset (h = idx / HALVES,
+ *       half = idx % HALVES) as the attention's per-tile form takes its split. With
+ *       HALVES = 2 the task merges the whole head and multiplies only the W_uv rows
+ *       D_V / 2 * half .. + D_V / 2 - 1 (16 per wave, one batch), storing the matching
+ *       64 columns of attn; the partials traffic doubles and the W_uv phase halves.
+ *       The lane reduction is butterfly_sum<MERGE_W_BATCH> either way, so a row's
+ *       sum is the same float in both forms: the two are bit-exact against each other.
+ *
  * Inputs : partials [n_splits, NH, P_ROW] FP32 (P_ROW = D_C+1 padded to /4), W_uv [NH, D_V, D_C] BF16
  * Outputs: attn [1, NH * D_V] BF16
- * Pointer conventions (computed by the registration from the imaps):
+ * Pointer conventions (computed by the registration from the imaps; the gang form only,
+ * the regular one takes every tensor whole):
  *   partials_xcd_offset_rows: rows already added for this XCD (0 if unpartitioned)
  *   w_uv_local: 1 if the W_uv pointer is this XCD's [heads_per_xcd, D_V, D_C] slice
  *   out_local : 1 if the attn pointer is this XCD's heads_per_xcd * D_V columns
@@ -66,20 +79,19 @@
 
 namespace kernel {
 
-template <typename T, int NH, int D_V, int D_C>
+// The shared body: head h's merge, and the W_uv rows of the half `half` (HALVES = 1: the
+// whole head). The three pointers are already offset to the head by the caller, so the two
+// entry points below differ only in how they find h and the half.
+template <typename T, int NH, int D_V, int D_C, int HALVES>
 __device__ __forceinline__ void
-    mla_merge_uv_mi300_task_impl(void const *partials_ptr,
-                                 void const *w_uv_ptr,
-                                 void *attn_ptr,
-                                 int step,
-                                 int split,
-                                 int n_splits,
-                                 int tiles_per_xcd,
-                                 int heads_per_xcd,
-                                 int partials_xcd_offset_rows,
-                                 int w_uv_local,
-                                 int out_local,
-                                 int tile_idx) {
+    mla_merge_uv_head(float const *partials,
+                      T const *w_uv,
+                      T *attn,
+                      int step,
+                      int split,
+                      int n_splits,
+                      int h,
+                      int half) {
   using namespace dsv2;
   static_assert(sizeof(T) == 2, "the raw-word conversion below is BF16's");
   static_assert(D_C == 8 * WAVE, "one row of W_uv is exactly one wave-load");
@@ -88,30 +100,20 @@ __device__ __forceinline__ void
   // the W_uv map (M3): the wave's rows in batches of MERGE_W_BATCH, one halving
   // butterfly per batch, so the batch is a power of two at most a wave wide
   constexpr int W_BATCH = MERGE_W_BATCH;
-  constexpr int W_ROWS_PER_WAVE = D_V / WAVES;
+  constexpr int W_ROWS_PER_HALF = D_V / HALVES;       // M4: this task's share of the head's rows
+  constexpr int W_ROWS_PER_WAVE = W_ROWS_PER_HALF / WAVES;
   constexpr int W_BATCHES = W_ROWS_PER_WAVE / W_BATCH;
-  static_assert(D_V % WAVES == 0 && W_ROWS_PER_WAVE % W_BATCH == 0,
+  static_assert(HALVES >= 1 && D_V % (WAVES * HALVES) == 0 && W_ROWS_PER_WAVE % W_BATCH == 0,
                 "the wave's W_uv rows split into whole batches");
   static_assert(W_BATCH >= 1 && W_BATCH <= WAVE && (W_BATCH & (W_BATCH - 1)) == 0,
                 "one halving butterfly reduces a batch");
 
-  int xcd = tile_idx / tiles_per_xcd;
-  int t = tile_idx % tiles_per_xcd;
-  if (t >= heads_per_xcd) {
-    return;
-  }
-  int h = xcd * heads_per_xcd + t;
   int live = (step + split) / split;                // ceil((step + 1) / split)
   if (live > n_splits) {
     live = n_splits;
   }
-  float const *partials = static_cast<float const *>(partials_ptr)
-      - (size_t)xcd * partials_xcd_offset_rows * NH * P_ROW;
   StreamSrc<float> partials_stream(partials);         // O6: the partials are read once per iteration
-  T const *w_uv = static_cast<T const *>(w_uv_ptr)
-      + (size_t)(w_uv_local ? t : h) * D_V * D_C;
   StreamSrc<T> w_uv_stream(w_uv);
-  T *attn = static_cast<T *>(attn_ptr) + (size_t)(out_local ? t : h) * D_V;
 
   extern __shared__ char smem[];
   float *lse_s = reinterpret_cast<float *>(smem);    // [64]: the live splits' lse
@@ -129,7 +131,7 @@ __device__ __forceinline__ void
 
   // (a) the first W_uv batch, before anything else (M2): the head's rows
   // w_row0 .. w_row0 + W_BATCH - 1, one wave-load each, kept as raw words
-  int w_row0 = wave * W_ROWS_PER_WAVE;
+  int w_row0 = half * W_ROWS_PER_HALF + wave * W_ROWS_PER_WAVE;
 #if MERGE_W_PRELOAD
   uint4 w_raw[2][W_BATCH];                            // two batches alternate; (e) fills the second
 #pragma unroll
@@ -329,6 +331,59 @@ __device__ __forceinline__ void
     }
   }
 #endif
+}
+
+// The gang entry point (task type TASK_MLA_MERGE_UV_MI300): the tile decode of the header,
+// the three pointers resolved from the imap flags, the whole head in one task.
+template <typename T, int NH, int D_V, int D_C>
+__device__ __forceinline__ void
+    mla_merge_uv_mi300_task_impl(void const *partials_ptr,
+                                 void const *w_uv_ptr,
+                                 void *attn_ptr,
+                                 int step,
+                                 int split,
+                                 int n_splits,
+                                 int tiles_per_xcd,
+                                 int heads_per_xcd,
+                                 int partials_xcd_offset_rows,
+                                 int w_uv_local,
+                                 int out_local,
+                                 int tile_idx) {
+  constexpr int P_ROW = ((D_C + 1 + 3) / 4) * 4;
+  int xcd = tile_idx / tiles_per_xcd;
+  int t = tile_idx % tiles_per_xcd;
+  if (t >= heads_per_xcd) {
+    return;
+  }
+  int h = xcd * heads_per_xcd + t;
+  float const *partials = static_cast<float const *>(partials_ptr)
+      - (size_t)xcd * partials_xcd_offset_rows * NH * P_ROW;
+  T const *w_uv = static_cast<T const *>(w_uv_ptr)
+      + (size_t)(w_uv_local ? t : h) * D_V * D_C;
+  T *attn = static_cast<T *>(attn_ptr) + (size_t)(out_local ? t : h) * D_V;
+  mla_merge_uv_head<T, NH, D_V, D_C, 1>(partials, w_uv, attn, step, split, n_splits, h, 0);
+}
+
+// The regular entry point (N4, task type TASK_MLA_MERGE_UV_TILE_MI300): NH * HALVES tasks
+// with every tensor whole, the task index from expert_offset as the attention's per-tile
+// form takes its split and prep its head; h = idx / HALVES, half = idx % HALVES.
+template <typename T, int NH, int D_V, int D_C, int HALVES>
+__device__ __forceinline__ void
+    mla_merge_uv_tile_mi300_task_impl(void const *partials_ptr,
+                                      void const *w_uv_ptr,
+                                      void *attn_ptr,
+                                      int step,
+                                      int split,
+                                      int n_splits,
+                                      int idx) {
+  static_assert(HALVES == 1 || HALVES == 2, "a merge task is a whole head or a half of one");
+  int h = idx / HALVES;
+  int half = idx % HALVES;
+  mla_merge_uv_head<T, NH, D_V, D_C, HALVES>(
+      static_cast<float const *>(partials_ptr),
+      static_cast<T const *>(w_uv_ptr) + (size_t)h * D_V * D_C,
+      static_cast<T *>(attn_ptr) + (size_t)h * D_V,
+      step, split, n_splits, h, half);
 }
 
 } // namespace kernel
