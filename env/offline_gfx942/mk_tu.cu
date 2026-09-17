@@ -18,7 +18,8 @@ void _execute_task(TaskDesc const *task_desc, RuntimeConfig const &runtime_confi
         task_desc->input_ptrs[0], task_desc->input_ptrs[1], task_desc->input_ptrs[2],
         task_desc->input_ptrs[3], task_desc->input_ptrs[4],
         task_desc->output_ptrs[0], task_desc->output_ptrs[1], task_desc->output_ptrs[2],
-        task_desc->output_ptrs[3], runtime_config.step[0], 1e-6f);
+        task_desc->output_ptrs[3], runtime_config.step[0], 1e-6f,
+        (int)(task_desc->task_metadata.expert_offset & 0xFFFF));
   } else if (task_desc->task_type == TASK_MOE_ROUTER_MI300 && task_desc->variant_id == 0) {
     kernel::moe_router_mi300_task_impl<bfloat16, 2048, 64, 2, 6, 32, 26, false>(
         task_desc->input_ptrs[0], nullptr, task_desc->input_ptrs[1], nullptr,

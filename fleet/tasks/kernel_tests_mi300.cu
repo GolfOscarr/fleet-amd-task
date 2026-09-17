@@ -102,7 +102,8 @@ __global__ __launch_bounds__(256, 1) void k_mla_prep(void const *qkva,
                                                      void *q_pe,
                                                      Meta meta) {
   kernel::mla_prep_mi300_task_impl<bf16, NH, D_N, D_R, D_C>(
-      qkva, w_kv_norm, w_uk, cos, sin, c_kv, k_pe, ql_nope, q_pe, meta.step[0], 1e-6f);
+      qkva, w_kv_norm, w_uk, cos, sin, c_kv, k_pe, ql_nope, q_pe, meta.step[0], 1e-6f,
+      (int)blockIdx.x);   // the head (grid NH; the runtime passes expert_offset)
 }
 
 // grid (8, tiles_per_xcd): bid.x is the XCD slot, bid.y the tile t on it.
@@ -404,7 +405,7 @@ void run_mla_prep(std::string const &dir) {
   b.load();
   DeviceMeta m((int)param(p, "step"), (int)param_or(p, "prompt_length", 0));
   allow_full_lds(k_mla_prep);
-  hipLaunchKernelGGL(k_mla_prep, dim3(1), dim3(256), SMEM_BYTES, 0,
+  hipLaunchKernelGGL(k_mla_prep, dim3(NH), dim3(256), SMEM_BYTES, 0,
                      b.get("qkva"), b.get("w_kv_norm"), b.get("w_uk"), b.get("cos"), b.get("sin"),
                      b.get("c_kv"), b.get("k_pe"), b.get("ql_nope"), b.get("q_pe"), m.meta);
   finish_launch();

@@ -46,14 +46,16 @@ def _new_task(mpk, grid_dim, block_dim, inputs, task_type, params):
 
 def mla_prep_layer(mpk, qkva, w_kv_norm, w_uk, cos, sin, c_kv, k_pe, ql_nope, q_pe,
                    block_dim=(256, 1, 1)):
-    """One task per layer: kv_a_layernorm, RoPE, cache append at row step, ql_nope = q_nope @ W_uk."""
+    """One task per head: kv_a_layernorm and the cache append at row step (task 0), RoPE of q_pe[h],
+    ql_nope[h] = q_nope[h] @ W_uk[h] (round 3: the single task cost 143 us per layer)."""
     assert qkva.num_dims == 2 and w_uk.num_dims == 3 and c_kv.num_dims == 2 and k_pe.num_dims == 2
     assert ql_nope.num_dims == 2 and q_pe.num_dims == 2
     nh, d_n, d_c = w_uk.dim(0), w_uk.dim(1), w_uk.dim(2)
     d_r = k_pe.dim(1)
     assert qkva.dim(1) == nh * (d_n + d_r) + d_c + d_r, qkva.dim(1)
     assert ql_nope.dim(0) == nh and ql_nope.dim(1) == d_c and q_pe.dim(1) == d_r
-    _new_task(mpk, (1, 1, 1), block_dim,
+    # one task per head (grid nh); every tensor whole, the task reads its head from expert_offset
+    _new_task(mpk, (nh, 1, 1), block_dim,
               [(qkva, (-1, -1, -1), -1), (w_kv_norm, (-1, -1, -1), -1), (w_uk, (-1, -1, -1), -1),
                (cos, (-1, -1, -1), -1), (sin, (-1, -1, -1), -1),
                (c_kv, (-1, -1, -1), -1), (k_pe, (-1, -1, -1), -1),

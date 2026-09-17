@@ -337,7 +337,7 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
             g = grid_for_linear(d.H)
             p.op("prefetch_layer", g, status="new", side=True, label=f"L{l}.prefetch_W_o",
                  weight=f"W_o_{l}", dummy="pf_dummy_o", grid_dim=(g, 1, 1), block_dim=(256, 1, 1))
-        p.op("mla_prep_layer", 1, status="new", label=f"L{l}.mla_prep",
+        p.op("mla_prep_layer", dims.NH, status="new", label=f"L{l}.mla_prep",
              qkva="qkva", w_kv_norm=f"w_kv_norm_{l}", w_uk=f"W_uk_{l}", cos="cos", sin="sin",
              c_kv=f"c_kv_{l}", k_pe=f"k_pe_{l}", ql_nope="ql_nope", q_pe="q_pe",
              block_dim=(256, 1, 1))

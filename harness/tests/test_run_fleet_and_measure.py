@@ -263,7 +263,8 @@ def test_measure_end_to_end(tmp_path):
     assert m["fwd_pass"]["iterations_logged"] == 32
     assert abs(m["wall"]["per_iteration_us_from_wall"] - 0.045 / 32 * 1e6) < 1e-6
     assert m["event_timing"]["per_iteration_us"]["n"] == 2
-    assert m["event_timing"]["per_op"][1]["op"] == "embed_layer"
+    assert m["event_timing"]["per_op"][1]["op"] == "iteration_start"
+    assert m["event_timing"]["per_op"][2]["op"] == "embed_layer"      # event i is the (i - 1)-th operator's completion
     md = measure.report_table(m)
     assert "| launches per generation | 3 | - |" in md and "embed_layer" in md
     kt = tmp_path / "kt.csv"

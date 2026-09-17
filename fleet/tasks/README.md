@@ -38,7 +38,7 @@ choice of imap in `build_graph.py`.
 
 | File | Task type (enum) | Grid | Inputs, in order | Outputs, in order | Params (`register_task`) |
 |---|---|---|---|---|---|
-| `mla_prep_mi300.cuh` | `TASK_MLA_PREP_MI300` (185), CU-task | 1 | `qkva [1,3648]`, `w_kv_norm [512]`, `W_uk [16,128,512]`, `cos [S_max,64]`, `sin [S_max,64]` | `c_kv [S_max,512]` (row `step`), `k_pe [S_max,64]` (row `step`), `ql_nope [16,512]`, `q_pe [16,64]` | `[nh, d_n, d_r, d_c]` |
+| `mla_prep_mi300.cuh` | `TASK_MLA_PREP_MI300` (185), CU-task | 16 (one per head; task 0 writes the cache rows; the head from `expert_offset`) | `qkva [1,3648]`, `w_kv_norm [512]`, `W_uk [16,128,512]`, `cos [S_max,64]`, `sin [S_max,64]` | `c_kv [S_max,512]` (row `step`), `k_pe [S_max,64]` (row `step`), `ql_nope [16,512]`, `q_pe [16,64]` | `[nh, d_n, d_r, d_c]` |
 | `mla_attend_mi300.cuh` | `TASK_MLA_ATTEND_MI300` (186), gang | 8 x `tiles_per_xcd` | `ql_nope`, `q_pe`, `c_kv`, `k_pe` | `partials [n_splits,16,513]` FP32; optional second output: debug scores `[16,S_max]` FP32 | `[softmax_scale_bits, split, n_splits, tiles_per_xcd, nh, d_c, d_r]` |
 | `mla_attend_mfma_mi300.cuh` (build flag `-DMLA_ATTEND_MFMA`, selected from `mla_attend_mi300.cuh`; `--mfma-attend`, O7 of `docs/gpu-experiments/03-acceleration`) | the same task types as the VALU kernel | the same | the same | the same | the same; the scores and p x V on `v_mfma_f32_16x16x16_bf16`, the tile staged once in LDS |
 | `mla_merge_uv_mi300.cuh` | `TASK_MLA_MERGE_UV_MI300` (187), gang | 8 x `heads_per_xcd` | `partials`, `W_uv [16,128,512]` | `attn [1,2048]` | `[split, n_splits, tiles_per_xcd, nh, d_v, d_c]` |

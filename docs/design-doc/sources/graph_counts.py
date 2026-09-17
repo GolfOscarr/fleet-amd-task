@@ -57,7 +57,7 @@ def attention_ops(s_eff):
         ("input_layernorm", "rmsnorm", 1, "-", H * BF16, 0, "reuse"),
         ("qkv_a_proj (q_proj | kv_a_proj_with_mqa)", "gang_linear_mi300", 8,
          (Q_OUT + KVA_OUT) // 8 // 24, lin_bytes(Q_OUT + KVA_OUT, H), 0, "reuse"),
-        ("mla_prep (kv_a_layernorm, RoPE, append, q_nope @ W_UK)", "mla_prep_mi300 (NEW)", 1, "-",
+        ("mla_prep (kv_a_layernorm, RoPE, append, q_nope @ W_UK)", "mla_prep_mi300 (NEW)", 16, "-",
          lin_bytes(NH * D_N, D_C) + D_C * BF16, 0, "new"),
         ("mla_attend (split-KV, 16 heads)", "mla_attend_mi300 (NEW)", 8, SPLITS_PER_XCD, 0, cache, "new"),
         ("mla_merge_uv (merge + W_UV per head)", "mla_merge_uv_mi300 (NEW)", 8, NH // 8,
