@@ -73,8 +73,8 @@ XCDs ([`docs/design-doc/00-decisions.md`](docs/design-doc/00-decisions.md), D6).
 on the MI300X; round 2 (2026-09-16) reached the required milestone and
 the end-to-end decode at 9.6 ms per token; round 3 (2026-09-17,
 `docs/gpu-experiments/03-acceleration/`, branch `gpu/round-3`) took the
-decode to **4.58 to 4.60 ms per token** on the runtime's event clock
-(4.58 by the megakernel's own report), the 32 ids equal to the
+decode to **4.57 to 4.60 ms per token** on the runtime's event clock
+(4.58 to 4.59 by the megakernel's own report), the 32 ids equal to the
 reference's, against the 4.5 ms production baseline: the MFMA attention,
 the prep task split over the heads, the router, merge and norm loads
 batched, the attention as regular tasks, the three boundary fusions. The
