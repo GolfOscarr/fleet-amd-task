@@ -1,0 +1,44 @@
+# Measurement report
+
+| Quantity | Predicted | Measured |
+|---|---|---|
+| bytes per iteration (read, MiB) | 4709.9 weights + cache; about 4772.0 with activations | - |
+| time per iteration, median (us) | 1148.5-1349.4 + 326 t_b + T_serial | 2180.0 |
+| time per iteration, P95 (us) |  | 5640.2 |
+| time per iteration from event timing, median (us) |  | 739.9 |
+| time per iteration from host wall clock (us) |  | 87679.8 |
+| time per iteration from the kernel trace (us) |  | - |
+| achieved read bandwidth (TB/s) | 3.66-4.3 over T_bw | - |
+| launches per generation | 3 | - |
+| L2 hit rate | 16-17% (Fleet's batch-1 figure) | - |
+| tokens per second |  | 458.7 |
+| workers with tasks (of those reporting) |  | 296 of 296 |
+| tasks per XCD (placement) |  | 0:337 1:326 2:320 3:324 4:325 5:320 6:320 7:320 |
+| shader clock from the spin (MHz) |  | 2056.0 |
+| exec cycles per task, busy workers |  | 102179.8 |
+| exec us per task (at the spin's SCLK) |  | 49.70 |
+| dep-wait us per iteration per busy worker |  | 153.05 |
+| GFX clock from amd-smi during the run, median / max (MHz) | 2100 max (D2 of round 1) | 2103 / 2104 over 28 samples |
+| memory clock from amd-smi, median (MHz) |  | 900 |
+
+## Exec time per task by class (worker timing, I1)
+
+| Class | tasks | cycles per task | us per task |
+|---|---|---|---|
+| copy | 2272 | 102139 | 49.68 |
+
+## Per-operator time (event gaps, mean over iterations after the first)
+
+| Event | Operator | mean us | min us | max us | n |
+|---|---|---|---|---|---|
+| 1 | iteration_start | 82.58 | 7.92 | 97.32 | 30 |
+| 2 | copy_layer | 624.53 | 588.52 | 677.47 | 31 |
+| 3 | copy_layer | 3.78 | 3.55 | 4.04 | 31 |
+| 4 | copy_layer | 3.63 | 3.29 | 3.96 | 31 |
+| 5 | copy_layer | 3.69 | 3.28 | 4.08 | 31 |
+| 6 | copy_layer | 3.67 | 3.41 | 3.84 | 31 |
+| 7 | copy_layer | 3.73 | 3.40 | 4.00 | 31 |
+| 8 | copy_layer | 3.64 | 3.21 | 3.89 | 31 |
+| 9 | copy_layer | 3.63 | 3.33 | 3.97 | 31 |
+| 10 | copy_layer | 3.49 | 3.23 | 3.81 | 31 |
+| 11 | copy_layer | 2.95 | 2.75 | 3.51 | 31 |

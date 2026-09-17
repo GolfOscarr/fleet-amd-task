@@ -1,0 +1,44 @@
+# Measurement report
+
+| Quantity | Predicted | Measured |
+|---|---|---|
+| bytes per iteration (read, MiB) | 4709.9 weights + cache; about 4772.0 with activations | - |
+| time per iteration, median (us) | 1148.5-1349.4 + 326 t_b + T_serial | 259.0 |
+| time per iteration, P95 (us) |  | 265.0 |
+| time per iteration from event timing, median (us) |  | 259.1 |
+| time per iteration from host wall clock (us) |  | 80840.1 |
+| time per iteration from the kernel trace (us) |  | - |
+| achieved read bandwidth (TB/s) | 3.66-4.3 over T_bw | - |
+| launches per generation | 3 | - |
+| L2 hit rate | 16-17% (Fleet's batch-1 figure) | - |
+| tokens per second |  | 3861.0 |
+| workers with tasks (of those reporting) |  | 267 of 296 |
+| tasks per XCD (placement) |  | 0:33 1:32 2:32 3:32 4:32 5:64 6:95 7:32 |
+| shader clock from the spin (MHz) |  | 2044.0 |
+| exec cycles per task, busy workers |  | 25322.3 |
+| exec us per task (at the spin's SCLK) |  | 12.39 |
+| dep-wait us per iteration per busy worker |  | 4.90 |
+| GFX clock from amd-smi during the run, median / max (MHz) | 2100 max (D2 of round 1) | 2103 / 2103 over 28 samples |
+| memory clock from amd-smi, median (MHz) |  | 900 |
+
+## Exec time per task by class (worker timing, I1)
+
+| Class | tasks | cycles per task | us per task |
+|---|---|---|---|
+| copy | 292 | 30314 | 14.83 |
+
+## Per-operator time (event gaps, mean over iterations after the first)
+
+| Event | Operator | mean us | min us | max us | n |
+|---|---|---|---|---|---|
+| 1 | iteration_start | 96.36 | 94.36 | 103.72 | 30 |
+| 2 | copy_layer | 135.24 | 132.59 | 142.79 | 31 |
+| 3 | copy_layer | 3.17 | 2.89 | 3.61 | 31 |
+| 4 | copy_layer | 3.14 | 2.96 | 3.40 | 31 |
+| 5 | copy_layer | 3.11 | 2.81 | 3.65 | 31 |
+| 6 | copy_layer | 3.12 | 2.80 | 3.40 | 31 |
+| 7 | copy_layer | 3.10 | 2.88 | 3.32 | 31 |
+| 8 | copy_layer | 3.28 | 3.11 | 3.47 | 31 |
+| 9 | copy_layer | 3.25 | 3.00 | 3.48 | 31 |
+| 10 | copy_layer | 3.03 | 2.87 | 3.31 | 31 |
+| 11 | copy_layer | 2.94 | 2.81 | 3.29 | 31 |

@@ -1,0 +1,2505 @@
+First tasks: 40
+Number of all events: 12
+Number of all tasks: 402
+Number of triggered events: 10
+Number of executed tasks: 400
+[EVENT_TIMING] Allocated buffer for 1200 entries (12 events x 100 iters)
+[WORKER_XCD] worker_id=108 block=108 xcd=1
+[WORKER_XCD] worker_id=76 block=76 xcd=1
+[WORKER_XCD] worker_id=116 block=116 xcd=1
+[WORKER_XCD] worker_id=290 block=290 xcd=7
+[WORKER_XCD] worker_id=20 block=20 xcd=1
+[WORKER_XCD] worker_id=60 block=60 xcd=1
+[WORKER_XCD] worker_id=146 block=146 xcd=7
+[WORKER_XCD] worker_id=124 block=124 xcd=1
+[WORKER_XCD] worker_id=100 block=100 xcd=1
+[WORKER_XCD] worker_id=266 block=266 xcd=7
+[WORKER_XCD] worker_id=172 block=172 xcd=1
+[WORKER_XCD] worker_id=204 block=204 xcd=1
+[WORKER_XCD] worker_id=84 block=84 xcd=1
+[WORKER_XCD] worker_id=244 block=244 xcd=1
+[WORKER_XCD] worker_id=33 block=33 xcd=6
+[WORKER_XCD] worker_id=170 block=170 xcd=7
+[WORKER_XCD] worker_id=226 block=226 xcd=7
+[WORKER_XCD] worker_id=2 block=2 xcd=7
+[WORKER_XCD] worker_id=138 block=138 xcd=7
+[WORKER_XCD] worker_id=42 block=42 xcd=7
+[WORKER_XCD] worker_id=50 block=50 xcd=7
+[WORKER_XCD] worker_id=114 block=114 xcd=7
+[WORKER_XCD] worker_id=58 block=58 xcd=7
+[WORKER_XCD] worker_id=169 block=169 xcd=6
+[WORKER_XCD] worker_id=130 block=130 xcd=7
+[WORKER_XCD] worker_id=9 block=9 xcd=6
+[WORKER_XCD] worker_id=209 block=209 xcd=6
+[WORKER_XCD] worker_id=17 block=17 xcd=6
+[WORKER_XCD] worker_id=145 block=145 xcd=6
+[WORKER_XCD] worker_id=105 block=105 xcd=6
+[WORKER_XCD] worker_id=129 block=129 xcd=6
+[WORKER_XCD] worker_id=220 block=220 xcd=1
+[WORKER_XCD] worker_id=257 block=257 xcd=6
+[WORKER_XCD] worker_id=193 block=193 xcd=6
+[WORKER_XCD] worker_id=113 block=113 xcd=6
+[WORKER_XCD] worker_id=201 block=201 xcd=6
+[WORKER_XCD] worker_id=57 block=57 xcd=6
+[WORKER_XCD] worker_id=185 block=185 xcd=6
+[WORKER_XCD] worker_id=281 block=281 xcd=6
+[WORKER_XCD] worker_id=81 block=81 xcd=6
+[WORKER_XCD] worker_id=289 block=289 xcd=6
+[WORKER_XCD] worker_id=73 block=73 xcd=6
+[WORKER_XCD] worker_id=177 block=177 xcd=6
+[WORKER_XCD] worker_id=217 block=217 xcd=6
+[WORKER_XCD] worker_id=52 block=52 xcd=1
+[WORKER_XCD] worker_id=68 block=68 xcd=1
+[WORKER_XCD] worker_id=196 block=196 xcd=1
+[WORKER_XCD] worker_id=282 block=282 xcd=7
+[WORKER_XCD] worker_id=259 block=259 xcd=0
+[WORKER_XCD] worker_id=156 block=156 xcd=1
+[WORKER_XCD] worker_id=260 block=260 xcd=1
+[WORKER_XCD] worker_id=249 block=249 xcd=6
+[WORKER_XCD] worker_id=28 block=28 xcd=1
+[WORKER_XCD] worker_id=139 block=139 xcd=0
+[WORKER_XCD] worker_id=121 block=121 xcd=6
+[WORKER_XCD] worker_id=35 block=35 xcd=0
+[WORKER_XCD] worker_id=131 block=131 xcd=0
+[WORKER_XCD] worker_id=164 block=164 xcd=1
+[WORKER_XCD] worker_id=51 block=51 xcd=0
+[WORKER_XCD] worker_id=219 block=219 xcd=0
+[WORKER_XCD] worker_id=155 block=155 xcd=0
+[WORKER_XCD] worker_id=243 block=243 xcd=0
+[WORKER_XCD] worker_id=292 block=292 xcd=1
+[WORKER_XCD] worker_id=67 block=67 xcd=0
+[WORKER_XCD] worker_id=3 block=3 xcd=0
+[WORKER_XCD] worker_id=123 block=123 xcd=0
+[WORKER_XCD] worker_id=235 block=235 xcd=0
+[WORKER_XCD] worker_id=275 block=275 xcd=0
+[WORKER_XCD] worker_id=195 block=195 xcd=0
+[WORKER_XCD] worker_id=83 block=83 xcd=0
+[WORKER_XCD] worker_id=163 block=163 xcd=0
+[WORKER_XCD] worker_id=179 block=179 xcd=0
+[WORKER_XCD] worker_id=171 block=171 xcd=0
+[WORKER_XCD] worker_id=99 block=99 xcd=0
+[WORKER_XCD] worker_id=147 block=147 xcd=0
+[WORKER_XCD] worker_id=291 block=291 xcd=0
+[WORKER_XCD] worker_id=211 block=211 xcd=0
+[WORKER_XCD] worker_id=273 block=273 xcd=6
+[WORKER_XCD] worker_id=283 block=283 xcd=0
+[WORKER_XCD] worker_id=267 block=267 xcd=0
+[WORKER_XCD] worker_id=75 block=75 xcd=0
+[WORKER_XCD] worker_id=107 block=107 xcd=0
+[WORKER_XCD] worker_id=19 block=19 xcd=0
+[WORKER_XCD] worker_id=27 block=27 xcd=0
+[WORKER_XCD] worker_id=227 block=227 xcd=0
+[WORKER_XCD] worker_id=251 block=251 xcd=0
+[WORKER_XCD] worker_id=59 block=59 xcd=0
+[WORKER_XCD] worker_id=274 block=274 xcd=7
+[WORKER_XCD] worker_id=92 block=92 xcd=1
+[WORKER_XCD] worker_id=44 block=44 xcd=1
+[WORKER_XCD] worker_id=180 block=180 xcd=1
+[WORKER_XCD] worker_id=106 block=106 xcd=7
+[WORKER_XCD] worker_id=41 block=41 xcd=6
+[WORKER_XCD] worker_id=11 block=11 xcd=0
+[WORKER_XCD] worker_id=203 block=203 xcd=0
+[WORKER_XCD] worker_id=89 block=89 xcd=6
+[WORKER_XCD] worker_id=82 block=82 xcd=7
+[WORKER_XCD] worker_id=241 block=241 xcd=6
+[WORKER_XCD] worker_id=90 block=90 xcd=7
+[WORKER_XCD] worker_id=36 block=36 xcd=1
+[WORKER_XCD] worker_id=161 block=161 xcd=6
+[WORKER_XCD] worker_id=202 block=202 xcd=7
+[WORKER_XCD] worker_id=66 block=66 xcd=7
+[WORKER_XCD] worker_id=268 block=268 xcd=1
+[WORKER_XCD] worker_id=252 block=252 xcd=1
+[WORKER_XCD] worker_id=91 block=91 xcd=0
+[WORKER_XCD] worker_id=154 block=154 xcd=7
+[WORKER_XCD] worker_id=137 block=137 xcd=6
+[WORKER_XCD] worker_id=43 block=43 xcd=0
+[WORKER_XCD] worker_id=65 block=65 xcd=6
+[WORKER_XCD] worker_id=187 block=187 xcd=0
+[WORKER_XCD] worker_id=148 block=148 xcd=1
+[WORKER_XCD] worker_id=1 block=1 xcd=6
+[WORKER_XCD] worker_id=236 block=236 xcd=1
+[WORKER_XCD] worker_id=49 block=49 xcd=6
+[WORKER_XCD] worker_id=284 block=284 xcd=1
+[WORKER_XCD] worker_id=186 block=186 xcd=7
+[WORKER_XCD] worker_id=162 block=162 xcd=7
+[WORKER_XCD] worker_id=140 block=140 xcd=1
+[WORKER_XCD] worker_id=122 block=122 xcd=7
+[WORKER_XCD] worker_id=74 block=74 xcd=7
+[WORKER_XCD] worker_id=212 block=212 xcd=1
+[WORKER_XCD] worker_id=132 block=132 xcd=1
+[WORKER_XCD] worker_id=12 block=12 xcd=1
+[WORKER_XCD] worker_id=188 block=188 xcd=1
+[WORKER_XCD] worker_id=225 block=225 xcd=6
+[WORKER_XCD] worker_id=228 block=228 xcd=1
+[WORKER_XCD] worker_id=194 block=194 xcd=7
+[WORKER_XCD] worker_id=18 block=18 xcd=7
+[WORKER_XCD] worker_id=218 block=218 xcd=7
+[WORKER_XCD] worker_id=178 block=178 xcd=7
+[WORKER_XCD] worker_id=276 block=276 xcd=1
+[WORKER_XCD] worker_id=115 block=115 xcd=0
+[WORKER_XCD] worker_id=250 block=250 xcd=7
+[WORKER_XCD] worker_id=34 block=34 xcd=7
+[WORKER_XCD] worker_id=242 block=242 xcd=7
+[WORKER_XCD] worker_id=98 block=98 xcd=7
+[WORKER_XCD] worker_id=265 block=265 xcd=6
+[WORKER_XCD] worker_id=233 block=233 xcd=6
+[WORKER_XCD] worker_id=26 block=26 xcd=7
+[WORKER_XCD] worker_id=10 block=10 xcd=7
+[WORKER_XCD] worker_id=25 block=25 xcd=6
+[WORKER_XCD] worker_id=153 block=153 xcd=6
+[WORKER_XCD] worker_id=102 block=102 xcd=3
+[WORKER_XCD] worker_id=258 block=258 xcd=7
+[WORKER_XCD] worker_id=97 block=97 xcd=6
+[WORKER_XCD] worker_id=4 block=4 xcd=1
+[WORKER_XCD] worker_id=214 block=214 xcd=3
+[WORKER_XCD] worker_id=234 block=234 xcd=7
+[WORKER_XCD] worker_id=210 block=210 xcd=7
+[WORKER_XCD] worker_id=144 block=144 xcd=5
+[WORKER_XCD] worker_id=136 block=136 xcd=5
+[WORKER_XCD] worker_id=16 block=16 xcd=5
+[WORKER_XCD] worker_id=104 block=104 xcd=5
+[WORKER_XCD] worker_id=62 block=62 xcd=3
+[WORKER_XCD] worker_id=240 block=240 xcd=5
+[WORKER_XCD] worker_id=32 block=32 xcd=5
+[WORKER_XCD] worker_id=72 block=72 xcd=5
+[WORKER_XCD] worker_id=120 block=120 xcd=5
+[WORKER_XCD] worker_id=221 block=221 xcd=2
+[WORKER_XCD] worker_id=262 block=262 xcd=3
+[WORKER_XCD] worker_id=0 block=0 xcd=5
+[WORKER_XCD] worker_id=141 block=141 xcd=2
+[WORKER_XCD] worker_id=158 block=158 xcd=3
+[WORKER_XCD] worker_id=80 block=80 xcd=5
+[WORKER_XCD] worker_id=230 block=230 xcd=3
+[WORKER_XCD] worker_id=111 block=111 xcd=4
+[WORKER_XCD] worker_id=216 block=216 xcd=5
+[WORKER_XCD] worker_id=88 block=88 xcd=5
+[WORKER_XCD] worker_id=112 block=112 xcd=5
+[WORKER_XCD] worker_id=14 block=14 xcd=3
+[WORKER_XCD] worker_id=232 block=232 xcd=5
+[WORKER_XCD] worker_id=70 block=70 xcd=3
+[WORKER_XCD] worker_id=224 block=224 xcd=5
+[WORKER_XCD] worker_id=78 block=78 xcd=3
+[WORKER_XCD] worker_id=152 block=152 xcd=5
+[WORKER_XCD] worker_id=272 block=272 xcd=5
+[WORKER_XCD] worker_id=246 block=246 xcd=3
+[WORKER_XCD] worker_id=184 block=184 xcd=5
+[WORKER_XCD] worker_id=168 block=168 xcd=5
+[WORKER_XCD] worker_id=64 block=64 xcd=5
+[WORKER_XCD] worker_id=96 block=96 xcd=5
+[WORKER_XCD] worker_id=46 block=46 xcd=3
+[WORKER_XCD] worker_id=8 block=8 xcd=5
+[WORKER_XCD] worker_id=222 block=222 xcd=3
+[WORKER_XCD] worker_id=189 block=189 xcd=2
+[WORKER_XCD] worker_id=56 block=56 xcd=5
+[WORKER_XCD] worker_id=30 block=30 xcd=3
+[WORKER_XCD] worker_id=208 block=208 xcd=5
+[WORKER_XCD] worker_id=280 block=280 xcd=5
+[WORKER_XCD] worker_id=128 block=128 xcd=5
+[WORKER_XCD] worker_id=54 block=54 xcd=3
+[WORKER_XCD] worker_id=176 block=176 xcd=5
+[WORKER_XCD] worker_id=134 block=134 xcd=3
+[WORKER_XCD] worker_id=256 block=256 xcd=5
+[WORKER_XCD] worker_id=142 block=142 xcd=3
+[WORKER_XCD] worker_id=40 block=40 xcd=5
+[WORKER_XCD] worker_id=200 block=200 xcd=5
+[WORKER_XCD] worker_id=13 block=13 xcd=2
+[WORKER_XCD] worker_id=175 block=175 xcd=4
+[WORKER_XCD] worker_id=6 block=6 xcd=3
+[WORKER_XCD] worker_id=190 block=190 xcd=3
+[WORKER_XCD] worker_id=126 block=126 xcd=3
+[WORKER_XCD] worker_id=24 block=24 xcd=5
+[WORKER_XCD] worker_id=166 block=166 xcd=3
+[WORKER_XCD] worker_id=133 block=133 xcd=2
+[WORKER_XCD] worker_id=53 block=53 xcd=2
+[WORKER_XCD] worker_id=206 block=206 xcd=3
+[WORKER_XCD] worker_id=71 block=71 xcd=4
+[WORKER_XCD] worker_id=182 block=182 xcd=3
+[WORKER_XCD] worker_id=288 block=288 xcd=5
+[WORKER_XCD] worker_id=174 block=174 xcd=3
+[WORKER_XCD] worker_id=278 block=278 xcd=3
+[WORKER_XCD] worker_id=55 block=55 xcd=4
+[WORKER_XCD] worker_id=294 block=294 xcd=3
+[WORKER_XCD] worker_id=150 block=150 xcd=3
+[WORKER_XCD] worker_id=86 block=86 xcd=3
+[WORKER_XCD] worker_id=248 block=248 xcd=5
+[WORKER_XCD] worker_id=192 block=192 xcd=5
+[WORKER_XCD] worker_id=94 block=94 xcd=3
+[WORKER_XCD] worker_id=247 block=247 xcd=4
+[WORKER_XCD] worker_id=270 block=270 xcd=3
+[WORKER_XCD] worker_id=48 block=48 xcd=5
+[WORKER_XCD] worker_id=238 block=238 xcd=3
+[WORKER_XCD] worker_id=110 block=110 xcd=3
+[WORKER_XCD] worker_id=151 block=151 xcd=4
+[WORKER_XCD] worker_id=69 block=69 xcd=2
+[WORKER_XCD] worker_id=21 block=21 xcd=2
+[WORKER_XCD] worker_id=239 block=239 xcd=4
+[WORKER_XCD] worker_id=118 block=118 xcd=3
+[WORKER_XCD] worker_id=263 block=263 xcd=4
+[WORKER_XCD] worker_id=254 block=254 xcd=3
+[WORKER_XCD] worker_id=119 block=119 xcd=4
+[WORKER_XCD] worker_id=160 block=160 xcd=5
+[WORKER_XCD] worker_id=22 block=22 xcd=3
+[WORKER_XCD] worker_id=183 block=183 xcd=4
+[WORKER_XCD] worker_id=277 block=277 xcd=2
+[WORKER_XCD] worker_id=143 block=143 xcd=4
+[WORKER_XCD] worker_id=23 block=23 xcd=4
+[WORKER_XCD] worker_id=47 block=47 xcd=4
+[WORKER_XCD] worker_id=45 block=45 xcd=2
+[WORKER_XCD] worker_id=264 block=264 xcd=5
+[WORKER_XCD] worker_id=149 block=149 xcd=2
+[WORKER_XCD] worker_id=159 block=159 xcd=4
+[WORKER_XCD] worker_id=286 block=286 xcd=3
+[WORKER_XCD] worker_id=15 block=15 xcd=4
+[WORKER_XCD] worker_id=198 block=198 xcd=3
+[WORKER_XCD] worker_id=135 block=135 xcd=4
+[WORKER_XCD] worker_id=191 block=191 xcd=4
+[WORKER_XCD] worker_id=261 block=261 xcd=2
+[WORKER_XCD] worker_id=79 block=79 xcd=4
+[WORKER_XCD] worker_id=127 block=127 xcd=4
+[WORKER_XCD] worker_id=117 block=117 xcd=2
+[WORKER_XCD] worker_id=167 block=167 xcd=4
+[WORKER_XCD] worker_id=223 block=223 xcd=4
+[WORKER_XCD] worker_id=213 block=213 xcd=2
+[WORKER_XCD] worker_id=215 block=215 xcd=4
+[WORKER_XCD] worker_id=7 block=7 xcd=4
+[WORKER_XCD] worker_id=229 block=229 xcd=2
+[WORKER_XCD] worker_id=199 block=199 xcd=4
+[WORKER_XCD] worker_id=237 block=237 xcd=2
+[WORKER_XCD] worker_id=157 block=157 xcd=2
+[WORKER_XCD] worker_id=197 block=197 xcd=2
+[WORKER_XCD] worker_id=31 block=31 xcd=4
+[WORKER_XCD] worker_id=271 block=271 xcd=4
+[WORKER_XCD] worker_id=85 block=85 xcd=2
+[WORKER_XCD] worker_id=255 block=255 xcd=4
+[WORKER_XCD] worker_id=231 block=231 xcd=4
+[WORKER_XCD] worker_id=103 block=103 xcd=4
+[WORKER_XCD] worker_id=181 block=181 xcd=2
+[WORKER_XCD] worker_id=38 block=38 xcd=3
+[WORKER_XCD] worker_id=87 block=87 xcd=4
+[WORKER_XCD] worker_id=101 block=101 xcd=2
+[WORKER_XCD] worker_id=39 block=39 xcd=4
+[WORKER_XCD] worker_id=95 block=95 xcd=4
+[WORKER_XCD] worker_id=63 block=63 xcd=4
+[WORKER_XCD] worker_id=207 block=207 xcd=4
+[WORKER_XCD] worker_id=279 block=279 xcd=4
+[WORKER_XCD] worker_id=61 block=61 xcd=2
+[WORKER_XCD] worker_id=109 block=109 xcd=2
+[WORKER_XCD] worker_id=77 block=77 xcd=2
+[WORKER_XCD] worker_id=37 block=37 xcd=2
+[WORKER_XCD] worker_id=269 block=269 xcd=2
+[WORKER_XCD] worker_id=295 block=295 xcd=4
+[WORKER_XCD] worker_id=253 block=253 xcd=2
+[WORKER_XCD] worker_id=5 block=5 xcd=2
+[WORKER_XCD] worker_id=93 block=93 xcd=2
+[WORKER_XCD] worker_id=165 block=165 xcd=2
+[WORKER_XCD] worker_id=287 block=287 xcd=4
+[WORKER_XCD] worker_id=125 block=125 xcd=2
+[WORKER_XCD] worker_id=173 block=173 xcd=2
+[WORKER_XCD] worker_id=29 block=29 xcd=2
+[WORKER_XCD] worker_id=293 block=293 xcd=2
+[WORKER_XCD] worker_id=205 block=205 xcd=2
+[WORKER_XCD] worker_id=245 block=245 xcd=2
+[WORKER_XCD] worker_id=285 block=285 xcd=2
+[SCHED_XCD] sched_id=2 xcd=2 workers_on_xcd=37 block=4
+[SCHED_XCD] sched_id=5 xcd=5 workers_on_xcd=37 block=7
+[SCHED_XCD] sched_id=1 xcd=1 workers_on_xcd=37 block=3
+[SCHED_XCD] sched_id=3 xcd=3 workers_on_xcd=37 block=5
+[SCHED_XCD] sched_id=6 xcd=6 workers_on_xcd=37 block=0
+[SCHED_XCD] sched_id=0 xcd=0 workers_on_xcd=37 block=2
+[SCHED_XCD] sched_id=7 xcd=7 workers_on_xcd=37 block=1
+[SCHED_XCD] sched_id=4 xcd=4 workers_on_xcd=37 block=6
+[SPIN] block=43 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=38 iters=1000 cycles=2068 ticks=100 x=350778849
+[SPIN] block=27 iters=1000 cycles=2048 ticks=100 x=350778849
+[SPIN] block=36 iters=1000 cycles=2056 ticks=100 x=350778849
+[SPIN] block=20 iters=1000 cycles=2068 ticks=100 x=350778849
+[SPIN] block=35 iters=1000 cycles=2044 ticks=100 x=350778849
+[SPIN] block=33 iters=1000 cycles=2068 ticks=100 x=350778849
+[SPIN] block=11 iters=1000 cycles=2344 ticks=116 x=350778849
+[SPIN] block=9 iters=1000 cycles=2052 ticks=100 x=350778849
+[SPIN] block=26 iters=1000 cycles=2052 ticks=100 x=350778849
+[SPIN] block=13 iters=1000 cycles=2080 ticks=100 x=350778849
+[SPIN] block=19 iters=1000 cycles=2088 ticks=100 x=350778849
+[SPIN] block=28 iters=1000 cycles=2072 ticks=100 x=350778849
+[SPIN] block=1 iters=1000 cycles=2352 ticks=116 x=350778849
+[SPIN] block=34 iters=1000 cycles=2048 ticks=100 x=350778849
+[SPIN] block=32 iters=1000 cycles=2048 ticks=100 x=350778849
+[SPIN] block=2 iters=1000 cycles=2356 ticks=116 x=350778849
+[SPIN] block=23 iters=1000 cycles=2068 ticks=100 x=350778849
+[SPIN] block=22 iters=1000 cycles=2064 ticks=100 x=350778849
+[SPIN] block=18 iters=1000 cycles=2088 ticks=104 x=350778849
+[SPIN] block=0 iters=1000 cycles=2464 ticks=120 x=350778849
+[SPIN] block=14 iters=1000 cycles=2052 ticks=100 x=350778849
+[SPIN] block=5 iters=1000 cycles=2328 ticks=112 x=350778849
+[SPIN] block=25 iters=1000 cycles=2080 ticks=100 x=350778849
+[SPIN] block=12 iters=1000 cycles=2052 ticks=100 x=350778849
+[SPIN] block=24 iters=1000 cycles=2052 ticks=100 x=350778849
+[SPIN] block=8 iters=1000 cycles=2080 ticks=104 x=350778849
+[SPIN] block=17 iters=1000 cycles=2064 ticks=100 x=350778849
+[SPIN] block=15 iters=1000 cycles=2048 ticks=100 x=350778849
+[SPIN] block=4 iters=1000 cycles=2356 ticks=116 x=350778849
+[SPIN] block=37 iters=1000 cycles=2048 ticks=100 x=350778849
+[SPIN] block=6 iters=1000 cycles=2328 ticks=112 x=350778849
+[SPIN] block=30 iters=1000 cycles=2080 ticks=100 x=350778849
+[SPIN] block=7 iters=1000 cycles=2484 ticks=120 x=350778849
+[SPIN] block=10 iters=1000 cycles=2080 ticks=100 x=350778849
+[SPIN] block=39 iters=1000 cycles=2060 ticks=100 x=350778849
+[SPIN] block=31 iters=1000 cycles=2072 ticks=104 x=350778849
+[SPIN] block=21 iters=1000 cycles=2096 ticks=100 x=350778849
+[SPIN] block=29 iters=1000 cycles=2048 ticks=100 x=350778849
+[SPIN] block=16 iters=1000 cycles=2080 ticks=100 x=350778849
+[SPIN] block=108 iters=1000 cycles=2052 ticks=100 x=350778849
+[SPIN] block=131 iters=1000 cycles=2052 ticks=100 x=350778849
+[SPIN] block=116 iters=1000 cycles=2052 ticks=100 x=350778849
+[SPIN] block=114 iters=1000 cycles=2028 ticks=96 x=350778849
+[SPIN] block=123 iters=1000 cycles=2052 ticks=104 x=350778849
+[SPIN] block=147 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=130 iters=1000 cycles=2048 ticks=96 x=350778849
+[SPIN] block=124 iters=1000 cycles=2028 ticks=96 x=350778849
+[SPIN] block=115 iters=1000 cycles=2028 ticks=96 x=350778849
+[SPIN] block=141 iters=1000 cycles=2028 ticks=100 x=350778849
+[SPIN] block=117 iters=1000 cycles=2028 ticks=100 x=350778849
+[SPIN] block=135 iters=1000 cycles=2028 ticks=100 x=350778849
+[SPIN] block=140 iters=1000 cycles=2060 ticks=100 x=350778849
+[SPIN] block=127 iters=1000 cycles=2024 ticks=96 x=350778849
+[SPIN] block=112 iters=1000 cycles=2028 ticks=100 x=350778849
+[SPIN] block=132 iters=1000 cycles=2028 ticks=100 x=350778849
+[SPIN] block=136 iters=1000 cycles=2032 ticks=100 x=350778849
+[SPIN] block=106 iters=1000 cycles=2028 ticks=100 x=350778849
+[SPIN] block=119 iters=1000 cycles=2048 ticks=100 x=350778849
+[SPIN] block=128 iters=1000 cycles=2048 ticks=100 x=350778849
+[SPIN] block=120 iters=1000 cycles=2052 ticks=100 x=350778849
+[SPIN] block=134 iters=1000 cycles=2028 ticks=96 x=350778849
+[SPIN] block=126 iters=1000 cycles=2028 ticks=100 x=350778849
+[SPIN] block=111 iters=1000 cycles=2048 ticks=100 x=350778849
+[SPIN] block=105 iters=1000 cycles=2056 ticks=100 x=350778849
+[SPIN] block=143 iters=1000 cycles=2056 ticks=100 x=350778849
+[SPIN] block=138 iters=1000 cycles=2032 ticks=100 x=350778849
+[SPIN] block=104 iters=1000 cycles=2028 ticks=100 x=350778849
+[SPIN] block=118 iters=1000 cycles=2052 ticks=100 x=350778849
+[SPIN] block=133 iters=1000 cycles=2052 ticks=100 x=350778849
+[SPIN] block=142 iters=1000 cycles=2052 ticks=100 x=350778849
+[SPIN] block=139 iters=1000 cycles=2032 ticks=100 x=350778849
+[SPIN] block=122 iters=1000 cycles=2052 ticks=100 x=350778849
+[SPIN] block=110 iters=1000 cycles=2052 ticks=100 x=350778849
+[SPIN] block=125 iters=1000 cycles=2048 ticks=100 x=350778849
+[SPIN] block=129 iters=1000 cycles=2028 ticks=96 x=350778849
+[SPIN] block=137 iters=1000 cycles=2056 ticks=100 x=350778849
+[SPIN] block=113 iters=1000 cycles=2056 ticks=100 x=350778849
+[SPIN] block=149 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=121 iters=1000 cycles=2028 ticks=100 x=350778849
+[SPIN] block=209 iters=1000 cycles=2056 ticks=96 x=350778849
+[SPIN] block=245 iters=1000 cycles=2032 ticks=100 x=350778849
+[SPIN] block=247 iters=1000 cycles=2060 ticks=100 x=350778849
+[SPIN] block=239 iters=1000 cycles=2060 ticks=100 x=350778849
+[SPIN] block=219 iters=1000 cycles=2060 ticks=100 x=350778849
+[SPIN] block=225 iters=1000 cycles=2036 ticks=96 x=350778849
+[SPIN] block=236 iters=1000 cycles=2060 ticks=100 x=350778849
+[SPIN] block=251 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=216 iters=1000 cycles=2060 ticks=100 x=350778849
+[SPIN] block=246 iters=1000 cycles=2060 ticks=100 x=350778849
+[SPIN] block=227 iters=1000 cycles=2060 ticks=100 x=350778849
+[SPIN] block=244 iters=1000 cycles=2056 ticks=100 x=350778849
+[SPIN] block=214 iters=1000 cycles=2052 ticks=100 x=350778849
+[SPIN] block=242 iters=1000 cycles=2036 ticks=96 x=350778849
+[SPIN] block=220 iters=1000 cycles=2040 ticks=100 x=350778849
+[SPIN] block=243 iters=1000 cycles=2036 ticks=100 x=350778849
+[SPIN] block=234 iters=1000 cycles=2036 ticks=96 x=350778849
+[SPIN] block=252 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=238 iters=1000 cycles=2060 ticks=100 x=350778849
+[SPIN] block=253 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=240 iters=1000 cycles=2056 ticks=100 x=350778849
+[SPIN] block=215 iters=1000 cycles=2060 ticks=100 x=350778849
+[SPIN] block=228 iters=1000 cycles=2036 ticks=96 x=350778849
+[SPIN] block=224 iters=1000 cycles=2056 ticks=100 x=350778849
+[SPIN] block=232 iters=1000 cycles=2036 ticks=100 x=350778849
+[SPIN] block=221 iters=1000 cycles=2060 ticks=100 x=350778849
+[SPIN] block=222 iters=1000 cycles=2036 ticks=100 x=350778849
+[SPIN] block=235 iters=1000 cycles=2036 ticks=100 x=350778849
+[SPIN] block=223 iters=1000 cycles=2040 ticks=100 x=350778849
+[SPIN] block=208 iters=1000 cycles=2028 ticks=96 x=350778849
+[SPIN] block=226 iters=1000 cycles=2060 ticks=100 x=350778849
+[SPIN] block=237 iters=1000 cycles=2036 ticks=100 x=350778849
+[SPIN] block=241 iters=1000 cycles=2064 ticks=100 x=350778849
+[SPIN] block=233 iters=1000 cycles=2064 ticks=100 x=350778849
+[SPIN] block=218 iters=1000 cycles=2060 ticks=100 x=350778849
+[SPIN] block=217 iters=1000 cycles=2032 ticks=100 x=350778849
+[SPIN] block=210 iters=1000 cycles=2032 ticks=96 x=350778849
+[SPIN] block=229 iters=1000 cycles=2060 ticks=100 x=350778849
+[SPIN] block=230 iters=1000 cycles=2032 ticks=100 x=350778849
+[SPIN] block=231 iters=1000 cycles=2040 ticks=100 x=350778849
+[FWD_PASS] iter=1 time_ms=37.226 num_active_tokens=1
+[SPIN] block=67 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=41 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=23 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=32 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=55 iters=1000 cycles=2048 ticks=100 x=350778849
+[SPIN] block=35 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=44 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=36 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=60 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=61 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=52 iters=1000 cycles=2048 ticks=100 x=350778849
+[SPIN] block=43 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=59 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=29 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=53 iters=1000 cycles=2024 ticks=100 x=350778849
+[SPIN] block=45 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=39 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=30 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=34 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=51 iters=1000 cycles=2020 ticks=100 x=350778849
+[SPIN] block=22 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=49 iters=1000 cycles=2048 ticks=100 x=350778849
+[SPIN] block=17 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=54 iters=1000 cycles=2048 ticks=100 x=350778849
+[SPIN] block=46 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=48 iters=1000 cycles=2024 ticks=100 x=350778849
+[SPIN] block=38 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=25 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=28 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=26 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=37 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=33 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=50 iters=1000 cycles=2024 ticks=96 x=350778849
+[SPIN] block=42 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=40 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=16 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=24 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=18 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=31 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=47 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=140 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=158 iters=1000 cycles=2028 ticks=100 x=350778849
+[SPIN] block=141 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=148 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=163 iters=1000 cycles=2056 ticks=100 x=350778849
+[SPIN] block=137 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=147 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=155 iters=1000 cycles=2052 ticks=100 x=350778849
+[SPIN] block=165 iters=1000 cycles=2052 ticks=100 x=350778849
+[SPIN] block=171 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=142 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=127 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=150 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=139 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=126 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=132 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=156 iters=1000 cycles=2036 ticks=100 x=350778849
+[SPIN] block=164 iters=1000 cycles=2036 ticks=96 x=350778849
+[SPIN] block=135 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=151 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=138 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=144 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=149 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=133 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=159 iters=1000 cycles=2032 ticks=100 x=350778849
+[SPIN] block=134 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=129 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=157 iters=1000 cycles=2052 ticks=100 x=350778849
+[SPIN] block=154 iters=1000 cycles=2056 ticks=100 x=350778849
+[SPIN] block=146 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=121 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=152 iters=1000 cycles=2056 ticks=104 x=350778849
+[SPIN] block=153 iters=1000 cycles=2032 ticks=100 x=350778849
+[SPIN] block=130 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=145 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=143 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=122 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=160 iters=1000 cycles=2056 ticks=100 x=350778849
+[SPIN] block=128 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=136 iters=1000 cycles=1924 ticks=92 x=350778849
+[FWD_PASS] iter=1 time_ms=12.176 num_active_tokens=1
+[SPIN] block=264 iters=1000 cycles=2040 ticks=100 x=350778849
+[SPIN] block=272 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=246 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=258 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=231 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=261 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=248 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=254 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=236 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=250 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=243 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=244 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=259 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=252 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=238 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=260 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=267 iters=1000 cycles=2040 ticks=100 x=350778849
+[SPIN] block=253 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=262 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=233 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=256 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=275 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=240 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=241 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=234 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=268 iters=1000 cycles=2068 ticks=100 x=350778849
+[SPIN] block=257 iters=1000 cycles=1928 ticks=96 x=350778849
+[SPIN] block=269 iters=1000 cycles=2040 ticks=100 x=350778849
+[SPIN] block=247 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=263 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=225 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=230 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=239 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=249 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=226 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=251 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=245 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=237 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=255 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=242 iters=1000 cycles=1924 ticks=96 x=350778849
+[FWD_PASS] iter=1 time_ms=62.456 num_active_tokens=1
+[SPIN] block=52 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=60 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=67 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=76 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=71 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=80 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=75 iters=1000 cycles=2028 ticks=96 x=350778849
+[SPIN] block=41 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=44 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=68 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=51 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=58 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=72 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=54 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=64 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=42 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=59 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=46 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=61 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=63 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=33 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=38 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=48 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=70 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=65 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=62 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=69 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=39 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=77 iters=1000 cycles=2024 ticks=96 x=350778849
+[SPIN] block=83 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=56 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=66 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=53 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=47 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=55 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=50 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=57 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=85 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=34 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=49 iters=1000 cycles=1924 ticks=92 x=350778849
+[FWD_PASS] iter=2 time_ms=25.432 num_active_tokens=1
+[SPIN] block=181 iters=1000 cycles=2032 ticks=100 x=350778849
+[SPIN] block=176 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=146 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=172 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=189 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=173 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=142 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=137 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=174 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=179 iters=1000 cycles=2032 ticks=100 x=350778849
+[SPIN] block=155 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=180 iters=1000 cycles=2052 ticks=100 x=350778849
+[SPIN] block=148 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=156 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=187 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=168 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=159 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=170 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=165 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=184 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=167 iters=1000 cycles=2036 ticks=96 x=350778849
+[SPIN] block=153 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=192 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=160 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=164 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=138 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=158 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=163 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=166 iters=1000 cycles=2028 ticks=100 x=350778849
+[SPIN] block=175 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=162 iters=1000 cycles=2052 ticks=100 x=350778849
+[SPIN] block=171 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=143 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=151 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=157 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=161 iters=1000 cycles=2032 ticks=100 x=350778849
+[SPIN] block=150 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=154 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=145 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=169 iters=1000 cycles=1924 ticks=96 x=350778849
+[FWD_PASS] iter=3 time_ms=12.273 num_active_tokens=1
+[SPIN] block=288 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=261 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=276 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=252 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=273 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=275 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=268 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=265 iters=1000 cycles=2064 ticks=100 x=350778849
+[SPIN] block=262 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=283 iters=1000 cycles=2064 ticks=104 x=350778849
+[SPIN] block=254 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=246 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=250 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=293 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=241 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=260 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=278 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=242 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=270 iters=1000 cycles=2060 ticks=104 x=350778849
+[SPIN] block=291 iters=1000 cycles=2064 ticks=100 x=350778849
+[SPIN] block=274 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=259 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=258 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=269 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=257 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=280 iters=1000 cycles=2064 ticks=100 x=350778849
+[SPIN] block=0 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=285 iters=1000 cycles=2064 ticks=100 x=350778849
+[SPIN] block=277 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=249 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=284 iters=1000 cycles=2044 ticks=100 x=350778849
+[SPIN] block=255 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=267 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=271 iters=1000 cycles=2068 ticks=100 x=350778849
+[SPIN] block=279 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=266 iters=1000 cycles=2040 ticks=96 x=350778849
+[SPIN] block=8 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=272 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=247 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=263 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=67 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=95 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=99 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=63 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=76 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=80 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=75 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=84 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=74 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=65 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=49 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=60 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=78 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=101 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=93 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=85 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=68 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=57 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=104 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=77 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=62 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=92 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=83 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=69 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=87 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=91 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=66 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=88 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=50 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=82 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=71 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=73 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=79 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=96 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=54 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=86 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=70 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=81 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=58 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=112 iters=1000 cycles=1924 ticks=92 x=350778849
+[FWD_PASS] iter=4 time_ms=25.148 num_active_tokens=1
+[SPIN] block=166 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=174 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=195 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=187 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=179 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=161 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=180 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=158 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=172 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=196 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=216 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=164 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=167 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=169 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=182 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=178 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=191 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=183 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=192 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=185 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=175 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=162 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=154 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=199 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=200 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=188 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=186 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=208 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=170 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=153 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=203 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=171 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=177 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=205 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=190 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=197 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=173 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=181 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=224 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=189 iters=1000 cycles=1924 ticks=96 x=350778849
+[FWD_PASS] iter=5 time_ms=12.715 num_active_tokens=1
+[SPIN] block=24 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=276 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=3 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=11 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=275 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=4 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=291 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=286 iters=1000 cycles=2036 ticks=96 x=350778849
+[SPIN] block=277 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=265 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=292 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=270 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=282 iters=1000 cycles=2064 ticks=100 x=350778849
+[SPIN] block=278 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=273 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=5 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=284 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=283 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=281 iters=1000 cycles=2036 ticks=96 x=350778849
+[SPIN] block=13 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=16 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=266 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=279 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=262 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=258 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=268 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=293 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=295 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=271 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=40 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=7 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=274 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=8 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=32 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=285 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=290 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=287 iters=1000 cycles=2044 ticks=100 x=350778849
+[SPIN] block=257 iters=1000 cycles=1928 ticks=96 x=350778849
+[SPIN] block=289 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=294 iters=1000 cycles=1924 ticks=92 x=350778849
+[FWD_PASS] iter=2 time_ms=113.007 num_active_tokens=1
+[SPIN] block=70 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=120 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=117 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=99 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=123 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=128 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=76 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=90 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=94 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=108 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=93 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=84 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=74 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=98 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=101 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=136 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=85 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=82 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=107 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=115 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=95 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=103 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=87 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=109 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=65 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=92 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=79 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=112 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=100 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=89 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=111 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=97 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=144 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=73 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=91 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=81 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=102 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=66 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=78 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=86 iters=1000 cycles=1924 ticks=92 x=350778849
+[FWD_PASS] iter=6 time_ms=25.114 num_active_tokens=1
+[SPIN] block=224 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=212 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=180 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=197 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=188 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=195 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=227 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=240 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=219 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=211 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=205 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=174 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=186 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=194 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=201 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=206 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=196 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=182 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=207 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=185 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=198 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=213 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=183 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=248 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=178 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=256 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=215 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=191 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=170 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=202 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=204 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=190 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=221 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=169 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=232 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=177 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=203 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=199 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=189 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=193 iters=1000 cycles=1924 ticks=96 x=350778849
+[FWD_PASS] iter=3 time_ms=25.406 num_active_tokens=1
+[SPIN] block=11 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=286 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=23 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=273 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=43 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=20 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=19 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=35 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=27 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=274 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=13 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=10 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=289 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=1 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=5 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=295 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=40 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=7 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=2 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=56 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=282 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=21 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=14 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=29 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=293 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=32 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=6 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=64 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=48 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=15 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=12 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=294 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=4 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=281 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=284 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=9 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=292 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=287 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=290 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=278 iters=1000 cycles=1924 ticks=92 x=350778849
+[FWD_PASS] iter=7 time_ms=25.566 num_active_tokens=1
+[SPIN] block=108 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=123 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=147 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=116 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=115 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=94 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=92 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=105 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=100 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=106 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=152 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=90 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=124 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=97 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=176 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=102 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=133 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=81 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=131 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=111 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=114 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=98 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=86 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=113 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=160 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=82 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=109 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=89 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=103 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=118 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=144 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=119 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=117 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=95 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=101 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=110 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=139 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=168 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=125 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=127 iters=1000 cycles=1924 ticks=96 x=350778849
+[FWD_PASS] iter=2 time_ms=125.793 num_active_tokens=1
+[SPIN] block=251 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=212 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=235 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=217 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=218 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=215 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=210 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=221 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=196 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=245 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=198 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=193 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=264 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=207 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=199 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=229 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=194 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=256 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=204 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=185 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=220 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=248 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=201 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=227 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=214 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=206 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=219 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=202 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=186 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=231 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=190 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=222 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=223 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=280 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=228 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=209 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=243 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=213 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=237 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=272 iters=1000 cycles=1924 ticks=96 x=350778849
+[FWD_PASS] iter=8 time_ms=24.861 num_active_tokens=1
+[SPIN] block=43 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=1 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=4 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=26 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=39 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=36 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=10 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=28 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=14 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=96 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=9 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=59 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=6 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=12 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=2 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=27 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=20 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=29 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=294 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=15 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=7 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=45 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=31 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=30 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=37 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=35 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=51 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=53 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=72 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=22 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=21 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=17 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=25 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=80 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=23 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=88 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=18 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=290 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=64 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=289 iters=1000 cycles=1924 ticks=92 x=350778849
+[FWD_PASS] iter=9 time_ms=12.883 num_active_tokens=1
+[SPIN] block=116 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=163 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=131 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=108 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=208 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=132 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=113 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=140 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=176 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=127 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=135 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=192 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=114 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=121 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=97 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=143 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=125 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=200 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=155 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=111 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=126 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=184 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=119 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=118 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=124 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=106 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=147 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=129 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=133 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=130 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=149 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=139 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=105 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=134 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=141 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=98 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=122 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=102 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=157 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=110 iters=1000 cycles=1924 ticks=96 x=350778849
+[FWD_PASS] iter=4 time_ms=62.687 num_active_tokens=1
+[SPIN] block=251 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=206 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=280 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=238 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=231 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=259 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=236 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=230 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=226 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=275 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=233 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=267 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=215 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=247 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=244 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=218 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=212 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=225 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=8 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=243 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=229 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=234 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=237 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=245 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=228 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=220 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=214 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=202 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=261 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=209 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=0 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=210 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=16 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=288 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=239 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=253 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=201 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=222 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=217 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=223 iters=1000 cycles=1924 ticks=96 x=350778849
+[FWD_PASS] iter=10 time_ms=25.223 num_active_tokens=1
+[SPIN] block=52 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=33 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=37 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=18 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=38 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=25 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=44 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=53 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=61 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=20 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=46 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=41 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=14 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=83 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=42 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=45 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=17 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=69 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=9 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=75 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=26 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=51 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=59 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=22 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=30 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=31 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=10 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=34 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=67 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=36 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=28 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=104 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=55 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=128 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=112 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=120 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=23 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=96 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=47 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=39 iters=1000 cycles=1924 ticks=96 x=350778849
+[FWD_PASS] iter=11 time_ms=12.933 num_active_tokens=1
+[SPIN] block=240 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=134 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=148 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=163 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=126 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=187 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=127 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=142 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=179 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=124 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=113 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=150 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=118 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=122 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=143 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=208 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=216 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=121 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=224 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=135 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=155 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=130 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=145 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=138 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=165 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=171 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=146 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=137 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=151 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=156 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=114 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=129 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=149 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=232 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=173 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=132 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=140 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=141 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=159 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=157 iters=1000 cycles=1924 ticks=92 x=350778849
+[FWD_PASS] iter=12 time_ms=12.333 num_active_tokens=1
+[SPIN] block=234 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=236 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=217 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=260 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=253 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=283 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=259 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=269 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=245 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=226 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=275 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=246 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=24 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=254 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=238 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=241 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=244 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=230 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=267 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=277 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=250 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=233 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=228 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=291 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=56 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=242 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=249 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=261 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=239 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=225 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=222 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=40 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=32 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=247 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=252 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=255 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=48 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=263 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=218 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=231 iters=1000 cycles=1924 ticks=92 x=350778849
+[FWD_PASS] iter=13 time_ms=12.538 num_active_tokens=1
+[SPIN] block=54 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=52 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=53 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=36 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=44 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=91 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=99 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=69 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=68 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=67 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=75 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=38 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=62 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=25 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=136 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=63 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=77 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=39 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=33 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=152 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=55 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=42 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=168 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=34 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=61 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=47 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=83 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=50 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=41 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=26 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=30 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=60 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=85 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=58 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=160 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=144 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=46 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=49 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=57 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=71 iters=1000 cycles=1924 ticks=96 x=350778849
+[FWD_PASS] iter=14 time_ms=14.103 num_active_tokens=1
+[SPIN] block=161 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=280 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=148 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=172 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=159 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=248 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=164 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=143 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=203 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=171 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=195 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=179 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=187 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=272 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=181 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=145 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=175 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=173 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=256 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=264 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=137 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=167 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=158 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=150 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=142 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=157 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=162 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=140 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=156 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=165 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=130 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=151 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=154 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=129 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=134 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=153 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=146 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=189 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=166 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=138 iters=1000 cycles=1924 ticks=92 x=350778849
+[FWD_PASS] iter=5 time_ms=79.829 num_active_tokens=1
+[SPIN] block=241 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=269 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=250 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=276 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=283 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=252 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=268 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=291 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=260 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=233 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=263 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=244 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=257 iters=1000 cycles=1932 ticks=96 x=350778849
+[SPIN] block=265 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=285 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=247 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=64 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=242 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=3 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=246 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=56 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=271 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=261 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=262 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=11 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=266 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=80 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=293 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=277 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=19 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=270 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=234 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=88 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=254 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=255 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=249 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=258 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=279 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=72 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=238 iters=1000 cycles=1924 ticks=96 x=350778849
+[FWD_PASS] iter=15 time_ms=29.295 num_active_tokens=1
+[SPIN] block=68 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=91 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=115 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=58 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=93 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=60 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=107 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=99 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=50 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=41 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=77 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=54 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=123 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=176 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=192 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=69 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=63 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=66 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=73 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=84 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=65 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=78 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=200 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=168 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=70 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=52 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=49 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=62 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=57 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=42 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=101 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=76 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=79 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=74 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=184 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=55 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=46 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=85 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=71 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=87 iters=1000 cycles=1924 ticks=92 x=350778849
+[FWD_PASS] iter=16 time_ms=14.251 num_active_tokens=1
+[SPIN] block=162 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=172 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=153 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=169 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=145 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=180 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=195 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=227 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=211 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=188 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=183 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=203 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=150 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=166 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=161 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=219 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=288 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=146 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=167 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=177 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=182 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=175 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=191 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=159 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=156 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=170 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=197 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=154 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=8 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=173 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=189 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=174 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=205 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=164 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=158 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=178 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=181 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=0 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=16 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=280 iters=1000 cycles=1924 ticks=92 x=350778849
+[FWD_PASS] iter=3 time_ms=160.816 num_active_tokens=1
+[SPIN] block=254 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=293 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=27 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=295 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=276 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=265 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=13 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=285 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=284 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=262 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=19 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=260 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=292 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=11 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=5 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=257 iters=1000 cycles=1932 ticks=96 x=350778849
+[SPIN] block=258 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=3 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=268 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=270 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=263 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=96 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=271 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=281 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=88 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=35 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=249 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=287 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=250 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=282 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=278 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=21 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=104 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=286 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=273 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=266 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=279 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=112 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=274 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=120 iters=1000 cycles=1924 ticks=96 x=350778849
+[FWD_PASS] iter=17 time_ms=29.175 num_active_tokens=1
+[SPIN] block=101 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=95 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=117 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=208 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=139 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=131 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=87 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=66 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=107 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=70 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=92 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=94 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=123 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=68 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=76 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=115 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=58 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=86 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=100 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=125 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=82 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=78 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=232 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=73 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=81 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=216 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=89 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=71 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=109 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=62 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=57 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=65 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=224 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=84 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=93 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=90 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=79 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=103 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=74 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=200 iters=1000 cycles=1924 ticks=92 x=350778849
+[FWD_PASS] iter=18 time_ms=14.395 num_active_tokens=1
+[SPIN] block=185 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=172 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=211 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=48 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=207 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=213 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=219 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=199 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=227 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=204 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=180 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=178 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=196 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=177 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=161 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=243 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=174 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=182 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=190 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=188 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=205 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=235 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=40 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=166 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=162 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=194 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=16 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=198 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=183 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=197 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=170 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=229 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=193 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=186 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=191 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=175 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=169 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=32 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=221 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=24 iters=1000 cycles=1924 ticks=96 x=350778849
+[FWD_PASS] iter=4 time_ms=44.160 num_active_tokens=1
+[SPIN] block=290 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=276 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=27 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=43 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=136 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=51 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=35 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=19 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=4 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=286 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=29 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=128 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=45 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=289 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=287 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=7 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=21 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=265 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=12 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=292 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=6 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=270 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=295 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=279 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=266 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=37 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=282 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=273 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=274 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=284 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=144 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=120 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=294 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=2 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=1 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=278 iters=1000 cycles=1924 ticks=96 x=350778849
+[SPIN] block=15 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=13 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=152 iters=1000 cycles=1924 ticks=92 x=350778849
+[SPIN] block=281 iters=1000 cycles=1924 ticks=92 x=350778849
+[FWD_PASS] iter=6 time_ms=102.526 num_active_tokens=1
+[TIMING] worker=212 tasks=43 poll_iters=266977 dep_iters=2748164 poll_cycles=153999260 dep_cycles=816429704 exec_cycles=51296288 signal_cycles=75784
+[TIMING] worker=140 tasks=43 poll_iters=241332 dep_iters=2574511 poll_cycles=140559268 dep_cycles=766193016 exec_cycles=104244692 signal_cycles=149364
+[TIMING] worker=276 tasks=43 poll_iters=260409 dep_iters=2583180 poll_cycles=150186368 dep_cycles=777725932 exec_cycles=87403016 signal_cycles=82392
+[TIMING] worker=204 tasks=43 poll_iters=505022 dep_iters=2631246 poll_cycles=298075360 dep_cycles=793610184 exec_cycles=74371980 signal_cycles=129072
+[TIMING] worker=148 tasks=43 poll_iters=270469 dep_iters=2729135 poll_cycles=156013196 dep_cycles=799589836 exec_cycles=70540612 signal_cycles=80780
+[TIMING] worker=60 tasks=44 poll_iters=534856 dep_iters=2842460 poll_cycles=308523144 dep_cycles=753293784 exec_cycles=108496756 signal_cycles=73876
+[TIMING] worker=52 tasks=44 poll_iters=416256 dep_iters=2672391 poll_cycles=240138212 dep_cycles=762954772 exec_cycles=99235032 signal_cycles=68876
+[TIMING] worker=92 tasks=43 poll_iters=294973 dep_iters=2898582 poll_cycles=170130548 dep_cycles=781364384 exec_cycles=89769784 signal_cycles=69096
+[TIMING] worker=100 tasks=43 poll_iters=238831 dep_iters=2974937 poll_cycles=139175452 dep_cycles=799411468 exec_cycles=71643912 signal_cycles=80920
+[TIMING] worker=185 tasks=43 poll_iters=438826 dep_iters=2887564 poll_cycles=253073660 dep_cycles=777922340 exec_cycles=84223864 signal_cycles=71172
+[TIMING] worker=57 tasks=44 poll_iters=422249 dep_iters=2800893 poll_cycles=243504504 dep_cycles=732836464 exec_cycles=137919064 signal_cycles=74748
+[TIMING] worker=161 tasks=43 poll_iters=305818 dep_iters=2793590 poll_cycles=176352260 dep_cycles=753550184 exec_cycles=110324100 signal_cycles=71640
+[TIMING] worker=1 tasks=44 poll_iters=254049 dep_iters=2776315 poll_cycles=146524224 dep_cycles=781202096 exec_cycles=93260564 signal_cycles=74428
+[TIMING] worker=209 tasks=43 poll_iters=434223 dep_iters=2699248 poll_cycles=250448088 dep_cycles=791999396 exec_cycles=67978192 signal_cycles=75444
+[TIMING] worker=116 tasks=43 poll_iters=517172 dep_iters=2870199 poll_cycles=298370360 dep_cycles=831226832 exec_cycles=39850744 signal_cycles=68288
+[TIMING] worker=260 tasks=43 poll_iters=385750 dep_iters=2747630 poll_cycles=222551456 dep_cycles=760628592 exec_cycles=105165140 signal_cycles=65772
+[TIMING] worker=27 tasks=44 poll_iters=305129 dep_iters=2710630 poll_cycles=175957016 dep_cycles=774336956 exec_cycles=94109888 signal_cycles=114428
+[TIMING] worker=267 tasks=43 poll_iters=275122 dep_iters=2792256 poll_cycles=176206796 dep_cycles=775033260 exec_cycles=95144844 signal_cycles=77296
+[TIMING] worker=169 tasks=43 poll_iters=458663 dep_iters=2513959 poll_cycles=264598092 dep_cycles=737666920 exec_cycles=125710036 signal_cycles=81492
+[TIMING] worker=268 tasks=43 poll_iters=298823 dep_iters=2451036 poll_cycles=172377192 dep_cycles=749078448 exec_cycles=116374124 signal_cycles=154820
+[TASK_TIME] worker=276 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=249 tasks=43 poll_iters=286029 dep_iters=2696843 poll_cycles=164951192 dep_cycles=737161556 exec_cycles=134834368 signal_cycles=77368
+[TIMING] worker=84 tasks=43 poll_iters=513327 dep_iters=2625729 poll_cycles=296168568 dep_cycles=770178104 exec_cycles=97904924 signal_cycles=92268
+[TIMING] worker=11 tasks=44 poll_iters=290850 dep_iters=2942081 poll_cycles=167702320 dep_cycles=769556376 exec_cycles=99735864 signal_cycles=74432
+[TIMING] worker=284 tasks=43 poll_iters=253407 dep_iters=2623125 poll_cycles=162364800 dep_cycles=738325228 exec_cycles=126487164 signal_cycles=72640
+[TIMING] worker=17 tasks=44 poll_iters=389223 dep_iters=2530931 poll_cycles=249330596 dep_cycles=773050368 exec_cycles=100394252 signal_cycles=140488
+[TIMING] worker=123 tasks=43 poll_iters=346929 dep_iters=2650756 poll_cycles=200089772 dep_cycles=766438960 exec_cycles=96219372 signal_cycles=115772
+[TIMING] worker=225 tasks=43 poll_iters=267600 dep_iters=2801586 poll_cycles=154319068 dep_cycles=766849468 exec_cycles=94737100 signal_cycles=77828
+[TIMING] worker=196 tasks=43 poll_iters=402343 dep_iters=2846252 poll_cycles=232074120 dep_cycles=776633432 exec_cycles=91689276 signal_cycles=65908
+[TIMING] worker=233 tasks=43 poll_iters=251725 dep_iters=2509476 poll_cycles=145197256 dep_cycles=746369632 exec_cycles=119044412 signal_cycles=89728
+[TIMING] worker=193 tasks=43 poll_iters=435230 dep_iters=2898919 poll_cycles=250968484 dep_cycles=781017520 exec_cycles=80465716 signal_cycles=74452
+[TIMING] worker=153 tasks=43 poll_iters=249858 dep_iters=2744990 poll_cycles=144118624 dep_cycles=740480004 exec_cycles=123675628 signal_cycles=73612
+[TIMING] worker=89 tasks=43 poll_iters=299914 dep_iters=2971544 poll_cycles=172966388 dep_cycles=789631320 exec_cycles=78790456 signal_cycles=72884
+[TIMING] worker=201 tasks=43 poll_iters=442900 dep_iters=2639676 poll_cycles=255488324 dep_cycles=785316976 exec_cycles=75344716 signal_cycles=132900
+[TIMING] worker=82 tasks=43 poll_iters=286675 dep_iters=2859857 poll_cycles=165317296 dep_cycles=767318420 exec_cycles=100671928 signal_cycles=72392
+[TASK_TIME] worker=148 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=171 tasks=43 poll_iters=319236 dep_iters=2751227 poll_cycles=184092448 dep_cycles=740560692 exec_cycles=119070444 signal_cycles=74644
+[TIMING] worker=195 tasks=43 poll_iters=339004 dep_iters=2637464 poll_cycles=195503344 dep_cycles=773151212 exec_cycles=84915232 signal_cycles=115680
+[TIMING] worker=203 tasks=43 poll_iters=305724 dep_iters=2764690 poll_cycles=176304700 dep_cycles=756077656 exec_cycles=101452828 signal_cycles=73632
+[TIMING] worker=138 tasks=43 poll_iters=491240 dep_iters=2705979 poll_cycles=283363348 dep_cycles=737923660 exec_cycles=127530532 signal_cycles=75268
+[TIMING] worker=259 tasks=43 poll_iters=374988 dep_iters=2648641 poll_cycles=218543948 dep_cycles=785302472 exec_cycles=84899188 signal_cycles=110136
+[TIMING] worker=91 tasks=44 poll_iters=266779 dep_iters=2686263 poll_cycles=153843880 dep_cycles=778094888 exec_cycles=86717380 signal_cycles=115788
+[TIMING] worker=73 tasks=43 poll_iters=421135 dep_iters=2635952 poll_cycles=242908308 dep_cycles=763361644 exec_cycles=106297844 signal_cycles=141156
+[TIMING] worker=139 tasks=43 poll_iters=355294 dep_iters=2755917 poll_cycles=204928148 dep_cycles=742892760 exec_cycles=118775724 signal_cycles=81408
+[TIMING] worker=257 tasks=43 poll_iters=422399 dep_iters=2727620 poll_cycles=245143540 dep_cycles=746928960 exec_cycles=128406956 signal_cycles=78988
+[TIMING] worker=68 tasks=44 poll_iters=261445 dep_iters=2858005 poll_cycles=150771492 dep_cycles=757752228 exec_cycles=107160448 signal_cycles=69868
+[TIMING] worker=35 tasks=44 poll_iters=363549 dep_iters=2567553 poll_cycles=209798336 dep_cycles=733600156 exec_cycles=134609992 signal_cycles=85580
+[TIMING] worker=156 tasks=43 poll_iters=359670 dep_iters=2718267 poll_cycles=207486652 dep_cycles=742836456 exec_cycles=127012500 signal_cycles=74668
+[TASK_TIME] worker=92 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=163 tasks=43 poll_iters=319167 dep_iters=2685661 poll_cycles=184061884 dep_cycles=788605480 exec_cycles=71474764 signal_cycles=109180
+[TIMING] worker=99 tasks=44 poll_iters=322011 dep_iters=2733885 poll_cycles=185669844 dep_cycles=791941808 exec_cycles=72316128 signal_cycles=110432
+[TIMING] worker=147 tasks=43 poll_iters=325137 dep_iters=2961447 poll_cycles=187480964 dep_cycles=785363424 exec_cycles=75744340 signal_cycles=66896
+[TIMING] worker=42 tasks=44 poll_iters=479103 dep_iters=2800218 poll_cycles=276353868 dep_cycles=740207560 exec_cycles=129613176 signal_cycles=73920
+[TIMING] worker=122 tasks=43 poll_iters=267294 dep_iters=2625723 poll_cycles=154173268 dep_cycles=768101560 exec_cycles=97973716 signal_cycles=103804
+[TIMING] worker=258 tasks=43 poll_iters=229601 dep_iters=2500562 poll_cycles=132400360 dep_cycles=751541904 exec_cycles=120981764 signal_cycles=77564
+[TASK_TIME] worker=84 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=219 tasks=43 poll_iters=363617 dep_iters=2485832 poll_cycles=209751648 dep_cycles=739975068 exec_cycles=116610056 signal_cycles=116356
+[TIMING] worker=220 tasks=43 poll_iters=402513 dep_iters=2864725 poll_cycles=232190864 dep_cycles=794524324 exec_cycles=72913668 signal_cycles=67968
+[TIMING] worker=162 tasks=43 poll_iters=263828 dep_iters=2498409 poll_cycles=152152544 dep_cycles=741772512 exec_cycles=126642004 signal_cycles=94308
+[TIMING] worker=33 tasks=44 poll_iters=492044 dep_iters=2898724 poll_cycles=283779940 dep_cycles=759320196 exec_cycles=113208376 signal_cycles=74584
+[TIMING] worker=108 tasks=43 poll_iters=417988 dep_iters=2785213 poll_cycles=241133460 dep_cycles=816626604 exec_cycles=54504180 signal_cycles=105588
+[TIMING] worker=25 tasks=44 poll_iters=227482 dep_iters=2879733 poll_cycles=131211828 dep_cycles=754243740 exec_cycles=118579548 signal_cycles=72936
+[TIMING] worker=273 tasks=43 poll_iters=300096 dep_iters=2558336 poll_cycles=173037916 dep_cycles=760885568 exec_cycles=114471132 signal_cycles=89552
+[TIMING] worker=292 tasks=43 poll_iters=271787 dep_iters=2707198 poll_cycles=174095832 dep_cycles=761923420 exec_cycles=102512764 signal_cycles=68364
+[TIMING] worker=180 tasks=43 poll_iters=296391 dep_iters=2576649 poll_cycles=171158512 dep_cycles=766634020 exec_cycles=102327212 signal_cycles=113960
+[TASK_TIME] worker=100 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=27 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=211 tasks=43 poll_iters=337464 dep_iters=2922261 poll_cycles=194582784 dep_cycles=786614892 exec_cycles=70426840 signal_cycles=69888
+[TASK_TIME] worker=11 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=172 tasks=43 poll_iters=515892 dep_iters=2614382 poll_cycles=297702392 dep_cycles=776445004 exec_cycles=92836748 signal_cycles=76752
+[TASK_TIME] worker=268 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=4 tasks=44 poll_iters=228601 dep_iters=2638731 poll_cycles=131854792 dep_cycles=751911112 exec_cycles=112305720 signal_cycles=69844
+[TIMING] worker=83 tasks=44 poll_iters=316849 dep_iters=2877236 poll_cycles=182666152 dep_cycles=763045404 exec_cycles=102205616 signal_cycles=74864
+[TIMING] worker=51 tasks=44 poll_iters=316270 dep_iters=2892899 poll_cycles=182459284 dep_cycles=745649708 exec_cycles=121664632 signal_cycles=73632
+[TIMING] worker=43 tasks=44 poll_iters=277636 dep_iters=2992683 poll_cycles=160201868 dep_cycles=781974980 exec_cycles=85717084 signal_cycles=80816
+[TASK_TIME] worker=140 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=228 tasks=43 poll_iters=259193 dep_iters=2763758 poll_cycles=149494756 dep_cycles=766504120 exec_cycles=100600860 signal_cycles=75576
+[TIMING] worker=194 tasks=43 poll_iters=244568 dep_iters=2685091 poll_cycles=142632368 dep_cycles=796190084 exec_cycles=77837288 signal_cycles=102296
+[TIMING] worker=290 tasks=43 poll_iters=554098 dep_iters=2540924 poll_cycles=319614856 dep_cycles=774643008 exec_cycles=96668832 signal_cycles=98752
+[TIMING] worker=235 tasks=43 poll_iters=330840 dep_iters=2868841 poll_cycles=190772184 dep_cycles=783682248 exec_cycles=71762924 signal_cycles=82120
+[TIMING] worker=217 tasks=43 poll_iters=435194 dep_iters=2827824 poll_cycles=250988964 dep_cycles=773994792 exec_cycles=85210564 signal_cycles=75008
+[TIMING] worker=121 tasks=43 poll_iters=309710 dep_iters=2904376 poll_cycles=178607676 dep_cycles=770892568 exec_cycles=95236228 signal_cycles=77144
+[TIMING] worker=129 tasks=43 poll_iters=445394 dep_iters=2768842 poll_cycles=256837760 dep_cycles=734983860 exec_cycles=130792720 signal_cycles=72300
+[TIMING] worker=97 tasks=43 poll_iters=238622 dep_iters=3008214 poll_cycles=137616996 dep_cycles=799457932 exec_cycles=68451508 signal_cycles=73476
+[TIMING] worker=19 tasks=44 poll_iters=304672 dep_iters=2673985 poll_cycles=175663336 dep_cycles=751926552 exec_cycles=117000900 signal_cycles=82496
+[TIMING] worker=10 tasks=44 poll_iters=238256 dep_iters=2928751 poll_cycles=137409212 dep_cycles=774854916 exec_cycles=95923560 signal_cycles=78492
+[TASK_TIME] worker=195 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=65 tasks=44 poll_iters=285094 dep_iters=2834894 poll_cycles=164383272 dep_cycles=741731480 exec_cycles=128595948 signal_cycles=73940
+[TIMING] worker=243 tasks=43 poll_iters=344195 dep_iters=2698740 poll_cycles=198473876 dep_cycles=738221708 exec_cycles=124635676 signal_cycles=69996
+[TIMING] worker=242 tasks=43 poll_iters=234188 dep_iters=2707009 poll_cycles=135059644 dep_cycles=749105752 exec_cycles=124001220 signal_cycles=74836
+[TASK_TIME] worker=260 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=91 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=44 tasks=44 poll_iters=302281 dep_iters=2725297 poll_cycles=174397804 dep_cycles=787700704 exec_cycles=74816252 signal_cycles=98076
+[TIMING] worker=283 tasks=43 poll_iters=302115 dep_iters=2610087 poll_cycles=174177004 dep_cycles=787305752 exec_cycles=82829300 signal_cycles=118908
+[TIMING] worker=250 tasks=43 poll_iters=241898 dep_iters=2525090 poll_cycles=139533304 dep_cycles=758926520 exec_cycles=113976712 signal_cycles=101424
+[TIMING] worker=58 tasks=44 poll_iters=473709 dep_iters=2582796 poll_cycles=273327872 dep_cycles=745072408 exec_cycles=124098800 signal_cycles=81060
+[TIMING] worker=177 tasks=43 poll_iters=429442 dep_iters=2566694 poll_cycles=247842340 dep_cycles=753720696 exec_cycles=109038072 signal_cycles=124144
+[TASK_TIME] worker=292 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=137 tasks=43 poll_iters=296829 dep_iters=2544224 poll_cycles=171264180 dep_cycles=746945216 exec_cycles=118141464 signal_cycles=137264
+[TIMING] worker=2 tasks=44 poll_iters=456217 dep_iters=2497062 poll_cycles=276208864 dep_cycles=770541344 exec_cycles=100621680 signal_cycles=116536
+[TIMING] worker=74 tasks=43 poll_iters=265041 dep_iters=2844687 poll_cycles=152856856 dep_cycles=764533812 exec_cycles=103792732 signal_cycles=79740
+[TIMING] worker=124 tasks=43 poll_iters=521105 dep_iters=2925392 poll_cycles=300564784 dep_cycles=786830040 exec_cycles=84168980 signal_cycles=68728
+[TASK_TIME] worker=284 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=145 tasks=43 poll_iters=449637 dep_iters=2563955 poll_cycles=259346464 dep_cycles=742103468 exec_cycles=122564288 signal_cycles=75132
+[TIMING] worker=106 tasks=43 poll_iters=306408 dep_iters=2980813 poll_cycles=176714076 dep_cycles=799976016 exec_cycles=66805784 signal_cycles=71352
+[TASK_TIME] worker=204 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=50 tasks=44 poll_iters=473597 dep_iters=2844487 poll_cycles=273156996 dep_cycles=741820812 exec_cycles=127774164 signal_cycles=71664
+[TASK_TIME] worker=259 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=92 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=89769784/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=90 tasks=43 poll_iters=291983 dep_iters=2723122 poll_cycles=168416068 dep_cycles=797155228 exec_cycles=70384824 signal_cycles=108800
+[TIMING] worker=107 tasks=44 poll_iters=320254 dep_iters=2997018 poll_cycles=184647768 dep_cycles=794830408 exec_cycles=68910712 signal_cycles=82584
+[TIMING] worker=274 tasks=43 poll_iters=290892 dep_iters=2678291 poll_cycles=167786736 dep_cycles=740075808 exec_cycles=131863584 signal_cycles=74432
+[TASK_TIME] worker=172 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=291 tasks=43 poll_iters=314533 dep_iters=2594448 poll_cycles=181328324 dep_cycles=782605612 exec_cycles=87229792 signal_cycles=81788
+[TIMING] worker=75 tasks=44 poll_iters=308947 dep_iters=2938092 poll_cycles=178134068 dep_cycles=780286252 exec_cycles=85576760 signal_cycles=80768
+[TASK_TIME] worker=116 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=251 tasks=43 poll_iters=314162 dep_iters=2647625 poll_cycles=181294848 dep_cycles=786682176 exec_cycles=75862712 signal_cycles=111016
+[TIMING] worker=226 tasks=43 poll_iters=434604 dep_iters=2594414 poll_cycles=278358164 dep_cycles=780416952 exec_cycles=93262492 signal_cycles=121440
+[TIMING] worker=20 tasks=44 poll_iters=475273 dep_iters=2534726 poll_cycles=304440884 dep_cycles=783568288 exec_cycles=79996720 signal_cycles=157656
+[TIMING] worker=210 tasks=43 poll_iters=200498 dep_iters=2946912 poll_cycles=115623284 dep_cycles=802755364 exec_cycles=71285688 signal_cycles=77108
+[TASK_TIME] worker=220 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=18 tasks=44 poll_iters=251347 dep_iters=2713003 poll_cycles=144958132 dep_cycles=771548056 exec_cycles=99025344 signal_cycles=75200
+[TIMING] worker=59 tasks=44 poll_iters=303907 dep_iters=2708853 poll_cycles=175370260 dep_cycles=772482352 exec_cycles=94439636 signal_cycles=74624
+[TASK_TIME2] worker=260 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=105165140/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=148 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=70540612/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=170 tasks=43 poll_iters=486925 dep_iters=2702378 poll_cycles=280848232 dep_cycles=736551892 exec_cycles=134651380 signal_cycles=72536
+[TIMING] worker=66 tasks=44 poll_iters=289448 dep_iters=2574663 poll_cycles=166925744 dep_cycles=742804980 exec_cycles=126021288 signal_cycles=107892
+[TASK_TIME2] worker=172 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=92836748/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=284 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=126487164/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=34 tasks=44 poll_iters=242210 dep_iters=2577681 poll_cycles=139721988 dep_cycles=744149792 exec_cycles=125825884 signal_cycles=90480
+[TIMING] worker=132 tasks=43 poll_iters=221608 dep_iters=2918928 poll_cycles=127834340 dep_cycles=784758116 exec_cycles=85975064 signal_cycles=68268
+[TASK_TIME2] worker=116 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=39850744/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=49 tasks=44 poll_iters=262907 dep_iters=2632759 poll_cycles=151646232 dep_cycles=741457244 exec_cycles=129966468 signal_cycles=90352
+[TASK_TIME2] worker=220 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=72913668/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=219 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=123 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=114 tasks=43 poll_iters=480188 dep_iters=2951629 poll_cycles=276925708 dep_cycles=781163424 exec_cycles=85264740 signal_cycles=71920
+[TIMING] worker=236 tasks=43 poll_iters=280882 dep_iters=2645241 poll_cycles=162112664 dep_cycles=796384400 exec_cycles=70381716 signal_cycles=118368
+[TASK_TIME] worker=211 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=188 tasks=43 poll_iters=258077 dep_iters=2829645 poll_cycles=148874036 dep_cycles=772125788 exec_cycles=96517744 signal_cycles=68604
+[TASK_TIME] worker=201 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=52 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=282 tasks=43 poll_iters=361396 dep_iters=2508819 poll_cycles=208473716 dep_cycles=764850128 exec_cycles=106843616 signal_cycles=122700
+[TIMING] worker=234 tasks=43 poll_iters=203406 dep_iters=2753060 poll_cycles=117331504 dep_cycles=760870804 exec_cycles=112627580 signal_cycles=75164
+[TIMING] worker=12 tasks=44 poll_iters=259807 dep_iters=2634535 poll_cycles=149875620 dep_cycles=762615484 exec_cycles=101196996 signal_cycles=69928
+[TIMING] worker=218 tasks=43 poll_iters=246971 dep_iters=2589570 poll_cycles=142448440 dep_cycles=779220796 exec_cycles=94801832 signal_cycles=103764
+[TASK_TIME] worker=169 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=3 tasks=44 poll_iters=312728 dep_iters=2632953 poll_cycles=181737704 dep_cycles=803435964 exec_cycles=66102860 signal_cycles=154912
+[TIMING] worker=36 tasks=44 poll_iters=255103 dep_iters=2875182 poll_cycles=147152100 dep_cycles=762720984 exec_cycles=100192008 signal_cycles=68844
+[TASK_TIME] worker=33 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=281 tasks=43 poll_iters=371361 dep_iters=2758667 poll_cycles=237870236 dep_cycles=766055096 exec_cycles=109227988 signal_cycles=77420
+[TIMING] worker=164 tasks=43 poll_iters=300645 dep_iters=2741251 poll_cycles=173400508 dep_cycles=749035640 exec_cycles=120506872 signal_cycles=72528
+[TIMING] worker=130 tasks=43 poll_iters=477055 dep_iters=2537937 poll_cycles=275194320 dep_cycles=742422948 exec_cycles=123439768 signal_cycles=77104
+[TIMING] worker=26 tasks=44 poll_iters=234639 dep_iters=2597473 poll_cycles=135341120 dep_cycles=749707928 exec_cycles=120484976 signal_cycles=112848
+[TASK_TIME] worker=171 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=60 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=140 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=104244692/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=233 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=81 tasks=43 poll_iters=424534 dep_iters=2648353 poll_cycles=244848320 dep_cycles=766442384 exec_cycles=102723616 signal_cycles=78040
+[TIMING] worker=227 tasks=43 poll_iters=292761 dep_iters=2498228 poll_cycles=187509176 dep_cycles=743630076 exec_cycles=112404404 signal_cycles=114512
+[TASK_TIME] worker=138 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=185 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=146 tasks=43 poll_iters=503398 dep_iters=2758607 poll_cycles=290339432 dep_cycles=740297512 exec_cycles=124875128 signal_cycles=70876
+[TASK_TIME] worker=193 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=98 tasks=43 poll_iters=239570 dep_iters=2719723 poll_cycles=138161500 dep_cycles=796222692 exec_cycles=70967740 signal_cycles=116780
+[TIMING] worker=202 tasks=43 poll_iters=276527 dep_iters=2877045 poll_cycles=159471752 dep_cycles=796277256 exec_cycles=77771592 signal_cycles=73604
+[TIMING] worker=113 tasks=43 poll_iters=426785 dep_iters=2724607 poll_cycles=246128780 dep_cycles=778038340 exec_cycles=88690112 signal_cycles=103776
+[TIMING] worker=67 tasks=44 poll_iters=298697 dep_iters=2727158 poll_cycles=172205168 dep_cycles=777663284 exec_cycles=88734712 signal_cycles=139932
+[TASK_TIME] worker=51 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=241 tasks=43 poll_iters=292326 dep_iters=2534523 poll_cycles=168682024 dep_cycles=754181044 exec_cycles=114364868 signal_cycles=105768
+[TASK_TIME] worker=290 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=34 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=58 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=4 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=289 tasks=43 poll_iters=373375 dep_iters=2778320 poll_cycles=239142344 dep_cycles=771535192 exec_cycles=103213644 signal_cycles=76016
+[TIMING] worker=76 tasks=44 poll_iters=564395 dep_iters=2589499 poll_cycles=325674536 dep_cycles=760847408 exec_cycles=107381364 signal_cycles=133720
+[TASK_TIME] worker=18 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=44 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=124 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=82 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=266 tasks=43 poll_iters=458842 dep_iters=2613747 poll_cycles=293935080 dep_cycles=733698888 exec_cycles=138630348 signal_cycles=75632
+[TASK_TIME] worker=26 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=226 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=68 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=35 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=276 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=87403016/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=212 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=244 tasks=43 poll_iters=492914 dep_iters=2487151 poll_cycles=297908112 dep_cycles=750124428 exec_cycles=116325836 signal_cycles=80256
+[TIMING] worker=252 tasks=43 poll_iters=292261 dep_iters=2721537 poll_cycles=168578340 dep_cycles=753395036 exec_cycles=112722100 signal_cycles=69524
+[TASK_TIME] worker=98 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=243 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=258 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=275 tasks=43 poll_iters=318553 dep_iters=2804471 poll_cycles=183672636 dep_cycles=766049440 exec_cycles=104079728 signal_cycles=78472
+[TASK_TIME] worker=1 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=161 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=131 tasks=43 poll_iters=367000 dep_iters=2746788 poll_cycles=211690968 dep_cycles=794192496 exec_cycles=67974240 signal_cycles=85708
+[TIMING] worker=9 tasks=44 poll_iters=441576 dep_iters=2737192 poll_cycles=254724856 dep_cycles=781634020 exec_cycles=92170932 signal_cycles=81880
+[TIMING] worker=41 tasks=44 poll_iters=299319 dep_iters=2654196 poll_cycles=172667736 dep_cycles=757650880 exec_cycles=114189792 signal_cycles=92276
+[TASK_TIME] worker=218 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=34 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=125825884/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=108 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=154 tasks=43 poll_iters=285837 dep_iters=2457088 poll_cycles=164956496 dep_cycles=729339760 exec_cycles=135415400 signal_cycles=135264
+[TASK_TIME] worker=42 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=73 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=100 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=71643912/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=178 tasks=43 poll_iters=244738 dep_iters=2799236 poll_cycles=141119240 dep_cycles=764075964 exec_cycles=107009388 signal_cycles=73648
+[TASK_TIME2] worker=18 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=99025344/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=226 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=93262492/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=146 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=26 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=120484976/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=194 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=258 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=120981764/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=156 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=218 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=94801832/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=105 tasks=43 poll_iters=456592 dep_iters=2758261 poll_cycles=263388804 dep_cycles=798302784 exec_cycles=68908196 signal_cycles=84780
+[TIMING] worker=179 tasks=43 poll_iters=336066 dep_iters=2866080 poll_cycles=193800208 dep_cycles=772642876 exec_cycles=86442324 signal_cycles=75420
+[TIMING] worker=79 tasks=44 poll_iters=50144 dep_iters=2598401 poll_cycles=29073572 dep_cycles=753055928 exec_cycles=110088176 signal_cycles=121460
+[TASK_TIME2] worker=194 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=77837288/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=146 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=124875128/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=28 tasks=44 poll_iters=367650 dep_iters=2889389 poll_cycles=212043548 dep_cycles=766421524 exec_cycles=96835964 signal_cycles=72120
+[TASK_TIME] worker=122 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=153 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=144 tasks=44 poll_iters=183202 dep_iters=2754039 poll_cycles=105775376 dep_cycles=730926236 exec_cycles=133134548 signal_cycles=80880
+[TASK_TIME] worker=228 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=12 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=265 tasks=43 poll_iters=236023 dep_iters=2513168 poll_cycles=136117172 dep_cycles=758050480 exec_cycles=117300168 signal_cycles=127564
+[TASK_TIME] worker=162 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=268 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=116374124/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=52 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=99235032/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=115 tasks=44 poll_iters=245344 dep_iters=2912589 poll_cycles=141460888 dep_cycles=761857360 exec_cycles=101440944 signal_cycles=71240
+[TASK_TIME] worker=236 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=196 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=45 tasks=44 poll_iters=41279 dep_iters=2924017 poll_cycles=24067656 dep_cycles=764409284 exec_cycles=99792956 signal_cycles=76520
+[TASK_TIME] worker=66 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=225 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=188 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=36 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=203 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=60 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=108496756/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=209 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=43 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=106 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=90 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=204 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=74371980/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=155 tasks=43 poll_iters=336922 dep_iters=2648234 poll_cycles=194576744 dep_cycles=777625492 exec_cycles=83025864 signal_cycles=127748
+[TASK_TIME] worker=180 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=137 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=114 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=292 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=102512764/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=65 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=242 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=174 tasks=43 poll_iters=66714 dep_iters=2568386 poll_cycles=38660936 dep_cycles=753631656 exec_cycles=117136280 signal_cycles=73424
+[TASK_TIME] worker=252 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=164 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=97 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=182 tasks=43 poll_iters=84143 dep_iters=2608585 poll_cycles=48786248 dep_cycles=765909472 exec_cycles=104412464 signal_cycles=139568
+[TIMING] worker=186 tasks=43 poll_iters=256506 dep_iters=2589603 poll_cycles=147937932 dep_cycles=768666292 exec_cycles=105433984 signal_cycles=87568
+[TASK_TIME] worker=145 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=267 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=177 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=99 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=17 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=178 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=59 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=57 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=154 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=89 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=202 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=120 tasks=44 poll_iters=125939 dep_iters=2519541 poll_cycles=72796608 dep_cycles=729129944 exec_cycles=125306904 signal_cycles=139532
+[TASK_TIME] worker=129 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=217 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=197 tasks=43 poll_iters=15968 dep_iters=2577399 poll_cycles=10959284 dep_cycles=766454848 exec_cycles=104246912 signal_cycles=104704
+[TIMING] worker=187 tasks=43 poll_iters=288445 dep_iters=2646731 poll_cycles=166375568 dep_cycles=775866972 exec_cycles=82647832 signal_cycles=82748
+[TASK_TIME2] worker=58 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=124098800/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=76 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=121 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=108 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=54504180/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=273 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=117 tasks=43 poll_iters=48538 dep_iters=2937409 poll_cycles=28134836 dep_cycles=768730084 exec_cycles=91753564 signal_cycles=70068
+[TIMING] worker=62 tasks=44 poll_iters=158409 dep_iters=2795426 poll_cycles=91638956 dep_cycles=731318952 exec_cycles=131975108 signal_cycles=76332
+[TASK_TIME] worker=235 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=84 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=97904924/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=259 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=84899188/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=251 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=206 tasks=43 poll_iters=71155 dep_iters=2710913 poll_cycles=41223896 dep_cycles=806501512 exec_cycles=62882944 signal_cycles=154024
+[TASK_TIME2] worker=44 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=74816252/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=283 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=124 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=84168980/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=143 tasks=43 poll_iters=58393 dep_iters=2452079 poll_cycles=33991088 dep_cycles=720373512 exec_cycles=145388896 signal_cycles=160660
+[TASK_TIME2] worker=290 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=96668832/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=173 tasks=43 poll_iters=29456 dep_iters=2733073 poll_cycles=17118564 dep_cycles=736025140 exec_cycles=127924896 signal_cycles=70444
+[TASK_TIME] worker=163 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=107 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=170 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=264 tasks=43 poll_iters=40380 dep_iters=2861672 poll_cycles=25950388 dep_cycles=794448452 exec_cycles=69107692 signal_cycles=86700
+[TIMING] worker=38 tasks=44 poll_iters=36442 dep_iters=2895968 poll_cycles=21249380 dep_cycles=758386060 exec_cycles=106047640 signal_cycles=73972
+[TASK_TIME] worker=75 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=41 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=272 tasks=43 poll_iters=111503 dep_iters=2805366 poll_cycles=64432320 dep_cycles=766851992 exec_cycles=96180616 signal_cycles=85936
+[TIMING] worker=72 tasks=44 poll_iters=146706 dep_iters=2932016 poll_cycles=84760976 dep_cycles=779272788 exec_cycles=78211716 signal_cycles=81740
+[TASK_TIME] worker=83 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=50 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=214 tasks=43 poll_iters=179642 dep_iters=2711801 poll_cycles=103916240 dep_cycles=795677980 exec_cycles=73350364 signal_cycles=74916
+[TASK_TIME2] worker=36 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=100192008/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=11 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=99735864/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=289 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=9 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=115 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=282 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=167 tasks=43 poll_iters=20891 dep_iters=2865738 poll_cycles=13715236 dep_cycles=771015160 exec_cycles=101821680 signal_cycles=79604
+[TASK_TIME] worker=81 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=113 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=33 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=113208376/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=54 tasks=44 poll_iters=108359 dep_iters=2686316 poll_cycles=62752648 dep_cycles=756522048 exec_cycles=107174536 signal_cycles=99372
+[TASK_TIME2] worker=228 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=100600860/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=74 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=241 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=71 tasks=44 poll_iters=41621 dep_iters=2783262 poll_cycles=24106104 dep_cycles=728037164 exec_cycles=135626356 signal_cycles=81500
+[TASK_TIME] worker=3 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=130 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=291 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=244 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=105 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=73 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=106297844/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=91 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=86717380/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=277 tasks=43 poll_iters=45228 dep_iters=2821328 poll_cycles=26322216 dep_cycles=771076444 exec_cycles=96847452 signal_cycles=79176
+[TASK_TIME] worker=249 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=147 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=53 tasks=44 poll_iters=83217 dep_iters=2919142 poll_cycles=48302368 dep_cycles=752848272 exec_cycles=111087572 signal_cycles=79640
+[TASK_TIME] worker=25 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=142 tasks=43 poll_iters=81798 dep_iters=2592422 poll_cycles=47458732 dep_cycles=761072936 exec_cycles=110773456 signal_cycles=156184
+[TASK_TIME] worker=10 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=243 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=124635676/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=161 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=110324100/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=195 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=84915232/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=250 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=12 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=101196996/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=219 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=116610056/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=164 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=120506872/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=227 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=102 tasks=43 poll_iters=91450 dep_iters=2996475 poll_cycles=54371832 dep_cycles=799259984 exec_cycles=73044504 signal_cycles=77948
+[TASK_TIME] worker=179 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=139 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=129 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=130792720/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=187 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=168 tasks=44 poll_iters=106209 dep_iters=2844355 poll_cycles=61346824 dep_cycles=766148568 exec_cycles=101373060 signal_cycles=84900
+[TASK_TIME] worker=67 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=275 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=210 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=2 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=96 tasks=44 poll_iters=119439 dep_iters=2599118 poll_cycles=69036656 dep_cycles=752649544 exec_cycles=103132644 signal_cycles=174608
+[TASK_TIME2] worker=51 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=121664632/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=267 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=95144844/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=46 tasks=44 poll_iters=118633 dep_iters=2571870 poll_cycles=68723844 dep_cycles=734128044 exec_cycles=129958344 signal_cycles=98792
+[TASK_TIME2] worker=99 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=72316128/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=61 tasks=44 poll_iters=31430 dep_iters=2698475 poll_cycles=18375892 dep_cycles=769862708 exec_cycles=93660868 signal_cycles=85500
+[TIMING] worker=14 tasks=44 poll_iters=102313 dep_iters=2705402 poll_cycles=59197492 dep_cycles=772510972 exec_cycles=92846524 signal_cycles=76548
+[TIMING] worker=70 tasks=44 poll_iters=70259 dep_iters=2867636 poll_cycles=40629804 dep_cycles=750181044 exec_cycles=116063204 signal_cycles=73500
+[TASK_TIME2] worker=122 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=97973716/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=248 tasks=43 poll_iters=75566 dep_iters=2582304 poll_cycles=43687764 dep_cycles=767967092 exec_cycles=96612640 signal_cycles=111752
+[TIMING] worker=56 tasks=44 poll_iters=112082 dep_iters=2653434 poll_cycles=64862080 dep_cycles=757306392 exec_cycles=101229388 signal_cycles=92584
+[TIMING] worker=93 tasks=44 poll_iters=33041 dep_iters=2637690 poll_cycles=19192324 dep_cycles=764394972 exec_cycles=97534384 signal_cycles=133552
+[TASK_TIME] worker=234 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=64 tasks=44 poll_iters=102917 dep_iters=2654844 poll_cycles=59490376 dep_cycles=757730324 exec_cycles=100307828 signal_cycles=135492
+[TASK_TIME2] worker=291 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=87229792/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=112 tasks=44 poll_iters=99130 dep_iters=2770234 poll_cycles=57276812 dep_cycles=725062308 exec_cycles=129903076 signal_cycles=78988
+[TASK_TIME] worker=131 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=31 tasks=44 poll_iters=36384 dep_iters=2913756 poll_cycles=21093852 dep_cycles=762975012 exec_cycles=102940164 signal_cycles=80488
+[TASK_TIME2] worker=43 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=85717084/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=163 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=71474764/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=155 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=37 tasks=44 poll_iters=28763 dep_iters=2574368 poll_cycles=16818992 dep_cycles=735796008 exec_cycles=129061164 signal_cycles=95468
+[TASK_TIME] worker=265 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=123 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=96219372/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=283 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=82829300/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=160 tasks=44 poll_iters=42183 dep_iters=2611984 poll_cycles=28227844 dep_cycles=766031148 exec_cycles=101472100 signal_cycles=119484
+[TASK_TIME2] worker=235 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=71762620/42 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=107 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=68910712/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=2 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=100621680/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=271 tasks=43 poll_iters=36599 dep_iters=2525592 poll_cycles=21245688 dep_cycles=762118916 exec_cycles=106620708 signal_cycles=158520
+[TASK_TIME2] worker=203 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=101452828/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=59 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=94439636/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=118 tasks=43 poll_iters=47544 dep_iters=2721901 poll_cycles=27551336 dep_cycles=777247228 exec_cycles=95071792 signal_cycles=101412
+[TASK_TIME2] worker=252 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=112722100/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=147 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=75744340/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=75 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=85576760/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=187 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=82647832/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=179 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=86442324/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=67 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=88734712/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=274 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=139 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=118775724/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=158 tasks=43 poll_iters=110275 dep_iters=2792556 poll_cycles=63818856 dep_cycles=753190832 exec_cycles=118193088 signal_cycles=73044
+[TIMING] worker=279 tasks=43 poll_iters=34245 dep_iters=2449787 poll_cycles=19865992 dep_cycles=728351292 exec_cycles=139913520 signal_cycles=97496
+[TASK_TIME2] worker=188 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=96517744/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=215 tasks=43 poll_iters=31111 dep_iters=2647193 poll_cycles=18098216 dep_cycles=776451440 exec_cycles=95078868 signal_cycles=82440
+[TASK_TIME2] worker=138 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=127530532/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=74 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=103792732/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=207 tasks=43 poll_iters=23450 dep_iters=2679634 poll_cycles=13708700 dep_cycles=797683128 exec_cycles=74269972 signal_cycles=134516
+[TASK_TIME2] worker=131 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=67974240/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=0 tasks=44 poll_iters=136316 dep_iters=2479080 poll_cycles=78975048 dep_cycles=757051804 exec_cycles=104716072 signal_cycles=149508
+[TASK_TIME] worker=266 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=238 tasks=43 poll_iters=70548 dep_iters=2506853 poll_cycles=40866024 dep_cycles=745583368 exec_cycles=122606932 signal_cycles=92476
+[TASK_TIME2] worker=233 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=119044412/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=155 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=83025864/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=19 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=201 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=75344716/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=166 tasks=43 poll_iters=59993 dep_iters=2755420 poll_cycles=34743488 dep_cycles=743265248 exec_cycles=127749764 signal_cycles=72612
+[TASK_TIME2] worker=57 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=137919064/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=278 tasks=43 poll_iters=85011 dep_iters=2469260 poll_cycles=49150388 dep_cycles=734391696 exec_cycles=132072140 signal_cycles=96460
+[TASK_TIME2] worker=251 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=75862712/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=177 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=109038072/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=255 tasks=43 poll_iters=33467 dep_iters=2790310 poll_cycles=19441408 dep_cycles=762651056 exec_cycles=106895824 signal_cycles=78712
+[TIMING] worker=231 tasks=43 poll_iters=29700 dep_iters=2732833 poll_cycles=17269316 dep_cycles=748052112 exec_cycles=122663596 signal_cycles=86508
+[TIMING] worker=286 tasks=43 poll_iters=47132 dep_iters=2813361 poll_cycles=30322536 dep_cycles=781267576 exec_cycles=84956416 signal_cycles=77852
+[TASK_TIME2] worker=89 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=78790456/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=217 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=85210564/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=85 tasks=44 poll_iters=38699 dep_iters=2756032 poll_cycles=22445124 dep_cycles=731342684 exec_cycles=131079528 signal_cycles=76456
+[TASK_TIME] worker=257 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=153 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=123675628/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=169 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=125710036/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=196 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=91689276/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=159 tasks=43 poll_iters=47100 dep_iters=2772310 poll_cycles=27355376 dep_cycles=747785748 exec_cycles=121151984 signal_cycles=80396
+[TIMING] worker=293 tasks=43 poll_iters=29354 dep_iters=2483676 poll_cycles=17048672 dep_cycles=749553488 exec_cycles=117647392 signal_cycles=98888
+[TASK_TIME2] worker=98 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=70967740/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=281 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=287 tasks=43 poll_iters=30013 dep_iters=2730063 poll_cycles=19322616 dep_cycles=758361288 exec_cycles=109565280 signal_cycles=84984
+[TIMING] worker=111 tasks=43 poll_iters=65160 dep_iters=2645668 poll_cycles=37770716 dep_cycles=765372124 exec_cycles=95603416 signal_cycles=131580
+[TASK_TIME2] worker=145 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=122564288/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=240 tasks=43 poll_iters=125695 dep_iters=2859323 poll_cycles=72604408 dep_cycles=782412068 exec_cycles=82373568 signal_cycles=85140
+[TASK_TIME2] worker=212 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=51295984/42 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=81 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=102723616/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=65 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=128595948/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=103 tasks=43 poll_iters=43712 dep_iters=2947034 poll_cycles=25315752 dep_cycles=783120032 exec_cycles=78453768 signal_cycles=81900
+[TASK_TIME2] worker=225 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=94737100/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=49 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=190 tasks=43 poll_iters=84029 dep_iters=2831638 poll_cycles=48621740 dep_cycles=762833676 exec_cycles=107242920 signal_cycles=73680
+[TASK_TIME2] worker=273 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=114471132/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=262 tasks=43 poll_iters=58451 dep_iters=2729689 poll_cycles=33858412 dep_cycles=746235732 exec_cycles=120929248 signal_cycles=71076
+[TASK_TIME2] worker=185 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=84223864/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=28 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=20 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=232 tasks=43 poll_iters=114889 dep_iters=2781597 poll_cycles=66366468 dep_cycles=760388936 exec_cycles=104700548 signal_cycles=84972
+[TASK_TIME2] worker=154 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=135415400/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=193 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=80465716/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=208 tasks=44 poll_iters=79841 dep_iters=2799086 poll_cycles=46126780 dep_cycles=754002084 exec_cycles=112475980 signal_cycles=79668
+[TIMING] worker=191 tasks=43 poll_iters=35683 dep_iters=2832731 poll_cycles=20736540 dep_cycles=762997336 exec_cycles=109774960 signal_cycles=77408
+[TASK_TIME2] worker=289 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=103213644/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=41 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=114189792/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=183 tasks=43 poll_iters=25047 dep_iters=2617721 poll_cycles=14657584 dep_cycles=769205224 exec_cycles=103634660 signal_cycles=136384
+[TIMING] worker=152 tasks=44 poll_iters=117099 dep_iters=2591888 poll_cycles=67721356 dep_cycles=760941676 exec_cycles=102903572 signal_cycles=216212
+[TASK_TIME] worker=132 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=249 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=134834368/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=156 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=127012500/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=186 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=66 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=126021288/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=106 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=66805784/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=1 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=93260564/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=241 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=114364868/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=113 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=88690112/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=9 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=92170932/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=128 tasks=44 poll_iters=94593 dep_iters=2553896 poll_cycles=54655896 dep_cycles=739059876 exec_cycles=118035396 signal_cycles=90584
+[TIMING] worker=48 tasks=44 poll_iters=74858 dep_iters=2871349 poll_cycles=43333140 dep_cycles=740522100 exec_cycles=118606892 signal_cycles=80148
+[TASK_TIME2] worker=105 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=68908196/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=97 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=68451508/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=137 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=118141464/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=236 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=70381716/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=27 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=94109580/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=211 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=70426840/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=257 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=128406956/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=239 tasks=43 poll_iters=39567 dep_iters=2611173 poll_cycles=23415800 dep_cycles=776319960 exec_cycles=94020468 signal_cycles=135848
+[TASK_TIME2] worker=130 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=123439768/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=68 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=107160448/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=274 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=131863584/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=265 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=117300168/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=269 tasks=43 poll_iters=23677 dep_iters=2817294 poll_cycles=15304916 dep_cycles=782374464 exec_cycles=85970788 signal_cycles=82044
+[TASK_TIME2] worker=49 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=129966468/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=63 tasks=44 poll_iters=36146 dep_iters=2930159 poll_cycles=21064208 dep_cycles=766408040 exec_cycles=97668968 signal_cycles=78136
+[TASK_TIME2] worker=114 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=85264740/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=245 tasks=43 poll_iters=20989 dep_iters=2777307 poll_cycles=12224908 dep_cycles=760068420 exec_cycles=109413368 signal_cycles=74500
+[TASK_TIME2] worker=121 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=95236228/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=254 tasks=43 poll_iters=64718 dep_iters=2784394 poll_cycles=37479596 dep_cycles=761188888 exec_cycles=106362020 signal_cycles=71468
+[TASK_TIME2] worker=3 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=66102012/42 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=178 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=107009388/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=242 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=124001220/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=209 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=67978192/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=19 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=117000900/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=23 tasks=44 poll_iters=28062 dep_iters=2486067 poll_cycles=18054416 dep_cycles=758964288 exec_cycles=107485964 signal_cycles=172828
+[TIMING] worker=127 tasks=43 poll_iters=47623 dep_iters=2838904 poll_cycles=27581880 dep_cycles=753383676 exec_cycles=106504484 signal_cycles=79420
+[TIMING] worker=86 tasks=43 poll_iters=70061 dep_iters=2648824 poll_cycles=40549484 dep_cycles=766556256 exec_cycles=102699252 signal_cycles=78608
+[TASK_TIME2] worker=42 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=129613176/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=80 tasks=44 poll_iters=137982 dep_iters=2891064 poll_cycles=79705968 dep_cycles=767233960 exec_cycles=89688336 signal_cycles=78648
+[TASK_TIME2] worker=180 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=102327212/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=32 tasks=44 poll_iters=161668 dep_iters=2477097 poll_cycles=93471568 dep_cycles=707503708 exec_cycles=152541712 signal_cycles=109624
+[TASK_TIME2] worker=171 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=119070444/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=30 tasks=44 poll_iters=103745 dep_iters=2809885 poll_cycles=59983312 dep_cycles=735479336 exec_cycles=129290360 signal_cycles=75580
+[TASK_TIME2] worker=202 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=77771592/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=115 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=101440944/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=16 tasks=44 poll_iters=172843 dep_iters=2483770 poll_cycles=99852368 dep_cycles=698801692 exec_cycles=162203708 signal_cycles=89296
+[TIMING] worker=175 tasks=43 poll_iters=74568 dep_iters=2505649 poll_cycles=43291696 dep_cycles=734947592 exec_cycles=137898016 signal_cycles=84220
+[TASK_TIME2] worker=227 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=112404404/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=281 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=109227988/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=35 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=134609992/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=76 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=107381364/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=200 tasks=44 poll_iters=79644 dep_iters=2788281 poll_cycles=46019948 dep_cycles=762705476 exec_cycles=104135488 signal_cycles=86720
+[TIMING] worker=87 tasks=43 poll_iters=40703 dep_iters=2632297 poll_cycles=23591756 dep_cycles=761486288 exec_cycles=101144432 signal_cycles=113876
+[TASK_TIME2] worker=82 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=100671928/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=90 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=70384824/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=17 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=100394252/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=13 tasks=44 poll_iters=65797 dep_iters=2846054 poll_cycles=38138092 dep_cycles=744804288 exec_cycles=121449632 signal_cycles=74080
+[TIMING] worker=192 tasks=44 poll_iters=62887 dep_iters=2636677 poll_cycles=36360608 dep_cycles=773602116 exec_cycles=93495016 signal_cycles=145132
+[TIMING] worker=110 tasks=43 poll_iters=46459 dep_iters=2750819 poll_cycles=26939628 dep_cycles=796091864 exec_cycles=76223232 signal_cycles=100352
+[TIMING] worker=222 tasks=43 poll_iters=90002 dep_iters=2797469 poll_cycles=52079648 dep_cycles=765616572 exec_cycles=103157644 signal_cycles=77984
+[TASK_TIME2] worker=266 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=138630348/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=15 tasks=44 poll_iters=51806 dep_iters=2659499 poll_cycles=30048412 dep_cycles=759919136 exec_cycles=106786368 signal_cycles=84672
+[TASK_TIME2] worker=170 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=134651380/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=282 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=106843616/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=162 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=126642004/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=244 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=116325836/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=50 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=127774164/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=78 tasks=43 poll_iters=94877 dep_iters=2632837 poll_cycles=54899028 dep_cycles=762434780 exec_cycles=103425540 signal_cycles=160712
+[TASK_TIME2] worker=10 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=95923560/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=8 tasks=44 poll_iters=64778 dep_iters=2796016 poll_cycles=37449920 dep_cycles=731616740 exec_cycles=129761496 signal_cycles=82444
+[TIMING] worker=21 tasks=44 poll_iters=27101 dep_iters=2600240 poll_cycles=15759080 dep_cycles=731498448 exec_cycles=134318828 signal_cycles=76444
+[TIMING] worker=216 tasks=44 poll_iters=126941 dep_iters=2603227 poll_cycles=73368992 dep_cycles=774719216 exec_cycles=91319444 signal_cycles=161008
+[TASK_TIME2] worker=83 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=102205312/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=28 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=96835964/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=210 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=71285688/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=223 tasks=43 poll_iters=27084 dep_iters=2897175 poll_cycles=15764504 dep_cycles=793004096 exec_cycles=78130272 signal_cycles=82168
+[TIMING] worker=229 tasks=43 poll_iters=18037 dep_iters=2566702 poll_cycles=11647600 dep_cycles=764369388 exec_cycles=105879760 signal_cycles=141032
+[TASK_TIME2] worker=275 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=104079424/42 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=189 tasks=43 poll_iters=33669 dep_iters=2502035 poll_cycles=19602388 dep_cycles=733736980 exec_cycles=132820104 signal_cycles=112776
+[TASK_TIME2] worker=25 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=118579548/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=20 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=79996720/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=285 tasks=43 poll_iters=27341 dep_iters=2540493 poll_cycles=15924132 dep_cycles=766697332 exec_cycles=100961548 signal_cycles=129088
+[TASK_TIME2] worker=250 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=113976712/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=186 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=105433984/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=101 tasks=44 poll_iters=38694 dep_iters=2554529 poll_cycles=22455920 dep_cycles=740253284 exec_cycles=121311764 signal_cycles=139872
+[TASK_TIME2] worker=234 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=112627580/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=6 tasks=44 poll_iters=81154 dep_iters=2707987 poll_cycles=46948436 dep_cycles=761982208 exec_cycles=103650396 signal_cycles=74092
+[TIMING] worker=5 tasks=44 poll_iters=22304 dep_iters=2524816 poll_cycles=14341432 dep_cycles=770756704 exec_cycles=95994408 signal_cycles=157460
+[TIMING] worker=294 tasks=43 poll_iters=76655 dep_iters=2729203 poll_cycles=49196372 dep_cycles=757917568 exec_cycles=107924060 signal_cycles=74800
+[TIMING] worker=230 tasks=43 poll_iters=94809 dep_iters=2811335 poll_cycles=54841300 dep_cycles=769436512 exec_cycles=99027872 signal_cycles=75028
+[TIMING] worker=133 tasks=43 poll_iters=62178 dep_iters=2642609 poll_cycles=36069496 dep_cycles=764400576 exec_cycles=95075780 signal_cycles=85600
+[TIMING] worker=151 tasks=43 poll_iters=67787 dep_iters=2632704 poll_cycles=39336784 dep_cycles=761638876 exec_cycles=103771232 signal_cycles=85024
+[TIMING] worker=22 tasks=44 poll_iters=40452 dep_iters=2506761 poll_cycles=26007672 dep_cycles=765599608 exec_cycles=99458504 signal_cycles=173004
+[TIMING] worker=69 tasks=44 poll_iters=47360 dep_iters=2593198 poll_cycles=27482008 dep_cycles=739836460 exec_cycles=123281940 signal_cycles=132296
+[TASK_TIME2] worker=4 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=112305720/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=88 tasks=44 poll_iters=143202 dep_iters=2581428 poll_cycles=82779228 dep_cycles=747394692 exec_cycles=108888104 signal_cycles=143108
+[TIMING] worker=157 tasks=43 poll_iters=40724 dep_iters=2476334 poll_cycles=23749516 dep_cycles=727576372 exec_cycles=130367920 signal_cycles=164224
+[TASK_TIME2] worker=132 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=85975064/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=77 tasks=44 poll_iters=32944 dep_iters=2877743 poll_cycles=19127528 dep_cycles=764620428 exec_cycles=98125904 signal_cycles=74188
+[TIMING] worker=149 tasks=43 poll_iters=53707 dep_iters=2861596 poll_cycles=31135284 dep_cycles=759260680 exec_cycles=99185856 signal_cycles=73956
+[TIMING] worker=270 tasks=43 poll_iters=72623 dep_iters=2439791 poll_cycles=42039564 dep_cycles=735959788 exec_cycles=130871852 signal_cycles=164080
+[TIMING] worker=119 tasks=43 poll_iters=52214 dep_iters=2760689 poll_cycles=30251300 dep_cycles=788913360 exec_cycles=71510000 signal_cycles=83972
+[TIMING] worker=95 tasks=43 poll_iters=40679 dep_iters=2912647 poll_cycles=23572132 dep_cycles=773793316 exec_cycles=88435352 signal_cycles=77260
+[TIMING] worker=47 tasks=44 poll_iters=55998 dep_iters=2656772 poll_cycles=32574160 dep_cycles=758114072 exec_cycles=106884200 signal_cycles=111816
+[TIMING] worker=150 tasks=43 poll_iters=67306 dep_iters=2589096 poll_cycles=38974860 dep_cycles=749389120 exec_cycles=122194448 signal_cycles=77860
+[TIMING] worker=40 tasks=44 poll_iters=91254 dep_iters=2791634 poll_cycles=52788968 dep_cycles=729985856 exec_cycles=129621892 signal_cycles=77704
+[TIMING] worker=213 tasks=43 poll_iters=21265 dep_iters=2949053 poll_cycles=12380056 dep_cycles=794227716 exec_cycles=76439156 signal_cycles=70260
+[TIMING] worker=134 tasks=43 poll_iters=86872 dep_iters=2850475 poll_cycles=50233576 dep_cycles=756438156 exec_cycles=115625904 signal_cycles=71764
+[TIMING] worker=237 tasks=43 poll_iters=21875 dep_iters=2804103 poll_cycles=12750352 dep_cycles=766371032 exec_cycles=103637928 signal_cycles=74512
+[TIMING] worker=165 tasks=43 poll_iters=40699 dep_iters=2592979 poll_cycles=23616968 dep_cycles=761790176 exec_cycles=95703176 signal_cycles=112708
+[TIMING] worker=184 tasks=44 poll_iters=71270 dep_iters=2699856 poll_cycles=41205352 dep_cycles=792118360 exec_cycles=75353388 signal_cycles=89124
+[TIMING] worker=261 tasks=43 poll_iters=25483 dep_iters=2558550 poll_cycles=14839104 dep_cycles=760639372 exec_cycles=108048192 signal_cycles=88604
+[TIMING] worker=104 tasks=44 poll_iters=165438 dep_iters=2828120 poll_cycles=95562224 dep_cycles=750575512 exec_cycles=104829380 signal_cycles=80304
+[TIMING] worker=141 tasks=43 poll_iters=76737 dep_iters=2860707 poll_cycles=44488124 dep_cycles=771369216 exec_cycles=87565024 signal_cycles=71400
+[TIMING] worker=136 tasks=44 poll_iters=162786 dep_iters=2764446 poll_cycles=94018540 dep_cycles=745425636 exec_cycles=114898840 signal_cycles=86816
+[TIMING] worker=247 tasks=43 poll_iters=34251 dep_iters=2429997 poll_cycles=20232400 dep_cycles=723650084 exec_cycles=146283292 signal_cycles=92576
+[TIMING] worker=24 tasks=44 poll_iters=78851 dep_iters=2621552 poll_cycles=45583064 dep_cycles=748711068 exec_cycles=111793804 signal_cycles=144348
+[TIMING] worker=176 tasks=44 poll_iters=52256 dep_iters=2932712 poll_cycles=30220708 dep_cycles=790989112 exec_cycles=76577016 signal_cycles=79396
+[TIMING] worker=199 tasks=43 poll_iters=26893 dep_iters=2859877 poll_cycles=15640012 dep_cycles=770312392 exec_cycles=102048824 signal_cycles=80368
+[TIMING] worker=221 tasks=43 poll_iters=40820 dep_iters=2577210 poll_cycles=23759668 dep_cycles=767491524 exec_cycles=103156428 signal_cycles=117228
+[TIMING] worker=181 tasks=43 poll_iters=30787 dep_iters=2852439 poll_cycles=17884976 dep_cycles=769273652 exec_cycles=94429396 signal_cycles=72788
+[TIMING] worker=256 tasks=43 poll_iters=91618 dep_iters=2561920 poll_cycles=52921336 dep_cycles=761941120 exec_cycles=102087324 signal_cycles=88256
+[TIMING] worker=125 tasks=43 poll_iters=36370 dep_iters=2627804 poll_cycles=21106928 dep_cycles=760105332 exec_cycles=99808208 signal_cycles=125108
+[TIMING] worker=280 tasks=43 poll_iters=100307 dep_iters=2476764 poll_cycles=57952316 dep_cycles=747029900 exec_cycles=115669388 signal_cycles=173484
+[TIMING] worker=224 tasks=43 poll_iters=65936 dep_iters=2513653 poll_cycles=42293448 dep_cycles=748122140 exec_cycles=117419912 signal_cycles=173228
+[TIMING] worker=205 tasks=43 poll_iters=17785 dep_iters=2782654 poll_cycles=10374368 dep_cycles=761258948 exec_cycles=109358712 signal_cycles=76672
+[TIMING] worker=94 tasks=43 poll_iters=68985 dep_iters=3053928 poll_cycles=39918368 dep_cycles=811673704 exec_cycles=57410776 signal_cycles=71120
+[TIMING] worker=288 tasks=43 poll_iters=84592 dep_iters=2648520 poll_cycles=48864496 dep_cycles=798831272 exec_cycles=63324524 signal_cycles=119916
+[TIMING] worker=29 tasks=44 poll_iters=26987 dep_iters=2597802 poll_cycles=15701372 dep_cycles=742429508 exec_cycles=122815572 signal_cycles=120252
+[TIMING] worker=198 tasks=43 poll_iters=30656 dep_iters=2940166 poll_cycles=17823668 dep_cycles=792056120 exec_cycles=77597312 signal_cycles=72568
+[TIMING] worker=39 tasks=44 poll_iters=35156 dep_iters=2743621 poll_cycles=20486900 dep_cycles=718470188 exec_cycles=147073004 signal_cycles=81820
+[TASK_TIME] worker=293 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=109 tasks=44 poll_iters=36039 dep_iters=2952140 poll_cycles=20912084 dep_cycles=783314676 exec_cycles=77573328 signal_cycles=78384
+[TASK_TIME] worker=0 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=144 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=120 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=197 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=96 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=160 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=253 tasks=43 poll_iters=22710 dep_iters=2622181 poll_cycles=13359780 dep_cycles=779543540 exec_cycles=89617816 signal_cycles=112984
+[TASK_TIME] worker=208 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=128 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=152 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=16 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=72 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=264 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=135 tasks=43 poll_iters=52995 dep_iters=2906770 poll_cycles=30700464 dep_cycles=771432340 exec_cycles=87814812 signal_cycles=76816
+[TASK_TIME] worker=104 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=168 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=32 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=112 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=48 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=88 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=21 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=272 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=240 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=184 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=232 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=277 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=126 tasks=43 poll_iters=58391 dep_iters=2966479 poll_cycles=33806248 dep_cycles=787217244 exec_cycles=85102572 signal_cycles=70632
+[TASK_TIME] worker=136 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=246 tasks=43 poll_iters=113509 dep_iters=2539773 poll_cycles=66383124 dep_cycles=755725708 exec_cycles=112142644 signal_cycles=121136
+[TASK_TIME] worker=56 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=192 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=64 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=45 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=117 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=93 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=61 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=24 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=248 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=200 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=280 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=101 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TIMING] worker=295 tasks=43 poll_iters=32154 dep_iters=2770196 poll_cycles=20665052 dep_cycles=769402816 exec_cycles=98004772 signal_cycles=78260
+[TASK_TIME] worker=256 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=176 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=53 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=224 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=80 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=62 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=85 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=5 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=285 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=237 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=13 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=141 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=40 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=157 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=54 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=77 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=165 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=216 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=69 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=173 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=8 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=221 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=189 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=111 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=288 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=264 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=69107384/42 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=110 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=29 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=240 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=82373264/42 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=120 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=125306600/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=16 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=162203400/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=104 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=104829380/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=128 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=118035092/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=208 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=112475980/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=160 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=101471796/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=144 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=133134548/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=7 tasks=44 poll_iters=41952 dep_iters=2626842 poll_cycles=24322988 dep_cycles=738997304 exec_cycles=128195520 signal_cycles=80224
+[TASK_TIME] worker=133 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=245 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=0 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=104715664/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=184 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=75353084/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=32 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=152541712/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=48 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=118606892/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=232 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=104700244/42 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=72 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=78211716/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=168 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=101372756/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=182 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=136 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=114898532/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=56 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=101229084/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=55 tasks=44 poll_iters=80033 dep_iters=2599468 poll_cycles=46496400 dep_cycles=732460316 exec_cycles=132065480 signal_cycles=90696
+[TASK_TIME] worker=238 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=38 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=112 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=129903076/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=96 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=103132644/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=152 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=102903264/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=40 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=129621892/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=149 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=31 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=224 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=117419912/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=229 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=192 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=93494712/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=142 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=158 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=24 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=111793804/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=70 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=272 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=96180312/42 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=294 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=37 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=280 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=115669388/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=46 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=176 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=76577016/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=88 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=108887800/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=248 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=96612640/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=134 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=80 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=89688336/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=64 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=100307828/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=216 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=91319140/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=143 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=256 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=102087324/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=230 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=30 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=102 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=254 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=198 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=288 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=63324524/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=8 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=129761188/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=263 tasks=43 poll_iters=46165 dep_iters=2702589 poll_cycles=26798420 dep_cycles=738710280 exec_cycles=130370524 signal_cycles=80276
+[TASK_TIME2] worker=200 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=104135184/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=190 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=118 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=286 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=174 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=14 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=126 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=86 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=271 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=214 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=206 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=207 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=109 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=269 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=262 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=94 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=166 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=287 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=22 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=246 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=261 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=278 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=125 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=222 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=270 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=213 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=205 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=181 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=71 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=78 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=150 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=293 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=117647392/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=183 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=253 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=6 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=197 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=104246912/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=117 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=91753564/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=61 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=93660868/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=45 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=99792652/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=277 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=96847148/42 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=69 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=123281940/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=101 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=121311764/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=63 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=77 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=98125904/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=13 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=121449632/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=141 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=87565024/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=103 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=221 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=103156428/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=285 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=100961548/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=127 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=133 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=95075780/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=175 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=167 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=109 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=77573024/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=189 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=132820104/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=215 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=125 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=99808208/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=165 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=95703176/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=157 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=130367920/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=229 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=105879760/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=173 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=127924896/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=53 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=111087572/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=29 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=122815572/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=119 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=79 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=37 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=129061164/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=237 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=103637928/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=21 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=134318828/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=5 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=95994104/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=245 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=109413368/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=93 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=97534384/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=205 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=109358408/42 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=85 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=131079528/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=181 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=94429396/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=231 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=261 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=108048192/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=253 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=89617816/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=239 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=149 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=99185856/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=269 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=85970788/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=159 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=213 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=76439156/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=95 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=23 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=279 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=87 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=223 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=47 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=158 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=118193088/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=247 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=54 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=107174536/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=199 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=151 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=15 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=255 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=7 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME] worker=135 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=30 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=129290360/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=198 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=77597312/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=294 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=107924060/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=238 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=122606932/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=295 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=38 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=106047640/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=278 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=132072140/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=118 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=95071792/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=94 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=57410776/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=126 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=85102572/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=62 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=131975108/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=230 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=99027872/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=142 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=110773456/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=70 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=116063204/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=182 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=104412464/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=14 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=92846524/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=286 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=84956416/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=190 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=107242920/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=22 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=99458504/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=262 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=120929248/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=270 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=130871852/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=46 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=129958344/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=150 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=122194448/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=214 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=73350364/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=254 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=106362020/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=206 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=62882944/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=110 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=76223232/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=222 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=103157644/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=6 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=103650396/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=86 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=102699252/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=174 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=117136280/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=78 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=103425540/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=134 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=115625904/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=102 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=73044504/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=246 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=112142644/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=166 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=127749764/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=111 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=95603416/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=191 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=31 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=102940164/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=55 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0
+[TASK_TIME2] worker=47 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=106884200/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=143 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=145388896/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=103 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=78453768/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=63 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=97668968/44 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=167 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=101821680/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=287 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=109565280/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=119 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=71510000/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=87 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=101144432/43 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_T[EVENT_TIMING] 352 event firings recorded
+
+================================================================================
+PER-EVENT WALL-CLOCK TIMING (barrier-to-barrier)
+================================================================================
+Event TaskType              Count    Avg(us)    Min(us)    Max(us)    Std(us)
+-------------------------------------------------------------------------
+    1 UNKNOWN                  30      88.53       8.40     109.84      27.19
+    2 UNKNOWN                  31   13053.24   12133.76   15132.32     960.10
+    3 UNKNOWN                  31       3.71       3.31       4.36       0.23
+    4 UNKNOWN                  31       4.07       3.52       4.48       0.18
+    5 UNKNOWN                  31       3.90       3.44       4.25       0.21
+    6 UNKNOWN                  31       3.88       3.56       4.23       0.17
+    7 UNKNOWN                  31       3.86       3.29       4.20       0.21
+    8 UNKNOWN                  31       3.87       3.40       4.39       0.22
+    9 UNKNOWN                  31       3.85       3.43       4.24       0.21
+   10 UNKNOWN                  31       3.82       3.30       4.18       0.20
+   11 UNKNOWN                  31       2.86       2.68       3.04       0.12
+
+================================================================================
+PER-TYPE SUMMARY (sum of avg durations across all events)
+================================================================================
+TaskType             Events    Total(us)  Total(ms)        %
+----------------------------------------------------------
+UNKNOWN                  11      13175.6     13.176   100.0%
+TOTAL                            13175.6     13.176
+
+Saved raw event timing to event_timing.json

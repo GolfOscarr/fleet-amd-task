@@ -1,0 +1,134 @@
+# Measurement report
+
+| Quantity | Predicted | Measured |
+|---|---|---|
+| bytes per iteration (read, MiB) | 4709.9 weights + cache; about 4772.0 with activations | - |
+| time per iteration, median (us) | 1148.5-1349.4 + 326 t_b + T_serial | 5887.0 |
+| time per iteration, P95 (us) |  | 35407.4 |
+| time per iteration from event timing, median (us) |  | 5882.5 |
+| time per iteration from host wall clock (us) |  | 65852.7 |
+| time per iteration from the kernel trace (us) |  | - |
+| achieved read bandwidth (TB/s) | 3.66-4.3 over T_bw | - |
+| launches per generation | 3 | - |
+| L2 hit rate | 16-17% (Fleet's batch-1 figure) | - |
+| tokens per second |  | 169.9 |
+| workers with tasks (of those reporting) |  | 296 of 296 |
+| tasks per XCD (placement) |  | 0:118401 1:118400 2:118400 3:118400 4:118400 5:118400 6:118415 7:118416 |
+| shader clock from the spin (MHz) |  | - |
+| exec cycles per task, busy workers |  | 3640.6 |
+| exec us per task (at the spin's SCLK) |  | - |
+| dep-wait us per iteration per busy worker |  | - |
+| GFX clock from amd-smi during the run, median / max (MHz) | 2100 max (D2 of round 1) | 2103 / 2104 over 28 samples |
+| memory clock from amd-smi, median (MHz) |  | 900 |
+
+## Exec time per task by class (worker timing, I1)
+
+| Class | tasks | cycles per task | us per task |
+|---|---|---|---|
+| copy | 934400 | 3627 | - |
+
+## Per-operator time (event gaps, mean over iterations after the first)
+
+| Event | Operator | mean us | min us | max us | n |
+|---|---|---|---|---|---|
+| 1 | iteration_start | 191.01 | 8.56 | 221.96 | 30 |
+| 2 | copy_layer | 65.52 | 63.08 | 66.64 | 31 |
+| 3 | copy_layer | 57.53 | 56.60 | 58.36 | 31 |
+| 4 | copy_layer | 57.35 | 56.52 | 58.48 | 31 |
+| 5 | copy_layer | 57.31 | 56.52 | 58.36 | 31 |
+| 6 | copy_layer | 56.99 | 53.28 | 58.00 | 31 |
+| 7 | copy_layer | 57.17 | 56.72 | 57.76 | 31 |
+| 8 | copy_layer | 57.11 | 56.16 | 57.84 | 31 |
+| 9 | copy_layer | 57.09 | 56.48 | 58.20 | 31 |
+| 10 | copy_layer | 56.78 | 53.52 | 57.96 | 31 |
+| 11 | copy_layer | 57.12 | 56.56 | 57.68 | 31 |
+| 12 | copy_layer | 57.11 | 56.32 | 57.84 | 31 |
+| 13 | copy_layer | 57.01 | 56.16 | 57.72 | 31 |
+| 14 | copy_layer | 56.76 | 53.16 | 58.00 | 31 |
+| 15 | copy_layer | 57.02 | 55.16 | 57.96 | 31 |
+| 16 | copy_layer | 57.02 | 56.08 | 57.76 | 31 |
+| 17 | copy_layer | 56.95 | 54.64 | 57.84 | 31 |
+| 18 | copy_layer | 56.79 | 53.76 | 58.08 | 31 |
+| 19 | copy_layer | 56.95 | 56.52 | 57.56 | 31 |
+| 20 | copy_layer | 57.02 | 56.16 | 57.96 | 31 |
+| 21 | copy_layer | 57.03 | 56.16 | 58.08 | 31 |
+| 22 | copy_layer | 56.70 | 53.32 | 57.68 | 31 |
+| 23 | copy_layer | 56.95 | 56.28 | 57.80 | 31 |
+| 24 | copy_layer | 57.07 | 56.36 | 57.96 | 31 |
+| 25 | copy_layer | 56.89 | 55.96 | 57.80 | 31 |
+| 26 | copy_layer | 56.67 | 53.68 | 57.52 | 31 |
+| 27 | copy_layer | 56.84 | 55.16 | 57.76 | 31 |
+| 28 | copy_layer | 56.82 | 55.12 | 57.96 | 31 |
+| 29 | copy_layer | 56.77 | 54.44 | 57.48 | 31 |
+| 30 | copy_layer | 56.46 | 53.60 | 57.56 | 31 |
+| 31 | copy_layer | 56.82 | 55.08 | 57.72 | 31 |
+| 32 | copy_layer | 56.78 | 54.92 | 57.88 | 31 |
+| 33 | copy_layer | 56.81 | 54.80 | 58.04 | 31 |
+| 34 | copy_layer | 56.63 | 53.48 | 57.76 | 31 |
+| 35 | copy_layer | 56.75 | 54.80 | 57.28 | 31 |
+| 36 | copy_layer | 56.82 | 55.00 | 57.84 | 31 |
+| 37 | copy_layer | 56.70 | 54.68 | 57.56 | 31 |
+| 38 | copy_layer | 56.48 | 53.80 | 57.40 | 31 |
+| 39 | copy_layer | 56.74 | 53.68 | 57.32 | 31 |
+| 40 | copy_layer | 56.77 | 54.40 | 57.88 | 31 |
+| 41 | copy_layer | 56.74 | 54.36 | 57.84 | 31 |
+| 42 | copy_layer | 56.52 | 53.28 | 57.52 | 31 |
+| 43 | copy_layer | 56.79 | 54.56 | 57.48 | 31 |
+| 44 | copy_layer | 56.77 | 54.96 | 57.36 | 31 |
+| 45 | copy_layer | 56.74 | 54.36 | 57.60 | 31 |
+| 46 | copy_layer | 56.44 | 53.44 | 57.76 | 31 |
+| 47 | copy_layer | 56.85 | 56.28 | 57.52 | 31 |
+| 48 | copy_layer | 56.85 | 56.00 | 57.52 | 31 |
+| 49 | copy_layer | 56.82 | 56.08 | 57.72 | 31 |
+| 50 | copy_layer | 56.56 | 53.32 | 57.76 | 31 |
+| 51 | copy_layer | 56.78 | 54.76 | 57.64 | 31 |
+| 52 | copy_layer | 56.75 | 55.28 | 57.60 | 31 |
+| 53 | copy_layer | 56.74 | 54.68 | 57.48 | 31 |
+| 54 | copy_layer | 56.60 | 53.52 | 57.92 | 31 |
+| 55 | copy_layer | 56.79 | 54.92 | 57.80 | 31 |
+| 56 | copy_layer | 56.62 | 55.28 | 57.44 | 31 |
+| 57 | copy_layer | 56.75 | 54.96 | 57.56 | 31 |
+| 58 | copy_layer | 56.60 | 53.04 | 57.64 | 31 |
+| 59 | copy_layer | 56.78 | 54.80 | 57.68 | 31 |
+| 60 | copy_layer | 56.70 | 54.40 | 57.76 | 31 |
+| 61 | copy_layer | 56.75 | 54.52 | 57.84 | 31 |
+| 62 | copy_layer | 56.39 | 53.56 | 57.92 | 31 |
+| 63 | copy_layer | 56.68 | 54.12 | 57.72 | 31 |
+| 64 | copy_layer | 56.68 | 54.00 | 57.92 | 31 |
+| 65 | copy_layer | 56.62 | 54.36 | 57.44 | 31 |
+| 66 | copy_layer | 56.45 | 53.32 | 57.44 | 31 |
+| 67 | copy_layer | 56.68 | 54.28 | 57.80 | 31 |
+| 68 | copy_layer | 56.68 | 54.44 | 57.72 | 31 |
+| 69 | copy_layer | 56.69 | 54.48 | 57.76 | 31 |
+| 70 | copy_layer | 56.53 | 53.16 | 57.56 | 31 |
+| 71 | copy_layer | 56.82 | 56.36 | 57.60 | 31 |
+| 72 | copy_layer | 56.81 | 56.08 | 57.64 | 31 |
+| 73 | copy_layer | 56.77 | 55.60 | 57.40 | 31 |
+| 74 | copy_layer | 56.63 | 53.56 | 57.56 | 31 |
+| 75 | copy_layer | 56.77 | 54.68 | 57.84 | 31 |
+| 76 | copy_layer | 56.75 | 54.80 | 58.04 | 31 |
+| 77 | copy_layer | 56.79 | 55.08 | 57.48 | 31 |
+| 78 | copy_layer | 56.42 | 53.00 | 57.60 | 31 |
+| 79 | copy_layer | 56.73 | 54.64 | 57.44 | 31 |
+| 80 | copy_layer | 56.76 | 55.04 | 57.48 | 31 |
+| 81 | copy_layer | 56.77 | 54.72 | 57.52 | 31 |
+| 82 | copy_layer | 56.51 | 53.44 | 57.40 | 31 |
+| 83 | copy_layer | 56.73 | 54.64 | 57.68 | 31 |
+| 84 | copy_layer | 56.62 | 54.76 | 57.44 | 31 |
+| 85 | copy_layer | 56.84 | 55.00 | 57.88 | 31 |
+| 86 | copy_layer | 56.42 | 53.12 | 57.68 | 31 |
+| 87 | copy_layer | 56.70 | 54.80 | 57.52 | 31 |
+| 88 | copy_layer | 56.75 | 55.04 | 58.04 | 31 |
+| 89 | copy_layer | 56.73 | 54.84 | 57.52 | 31 |
+| 90 | copy_layer | 56.45 | 52.96 | 57.44 | 31 |
+| 91 | copy_layer | 56.82 | 55.91 | 57.56 | 31 |
+| 92 | copy_layer | 56.83 | 56.12 | 57.52 | 31 |
+| 93 | copy_layer | 56.85 | 55.84 | 57.68 | 31 |
+| 94 | copy_layer | 56.43 | 53.64 | 57.40 | 31 |
+| 95 | copy_layer | 56.77 | 56.12 | 57.60 | 31 |
+| 96 | copy_layer | 56.69 | 55.92 | 57.40 | 31 |
+| 97 | copy_layer | 56.77 | 55.84 | 57.56 | 31 |
+| 98 | copy_layer | 56.58 | 53.76 | 57.20 | 31 |
+| 99 | copy_layer | 56.86 | 56.24 | 57.52 | 31 |
+| 100 | copy_layer | 56.77 | 56.12 | 57.64 | 31 |
+| 101 | copy_layer | 57.08 | 56.36 | 57.64 | 31 |

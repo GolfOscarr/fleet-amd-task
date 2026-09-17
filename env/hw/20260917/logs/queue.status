@@ -26,3 +26,20 @@
 2026-09-17T10:19:30Z L27_head_it32_tile_fn1_fn2_fs_pf_wt PASS rc=0 mpk=1 fault=0 fwd=0 wall=66s compare=FAIL table=PASS
 2026-09-17T10:20:39Z L27_head_it32_tile_fn1_fn2_fs_pf_nt_wt PASS rc=0 mpk=1 fault=0 fwd=0 wall=67s compare=FAIL table=PASS
 2026-09-17T10:20:39Z DONE env/session/queue-d8.txt
+2026-09-17T10:22:59Z L27_head_it32_tile_fn1_fn2_fs_nt_mfma PASS rc=0 mpk=1 fault=0 fwd=31 wall=61s table=PASS
+2026-09-17T10:24:01Z L27_head_it32_tile_fn1_fn2_fs_nt_mfma PASS rc=0 mpk=1 fault=0 fwd=31 wall=61s table=PASS
+2026-09-17T10:25:04Z L27_head_it32_tile_fn1_fn2_fs_nt_mfma PASS rc=0 mpk=1 fault=0 fwd=31 wall=61s compare=FAIL table=PASS
+2026-09-17T10:25:04Z DONE env/session/queue-d9.txt
+2026-09-17T10:25:55Z E10x1_spin1000_it32_wt PASS rc=0 mpk=1 fault=0 fwd=0 wall=34s table=PASS
+2026-09-17T10:26:30Z E10x8_spin1000_it32_wt PASS rc=0 mpk=1 fault=0 fwd=0 wall=34s table=PASS
+2026-09-17T10:27:05Z E10x40_spin1000_it32_wt PASS rc=0 mpk=1 fault=0 fwd=0 wall=35s table=PASS
+2026-09-17T10:27:51Z E10x296_spin1000_it32_wt PASS rc=0 mpk=1 fault=0 fwd=0 wall=46s table=PASS
+2026-09-17T10:28:26Z E100x1_it32_wt PASS rc=0 mpk=1 fault=0 fwd=0 wall=34s table=PASS
+2026-09-17T10:29:00Z E100x8_it32_wt PASS rc=0 mpk=1 fault=0 fwd=0 wall=33s table=PASS
+2026-09-17T10:29:35Z E100x40_it32_wt PASS rc=0 mpk=1 fault=0 fwd=0 wall=34s table=PASS
+2026-09-17T10:30:10Z E100x296_it32_wt PASS rc=0 mpk=1 fault=0 fwd=0 wall=35s table=PASS
+2026-09-17T10:30:39Z E300x1_it32 PASS rc=0 mpk=1 fault=0 fwd=32 wall=29s table=PASS
+2026-09-17T10:31:09Z E300x8_it32 PASS rc=0 mpk=1 fault=0 fwd=28 wall=30s table=PASS
+2026-09-17T10:31:39Z E300x40_it32 PASS rc=0 mpk=1 fault=0 fwd=30 wall=30s table=PASS
+2026-09-17T10:32:13Z E300x296_it32 PASS rc=0 mpk=1 fault=0 fwd=31 wall=33s table=PASS
+2026-09-17T10:32:13Z DONE env/session/queue-c3.txt

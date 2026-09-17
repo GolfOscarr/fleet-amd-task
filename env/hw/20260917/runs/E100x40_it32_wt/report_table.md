@@ -1,0 +1,134 @@
+# Measurement report
+
+| Quantity | Predicted | Measured |
+|---|---|---|
+| bytes per iteration (read, MiB) | 4709.9 weights + cache; about 4772.0 with activations | - |
+| time per iteration, median (us) | 1148.5-1349.4 + 326 t_b + T_serial | 964.5 |
+| time per iteration, P95 (us) |  | 974.5 |
+| time per iteration from event timing, median (us) |  | 964.2 |
+| time per iteration from host wall clock (us) |  | 95529.5 |
+| time per iteration from the kernel trace (us) |  | - |
+| achieved read bandwidth (TB/s) | 3.66-4.3 over T_bw | - |
+| launches per generation | 3 | - |
+| L2 hit rate | 16-17% (Fleet's batch-1 figure) | - |
+| tokens per second |  | 1036.8 |
+| workers with tasks (of those reporting) |  | 296 of 296 |
+| tasks per XCD (placement) |  | 0:16001 1:16000 2:16000 3:16000 4:16030 5:16001 6:16000 7:16000 |
+| shader clock from the spin (MHz) |  | - |
+| exec cycles per task, busy workers |  | 1223.3 |
+| exec us per task (at the spin's SCLK) |  | - |
+| dep-wait us per iteration per busy worker |  | - |
+| GFX clock from amd-smi during the run, median / max (MHz) | 2100 max (D2 of round 1) | 2103 / 2104 over 28 samples |
+| memory clock from amd-smi, median (MHz) |  | 900 |
+
+## Exec time per task by class (worker timing, I1)
+
+| Class | tasks | cycles per task | us per task |
+|---|---|---|---|
+| copy | 120649 | 1221 | - |
+
+## Per-operator time (event gaps, mean over iterations after the first)
+
+| Event | Operator | mean us | min us | max us | n |
+|---|---|---|---|---|---|
+| 1 | iteration_start | 148.60 | 8.56 | 164.88 | 30 |
+| 2 | copy_layer | 16.80 | 16.13 | 17.43 | 31 |
+| 3 | copy_layer | 8.44 | 7.46 | 9.08 | 31 |
+| 4 | copy_layer | 7.89 | 6.80 | 8.80 | 31 |
+| 5 | copy_layer | 7.74 | 6.72 | 8.96 | 31 |
+| 6 | copy_layer | 7.89 | 6.80 | 8.88 | 31 |
+| 7 | copy_layer | 7.95 | 7.00 | 9.20 | 31 |
+| 8 | copy_layer | 8.05 | 7.24 | 8.92 | 31 |
+| 9 | copy_layer | 8.05 | 7.28 | 8.92 | 31 |
+| 10 | copy_layer | 7.98 | 7.16 | 9.44 | 31 |
+| 11 | copy_layer | 7.99 | 7.00 | 9.32 | 31 |
+| 12 | copy_layer | 8.08 | 7.16 | 8.88 | 31 |
+| 13 | copy_layer | 7.96 | 7.24 | 9.16 | 31 |
+| 14 | copy_layer | 8.06 | 7.24 | 8.84 | 31 |
+| 15 | copy_layer | 8.04 | 7.00 | 9.04 | 31 |
+| 16 | copy_layer | 7.99 | 7.08 | 9.32 | 31 |
+| 17 | copy_layer | 8.11 | 7.08 | 8.92 | 31 |
+| 18 | copy_layer | 8.06 | 7.16 | 9.00 | 31 |
+| 19 | copy_layer | 8.01 | 7.16 | 9.20 | 31 |
+| 20 | copy_layer | 8.07 | 7.32 | 9.04 | 31 |
+| 21 | copy_layer | 7.97 | 6.92 | 8.80 | 31 |
+| 22 | copy_layer | 8.10 | 7.36 | 8.96 | 31 |
+| 23 | copy_layer | 7.97 | 7.20 | 8.92 | 31 |
+| 24 | copy_layer | 8.03 | 7.12 | 9.40 | 31 |
+| 25 | copy_layer | 7.99 | 7.16 | 9.08 | 31 |
+| 26 | copy_layer | 8.08 | 7.08 | 8.88 | 31 |
+| 27 | copy_layer | 8.01 | 7.36 | 8.92 | 31 |
+| 28 | copy_layer | 8.08 | 7.28 | 9.12 | 31 |
+| 29 | copy_layer | 8.13 | 7.28 | 9.04 | 31 |
+| 30 | copy_layer | 8.01 | 7.00 | 8.92 | 31 |
+| 31 | copy_layer | 8.11 | 7.32 | 9.20 | 31 |
+| 32 | copy_layer | 7.96 | 7.24 | 8.68 | 31 |
+| 33 | copy_layer | 8.08 | 7.24 | 9.04 | 31 |
+| 34 | copy_layer | 8.12 | 7.32 | 9.04 | 31 |
+| 35 | copy_layer | 8.03 | 7.00 | 9.16 | 31 |
+| 36 | copy_layer | 8.09 | 7.00 | 9.20 | 31 |
+| 37 | copy_layer | 8.14 | 7.24 | 9.12 | 31 |
+| 38 | copy_layer | 8.02 | 7.16 | 9.00 | 31 |
+| 39 | copy_layer | 8.04 | 7.20 | 9.04 | 31 |
+| 40 | copy_layer | 8.00 | 7.24 | 9.20 | 31 |
+| 41 | copy_layer | 8.00 | 7.08 | 8.64 | 31 |
+| 42 | copy_layer | 8.04 | 7.36 | 8.84 | 31 |
+| 43 | copy_layer | 8.03 | 7.16 | 9.24 | 31 |
+| 44 | copy_layer | 8.05 | 6.96 | 9.12 | 31 |
+| 45 | copy_layer | 8.05 | 7.28 | 8.84 | 31 |
+| 46 | copy_layer | 8.05 | 7.28 | 9.04 | 31 |
+| 47 | copy_layer | 8.02 | 7.20 | 9.08 | 31 |
+| 48 | copy_layer | 8.07 | 7.12 | 9.20 | 31 |
+| 49 | copy_layer | 8.05 | 7.16 | 9.00 | 31 |
+| 50 | copy_layer | 7.98 | 7.24 | 8.76 | 31 |
+| 51 | copy_layer | 8.04 | 6.96 | 8.80 | 31 |
+| 52 | copy_layer | 8.14 | 7.16 | 9.08 | 31 |
+| 53 | copy_layer | 8.04 | 7.00 | 9.12 | 31 |
+| 54 | copy_layer | 7.98 | 7.08 | 8.96 | 31 |
+| 55 | copy_layer | 8.11 | 7.08 | 9.36 | 31 |
+| 56 | copy_layer | 8.05 | 7.08 | 8.76 | 31 |
+| 57 | copy_layer | 8.09 | 7.24 | 9.40 | 31 |
+| 58 | copy_layer | 7.93 | 7.24 | 8.92 | 31 |
+| 59 | copy_layer | 8.08 | 7.36 | 9.08 | 31 |
+| 60 | copy_layer | 8.05 | 7.40 | 9.08 | 31 |
+| 61 | copy_layer | 7.96 | 7.12 | 8.68 | 31 |
+| 62 | copy_layer | 8.06 | 6.96 | 9.28 | 31 |
+| 63 | copy_layer | 8.01 | 7.16 | 9.08 | 31 |
+| 64 | copy_layer | 8.05 | 7.08 | 9.24 | 31 |
+| 65 | copy_layer | 8.02 | 7.04 | 9.24 | 31 |
+| 66 | copy_layer | 8.04 | 7.24 | 8.72 | 31 |
+| 67 | copy_layer | 8.08 | 7.32 | 9.04 | 31 |
+| 68 | copy_layer | 8.02 | 7.28 | 9.04 | 31 |
+| 69 | copy_layer | 7.96 | 7.16 | 8.88 | 31 |
+| 70 | copy_layer | 8.04 | 7.12 | 9.04 | 31 |
+| 71 | copy_layer | 8.06 | 6.92 | 9.08 | 31 |
+| 72 | copy_layer | 8.02 | 7.36 | 8.84 | 31 |
+| 73 | copy_layer | 8.02 | 7.20 | 9.08 | 31 |
+| 74 | copy_layer | 8.08 | 7.08 | 9.00 | 31 |
+| 75 | copy_layer | 8.05 | 7.16 | 9.52 | 31 |
+| 76 | copy_layer | 7.95 | 7.24 | 8.88 | 31 |
+| 77 | copy_layer | 7.99 | 7.08 | 9.16 | 31 |
+| 78 | copy_layer | 8.03 | 7.16 | 8.92 | 31 |
+| 79 | copy_layer | 8.07 | 7.16 | 8.88 | 31 |
+| 80 | copy_layer | 8.02 | 6.92 | 8.96 | 31 |
+| 81 | copy_layer | 8.02 | 7.12 | 8.96 | 31 |
+| 82 | copy_layer | 8.06 | 7.16 | 9.04 | 31 |
+| 83 | copy_layer | 8.06 | 7.24 | 9.12 | 31 |
+| 84 | copy_layer | 7.98 | 7.24 | 8.96 | 31 |
+| 85 | copy_layer | 8.02 | 7.24 | 8.92 | 31 |
+| 86 | copy_layer | 8.06 | 7.32 | 9.00 | 31 |
+| 87 | copy_layer | 7.99 | 7.16 | 9.08 | 31 |
+| 88 | copy_layer | 8.04 | 7.20 | 9.12 | 31 |
+| 89 | copy_layer | 8.06 | 6.88 | 9.16 | 31 |
+| 90 | copy_layer | 8.01 | 7.16 | 9.04 | 31 |
+| 91 | copy_layer | 8.01 | 7.24 | 8.92 | 31 |
+| 92 | copy_layer | 8.09 | 7.24 | 9.36 | 31 |
+| 93 | copy_layer | 7.97 | 7.16 | 8.76 | 31 |
+| 94 | copy_layer | 8.01 | 7.16 | 9.28 | 31 |
+| 95 | copy_layer | 7.94 | 7.28 | 8.72 | 31 |
+| 96 | copy_layer | 7.98 | 7.08 | 9.00 | 31 |
+| 97 | copy_layer | 8.03 | 7.08 | 9.00 | 31 |
+| 98 | copy_layer | 8.02 | 6.96 | 9.28 | 31 |
+| 99 | copy_layer | 7.96 | 7.16 | 8.80 | 31 |
+| 100 | copy_layer | 8.06 | 7.28 | 9.24 | 31 |
+| 101 | copy_layer | 7.99 | 7.24 | 8.76 | 31 |

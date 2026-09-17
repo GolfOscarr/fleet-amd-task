@@ -2,8 +2,8 @@
   "n": 100,
   "seed": 0,
   "dry_run": false,
-  "binary": "/home/hotaisle/metalOps/fleet/tasks/build/kernel_tests",
-  "binary_debug": "/home/hotaisle/metalOps/fleet/tasks/build/kernel_tests_debug",
+  "binary": "fleet/tasks/build/kernel_tests",
+  "binary_debug": "fleet/tasks/build/kernel_tests_debug",
   "tolerances": {
     "f32_rel": 0.0001,
     "bf16_rel": 0.002,
@@ -76,8 +76,8 @@
           "kind": "rel",
           "threshold": 0.0005,
           "max_abs_err": 0.0032607316970825195,
-          "rel_err": 6.34122931126813e-05,
-          "cos_sim": 0.9999999979899683,
+          "rel_err": 6.341229311268133e-05,
+          "cos_sim": 0.9999999979899691,
           "fails": 0,
           "notes": []
         },
@@ -124,21 +124,30 @@
       "trials": 100,
       "failed_trials": 0,
       "outputs": {
+        "h": {
+          "kind": "rel",
+          "threshold": 0.002,
+          "max_abs_err": 0.0,
+          "rel_err": 0.0,
+          "cos_sim": 0.9999999999999998,
+          "fails": 0,
+          "notes": []
+        },
         "logits": {
           "kind": "rel",
           "threshold": 0.0001,
           "max_abs_err": 9.5367431640625e-07,
-          "rel_err": 1.8719554969585767e-07,
-          "cos_sim": 0.9999999999999825,
+          "rel_err": 2.167005492800137e-07,
+          "cos_sim": 0.9999999999999769,
           "fails": 0,
           "notes": []
         },
         "topk_w": {
           "kind": "rel",
           "threshold": 0.0001,
-          "max_abs_err": 2.2351741790771484e-08,
-          "rel_err": 1.8884759642467952e-08,
-          "cos_sim": 0.9999999999999998,
+          "max_abs_err": 2.9802322387695312e-08,
+          "rel_err": 2.5721477704325136e-08,
+          "cos_sim": 0.9999999999999996,
           "fails": 0,
           "notes": []
         },
@@ -198,6 +207,52 @@
       },
       "failures": []
     },
+    "prefetch": {
+      "result": "PASS",
+      "trials": 100,
+      "failed_trials": 0,
+      "outputs": {
+        "dummy": {
+          "kind": "exact",
+          "threshold": 0.0,
+          "max_abs_err": 0.0,
+          "rel_err": 0.0,
+          "cos_sim": 0.9999999999999998,
+          "fails": 0,
+          "notes": [
+            "trial 0: the XOR of every word of the stripe, per wave",
+            "trial 1: the XOR of every word of the stripe, per wave",
+            "trial 2: the XOR of every word of the stripe, per wave",
+            "trial 3: the XOR of every word of the stripe, per wave",
+            "trial 4: the XOR of every word of the stripe, per wave"
+          ]
+        }
+      },
+      "failures": []
+    },
+    "prefetch_moe": {
+      "result": "PASS",
+      "trials": 100,
+      "failed_trials": 0,
+      "outputs": {
+        "dummy": {
+          "kind": "exact",
+          "threshold": 0.0,
+          "max_abs_err": 0.0,
+          "rel_err": 0.0,
+          "cos_sim": 0.9999999999999998,
+          "fails": 0,
+          "notes": [
+            "trial 0: per (slot, part): the active expert's rows; sentinel past the count",
+            "trial 1: per (slot, part): the active expert's rows; sentinel past the count",
+            "trial 2: per (slot, part): the active expert's rows; sentinel past the count",
+            "trial 3: per (slot, part): the active expert's rows; sentinel past the count",
+            "trial 4: per (slot, part): the active expert's rows; sentinel past the count"
+          ]
+        }
+      },
+      "failures": []
+    },
     "mla_attend_scores": {
       "result": "PASS",
       "trials": 100,
@@ -207,8 +262,8 @@
           "kind": "rel",
           "threshold": 0.0005,
           "max_abs_err": 0.004870414733886719,
-          "rel_err": 0.00012798732052364013,
-          "cos_sim": 0.9999999918129343,
+          "rel_err": 0.00012798732052364016,
+          "cos_sim": 0.9999999918129354,
           "fails": 0,
           "notes": []
         },
