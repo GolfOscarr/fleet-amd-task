@@ -93,6 +93,7 @@ provision at 09:35:09. The numbers are in `08-results.md`; the record is
 | Trap | Where it lives now |
 |---|---|
 | the megakernel's JIT compiles the fork's copy of our task headers (`env/setup.sh` step 5b copies them); a kernel pushed mid-session does not reach a graph run until it is installed again; seven rows ran old kernels before this was seen (their exec counters were byte-for-byte the old ones while the standalone suite, which reads the pushed files, had passed with the new) | `env/session/common.sh` `fleet_env` installs the headers before every stage |
+| the record's copy of a run name that ran again did not always follow: the worker-timing run of 11:10 is in the record as its 10:45 version (the counters are the old kernels'); the live reads in this log are the source for those numbers (`08`, provenance) | not resolved; a run name per experiment (the iteration-count trick) avoids it |
 | a queue file written after the push does not exist on the VM (`no queue file`) | push before `L start queue`; the `wait` should read the stage's own FAIL row, not only the queue's DONE |
 | an `until ... DONE <queue>` wait is satisfied by an earlier DONE line of the same file | count the DONE lines, or read the last line |
 | `kill` of the `vm.sh queue` shell leaves `queue.sh`'s loop alive: the next row starts after the current run is killed | kill the `queue.sh` process too (`pgrep -f 'queue.sh run'`), then `vm.sh kill --all`; the playbook's "never two graph runs at once" held for a reason |

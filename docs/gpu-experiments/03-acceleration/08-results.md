@@ -85,6 +85,25 @@ in the L2.
 | `--nt-streams` (O6) | S4 | within 0.2 us of plain standalone; not run in a graph |
 | the fence knobs (I4) | S11 | removing either fence fails the step-0 compare; no completion fence also no faster (626.8 against 618.3 us, 2 layers); off. The sleep and CAS knobs' rows overlapped another queue and are discarded |
 
+## Provenance of the numbers
+
+The record is the last pulled copy of each run name (`env/hw/20260917/runs/`,
+pulls at 10:11, 10:21, 10:36, 10:51, 11:23 and 11:53, commits 1acabab,
+bb6b108, 537935c, 2d59970, 98bd826, bddb69b on `gpu/round-3`). A run name
+that ran more than once keeps only its last copy in the tree; earlier
+copies are in the earlier pull commits.
+
+| Number | Where it is |
+|---|---|
+| the finals 4,583.1 / 4,571.2 / 4,596.8 / 4,575.6 (11:47) and the `FWD_PASS` 4,590 | the record (bddb69b) |
+| the finals 4,599.5 / 4,578.2 / 4,589.3 / 4,618.1 (11:15) and the `FWD_PASS` 4,584 | read live at 11:20 (`07`); overwritten by the 11:40 and 11:47 reruns before a pull |
+| 10,250.7 (S5), 8,952.8 (S7), 10,223.6 (S6), 12,486.7 (S8), 4,988.4 (without the norm-1 fusion) | the record |
+| 8,904.0 (S9) and 5,006.2 (the per-head prep, 10:40) | read live; the name was rerun at 10:49 (4,983.9, in 2d59970) and later |
+| the S5 per-operator column (10,261 us) | the record, re-measured with the corrected naming |
+| the "last" per-operator column (4,713 us) and the exec counters (merge 28,739, router 34,425, prep 12,466, attention 15,578 cycles) | read live at 11:12 from `L27_head_it32_tile_fn1_fn2_fs_nt_mfma_wt` (`07`); the record's copy of that name holds the 10:45 run (merge 40,504, router 51,277: the old kernels), a copy the later pulls did not refresh, unresolved |
+| the 2-layer per-operator tables of S5 to S7 | the record, re-measured with the corrected naming |
+| the ladder, `ktime`, the suites, the checks | the record (`runs/E*`, `ktime/`, `kernel_tests*/`, `logs/`) |
+
 ## Measurement corrections
 
 - The event-to-operator mapping (`07`, finding 1): every per-operator

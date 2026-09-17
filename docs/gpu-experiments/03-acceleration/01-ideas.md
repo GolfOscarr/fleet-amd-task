@@ -14,6 +14,42 @@ This page lists every idea worth considering, what round 2 says about it,
 what it is worth, and what it costs. It does not choose; the split into
 laptop work and VM work is the next page. Every number names its run.
 
+## Read after the session (2026-09-17)
+
+The session found that the per-operator table below, taken from round 2's
+`04-results.md`, names every gap after the operator that follows the one
+that produced it (`07-session-log.md`, finding 1: event i marks the
+completion of the (i - 1)-th operator, verified against the task graph).
+The sums per layer stand; the rows do not. The true table of the same
+runs (the 2-layer graph, per-tile linears and nt weights, VALU attention):
+
+| Operator | true us | the table below says |
+|---|---|---|
+| iteration start (the begin event) | 130 to 220 | (embed) |
+| `mla_prep`, one task | 143 to 150 | 13.6 |
+| `mla_attend`, 33 splits | 48 to 60 | 147.5 |
+| `mla_merge_uv` | 21 to 25 | 45.7 to 59.2 |
+| `o_proj` (per-tile, residual) | 14 | 22.1 |
+| norms, one task each | 4 to 5 | 13.6 |
+| router | 21 to 23 | 3.6 |
+| expert gate and up (w13) | 41 to 42 | 19.8 |
+| `moe_silu_mul` | 5 | 40.8 |
+| expert down (w2) | 21 to 23 | 5.6 |
+| `moe_mul_sum_add` | 3 to 5 | 20.3 |
+| `qkva` (per-tile) | 13 | 4.6 |
+
+So there was no "per-task overhead of the attention" to find (Group A):
+the 110 us belonged to `mla_prep`, a single task reading 2 MiB of `W_uk`
+at memory latency, and the boundary floor is 2.3 to 5 us, not 13.6. Of
+the groups below, C1 (the MFMA attention) paid as estimated, B1 to B3
+were neutral (a boundary is cheap), D1 (the prefetch) was a loss, and the
+levers that took the number from 8.9 to 4.6 ms were not on this list: the
+prep task split over the heads and the load batching of the router, merge
+and norm helper (`08-results.md`). The per-task cost that does exist is
+the runtime's 0.19 us per regular task of an operator (the ladder), which
+is what the per-tile linears pay; the remedy is a per-XCD completion
+hierarchy (`08`, what remains).
+
 ## The arithmetic of the target
 
 One MoE layer with both round-2 levers on (`--tile-linears --nt-weights`),

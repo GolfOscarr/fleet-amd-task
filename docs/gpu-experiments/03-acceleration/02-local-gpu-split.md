@@ -8,6 +8,15 @@ VM row that consumes it; every VM row names the laptop item it needs, the
 PASS text and the decision it feeds. The details of each item are filled in
 on the next pass; this page fixes the shape.
 
+## Read after the session (2026-09-17)
+
+The plan below became one session of up to four hours (`05-session-plan.md`,
+the user's decision) and ran as `07-session-log.md` records; the numbers
+are in `08-results.md`, the lessons in `09-lessons.md`. The layer table
+this page reasons from is mis-attributed by one operator (`01-ideas.md`,
+"Read after the session"): the measurements planned here (the ladder, the
+worker timing, the knobs) were what exposed it.
+
 ## What the double-check changed
 
 | Idea in `01` | What the source says | Consequence |
