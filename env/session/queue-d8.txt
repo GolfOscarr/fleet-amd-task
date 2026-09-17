@@ -1,0 +1,7 @@
+# Session D, row G8 (docs/gpu-experiments/03-acceleration/05-session-plan.md): the prefetch side operators (O8),
+# first without the non-temporal weight loads on the consuming linears (the prefetch allocates in the memory-side
+# cache, the nt loads bypass it on allocation: idea D1), then with them. Run vm.sh tgcheck <run> on the first row's
+# build before reading its clock: the side tasks' events are the question the laptop could not answer.
+--layers 2 --iters 32 --tile-linears --event-timing --worker-timing --fuse-norm2 --fuse-silu --fuse-norm1 --prefetch table compare continue
+--layers 27 --head --iters 32 --tile-linears --event-timing --worker-timing --fuse-norm2 --fuse-silu --fuse-norm1 --prefetch table compare continue
+--layers 27 --head --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --fuse-norm2 --fuse-silu --fuse-norm1 --prefetch table compare continue

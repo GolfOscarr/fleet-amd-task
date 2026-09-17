@@ -499,7 +499,10 @@ N triggers rather than N per-task chains. The queue for G3 is
 the broadcast queue takes only the begin event after the prelaunch and the
 per-event publishes go to the same-XCD queue; the queue for G4 is
 `env/session/queue-c4.txt`; the clock sampler in the queue's run step). I5
-was skipped on the user's decision: no time for the vLLM dependencies.
+was skipped on the user's decision: no time for the vLLM dependencies. I7
+is `05-session-plan.md` and `06-rehearsal.md` (2026-09-17), with three
+`vm.sh` stages the rows needed: `kernels [variant]`, `ktime [variant]`,
+`tgcheck <run>`.
 
 | Item | Direction | Core approach | Files |
 |---|---|---|---|
