@@ -440,6 +440,28 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
     return p
 
 
+EMPTY_WIDTH = 256    # elements per row of the empty ladder's tensors (one 512-byte copy per task)
+
+
+def build_empty_plan(ops: int, tasks: int, spin: int = 0, dims: Dims = REAL_DIMS, s_max: int = 1056) -> Plan:
+    """I3 (docs/gpu-experiments/03-acceleration): the empty-task ladder, M operators of N copy
+    tasks alternating two [N, EMPTY_WIDTH] BF16 tensors. Every operator reads its input whole and
+    writes its own row of the output (partitioned on dim 0), so each boundary is one event with N
+    triggers: the per-operator cost of the runtime as a function of the task count, with the
+    per-task cost from the worker timing (I1). spin > 0: every task also runs the shader-clock
+    spin of I2; the first operator's tasks print their [SPIN] lines (one per task). No model, no
+    weights, no head: the plan has only the two workspaces."""
+    assert ops >= 1 and tasks >= 1
+    p = Plan(dims, s_max, 0, False, False)
+    p.t("empty_a", (tasks, EMPTY_WIDTH))
+    p.t("empty_b", (tasks, EMPTY_WIDTH))
+    for k in range(ops):
+        src, dst = ("empty_a", "empty_b") if k % 2 == 0 else ("empty_b", "empty_a")
+        p.op("copy_layer", tasks, status="new", label=f"E{k}.copy", input=src, output=dst,
+             grid_dim=(tasks, 1, 1), block_dim=(256, 1, 1), spin=spin, spin_print=1 if (spin and k == 0) else 0)
+    return p
+
+
 def summary(p: Plan) -> dict:
     by_status = {}
     for c in p.calls:

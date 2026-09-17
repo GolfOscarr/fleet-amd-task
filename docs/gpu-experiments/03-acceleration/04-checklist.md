@@ -105,15 +105,15 @@ Status: laptop part done 2026-09-17 (commit below on `local/round-3`). What the 
 
 ## Instruments (Part 2 of `03`; detailed on the next pass)
 
-- [ ] I1 worker timing: the patch hunk (every worker, our types), `--worker-timing`, `measure.py` and `worker_timing.json`, a fixture test
-- [ ] I2 the SCLK spin: the `copy` task's spin mode, `KT_SPIN` in the suite, `measure.py` reports MHz
-- [ ] I3 the empty-task ladder: `--graph empty --ops M --tasks N`, the placement read from the timing lines, `queue-c3.txt` (12 rows), tests
+- [x] I1 worker timing: the patch hunk (the `[TIMING]`, `[TASK_TIME]` and `[WORKER_XCD]` prints for every worker; a `[TASK_TIME2]` line with our eight classes: prep, attention, merge, router, copy, the fused w2, the fused linear, the prefetches), `run_fleet.py --worker-timing` (`MPK_TIMING=1`, suffix `_wt`), `measure.py` parses the lines from `fwd_pass.log` into the measurement's `worker_timing` (per worker, the placement over the XCDs, the lifetime split, exec cycles and microseconds per task and per class) and the report; a fixture test in the exact printf formats; the `timing` variant of the offline compile (exit 0, the worker 256 VGPRs and 21 AGPRs, no VGPR spills)
+- [x] I2 the SCLK spin: the copy task's spin mode (`params [n, spin, print]`: thread 0 runs a dependent chain and prints `[SPIN] block iters cycles ticks`), `KT_SPIN=n` in the suite, `measure.py` reports the SCLK in MHz (cycles over ticks of 10 ns, the median over the lines) and converts I1's cycles
+- [x] I3 the empty-task ladder: `graph_plan.build_empty_plan(ops, tasks, spin)` (M copy operators of N tasks over two `[N, 256]` tensors, each read whole and written one row per task, so every boundary is one event with N triggers), `run_fleet.py --graph empty --ops M --tasks N [--spin S]` (no model, no reference; run name `E{M}x{N}[_spin{S}]_it{I}`), the placement read back from the timing lines, `queue-c3.txt` (12 rows: N in 1, 8, 40, 296 by M in 10, 100, 300; the `table` action; the queue guard exempts empty graphs from the reference cache), tests
 - [ ] I4 the fence knobs: the four defines in `gfx942.patch`, `--runtime-flags`, the offline compile per flag with the fence counts
 - [ ] I5 the vLLM stage: `vm.sh vllm` in the background, the per-token latency and the ids, `DRY=1`, shellcheck, a test
 - [ ] I6 the clock helper: `amd-smi metric --clock` loop into the record
 - [ ] I7 `05-session-plan.md` and the rehearsal
 
-Status:
+Status: I1 to I3 done 2026-09-17 (commit below on `local/round-3`); what the source settled: the timing counters are `clock64` (the shader clock), hence the spin; the placement is not the plan's to choose (the prelaunch puts task index p on worker p modulo the worker count), so the ladder reads it back from every worker's line; the copy registration keeps its one parameter unless the spin is asked for, so the model's snapshots and probes are unchanged. Checks: 177 tests (three new), check_syntax 9 PASS, preflight 8 PASS, the offline compile of all twelve variants and the host syntax check exit 0. `fences.txt` regenerated: the agent-scope fences of the worker (`buffer_wbl2 sc1` 4, `buffer_inv sc1` 2) are unchanged; the system-scope counts of the printf hostcall paths rose (72 to 120, 48 to 80) with the spin's printf site now in the worker's union, a path taken only when a task spins.
 
 ## Before the VM
 

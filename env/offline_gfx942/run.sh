@@ -83,6 +83,8 @@ compile ntstreams -DMLA_NT_STREAMS=1 || ok=1
 compile cklinear -DMK_CK_LINEAR=1 || ok=1
 # O7: the MFMA attention (v_mfma_f32_16x16x16_bf16) in place of the VALU kernel
 compile mfma -DMLA_ATTEND_MFMA=1 || ok=1
+# I1: the worker timing build (MPK_TIMING=1 of persistent_kernel.py): the per-worker prints of our hunk
+compile timing -DMPK_ENABLE_TIMING=1 || ok=1
 
 # The patched host sources of the runtime (O8, docs/gpu-experiments/03-acceleration: the
 # side-operator branch of register_mugraph; also every registration our patch adds), parsed
@@ -158,7 +160,7 @@ cat "$HERE/fences.txt"
 {
   echo "# Offline gfx942 compile, $(date -u +%Y-%m-%dT%H:%M:%SZ), $(cat "$WORK/out/hipcc.txt" | tr '\n' ' ')"
   echo "# fleet 51dce4f + gfx942.patch + new_tasks.patch + sched_xcd.patch; composable_kernel $CK_COMMIT; json $JSON_COMMIT"
-  for v in mk_ours mk_ckfmha mk_debugscores mk_ckgang mk_ntstreams mk_cklinear mk_mfma kernel_tests kernel_tests_debug kernel_tests_nt kernel_tests_mfma; do
+  for v in mk_ours mk_ckfmha mk_debugscores mk_ckgang mk_ntstreams mk_cklinear mk_mfma mk_timing kernel_tests kernel_tests_debug kernel_tests_nt kernel_tests_mfma; do
     echo; echo "## $v (hipcc exit $(cat "$WORK/out/$v.rc"))"
     grep -E "Function Name|    VGPRs:|AGPRs|SGPRs Spill|VGPRs Spill|LDS Size|ScratchSize|Occupancy" "$WORK/out/$v.log" \
       | sed 's/.*remark: *//; s/ \[-Rpass.*//; s/Function Name: //' | paste - - - - - - - - \

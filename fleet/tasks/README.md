@@ -124,6 +124,12 @@ in a build's `task_graph_rank0.json`.
   __HIP_MEMORY_SCOPE_AGENT)`) on AMD, since the first task of an iteration
   runs no acquire and the id was written on another XCD
   (`03-synchronization.md`).
+- `copy_mi300`: `params [n, spin, print]` (I2 of `docs/gpu-experiments/03-acceleration`)
+  makes thread 0 run `spin` iterations of a dependent integer chain after the
+  copy and, with `print`, report `[SPIN] block=.. iters=.. cycles=.. ticks=..`
+  (the shader clock against the 100 MHz real-time clock; `measure.py` turns it
+  into the SCLK); with `[n]` alone the task is the plain copy. With a grid above
+  one the output is partitioned on dim 0 (the empty ladder of I3).
 - `argmax_reduce`: `argmax_reduce_layer(..., output_to_tokens=True)` adds a
   second parameter; the registration then also passes
   `runtime_config.tokens + runtime_config.step[0] + 1`, and the kernel
@@ -214,6 +220,8 @@ The suite binary times a kernel's grid on request (round 2, 2026-09-16):
     KT_TIME=50 KT_COLD=27 fleet/tasks/build/kernel_tests mla_attend <dir>  # the launches rotate over 27 copies of the cache (cold L2)
 
 A trial directory comes from `python fleet/tasks/kernel_tests.py --n 1 --kernel mla_attend --work-dir <dir> --keep`.
+`KT_SPIN=1000 fleet/tasks/build/kernel_tests copy <dir>` adds a launch whose thread 0 spins 1,000 iterations and prints the
+`[SPIN]` line (I2: the SCLK standalone, against the same line from inside the graph).
 The other builds are timed the same way (`kernel_tests_nt` for O6, `kernel_tests_mfma` for O7); the suite runs against
 one of them with `kernel_tests.py --bin fleet/tasks/build/kernel_tests_mfma --bin-debug fleet/tasks/build/kernel_tests_mfma_debug`.
 On the MI300X the attention grid (8 x 5 tiles, step 1032) costs 34 us cold or warm and the merge grid 11.5 us,

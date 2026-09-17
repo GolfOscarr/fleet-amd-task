@@ -162,8 +162,9 @@ __global__ __launch_bounds__(256, 1) void k_moe_router(void const *x_res,
       meta.prompt_length[0], layer_index, scaling, eps);
 }
 
-__global__ __launch_bounds__(256, 1) void k_copy(void const *x, void *y) {
-  kernel::copy_mi300_task_impl<bf16, HIDDEN>(x, y);
+__global__ __launch_bounds__(256, 1) void k_copy(void const *x, void *y, int spin) {
+  // spin > 0 (KT_SPIN, I2): the shader-clock spin after the copy, printed as a [SPIN] line
+  kernel::copy_mi300_task_impl<bf16, HIDDEN>(x, y, spin, spin > 0 ? 1 : 0);
 }
 
 // ---------------------------------------------------------------------------
@@ -492,8 +493,13 @@ void run_copy(std::string const &dir) {
   Buffers b{dir, specs_of(SPEC_COPY), {}};
   b.load();
   allow_full_lds(k_copy);
-  hipLaunchKernelGGL(k_copy, dim3(1), dim3(256), SMEM_BYTES, 0, b.get("x"), b.get("y"));
+  hipLaunchKernelGGL(k_copy, dim3(1), dim3(256), SMEM_BYTES, 0, b.get("x"), b.get("y"), 0);
   finish_launch();
+  // KT_SPIN=n (I2): one more launch whose thread 0 spins n iterations and prints the clock deltas
+  if (char const *ks = std::getenv("KT_SPIN")) {
+    hipLaunchKernelGGL(k_copy, dim3(1), dim3(256), SMEM_BYTES, 0, b.get("x"), b.get("y"), std::atoi(ks));
+    finish_launch();
+  }
   b.store_outputs();
 }
 

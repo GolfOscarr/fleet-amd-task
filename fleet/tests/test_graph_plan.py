@@ -356,6 +356,30 @@ def test_prefetch_default_off_leaves_the_plan_unchanged():
     assert "pf_dummy_o" not in plan.tensors
 
 
+def test_empty_ladder_is_a_chain_of_copy_operators_with_one_event_per_boundary():
+    """I3 (docs/gpu-experiments/03-acceleration): M operators of N copy tasks over two [N, 256]
+    tensors; each reads its input whole and writes its own row (the output partitioned on dim 0),
+    so the boundary is one event with N triggers; with --spin the first operator's tasks print."""
+    from fleet.graph_plan import build_empty_plan, EMPTY_WIDTH
+    plan = build_empty_plan(ops=5, tasks=40, spin=1000)
+    assert plan.n_ops == 5 and plan.n_tasks == 200 and not plan.chain_violations()
+    assert plan.tensors["empty_a"].shape == (40, EMPTY_WIDTH) and plan.tensors["empty_a"].kind == "new"
+    assert [c.args["input"] for c in plan.calls] == ["empty_a", "empty_b", "empty_a", "empty_b", "empty_a"]
+    assert plan.calls[0].args["spin_print"] == 1 and all(c.args["spin_print"] == 0 for c in plan.calls[1:])
+    _, calls = B.dry_run(plan=plan)
+    rec = [c for c in calls if c["method"] == "copy_mi300@new"]
+    assert len(rec) == 5 and rec[0]["imaps"] == [[-1, -1, -1], [0, -1, -1]]     # whole in, a row out
+    assert rec[0]["params"] == [EMPTY_WIDTH, 1000, 1] and rec[1]["params"] == [EMPTY_WIDTH, 1000, 0]
+    # without spin the registration keeps its one parameter; a single task keeps the whole-tensor imaps
+    _, calls = B.dry_run(plan=build_empty_plan(ops=3, tasks=1))
+    rec = [c for c in calls if c["method"] == "copy_mi300@new"]
+    assert rec[0]["params"] == [EMPTY_WIDTH] and rec[0]["imaps"] == [[-1, -1, -1], [-1, -1, -1]]
+    # the model's copy operators are unchanged (a [1, H] snapshot, one parameter)
+    _, calls = B.dry_run(layers=2, head=False, debug=True)
+    rec = [c for c in calls if c["method"] == "copy_mi300@new"]
+    assert rec and rec[0]["params"] == [REAL_DIMS.H] and rec[0]["imaps"] == [[-1, -1, -1], [-1, -1, -1]]
+
+
 def test_probe_before_inserts_a_one_task_copy_and_rewires_the_consumer():
     """O5 (docs/gpu-experiments/03-acceleration): a copy of the chain's tensor in front of the
     named operator, which then reads the twin; one more operator and task, the chain intact."""

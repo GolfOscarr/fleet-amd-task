@@ -20,7 +20,7 @@ for f in mla_prep_mi300 mla_attend_mi300 mla_attend_mfma_mi300 mla_merge_uv_mi30
     mla_attend_mfma_mi300) inst='kernel::mla_attend_mi300_task_impl<bfloat16,16,512,64,1056>(0,0,0,0,0,0,0.1f,32,33,5,4,0,0);' ;;   # O7: the MFMA kernel (the same signature; the wrapper's host path)
     mla_merge_uv_mi300) inst='kernel::mla_merge_uv_mi300_task_impl<bfloat16,16,128,512>(0,0,0,0,32,33,2,2,0,1,1,0);' ;;
     moe_router_mi300) inst='kernel::moe_router_mi300_task_impl<bfloat16,2048,64,2,6,32,26,false>(0,0,0,0,0,0,0,0,0,0,0,0,1.0f,0.0f); kernel::moe_router_mi300_task_impl<bfloat16,2048,64,2,6,32,26,true>(0,0,0,0,0,0,0,0,0,0,0,0,1.0f,1e-6f);' ;;
-    copy_mi300) inst='kernel::copy_mi300_task_impl<bfloat16,2048>(0,0);' ;;
+    copy_mi300) inst='kernel::copy_mi300_task_impl<bfloat16,2048>(0,0); kernel::copy_mi300_task_impl<bfloat16,256>(0,0,1000,1);' ;;
     prefetch_mi300) inst='kernel::prefetch_mi300_task_impl<bfloat16,32,2048>(0,0); kernel::prefetch_moe_mi300_task_impl<bfloat16,66,2048,1408,32>(0,0,0,0);' ;;   # O8
   esac
   tu="$(mktemp -t "$f.XXXXXX").cpp"

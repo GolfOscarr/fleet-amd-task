@@ -34,6 +34,9 @@ void _execute_task(TaskDesc const *task_desc, RuntimeConfig const &runtime_confi
         runtime_config.step[0], runtime_config.prompt_length[0], 1, 1.0f, 1e-6f);
   } else if (task_desc->task_type == TASK_COPY_MI300 && task_desc->variant_id == 0) {
     kernel::copy_mi300_task_impl<bfloat16, 2048>(task_desc->input_ptrs[0], task_desc->output_ptrs[0]);
+  } else if (task_desc->task_type == TASK_COPY_MI300 && task_desc->variant_id == 1) {
+    // I2: the spin mode of the copy (the empty ladder's rows with --spin)
+    kernel::copy_mi300_task_impl<bfloat16, 256>(task_desc->input_ptrs[0], task_desc->output_ptrs[0], 1000, 1);
   } else if (task_desc->task_type == TASK_PREFETCH_MI300 && task_desc->variant_id == 0) {
     // O8: the side operators' prefetch tasks: W_o in 64 stripes of 32 rows; W2's active experts in 32 parts
     kernel::prefetch_mi300_task_impl<bfloat16, 32, 2048>(task_desc->input_ptrs[0], task_desc->output_ptrs[0]);

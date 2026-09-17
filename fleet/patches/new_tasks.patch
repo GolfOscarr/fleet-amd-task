@@ -56,7 +56,7 @@ index 2aab442..fff24d4 100755
    int register_splitk_linear_sm100_task(threadblock::Graph const &bgraph,
                                          std::vector<int> const &params,
 diff --git a/include/mirage/persistent_kernel/persistent_kernel.cuh b/include/mirage/persistent_kernel/persistent_kernel.cuh
-index 28aade0..6e81361 100755
+index 28aade0..3e3ef32 100755
 --- a/include/mirage/persistent_kernel/persistent_kernel.cuh
 +++ b/include/mirage/persistent_kernel/persistent_kernel.cuh
 @@ -232,7 +232,9 @@ __device__ __host__ __forceinline__ bool is_gang_task_type(TaskType t) {
@@ -70,6 +70,72 @@ index 28aade0..6e81361 100755
  }
  
  __device__ __forceinline__ bool is_termination_event(size_t event_loc,
+@@ -750,7 +752,13 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+     // Write this worker's XCD ID to shared map for scheduler to read
+     if (config.worker_xcd_map != nullptr) {
+       config.worker_xcd_map[worker_id] = block_xcd_id;
++#ifdef MPK_ENABLE_TIMING
++      // I1 (docs/gpu-experiments/03-acceleration): every worker's XCD, for the placement
++      // of the per-worker timing lines
++      if (true) {
++#else
+       if (worker_id < 8) {
++#endif
+         printf("[WORKER_XCD] worker_id=%d block=%d xcd=%d\n",
+                worker_id, (int)blockIdx.x, block_xcd_id);
+       }
+@@ -821,6 +829,10 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+   int linear_count = 0, linear_res_count = 0;
+   int attention_count = 0, rms_count = 0, silu_count = 0;
+   int fused_count = 0;
++  // I1 (docs/gpu-experiments/03-acceleration): our task classes: 0 prep, 1 attention (gang and
++  // per-split), 2 merge, 3 router, 4 copy, 5 fused w2, 6 fused linear, 7 prefetch (both)
++  unsigned long long ours_cycles[8] = {0, 0, 0, 0, 0, 0, 0, 0};
++  int ours_count[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+ #endif
+ 
+   while (true) {
+@@ -997,8 +1009,8 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+     if (task_desc->task_type == TASK_TERMINATE) {
+       // Terminate
+ #ifdef MPK_ENABLE_TIMING
+-      // Print timing stats before returning
+-      if (threadIdx.x == 0 && worker_id < 8) {
++      // Print timing stats before returning (I1: every worker, not the first eight)
++      if (threadIdx.x == 0) {
+         printf("[TIMING] worker=%d tasks=%d poll_iters=%d dep_iters=%d "
+                "poll_cycles=%llu dep_cycles=%llu exec_cycles=%llu signal_cycles=%llu\n",
+                worker_id, total_tasks_executed, total_poll_iters, total_dep_wait_iters,
+@@ -1007,6 +1019,11 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+                worker_id, linear_cycles, linear_count, linear_res_cycles, linear_res_count,
+                attention_cycles, attention_count, rms_cycles, rms_count, silu_cycles, silu_count,
+                fused_cycles, fused_count);
++        printf("[TASK_TIME2] worker=%d prep=%llu/%d attend=%llu/%d merge=%llu/%d router=%llu/%d copy=%llu/%d "
++               "w2silu=%llu/%d lnorm=%llu/%d prefetch=%llu/%d\n",
++               worker_id, ours_cycles[0], ours_count[0], ours_cycles[1], ours_count[1], ours_cycles[2], ours_count[2],
++               ours_cycles[3], ours_count[3], ours_cycles[4], ours_count[4], ours_cycles[5], ours_count[5],
++               ours_cycles[6], ours_count[6], ours_cycles[7], ours_count[7]);
+       }
+ #endif
+ #ifdef MPK_ENABLE_DEVICE_TASK_ACCUM
+@@ -1188,6 +1205,17 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+         case TASK_RMS_NORM: rms_cycles += task_time; rms_count++; break;
+         case TASK_SILU_MUL: silu_cycles += task_time; silu_count++; break;
+         case TASK_SILU_MUL_LINEAR_WITH_RESIDUAL: fused_cycles += task_time; fused_count++; break;
++        // I1: our classes
++        case TASK_MLA_PREP_MI300: ours_cycles[0] += task_time; ours_count[0]++; break;
++        case TASK_MLA_ATTEND_MI300:
++        case TASK_MLA_ATTEND_TILE_MI300: ours_cycles[1] += task_time; ours_count[1]++; break;
++        case TASK_MLA_MERGE_UV_MI300: ours_cycles[2] += task_time; ours_count[2]++; break;
++        case TASK_MOE_ROUTER_MI300: ours_cycles[3] += task_time; ours_count[3]++; break;
++        case TASK_COPY_MI300: ours_cycles[4] += task_time; ours_count[4]++; break;
++        case TASK_GANG_MOE_W2_SILU_MI300: ours_cycles[5] += task_time; ours_count[5]++; break;
++        case TASK_LINEAR_NORM_MI300: ours_cycles[6] += task_time; ours_count[6]++; break;
++        case TASK_PREFETCH_MI300:
++        case TASK_PREFETCH_MOE_MI300: ours_cycles[7] += task_time; ours_count[7]++; break;
+         default: break;
+       }
+     }
 diff --git a/include/mirage/persistent_kernel/runtime_header.h b/include/mirage/persistent_kernel/runtime_header.h
 index f2dfe4e..48e1d0b 100755
 --- a/include/mirage/persistent_kernel/runtime_header.h
@@ -230,7 +296,7 @@ index f3f98ad..a7e2f6f 100755
      150: "TASK_HOPPER_TASK_BEGIN",
      151: "TASK_LINEAR_WITH_RESIDUAL_HOPPER",
 diff --git a/src/kernel/graph.cc b/src/kernel/graph.cc
-index 97c4923..3317243 100755
+index 97c4923..7665420 100755
 --- a/src/kernel/graph.cc
 +++ b/src/kernel/graph.cc
 @@ -841,6 +841,69 @@ void Graph::register_task(char const *task_type, std::vector<int> params) {
@@ -297,7 +363,7 @@ index 97c4923..3317243 100755
 +    task_config[op] = std::make_tuple(2, 1, TASK_PREFETCH_MOE_MI300, variant_id);
 +    side_ops.insert(op);
 +  } else if (name == "copy_mi300") {
-+    assert(params.size() == 1);
++    assert(params.size() == 1 || params.size() == 3);   // [n] or [n, spin, print] (I2)
 +    int variant_id = task_register->register_copy_mi300_task(customized->bgraph, params);
 +    task_config[op] = std::make_tuple(1, 1, TASK_COPY_MI300, variant_id);
    } else {
@@ -451,7 +517,7 @@ index 9dde169..3c0bb97 100755
        for (size_t variant_id = 0; variant_id < task.second.size();
             variant_id++) {
 diff --git a/src/kernel/task_register.cc b/src/kernel/task_register.cc
-index a4e2602..724aaa7 100755
+index a4e2602..a97489d 100755
 --- a/src/kernel/task_register.cc
 +++ b/src/kernel/task_register.cc
 @@ -15,6 +15,8 @@
@@ -491,7 +557,7 @@ index a4e2602..724aaa7 100755
    return register_task_variant(TASK_ARGMAX_REDUCE, code.to_string());
  }
  
-@@ -4583,5 +4593,418 @@ int TaskRegister::register_paged_attention_split_kv_hopper_task(
+@@ -4583,5 +4593,427 @@ int TaskRegister::register_paged_attention_split_kv_hopper_task(
                                 code.to_string());
  }
  
@@ -891,10 +957,14 @@ index a4e2602..724aaa7 100755
 +  return register_task_variant(TASK_PREFETCH_MOE_MI300, code.to_string());
 +}
 +
-+// params: [n]; input [1, n]; output [1, n]
++// params: [n] or [n, spin, print] (I2 of docs/gpu-experiments/03-acceleration: spin > 0 makes
++// thread 0 run that many iterations of a dependent chain after the copy and, with print, report
++// the shader-clock and real-time deltas as a [SPIN] line); input [rows, n]; output [rows, n]
++// (the per-task pointers select the row when the output is partitioned on dim 0, the empty
++// ladder of I3)
 +int TaskRegister::register_copy_mi300_task(
 +    threadblock::Graph const &bgraph, std::vector<int> const &params) {
-+  assert(params.size() == 1);
++  assert(params.size() == 1 || params.size() == 3);
 +  std::vector<tb::TBInputOp *> input_ops, output_ops;
 +  int num_inputs = 1, num_outputs = 1;
 +  assert(bgraph.operators.size() == (size_t)num_inputs + num_outputs);
@@ -904,7 +974,12 @@ index a4e2602..724aaa7 100755
 +  code.inc_indent();
 +  code.e("kernel::copy_mi300_task_impl<bfloat16, $>(", params[0]);
 +  code.e("    task_desc->input_ptrs[0],");
-+  code.e("    task_desc->output_ptrs[0]);");
++  if (params.size() == 3) {
++    code.e("    task_desc->output_ptrs[0],");
++    code.e("    $, $);", params[1], params[2]);   // spin iterations, print
++  } else {
++    code.e("    task_desc->output_ptrs[0]);");
++  }
 +  return register_task_variant(TASK_COPY_MI300, code.to_string());
 +}
 +

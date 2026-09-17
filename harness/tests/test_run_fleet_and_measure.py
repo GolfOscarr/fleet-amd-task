@@ -104,6 +104,41 @@ def test_event_timing_iterations_and_ops():
     assert abs(by["opA"]["mean_us"] - 2.0) < 1e-9 and abs(by["end"]["mean_us"] - 3.0) < 1e-9
 
 
+def test_worker_timing_and_spin_parsers():
+    """I1 and I2: the runtime's per-worker lines and the spin line, in the exact printf formats."""
+    text = ("[WORKER_XCD] worker_id=0 block=0 xcd=0\n[WORKER_XCD] worker_id=1 block=1 xcd=1\n"
+            "[WORKER_XCD] worker_id=2 block=2 xcd=2\n"
+            "[SPIN] block=0 iters=1000 cycles=2100 ticks=100 x=123\n[SPIN] block=1 iters=1000 cycles=2000 ticks=100 x=5\n"
+            "[FWD_PASS] iter=1 time_ms=1.000 num_active_tokens=1\n"
+            "[TIMING] worker=0 tasks=10 poll_iters=5 dep_iters=7 poll_cycles=100 dep_cycles=4000 exec_cycles=21000 signal_cycles=300\n"
+            "[TASK_TIME] worker=0 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0\n"
+            "[TASK_TIME2] worker=0 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=21000/10 w2silu=0/0 lnorm=0/0 prefetch=0/0\n"
+            "[TIMING] worker=1 tasks=6 poll_iters=1 dep_iters=2 poll_cycles=10 dep_cycles=2000 exec_cycles=12600 signal_cycles=100\n"
+            "[TASK_TIME] worker=1 linear=0/0 linear_res=0/0 attn=0/0 rms=0/0 silu=0/0 fused=0/0\n"
+            "[TASK_TIME2] worker=1 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=12600/6 w2silu=0/0 lnorm=0/0 prefetch=0/0\n"
+            "[TIMING] worker=2 tasks=0 poll_iters=900 dep_iters=0 poll_cycles=99999 dep_cycles=0 exec_cycles=0 signal_cycles=0\n")
+    w = measure.parse_worker_timing(text)
+    assert set(w) == {0, 1, 2} and w[0]["tasks"] == 10 and w[0]["xcd"] == 0 and w[1]["classes"]["copy"] == {"cycles": 12600, "count": 6}
+    spins = measure.parse_spin(text)
+    assert spins == [(0, 1000, 2100, 100), (1, 1000, 2000, 100)]
+    mhz = measure.sclk_mhz(spins)
+    assert mhz == 2100.0                                    # 2100 cycles over 100 ticks of 10 ns: the median of the two lines
+    s = measure.worker_timing_summary(w, iters=2, mhz=mhz)
+    assert s["workers_reporting"] == 3 and s["workers_with_tasks"] == 2 and s["tasks"] == 16
+    assert s["tasks_per_xcd"] == {"0": 10, "1": 6}
+    assert s["exec_cycles_per_task"] == 2100.0 and s["exec_us_per_task"] == 1.0
+    assert s["per_class"]["copy"] == {"count": 16, "cycles_per_task": 2100.0, "us_per_task": 1.0}
+    assert "attend" not in s["per_class"]                   # classes without tasks are left out
+    assert abs(s["dep_wait_us_per_iteration_per_busy_worker"] - (6000 / 2 / 2) / 2100.0) < 1e-9
+    # without a spin line the microseconds are absent, the cycles stay
+    s0 = measure.worker_timing_summary(w, iters=2, mhz=None)
+    assert s0["exec_us_per_task"] is None and s0["exec_cycles_per_task"] == 2100.0
+    # the report renders the rows and the class table
+    m = {"predicted": measure.PREDICTED, "worker_timing": dict(s, workers={})}
+    rep = measure.report_table(m)
+    assert "workers with tasks" in rep and "| copy | 16 | 2100 | 1.00 |" in rep
+
+
 def test_pmc_and_trace_parsers(tmp_path):
     pmc = tmp_path / "pmc.csv"
     pmc.write_text("Dispatch_Id,Kernel_Name,TCC_BUBBLE_sum,TCC_EA0_RDREQ_sum,"
@@ -245,6 +280,11 @@ def test_pad_alloc_argument_and_run_name():
     assert a.mfma_attend and run_fleet.run_name(a) == "L2_it32_nts_mfma"   # O7
     a = p.parse_args(["--layers", "2", "--iters", "32", "--prefetch", "--probe-before", "L1.o_proj", "--model-dir", "x"])
     assert a.prefetch and run_fleet.run_name(a) == "L2_it32_pf_probe_L1.o_proj"   # O8
+    a = p.parse_args(["--layers", "2", "--iters", "32", "--worker-timing", "--model-dir", "x"])
+    assert a.worker_timing and run_fleet.run_name(a) == "L2_it32_wt"              # I1
+    a = p.parse_args(["--graph", "empty", "--ops", "100", "--tasks", "40", "--iters", "32", "--event-timing",
+                      "--worker-timing", "--spin", "1000", "--model-dir", "x"])
+    assert run_fleet.run_name(a) == "E100x40_spin1000_it32_wt"                    # I3
 
 
 def test_tensor_addresses_records_every_host_tensor():

@@ -47,6 +47,83 @@ PREDICTED = {
 # parsers
 
 
+TIMING_RE = re.compile(r"\[TIMING\] worker=(\d+) tasks=(\d+) poll_iters=(\d+) dep_iters=(\d+) "
+                       r"poll_cycles=(\d+) dep_cycles=(\d+) exec_cycles=(\d+) signal_cycles=(\d+)")
+TASK_TIME_RE = re.compile(r"\[TASK_TIME2?\] worker=(\d+) (.*)")
+CLASS_RE = re.compile(r"(\w+)=(\d+)/(\d+)")
+XCD_RE = re.compile(r"\[WORKER_XCD\] worker_id=(\d+) block=(\d+) xcd=(\d+)")
+SPIN_RE = re.compile(r"\[SPIN\] block=(\d+) iters=(\d+) cycles=(\d+) ticks=(\d+)")
+
+
+def parse_worker_timing(text: str):
+    """I1: the runtime's per-worker counters (MPK_TIMING=1 build: [TIMING], [TASK_TIME], [TASK_TIME2] at
+    the end of the run, [WORKER_XCD] at its start) -> {worker: {...}}. Cycles are clock64, the shader
+    clock (the SCLK from the spin of I2 converts them); the poll, dep, exec and signal cycles are the
+    worker's lifetime over all iterations."""
+    w = {}
+    for m in TIMING_RE.finditer(text):
+        wid = int(m.group(1))
+        w.setdefault(wid, {})
+        w[wid].update({"tasks": int(m.group(2)), "poll_iters": int(m.group(3)), "dep_iters": int(m.group(4)),
+                       "poll_cycles": int(m.group(5)), "dep_cycles": int(m.group(6)),
+                       "exec_cycles": int(m.group(7)), "signal_cycles": int(m.group(8))})
+    for m in TASK_TIME_RE.finditer(text):
+        wid = int(m.group(1))
+        w.setdefault(wid, {}).setdefault("classes", {})
+        for name, cyc, cnt in CLASS_RE.findall(m.group(2)):
+            w[wid]["classes"][name] = {"cycles": int(cyc), "count": int(cnt)}
+    for m in XCD_RE.finditer(text):
+        w.setdefault(int(m.group(1)), {})["xcd"] = int(m.group(3))
+    return w
+
+
+def parse_spin(text: str):
+    """I2: [(block, iters, cycles, ticks)] of the spin lines; MHz = cycles / (ticks x 10 ns)."""
+    return [tuple(int(x) for x in m.groups()) for m in SPIN_RE.finditer(text)]
+
+
+def sclk_mhz(spins):
+    """The shader clock from the spin lines (median over the lines), or None."""
+    vals = [c / (t * 0.01) for _, _, c, t in spins if t > 0]
+    if not vals:
+        return None
+    vals.sort()
+    return vals[len(vals) // 2]
+
+
+def worker_timing_summary(w, iters=None, mhz=None):
+    """Per-run figures from the per-worker records: the workers with tasks, the placement over the
+    XCDs, the lifetime split of the busy workers (poll, dep wait, exec, signal), and per class the
+    exec cycles per task; in microseconds when the SCLK (mhz) is known."""
+    busy = {k: v for k, v in w.items() if v.get("tasks", 0) > 0}
+    per_xcd = {}
+    for k, v in busy.items():
+        if "xcd" in v:
+            per_xcd[v["xcd"]] = per_xcd.get(v["xcd"], 0) + v["tasks"]
+    tot = {f: sum(v.get(f, 0) for v in busy.values()) for f in ("poll_cycles", "dep_cycles", "exec_cycles", "signal_cycles")}
+    tasks = sum(v.get("tasks", 0) for v in busy.values())
+    classes = {}
+    for v in w.values():
+        for name, c in v.get("classes", {}).items():
+            e = classes.setdefault(name, {"cycles": 0, "count": 0})
+            e["cycles"] += c["cycles"]; e["count"] += c["count"]
+    us = (lambda cyc: cyc / mhz) if mhz else (lambda cyc: None)
+    out = {"workers_reporting": len(w), "workers_with_tasks": len(busy), "tasks": tasks,
+           "tasks_per_xcd": {str(k): per_xcd[k] for k in sorted(per_xcd)}, "sclk_mhz": mhz,
+           "lifetime_cycles_busy_workers": tot,
+           "per_class": {name: {"count": c["count"], "cycles_per_task": c["cycles"] / c["count"] if c["count"] else None,
+                                "us_per_task": us(c["cycles"] / c["count"]) if c["count"] else None}
+                         for name, c in sorted(classes.items()) if c["count"]}}
+    if tasks and busy:
+        n = len(busy)
+        out["per_busy_worker_cycles"] = {f: tot[f] / n for f in tot}
+        out["exec_cycles_per_task"] = tot["exec_cycles"] / tasks
+        out["exec_us_per_task"] = us(tot["exec_cycles"] / tasks)
+        if iters:
+            out["dep_wait_us_per_iteration_per_busy_worker"] = us(tot["dep_cycles"] / n / iters)
+    return out
+
+
 def parse_fwd_pass(text: str):
     """[(iter, time_ms, num_active_tokens)] in file order."""
     return [(int(a), float(b), int(c)) for a, b, c in FWD_RE.findall(text)]
@@ -232,10 +309,19 @@ def measure(run_dir: Path, kernel_trace=None, pmc=None, kernel_filter=DEFAULT_KE
 
     fp = run_dir / "fwd_pass.log"
     if fp.exists():
-        passes = parse_fwd_pass(fp.read_text())
+        text = fp.read_text()
+        passes = parse_fwd_pass(text)
         times_us = [t * 1000.0 for _, t, _ in passes]
         m["fwd_pass"] = {"iterations_logged": len(passes), "per_iteration_us": percentiles(times_us),
                          "first_five_us": times_us[:5]}
+        spins = parse_spin(text)                       # I2
+        mhz = sclk_mhz(spins)
+        if spins:
+            m["spin"] = {"lines": len(spins), "sclk_mhz": mhz, "iters": spins[0][1]}
+        wt = parse_worker_timing(text)                 # I1
+        if wt:
+            m["worker_timing"] = worker_timing_summary(wt, iters, mhz)
+            m["worker_timing"]["workers"] = {str(k): wt[k] for k in sorted(wt)}
     et = run_dir / "event_timing.json"
     plan = json.loads((run_dir / "plan.json").read_text()) if (run_dir / "plan.json").exists() else None
     if et.exists():
@@ -299,8 +385,21 @@ def report_table(m):
         ("L2 hit rate", "16-17% (Fleet's batch-1 figure)", f(g("traffic", "l2_hit_rate"), 3)),
         ("tokens per second", "", f(1e6 / g("fwd_pass", "per_iteration_us", "p50")) if g("fwd_pass", "per_iteration_us", "p50") else "-"),
     ]
+    if g("worker_timing"):
+        wt = m["worker_timing"]
+        rows += [("workers with tasks (of those reporting)", "", f"{wt['workers_with_tasks']} of {wt['workers_reporting']}"),
+                 ("tasks per XCD (placement)", "", " ".join(f"{k}:{v}" for k, v in wt["tasks_per_xcd"].items()) or "-"),
+                 ("shader clock from the spin (MHz)", "", f(wt.get("sclk_mhz"))),
+                 ("exec cycles per task, busy workers", "", f(wt.get("exec_cycles_per_task"))),
+                 ("exec us per task (at the spin's SCLK)", "", f(wt.get("exec_us_per_task"), 2)),
+                 ("dep-wait us per iteration per busy worker", "", f(wt.get("dep_wait_us_per_iteration_per_busy_worker"), 2))]
     lines = ["# Measurement report", "", "| Quantity | Predicted | Measured |", "|---|---|---|"]
     lines += [f"| {a} | {b} | {c} |" for a, b, c in rows]
+    classes = (g("worker_timing", "per_class") or {})
+    if classes:
+        lines += ["", "## Exec time per task by class (worker timing, I1)", "",
+                  "| Class | tasks | cycles per task | us per task |", "|---|---|---|---|"]
+        lines += [f"| {k} | {v['count']} | {v['cycles_per_task']:.0f} | {f(v['us_per_task'], 2)} |" for k, v in classes.items()]
     ops = g("event_timing", "per_op") or []
     if ops:
         lines += ["", "## Per-operator time (event gaps, mean over iterations after the first)", "",

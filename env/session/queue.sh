@@ -66,7 +66,7 @@ row_guard() {
     echo "guard: --debug is the growth curve at step 0; it needs --iters 1 (got $iters)"; return 1; fi
   if [[ "$flags" == *compare* ]] && [ ! -f "$REF_DIR/ref_cache.safetensors" ]; then
     echo "guard: compare needs $REF_DIR/ref_cache.safetensors (run the reference stage first)"; return 1; fi
-  if [[ " ${args[*]} " != *" --stop-after "* ]] && [ ! -f "$REF_DIR/ref_cache.safetensors" ] && [ "$DRY" != "1" ]; then
+  if [[ " ${args[*]} " != *" --stop-after "* ]] && [[ " ${args[*]} " != *" --graph empty "* ]] && [ ! -f "$REF_DIR/ref_cache.safetensors" ] && [ "$DRY" != "1" ]; then
     echo "guard: run_fleet.py loads $REF_DIR/ref_cache.safetensors (run the reference stage first)"; return 1; fi
   if [[ "$flags" == *measure* ]] && [ "$DRY" != "1" ] && ! command -v "${PROFILER%% *}" >/dev/null 2>&1; then
     echo "guard: measure needs $PROFILER on PATH"; return 1; fi

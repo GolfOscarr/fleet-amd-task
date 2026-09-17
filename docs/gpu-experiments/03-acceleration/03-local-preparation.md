@@ -488,6 +488,13 @@ operators of 326 and about 1.8 ms; O6 and O7 are measured on the machine.
 
 These decide Group A and are cheap; they are built after O1 and O2 so the
 first VM session can run both the measurements and the first fusions.
+I1 to I3 were built on 2026-09-17 as the table says, with two details the
+source settled: the placement over XCDs is read back from every worker's
+`[TIMING]` line rather than chosen (the prelaunch puts task index p on
+worker p modulo the worker count), and the ladder's copy reads its input
+whole and writes one row per task so that each boundary is one event with
+N triggers rather than N per-task chains. The queue for G3 is
+`env/session/queue-c3.txt`.
 
 | Item | Direction | Core approach | Files |
 |---|---|---|---|

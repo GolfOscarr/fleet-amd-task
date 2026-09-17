@@ -193,11 +193,19 @@ def prefetch_moe_layer(mpk, weight, moe_mask, dummy, parts, block_dim=(256, 1, 1
               "prefetch_moe_mi300", [parts])
 
 
-def copy_layer(mpk, input, output, grid_dim=(1, 1, 1), block_dim=(256, 1, 1)):
-    """Debug builds only: snapshot of the residual after a layer (an identity task)."""
+def copy_layer(mpk, input, output, grid_dim=(1, 1, 1), block_dim=(256, 1, 1), spin=0, spin_print=0):
+    """The identity task: a snapshot of the residual (--debug), the probe of O5, and the empty
+    ladder of I3. With grid_dim[0] > 1 the output is partitioned on dim 0 (one row per task; the
+    input is read whole, so the boundary before the operator is one event with all the producer's
+    triggers). spin > 0 (I2): the shader-clock spin after the copy, printed when spin_print."""
     assert input.num_dims == 2 and output.num_dims == 2 and input.dim(1) == output.dim(1)
-    _new_task(mpk, grid_dim, block_dim, [(input, (-1, -1, -1), -1), (output, (-1, -1, -1), -1)],
-              "copy_mi300", [input.dim(1)])
+    g = grid_dim[0]
+    out_map = (0, -1, -1) if g > 1 else (-1, -1, -1)
+    if g > 1:
+        assert output.dim(0) == g, (output.shape, grid_dim)
+    params = [input.dim(1)] + ([int(spin), int(bool(spin_print))] if spin else [])
+    _new_task(mpk, grid_dim, block_dim, [(input, (-1, -1, -1), -1), (output, out_map, -1)],
+              "copy_mi300", params)
 
 
 NEW_LAYERS = {
@@ -346,13 +354,15 @@ def plan_json(plan):
 def build(packed, capture, meta, dims=REAL_DIMS, s_max=1056, layers=27, head=True, debug=False,
           stop_after=None, debug_scores=False, tile_linears=False, attend_tasks=False, num_workers=296, num_schedulers=8,
           profiler_tensor=None, align=0, workspaces=None, fuse_norm2=False, fuse_silu=False,
-          probe_before=None, fuse_norm1=False, prefetch=False):
-    """On the machine: construct the PersistentKernel, attach, issue, return (mpk, host tensors, plan)."""
+          probe_before=None, fuse_norm1=False, prefetch=False, plan=None):
+    """On the machine: construct the PersistentKernel, attach, issue, return (mpk, host tensors, plan).
+    plan: a ready plan (the empty ladder of I3) instead of the model's."""
     import torch
     import mirage as mi
 
-    plan = G.build_plan(dims, s_max, layers, head, debug, debug_scores, tile_linears, attend_tasks, fuse_norm2,
-                        fuse_silu, fuse_norm1, prefetch)
+    if plan is None:
+        plan = G.build_plan(dims, s_max, layers, head, debug, debug_scores, tile_linears, attend_tasks, fuse_norm2,
+                            fuse_silu, fuse_norm1, prefetch)
     if probe_before:
         plan.insert_probe(probe_before)
     if stop_after:
@@ -537,9 +547,10 @@ class FakeMPK:
 
 def dry_run(dims=REAL_DIMS, s_max=1056, layers=27, head=True, debug=False, stop_after=None,
             debug_scores=False, tile_linears=False, attend_tasks=False, fuse_norm2=False, fuse_silu=False,
-            probe_before=None, fuse_norm1=False, prefetch=False):
-    plan = G.build_plan(dims, s_max, layers, head, debug, debug_scores, tile_linears, attend_tasks, fuse_norm2,
-                        fuse_silu, fuse_norm1, prefetch)
+            probe_before=None, fuse_norm1=False, prefetch=False, plan=None):
+    if plan is None:
+        plan = G.build_plan(dims, s_max, layers, head, debug, debug_scores, tile_linears, attend_tasks, fuse_norm2,
+                            fuse_silu, fuse_norm1, prefetch)
     if probe_before:
         plan.insert_probe(probe_before)
     if stop_after:
