@@ -22,8 +22,8 @@ compiler, against hipcc 7.0 for gfx942 in the offline Docker image
 | Claim of the draft | What the check says | Consequence |
 |---|---|---|
 | K2, a packed `v_dot2_f32_bf16` halves the VALU work | the builtin "needs target feature dot12-insts" and the inline instruction is "not supported on this GPU" for gfx942; both compile for gfx950 (`gemv_probe/results.txt`) | **K2 is off** for the MI300X; the VALU form's conversion cost stays, and K3 (MFMA) is the only way to cut it |
-| K6, the batch depth B is set by the loop constant | the compiler unrolls the wave's 16 rows and hoists every load across the batches: BATCH = 8 gives 30 loads in flight and 175 VGPRs, BATCH = 16 gives 60 in flight and 256 VGPRs plus 28 AGPRs; `#pragma unroll 1` on the batch loop restores the constant (4 rows: 110 VGPRs, 16 in flight; 8 rows: 158, 32 in flight) | the depth is controlled by the unroll pragma, not the constant; the register cost per depth is now measured (the table under K6); the round-3 kernels' "batches" were subject to the same hoisting |
-| "the register file is the budget", the CK tile fills it | the arch VGPR limit is 256 per wave at one wave per SIMD; the excess goes to AGPRs (`v_accvgpr` moves, 28 of them at 60 loads in flight, no scratch) and a scratch spill appears only past that (the invalid 32-row probe: 68 spilled, 276 bytes per lane); the union without any CK linear (`mk_ours`) is already at 249 VGPRs | the CK tile leaving the union frees nothing by itself; what matters is that the GEMV's own form fits under 256 without a scratch spill, which 32 loads in flight does (158) and 60 does with AGPRs (256 + 28); layer 0's dense gate-up keeps the CK silu kernel in the unit until S4 replaces it |
+| K6, the batch depth B is set by the loop constant | the compiler unrolls the wave's 16 rows and hoists every load across the batches: BATCH = 8 gives 30 loads in flight and 175 VGPRs, BATCH = 16 gives 60 in flight and 256 VGPRs plus 28 AGPRs; `#pragma unroll 1` on the batch loop restores the constant (4 rows: 110 VGPRs, 16 in flight; 8 rows: 158, 32 in flight) | the depth is controlled by the unroll pragma, not the constant; the register cost per depth is now measured (the table under K6); the round-3 router's loop was not hoisted (124 VGPRs standalone: one batch live), so its four round trips are real |
+| "the register file is the budget", the CK tile fills it | the arch VGPR limit is 256 per wave at one wave per SIMD; the excess goes to AGPRs (`v_accvgpr` moves, 28 of them at 60 loads in flight, no scratch) and a scratch spill appears only past that (the invalid 32-row probe: 68 spilled, 276 bytes per lane); the union without any CK linear (`mk_ours`) was 249 VGPRs before round 3 and is 256 VGPRs plus 64 AGPRs with 8 VGPRs spilled with round 3's batched kernels (the refreshed offline build of 2026-09-17 evening, `resources.txt`) | the CK tile leaving the union frees nothing by itself; the union is already past the arch limit and round 3's batches put it there; what matters is that the GEMV's own form fits under 256 without a scratch spill, which 32 loads in flight does (158) and 60 does with AGPRs (256 + 28); layer 0's dense gate-up keeps the CK silu kernel in the unit until S4 replaces it |
 | regime 2, w13's first round is bandwidth-bound at the XCD's share (17.5 us) | 42.5 us per layer less a latency-bound second round of about 10 us and a boundary of about 3 leaves about 28 us for the first round, not 17.5: the XCD moved 9.5 MB at about 340 GB/s with 1.2 MB in flight, which is Little's law at a loaded latency of about 3.5 us per K step, or a fabric limit below the 1/8 share; the record cannot tell which | S1 (one round) and the deep stream are both needed for w13, and the per-XCD ceiling is unmeasured: a stream probe on the VM (M7) sets w13's reachable number (21 to 30 us) |
 | K3, the MFMA at 8 cycles per instruction | from the part's peak (1,307 TFLOPs BF16 dense, 304 CUs, 4 SIMDs, 2.1 GHz) a `16x16x16` MFMA is 16 cycles per SIMD | 128 MFMAs per wave per 16 rows is about 1 us against about 2 us of VALU (512 FMAs and 555 conversions, the probe's disassembly): MFMA halves the ALU time, it does not remove it |
 | I5, a bit-diff against round 3's boundary dumps | the record keeps `compare.out` and the reports, not the tensors (`env/hw/20260917/runs/L2_it1_*`) | the CK build's boundaries are dumped once on the VM before the GEMV build runs (a queue row), then diffed |
@@ -44,13 +44,17 @@ compiler, against hipcc 7.0 for gfx942 in the offline Docker image
   router, the merge and the norm helper went 2x or better by issuing every
   load of a batch before the first multiply, keeping the words raw and
   converting on use, and keeping the FMA order (`09-lessons.md`, lesson 6).
-- **The register wall is real but further than the draft said.** The
+- **The register wall is real, and round 3's kernels stand on it.** The
   worker kernel is the union of every task at one wave per SIMD: 256 arch
-  VGPRs, then AGPRs, then scratch. The offline build reports 242 to 256
-  VGPRs for every variant (`env/offline_gfx942/resources.txt`); the deeper
-  router and merge batches of round 3 were 1% slower (lesson 7), the cost
-  of AGPR traffic, not of a scratch spill (the scratch size is the same 64
-  bytes per lane in every variant).
+  VGPRs, then AGPRs, then scratch. Before round 3 the union was 249
+  VGPRs and no AGPRs; with the batched prep, router, merge and norm it is
+  256 VGPRs, 64 AGPRs and 8 VGPRs spilled to them (the refreshed
+  `env/offline_gfx942/resources.txt`; 134 AGPRs with the MFMA attention,
+  154 with the CK linear variant). The deeper router and merge batches of
+  round 3 were 1% slower (lesson 7): AGPR traffic, not a scratch spill
+  (the scratch size is the same 64 bytes per lane in every variant). Every
+  depth this round is therefore measured on the union's line, not only on
+  the kernel's own.
 - **The non-temporal weight loads are worth 20%** (round 2, E2: sc1 and nt
   on the CK weight loads, 12.3 to 10.2 ms); our own kernels have the same
   policy behind `MLA_NT_STREAMS` (`mla_common_mi300.cuh`, `StreamSrc`).
