@@ -112,7 +112,7 @@ Status: done 2026-09-18, commit a3edf62 (wave 2, agent J; cherry-picked), the hu
 
 ## N4. The merge as regular tasks (3 h)
 
-- [x] `mla_merge_uv_mi300.cuh`: `HALVES`, the regular form's head and half from `expert_offset`; `new_tasks.patch`: type 201 in the `expert_offset` list, `register_mla_merge_uv_tile_mi300_task` (whole imaps, params `[split, n_splits, halves]`), the dispatcher case; regenerated
+- [x] `mla_merge_uv_mi300.cuh`: `HALVES`, the regular form's head and half from `expert_offset`; `new_tasks.patch`: type 205 in the `expert_offset` list, `register_mla_merge_uv_tile_mi300_task` (whole imaps, params `[split, n_splits, halves]`), the dispatcher case; regenerated
 - [x] `build_graph.py`; `graph_plan.py --merge-tasks [--merge-halves 2]`; the counts; `task_graph_check.py`; a test on the plan
 - [x] `check_syntax.sh`; `mk_tu.cu`; the offline variant
 
@@ -121,7 +121,7 @@ Status: done 2026-09-18, commit 0f6eec3 (wave 2, agent I; cherry-picked). The sh
 ## N2. The router in four tasks (4 h)
 
 - [x] `moe_router_mi300.cuh`: `SPLIT` and `part`; the 16-expert batch before the norm; the logits to the tensor; the release fence, thread 0's acq-rel atomic at agent scope, the last task's acquire fence by every thread, top-k, writes and reset
-- [x] `new_tasks.patch`: type 200 in the `expert_offset` list, `register_moe_router_norm4_mi300_task` (the counter input, grid 4), the dispatcher case; regenerated
+- [x] `new_tasks.patch`: type 204 in the `expert_offset` list, `register_moe_router_norm4_mi300_task` (the counter input, grid 4), the dispatcher case; regenerated
 - [x] `build_graph.py`; `graph_plan.py --router-tasks` (`router_counter`); the counts
 - [x] the suite row `k_moe_router4` (four blocks, a zeroed counter, bit-exact against the one-task row)
 - [x] `check_syntax.sh`; `mk_tu.cu`; the offline variant
@@ -130,13 +130,13 @@ Status: done 2026-09-18, commit 3f406e6 (wave 2, agent I; cherry-picked), type 2
 
 ## N5. The merge with o_proj folded in (8 h)
 
-- [x] `mla_merge_oproj_mi300.cuh`: type 202; N3's and N4's merge; `attn` stored; the `W_o` slice (eight lanes per row, eight rows per wave-load, two batches of 32 under `#pragma unroll 1`), the three-step row reduction, the partial vector to `workspace[t]`; the release, the counter; the last task's acquire, the fixed-order sum with the residual into `x_res`, the reset
+- [x] `mla_merge_oproj_mi300.cuh`: type 207; N3's and N4's merge; `attn` stored; the `W_o` slice (eight lanes per row, eight rows per wave-load, two batches of 32 under `#pragma unroll 1`), the three-step row reduction, the partial vector to `workspace[t]`; the release, the counter; the last task's acquire, the fixed-order sum with the residual into `x_res`, the reset
 - [x] `new_tasks.patch`: the type in the `expert_offset` list, the registration (inputs `partials, W_uv, W_o, x_res, counter`; outputs `x_res, attn, workspace`; grid 32), the dispatcher case; regenerated
 - [x] `build_graph.py`; `graph_plan.py --merge-oproj` (`oproj_ws`, `oproj_counter`; the merge and o_proj replaced by one call labelled `L{l}.o_proj`); the counts; `compare.py`'s boundary list checked (the `x_res` and `attn` rows keep their keys)
 - [x] the suite row `mla_merge_oproj` (32 blocks, a zeroed counter; `x_res` within the linear tolerance, `attn` bit-exact)
 - [x] `check_syntax.sh`; `mk_tu.cu`; the offline variant (at most 200 VGPRs for the kernel; the worker line recorded here)
 
-Status: done 2026-09-18, commit 9231083 (wave 2, agent K; cherry-picked), type 207 (f49dba2), the hunk folded in at d91a1fe (every variant, the host check and the launchers clean). Offline: `k_mla_merge_oproj` 248 VGPRs, 32 AGPRs, 112 bytes of scratch, no spills (the page's "at most 200" was an estimate; the three phases' peak is 248 under the cap); the union with every round-4 task 256 VGPRs and 126 AGPRs. The shared merge body gained an optional LDS copy of the attn values and a constexpr LDS size; `x_res` is one argument (input 3 and output 0 share the address); `--merge-oproj` always uses two halves and overrides `--merge-tasks`; not gated by `--debug`. Counts: 299 operators and 2,717 tasks alone, 245 and 5,565 with every wave-2 flag. An emulation of phases 4 and 5 reproduced the residual linear bit for bit. Checks: 15 PASS, 232 tests, the suite's `mla_merge_oproj` row.
+Status: done 2026-09-18, commit 9231083 (wave 2, agent K; cherry-picked), type 207 (f49dba2), the hunk folded in at d91a1fe (every variant, the host check and the launchers clean). Offline: `k_mla_merge_oproj` 248 VGPRs, 32 AGPRs, 112 bytes of scratch, no spills (the page's "at most 200" was an estimate; the three phases' peak is 248 under the cap); the union with every round-4 task 256 VGPRs and 126 AGPRs (151 AGPRs and 368 bytes of scratch under `MLA_NT_STREAMS`, the build the graph rows make; round 3's own streaming build was 179). The review of 2026-09-18 (a Fable agent) found the weight phase's batch of 4 wave-loads (sixteen round trips for the 256 KB slice) and it is 16 now (248 registers at 4, 8 and 16; 32 spills 144 bytes); the release fence is followed by a barrier before the atomic in both last-task kernels (the page's order); the review's notes for L8: `vm.sh` must build `kernel_tests_xcd` or the gang rows SKIP, `KT_TIME` repeats the in-place `x_res` accumulation (timing only), `--probe-before L{l}.o_proj` does not apply under the fold, and the acquire-fence knob must not be paired with the counter forms. The shared merge body gained an optional LDS copy of the attn values and a constexpr LDS size; `x_res` is one argument (input 3 and output 0 share the address); `--merge-oproj` always uses two halves and overrides `--merge-tasks`; not gated by `--debug`. Counts: 299 operators and 2,717 tasks alone, 245 and 5,565 with every wave-2 flag. An emulation of phases 4 and 5 reproduced the residual linear bit for bit. Checks: 15 PASS, 232 tests, the suite's `mla_merge_oproj` row.
 
 ## L8 and N6. The session tooling (4 h)
 

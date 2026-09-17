@@ -271,6 +271,7 @@ __device__ __forceinline__ void
   if constexpr (SPLIT > 1) {
     int *counter = static_cast<int *>(counter_ptr);
     __builtin_amdgcn_fence(__ATOMIC_RELEASE, "agent");
+    __syncthreads();                             // every wave's fence before one thread's atomic (the page's order)
     if (tid == 0) {
       int old = __hip_atomic_fetch_add(counter, 1, __ATOMIC_ACQ_REL, __HIP_MEMORY_SCOPE_AGENT);
       last_s[0] = (old == SPLIT - 1) ? 1 : 0;

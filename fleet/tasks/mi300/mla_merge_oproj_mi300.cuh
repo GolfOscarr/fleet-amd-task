@@ -26,7 +26,7 @@
  *      rows a wave-load, so a wave-load is eight full 128-byte lines: lane l
  *      reads row 8 g + l / 8 of the wave-load's row group g. Wave w owns rows
  *      w * (HIDDEN / WAVES) .. + HIDDEN / WAVES - 1 (512 of the 2,048) and walks
- *      them in batches of OPROJ_BATCH wave-loads under "#pragma unroll 1" (4 =
+ *      them in batches of OPROJ_BATCH wave-loads under "#pragma unroll 1" (16 =
  *      32 rows and 4 loads per lane; 8 = 64 rows and 8 loads), with no pre-load:
  *      the first batch is issued inside the loop, after the merge (the third
  *      convention of the page; a batch live across a prologue costs about 70
@@ -56,8 +56,9 @@
  * floats of attn values and the one-word broadcast, 10.5 KiB in all.
  *
  * Registers: the merge is about 155 through its own phases (the header of
- * mla_merge_uv_mi300.cuh); phase 4 holds OPROJ_BATCH x 4 raw words (16 at a
- * batch of 4, 32 at 8), the eight attn values and OPROJ_BATCH row sums; the last
+ * mla_merge_uv_mi300.cuh); phase 4 holds OPROJ_BATCH x 4 raw words (64 at the
+ * batch of 16; 4, 8 and 32 measured offline at the same 248 registers, 32 with
+ * 144 more bytes of scratch), the eight attn values and OPROJ_BATCH row sums; the last
  * task holds OPROJ_WS_BATCH x 2 x 4 = 128 raw words in flight and eight
  * accumulators. The three phases are in sequence, so the peak is the merge's;
  * the offline build's k_mla_merge_oproj line is the check (at most 200).
@@ -74,10 +75,12 @@
 #include "tasks/mi300/mla_merge_uv_mi300.cuh"
 
 // The wave-loads of W_o a wave keeps in flight (4 = 32 rows, 4 loads per lane; 8 = 64 rows,
-// 8 loads), swept by the ktime A/B as -DOPROJ_BATCH=8. The constant only holds under
+// 8 loads), swept by the ktime A/B as -DOPROJ_BATCH=8. The default 16 (16 loads per lane, 64 KB
+// per CU in flight, four round trips for the 256 KB slice; the review of 2026-09-18 found the
+// first draft's 4 would have made sixteen). The constant only holds under
 // "#pragma unroll 1", the first convention of the page.
 #ifndef OPROJ_BATCH
-#define OPROJ_BATCH 4
+#define OPROJ_BATCH 16
 #endif
 // The workspace rows the last task keeps in flight (16 rows = 32 16-byte loads = 128 raw words).
 #ifndef OPROJ_WS_BATCH
@@ -197,6 +200,7 @@ __device__ MERGE_OPROJ_INLINE void
   // (5) the release, the counter and the broadcast of "this task was the last to arrive"
   __syncthreads();
   __builtin_amdgcn_fence(__ATOMIC_RELEASE, "agent");
+  __syncthreads();                                     // the fence in every wave before one thread's atomic (the page's order)
   if (tid == 0) {
     int old = __hip_atomic_fetch_add(static_cast<int *>(counter_ptr), 1, __ATOMIC_ACQ_REL,
                                      __HIP_MEMORY_SCOPE_AGENT);
