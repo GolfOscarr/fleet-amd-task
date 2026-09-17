@@ -1,0 +1,18 @@
+# gemv_probe, 2026-09-17, hipcc 7.0.51831 (clang roc-7.0.0), --offload-arch=gfx942 -O3
+# k_gemv_fma: 64 rows x K 2048, 256 threads, a wave owns 16 rows, a lane a 32-element K slice
+# (32 FP32 VGPRs), a row is 4 x 16-byte nontemporal loads per lane, FMA on raw BF16 words,
+# wave_sum per row. BATCH = rows whose loads are issued before the first multiply;
+# NOHOIST = "#pragma unroll 1" on the batch loop (without it the compiler unrolls the wave's
+# 16 rows and hoists the loads across batches).
+
+hoist8  (BATCH=8):           VGPRs 175, AGPRs 0,  scratch 0, spills 0; loads 68 (4 of x + 64); waits vmcnt(29) (28) (24) ... (0): about 30 loads in flight per lane
+hoist16 (BATCH=16):          VGPRs 256, AGPRs 28, scratch 0, spills 0; loads 68; waits vmcnt(56) (52) ... (0): 60 loads in flight per lane, the whole wave's tile
+BATCH=32 (rows beyond the wave, an invalid probe): VGPRs 256, AGPRs 256, scratch 276 B/lane, 68 VGPRs spilled: the register wall
+nh4  (BATCH=4,  NOHOIST):    VGPRs 110, AGPRs 0, spills 0; 16 loads in flight per lane (64 KB per CU); vmcnt(0) at each batch's end
+nh8  (BATCH=8,  NOHOIST):    VGPRs 158, AGPRs 0, spills 0; 32 loads in flight per lane (128 KB per CU)
+nh16 (BATCH=16, NOHOIST):    VGPRs 256, AGPRs 28, spills 0; 64 loads (256 KB per CU)
+VALU per wave per 16 rows: 512 v_fmac_f32 and about 555 shift/and conversions (the count of the disassembly)
+
+v_dot2_f32_bf16: the builtin needs target feature dot12-insts (gfx950); the inline asm is
+"instruction not supported on this GPU" for gfx942; the builtin compiles for gfx950. K2 of
+01-gemv-ideas.md is off for the MI300X.

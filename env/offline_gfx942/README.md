@@ -91,3 +91,11 @@ What this settles and what it does not:
 | `mk_tu.cu` | the hand-written generated-code stand-in |
 | `resources.txt` | `-Rpass-analysis=kernel-resource-usage` per kernel per variant |
 | `fences.txt` | static counts of cache-control, fence, `XCC_ID` and `s_sleep` instructions per kernel |
+
+## The GEMV probe (round 4, 2026-09-17)
+
+`gemv_probe/run.sh` compiles a 64-row batch-1 GEMV tile for gfx942 at several
+batch depths and prints the registers and the `s_waitcnt vmcnt` sequence (the
+loads in flight per lane), and checks `v_dot2_f32_bf16` (gfx950 only). The
+results of 2026-09-17 are in `gemv_probe/results.txt`; the reading is in
+`docs/gpu-experiments/04-kernels/01-gemv-ideas.md`.
