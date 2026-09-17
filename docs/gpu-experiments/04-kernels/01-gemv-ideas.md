@@ -27,6 +27,9 @@ compiler, against hipcc 7.0 for gfx942 in the offline Docker image
 | regime 2, w13's first round is bandwidth-bound at the XCD's share (17.5 us) | 42.5 us per layer less a latency-bound second round of about 10 us and a boundary of about 3 leaves about 28 us for the first round, not 17.5: the XCD moved 9.5 MB at about 340 GB/s with 1.2 MB in flight, which is Little's law at a loaded latency of about 3.5 us per K step, or a fabric limit below the 1/8 share; the record cannot tell which | S1 (one round) and the deep stream are both needed for w13, and the per-XCD ceiling is unmeasured: a stream probe on the VM (M7) sets w13's reachable number (21 to 30 us) |
 | K3, the MFMA at 8 cycles per instruction | from the part's peak (1,307 TFLOPs BF16 dense, 304 CUs, 4 SIMDs, 2.1 GHz) a `16x16x16` MFMA is 16 cycles per SIMD | 128 MFMAs per wave per 16 rows is about 1 us against about 2 us of VALU (512 FMAs and 555 conversions, the probe's disassembly): MFMA halves the ALU time, it does not remove it |
 | I5, a bit-diff against round 3's boundary dumps | the record keeps `compare.out` and the reports, not the tensors (`env/hw/20260917/runs/L2_it1_*`) | the CK build's boundaries are dumped once on the VM before the GEMV build runs (a queue row), then diffed |
+| K1's lane map, the router's (a lane owns 32 consecutive elements) | a wave-load then touches 32 cache lines of 128 bytes and uses 32 bytes of each; the other three quarters are re-fetched by the next three loads, from L1 if the streaming policy kept the lines and from L2 if not. CK's own B distribution gives consecutive lanes consecutive 16-byte chunks (`linear_ck_mi300.cuh`, `MakeBDramTileDistribution`: K0 = 32 lanes along K), 8 full lines per wave-load. The merge's `W_uv` phase (two lanes per row) is worse still | **K9 added**: the lane map that makes every wave-load 1 KB contiguous, at no cost; the same finding goes to the router and merge page |
+| K3, the head as 16 passes per wave | 256 rows over 4 waves is 64 rows per wave, four passes of 16 | corrected |
+| the fresh-host setup in `02`, "about 8 minutes" | round 3's log: download 95 s, hardware census 158 s, setup 483 s | 12 minutes |
 | everything else | the CK loop body (`gemm_pipeline_agmem_bgmem_creg_v2.hpp`, lines 251 to 279), the A view of one row (`linear_norm_mi300.cuh`, the w2 kernel, w13 at batch 1: `make_tuple(index_t(1), ...)`), the gang tile loop (`persistent_kernel.cuh`, lines 1099 to 1109: `for (t = rank; t < n_tile_count; t += workers_on_xcd)`), the eight experts per layer (`W13_{l}` is `[66, 2816, 2048]`, the mask holds 8 slots), the head's 400 tasks of 256 rows, the 37 workers per XCD, 63 outstanding loads per wave, the 57 KiB of dynamic LDS, 2,816 = 33 x 76 + 4 x 77 | stand as written |
 
 ## What round 3 established that this builds on
@@ -147,8 +150,11 @@ The router's loop: `uint4` words, `(k & 1) ? (w & 0xffff0000) : (w << 16)`,
 `__uint_as_float`, one FMA per element in ascending k, `wave_sum` per row.
 
 - **Thread map.** Wave w owns rows `w * R/4 .. (w+1) * R/4 - 1`; lane l
-  owns elements `32 l .. 32 l + 31` of every row, four 16-byte loads at
-  `row + 32 l + 8 i`. Each lane's slice of x sits in 32 FP32 VGPRs (K7).
+  owns 32 elements of every row in four 16-byte chunks, one per load. The
+  router places them at `32 l + 8 i` (contiguous per lane); K9 places
+  them at `8 l + 512 i` (contiguous per wave-load), which is the map to
+  build. Each lane's slice of x sits in 32 FP32 VGPRs (K7), loaded with
+  the same map.
   For R = 38 (qkva) the waves take 10, 10, 9, 9 rows; for R = 32, 8 each.
 - **The multiply.** Per row per lane: 32 conversions (a shift or a mask)
   and 32 `v_fmac_f32`, then a 6-step `wave_sum`; the probe's disassembly
@@ -210,7 +216,15 @@ with only row 0 non-zero, `v_mfma_f32_16x16x16_bf16` accumulates in FP32.
   second step if M5 shows the VALU term.
 - **Cost, risk.** AGPRs hold the accumulators (the MFMA attention put 53
   in the union); the x operand's LDS reads and the lane masking are new
-  code; the head's 256 rows are 16 passes of 16 rows per wave.
+  code; the head's 256 rows are four passes of 16 rows per wave. The
+  instruction fixes the lane map: lanes 0 to 15 read 16 different rows
+  at one k offset, so a wave-load touches 16 lines and uses 64 bytes of
+  each (the next K group uses the other half), two lines per KB against
+  K9's one; the same L1 question as K1's strided map, at half the
+  weight. A `v_mfma_f32_4x4x4_16b` form (16 independent 4 x 4 blocks per
+  instruction, so a quarter of the work is padding instead of fifteen
+  sixteenths) would halve the ALU time again at the cost of an intricate
+  layout; a step after K3 only if the ALU term still shows.
 
 ### K4. Direct-to-LDS staging (last resort)
 
@@ -279,7 +293,7 @@ per row instead would cost 256 KB of LDS reads per tile, about 1 us.
 K = 1,408 (w2) is 22 elements per lane, not a multiple of 8: the row is
 176 chunks of 8, lanes 0 to 47 take three chunks and 48 to 63 two (the
 chunk index `lane + 64 j`, j < 3, bounded by 176), and the x slice is 24
-VGPRs with two unused; the same irregularity made the stock w2 use K
+VGPRs (lanes 48 to 63 use 16 of them); the same irregularity made the stock w2 use K
 steps of 128.
 
 ### K8. The prologues and epilogues in one kernel
@@ -297,6 +311,44 @@ One template with flags:
 Dropping the scratch rows removes one global round trip per fused task
 (the write, the wait, the read back) and two tensors from the plan; the
 registrations keep the scratch outputs until the plan drops them (I1).
+
+Two more round trips hide for free: the first weight batch's loads do not
+depend on x, so they are issued before the prologue (the norm's read of
+x and its block reduction, or the silu row, then run under the batch's
+latency; the batch's raw registers are live across the prologue, whose
+own need is small), and the residual's 32 elements per lane are loaded
+with the first batch, not in the epilogue. The router page will use the
+same trick for its norm.
+
+### K9. The coalesced lane map
+
+A wave-load is 64 lanes x 16 bytes. With the router's map (lane l at
+`32 l + 8 i`) the 64 addresses of one load are 64 bytes apart: 32 cache
+lines of 128 bytes touched, 32 bytes used from each, the rest re-fetched
+by the next three loads of the row, from L1 if the line survived and
+from L2 if the streaming policy (`sc1 nt`: L1 miss-evict) dropped it.
+With lane l at `8 l + 512 i` the 64 addresses of one load are one
+contiguous KB: 8 full lines, nothing re-fetched. The lane's four chunks
+are then k = 8 l + 512 i + 0..7, and its x slice is loaded with the same
+map, so the products are the same and only the summation order within
+the lane changes (four runs of eight instead of one of 32). CK's B
+distribution is of this kind (K0 = 32 lanes along K, two rows per
+wave-load); the round-3 kernels are not: the router's rows are strided as
+above, the merge's partials phase reads 32-byte chunks per lane and its
+`W_uv` phase two lanes per row, 32 to 64 lines per wave-load.
+
+- **Worth.** Unknown until measured; it is the difference between 8 and
+  32 line requests per instruction on the L1 and L2 request queues, which
+  is the resource the `docs/mi300x/07` analysis names as the unproven
+  limit. Free to adopt; a compile switch (`GEMV_STRIDED`) keeps the
+  router's map for one `ktime` A/B (M5).
+- **The K-split variant.** Wave w could own a quarter of K for every row
+  (a wave-load then reads bytes `1024 w + 16 l` of a row: also
+  contiguous) with the four partial sums added through LDS: the x slice
+  drops to 8 VGPRs (24 more loads in flight at the same register cost),
+  but every row then needs a wave sum in each wave (64 per wave instead
+  of 16, about 290 extra shuffle ops per tile against 512 FMAs). Not
+  first; a variant if the register budget, not the ALU, turns out to bind.
 
 ## Group S: shaping the work
 
@@ -405,8 +457,8 @@ round learns about.
 
 ## To decide before the split
 
-1. K1 first (proven, exact products, the probe's registers), K3 as the
-   second step if M5 shows the VALU term; K2 is gone.
+1. K1 first (proven, exact products, the probe's registers) with K9's
+   map, K3 as the second step if M5 shows the VALU term; K2 is gone.
 2. The batch to build for: 8 rows with `#pragma unroll 1` (32 loads in
    flight, 158 VGPRs, no AGPRs), the constant swept at 4 and 16 on the VM.
 3. S1's uneven tiles by the kernel's arithmetic from `tile_idx` (no
