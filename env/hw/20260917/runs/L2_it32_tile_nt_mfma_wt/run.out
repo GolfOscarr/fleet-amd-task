@@ -349,58 +349,52 @@ In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/pyt
       |                                  ^
 15 warnings generated when compiling for host.
 Compiling megakernel using the following command line:
-['/opt/rocm/bin/hipcc', '-x', 'hip', './permanent_output_dir/test.cu', '-O3', '-I/usr/include/python3.12', '-I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include', '-I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/hip_compat', '-I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel', '-I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/rocblas/include', '-I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/cutlass/include', '-I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/cutlass/tools/util/include', '-I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include', '-I/opt/rocm/include', '-I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include', '-DCK_TILE_FMHA_FWD_FAST_EXP2=1', '-DMAX_WORKER_PER_SCHEDULER=38', '-DMIRAGE_USE_CUTLASS_KERNEL=0', '--offload-arch=gfx942', '-L/opt/rocm/lib', '-L/opt/rocm/lib', '-lamdhip64', '-lrocblas', '-lhipblas', '-shared', '-std=c++17', '-fPIC', '-D__HIP_PLATFORM_AMD__=1', '-DMIRAGE_AMD_MI300', '-DMIRAGE_BACKEND_USE_ROCM', '-DMPK_TARGET_CC=94', '-DMPK_MAX_NUM_BATCHED_REQUESTS=1', '-DMPK_MAX_NUM_BATCHED_TOKENS=1', '-DMPK_MAX_NUM_PAGES=1', '-DMPK_PAGE_SIZE=1025', '-DMPK_MAX_SEQ_LENGTH=1025', '-o', './permanent_output_dir/test.cpython-38-x86_64-linux-gnu.so', '-DMLA_ATTEND_MFMA', '-DMODE_ONLINE', '-DMPK_PROFILING_NUM_ITERS=0', '-DMPK_ENABLE_TIMING', '-DMPK_ENABLE_EVENT_TIMING', '-DMPK_ENABLE_GANG_TASKS', '-DMPK_NT_WEIGHT_LOADS']
+['/opt/rocm/bin/hipcc', '-x', 'hip', './permanent_output_dir/test.cu', '-O3', '-I/usr/include/python3.12', '-I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include', '-I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/hip_compat', '-I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel', '-I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/rocblas/include', '-I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/cutlass/include', '-I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/cutlass/tools/util/include', '-I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include', '-I/opt/rocm/include', '-I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include', '-DCK_TILE_FMHA_FWD_FAST_EXP2=1', '-DMAX_WORKER_PER_SCHEDULER=38', '-DMIRAGE_USE_CUTLASS_KERNEL=0', '--offload-arch=gfx942', '-L/opt/rocm/lib', '-L/opt/rocm/lib', '-lamdhip64', '-lrocblas', '-lhipblas', '-shared', '-std=c++17', '-fPIC', '-D__HIP_PLATFORM_AMD__=1', '-DMIRAGE_AMD_MI300', '-DMIRAGE_BACKEND_USE_ROCM', '-DMPK_TARGET_CC=94', '-DMPK_MAX_NUM_BATCHED_REQUESTS=1', '-DMPK_MAX_NUM_BATCHED_TOKENS=1', '-DMPK_MAX_NUM_PAGES=1', '-DMPK_PAGE_SIZE=1056', '-DMPK_MAX_SEQ_LENGTH=1056', '-o', './permanent_output_dir/test.cpython-38-x86_64-linux-gnu.so', '-DMLA_ATTEND_MFMA', '-DMODE_ONLINE', '-DMPK_PROFILING_NUM_ITERS=0', '-DMPK_ENABLE_TIMING', '-DMPK_ENABLE_EVENT_TIMING', '-DMPK_ENABLE_GANG_TASKS', '-DMPK_NT_WEIGHT_LOADS']
 Finished megakernel compilation...
-=15 prep=0/0 attend=78020/2 merge=82912/2 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
-[TASK_TIME2] worker=135 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
-[TASK_TIME2] worker=87 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
-[TASK_TIME2] worker=64 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
-[TASK_TIME2] worker=208 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
-[TASK_TIME2] worker=240 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
-[TASK_TIME2] worker=96 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
-[TASK_TIME2] worker=8 prep=0/0 attend=77668/2 merge=83016/2 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
-[TASK_TIME2] worker=24 prep=0/0 attend=77564/2 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
-[TASK_TIME2] worker=176 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
-[TASK_TIME2] worker=152 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/[EVENT_TIMING] 23 event firings recorded
-
-================================================================================
-PER-EVENT WALL-CLOCK TIMING (barrier-to-barrier)
-================================================================================
-Event TaskType              Count    Avg(us)    Min(us)    Max(us)    Std(us)
--------------------------------------------------------------------------
+  26.48       1.22
+    5 UNKNOWN                  31     142.01     139.42     145.37       1.51
+    6 UNKNOWN                  31      12.86      12.09      16.20       1.17
+    7 UNKNOWN                  31      25.42      21.79      26.53       1.28
+    8 UNKNOWN                  31      13.41      12.69      14.16       0.38
+    9 UNKNOWN                  31       4.06       3.58       4.71       0.25
+   10 UNKNOWN                  31      35.58      34.69      36.47       0.44
+   11 UNKNOWN                  31      51.61      49.88      53.12       0.94
+   12 UNKNOWN                  31       3.90       3.60       4.76       0.24
+   13 UNKNOWN                  31      13.71      12.80      14.16       0.26
+   14 UNKNOWN                  31     147.12     144.00     151.08       1.61
+   15 UNKNOWN                  31      12.26      11.92      12.60       0.17
+   16 UNKNOWN                  31      22.17      21.53      23.08       0.36
+   17 UNKNOWN                  31      13.47      12.99      14.04       0.32
+   18 UNKNOWN                  31       3.96       3.68       4.19       0.12
+   19 UNKNOWN                  31      21.75      20.02      23.50       0.80
+   20 UNKNOWN                  31      39.51      37.68      41.49       0.81
+   21 UNKNOWN                  31       5.40       3.94       6.53       1.03
+   22 UNKNOWN                  31      20.77      19.25      22.45       1.12
+   23 UNKNOWN                  31       3.24       3.06       3.65       0.12
 
 ================================================================================
 PER-TYPE SUMMARY (sum of avg durations across all events)
 ================================================================================
 TaskType             Events    Total(us)  Total(ms)        %
 ----------------------------------------------------------
-TOTAL                                0.0      0.000
+UNKNOWN                  23        761.9      0.762   100.0%
+TOTAL                              761.9      0.762
 
 Saved raw event timing to event_timing.json
 
-ids [0]; 21 boundary tensors; mpk() 2036.0 ms for 1 iterations -> /home/hotaisle/metalOps/harness/fleet_out/L2_it1_tile_nt_mfma_wt
-0 lnorm=0/0 prefetch=0/0
-[TASK_TIME2] worker=112 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
-[TASK_TIME2] worker=0 prep=0/0 attend=77872/2 merge=85844/2 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
-[TASK_TIME2] worker=32 prep=0/0 attend=41144/2 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
-[TASK_TIME2] worker=48 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
-[TASK_TIME2] worker=56 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
-[TASK_TIME2] worker=160 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
-[TASK_TIME2] worker=16 prep=0/0 attend=77656/2 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
-[TASK_TIME2] worker=288 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
-[TASK_TIME] worker=224 linear=0/0 linear_res=100148/1 attn=0/0 rms=0/0 silu=0/0 fused=0/0
-[TASK_TIME2] worker=200 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
-[TASK_TIME2] worker=144 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
-[TASK_TIME2] worker=128 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
-[TASK_TIME2] worker=232 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
-[TASK_TIME2] worker=248 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
-[TASK_TIME2] worker=120 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
-[TASK_TIME2] worker=168 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
-[TASK_TIME2] worker=272 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
-[TASK_TIME2] worker=256 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
-[TASK_TIME2] worker=280 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
-[TASK_TIME2] worker=264 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
-[TASK_TIME2] worker=184 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
-[TASK_TIME2] worker=88 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
-[TASK_TIME2] worker=216 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
-[TASK_TIME2] worker=224 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+ids [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]; 21 boundary tensors; mpk() 2791.1 ms for 32 iterations -> /home/hotaisle/metalOps/harness/fleet_out/L2_it32_tile_nt_mfma_wt
+er=181 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=157 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=149 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=117 prep=304672/1 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=5 prep=311252/1 attend=1246504/64 merge=2544376/64 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=269 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=93 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=261 prep=605456/2 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=245 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=61 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=189 prep=606948/2 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=21 prep=0/0 attend=1241776/64 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=221 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=253 prep=308400/1 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=77 prep=606820/2 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0

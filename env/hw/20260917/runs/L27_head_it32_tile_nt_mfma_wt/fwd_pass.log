@@ -1,0 +1,1597 @@
+First tasks: 1
+Number of all events: 377
+Number of all tasks: 6218
+Number of triggered events: 375
+Number of executed tasks: 6216
+[EVENT_TIMING] Allocated buffer for 37700 entries (377 events x 100 iters)
+[WORKER_XCD] worker_id=4 block=4 xcd=1
+[WORKER_XCD] worker_id=267 block=267 xcd=0
+[WORKER_XCD] worker_id=219 block=219 xcd=0
+[WORKER_XCD] worker_id=11 block=11 xcd=0
+[WORKER_XCD] worker_id=3 block=3 xcd=0
+[WORKER_XCD] worker_id=180 block=180 xcd=1
+[WORKER_XCD] worker_id=75 block=75 xcd=0
+[WORKER_XCD] worker_id=99 block=99 xcd=0
+[WORKER_XCD] worker_id=236 block=236 xcd=1
+[WORKER_XCD] worker_id=179 block=179 xcd=0
+[WORKER_XCD] worker_id=235 block=235 xcd=0
+[WORKER_XCD] worker_id=107 block=107 xcd=0
+[WORKER_XCD] worker_id=35 block=35 xcd=0
+[WORKER_XCD] worker_id=275 block=275 xcd=0
+[WORKER_XCD] worker_id=291 block=291 xcd=0
+[WORKER_XCD] worker_id=211 block=211 xcd=0
+[WORKER_XCD] worker_id=43 block=43 xcd=0
+[WORKER_XCD] worker_id=283 block=283 xcd=0
+[WORKER_XCD] worker_id=251 block=251 xcd=0
+[WORKER_XCD] worker_id=228 block=228 xcd=1
+[WORKER_XCD] worker_id=156 block=156 xcd=1
+[WORKER_XCD] worker_id=164 block=164 xcd=1
+[WORKER_XCD] worker_id=292 block=292 xcd=1
+[WORKER_XCD] worker_id=268 block=268 xcd=1
+[WORKER_XCD] worker_id=148 block=148 xcd=1
+[WORKER_XCD] worker_id=68 block=68 xcd=1
+[WORKER_XCD] worker_id=124 block=124 xcd=1
+[WORKER_XCD] worker_id=76 block=76 xcd=1
+[WORKER_XCD] worker_id=12 block=12 xcd=1
+[WORKER_XCD] worker_id=92 block=92 xcd=1
+[WORKER_XCD] worker_id=284 block=284 xcd=1
+[WORKER_XCD] worker_id=115 block=115 xcd=0
+[WORKER_XCD] worker_id=67 block=67 xcd=0
+[WORKER_XCD] worker_id=140 block=140 xcd=1
+[WORKER_XCD] worker_id=36 block=36 xcd=1
+[WORKER_XCD] worker_id=84 block=84 xcd=1
+[WORKER_XCD] worker_id=212 block=212 xcd=1
+[WORKER_XCD] worker_id=163 block=163 xcd=0
+[WORKER_XCD] worker_id=187 block=187 xcd=0
+[WORKER_XCD] worker_id=28 block=28 xcd=1
+[WORKER_XCD] worker_id=20 block=20 xcd=1
+[WORKER_XCD] worker_id=260 block=260 xcd=1
+[WORKER_XCD] worker_id=171 block=171 xcd=0
+[WORKER_XCD] worker_id=59 block=59 xcd=0
+[WORKER_XCD] worker_id=220 block=220 xcd=1
+[WORKER_XCD] worker_id=243 block=243 xcd=0
+[WORKER_XCD] worker_id=91 block=91 xcd=0
+[WORKER_XCD] worker_id=60 block=60 xcd=1
+[WORKER_XCD] worker_id=132 block=132 xcd=1
+[WORKER_XCD] worker_id=139 block=139 xcd=0
+[WORKER_XCD] worker_id=100 block=100 xcd=1
+[WORKER_XCD] worker_id=19 block=19 xcd=0
+[WORKER_XCD] worker_id=259 block=259 xcd=0
+[WORKER_XCD] worker_id=204 block=204 xcd=1
+[WORKER_XCD] worker_id=195 block=195 xcd=0
+[WORKER_XCD] worker_id=147 block=147 xcd=0
+[WORKER_XCD] worker_id=113 block=113 xcd=6
+[WORKER_XCD] worker_id=137 block=137 xcd=6
+[WORKER_XCD] worker_id=169 block=169 xcd=6
+[WORKER_XCD] worker_id=244 block=244 xcd=1
+[WORKER_XCD] worker_id=81 block=81 xcd=6
+[WORKER_XCD] worker_id=66 block=66 xcd=7
+[WORKER_XCD] worker_id=44 block=44 xcd=1
+[WORKER_XCD] worker_id=257 block=257 xcd=6
+[WORKER_XCD] worker_id=281 block=281 xcd=6
+[WORKER_XCD] worker_id=108 block=108 xcd=1
+[WORKER_XCD] worker_id=74 block=74 xcd=7
+[WORKER_XCD] worker_id=25 block=25 xcd=6
+[WORKER_XCD] worker_id=276 block=276 xcd=1
+[WORKER_XCD] worker_id=203 block=203 xcd=0
+[WORKER_XCD] worker_id=42 block=42 xcd=7
+[WORKER_XCD] worker_id=131 block=131 xcd=0
+[WORKER_XCD] worker_id=18 block=18 xcd=7
+[WORKER_XCD] worker_id=130 block=130 xcd=7
+[WORKER_XCD] worker_id=273 block=273 xcd=6
+[WORKER_XCD] worker_id=123 block=123 xcd=0
+[WORKER_XCD] worker_id=209 block=209 xcd=6
+[WORKER_XCD] worker_id=242 block=242 xcd=7
+[WORKER_XCD] worker_id=161 block=161 xcd=6
+[WORKER_XCD] worker_id=154 block=154 xcd=7
+[WORKER_XCD] worker_id=188 block=188 xcd=1
+[WORKER_XCD] worker_id=202 block=202 xcd=7
+[WORKER_XCD] worker_id=217 block=217 xcd=6
+[WORKER_XCD] worker_id=155 block=155 xcd=0
+[WORKER_XCD] worker_id=49 block=49 xcd=6
+[WORKER_XCD] worker_id=249 block=249 xcd=6
+[WORKER_XCD] worker_id=146 block=146 xcd=7
+[WORKER_XCD] worker_id=10 block=10 xcd=7
+[WORKER_XCD] worker_id=196 block=196 xcd=1
+[WORKER_XCD] worker_id=234 block=234 xcd=7
+[WORKER_XCD] worker_id=105 block=105 xcd=6
+[WORKER_XCD] worker_id=274 block=274 xcd=7
+[WORKER_XCD] worker_id=185 block=185 xcd=6
+[WORKER_XCD] worker_id=116 block=116 xcd=1
+[WORKER_XCD] worker_id=9 block=9 xcd=6
+[WORKER_XCD] worker_id=194 block=194 xcd=7
+[WORKER_XCD] worker_id=266 block=266 xcd=7
+[WORKER_XCD] worker_id=129 block=129 xcd=6
+[WORKER_XCD] worker_id=170 block=170 xcd=7
+[WORKER_XCD] worker_id=172 block=172 xcd=1
+[WORKER_XCD] worker_id=82 block=82 xcd=7
+[WORKER_XCD] worker_id=218 block=218 xcd=7
+[WORKER_XCD] worker_id=186 block=186 xcd=7
+[WORKER_XCD] worker_id=89 block=89 xcd=6
+[WORKER_XCD] worker_id=65 block=65 xcd=6
+[WORKER_XCD] worker_id=290 block=290 xcd=7
+[WORKER_XCD] worker_id=225 block=225 xcd=6
+[WORKER_XCD] worker_id=34 block=34 xcd=7
+[WORKER_XCD] worker_id=252 block=252 xcd=1
+[WORKER_XCD] worker_id=227 block=227 xcd=0
+[WORKER_XCD] worker_id=41 block=41 xcd=6
+[WORKER_XCD] worker_id=106 block=106 xcd=7
+[WORKER_XCD] worker_id=98 block=98 xcd=7
+[WORKER_XCD] worker_id=121 block=121 xcd=6
+[WORKER_XCD] worker_id=282 block=282 xcd=7
+[WORKER_XCD] worker_id=193 block=193 xcd=6
+[WORKER_XCD] worker_id=90 block=90 xcd=7
+[WORKER_XCD] worker_id=210 block=210 xcd=7
+[WORKER_XCD] worker_id=52 block=52 xcd=1
+[WORKER_XCD] worker_id=114 block=114 xcd=7
+[WORKER_XCD] worker_id=178 block=178 xcd=7
+[WORKER_XCD] worker_id=57 block=57 xcd=6
+[WORKER_XCD] worker_id=233 block=233 xcd=6
+[WORKER_XCD] worker_id=83 block=83 xcd=0
+[WORKER_XCD] worker_id=51 block=51 xcd=0
+[WORKER_XCD] worker_id=73 block=73 xcd=6
+[WORKER_XCD] worker_id=26 block=26 xcd=7
+[WORKER_XCD] worker_id=265 block=265 xcd=6
+[WORKER_XCD] worker_id=138 block=138 xcd=7
+[WORKER_XCD] worker_id=241 block=241 xcd=6
+[WORKER_XCD] worker_id=97 block=97 xcd=6
+[WORKER_XCD] worker_id=289 block=289 xcd=6
+[WORKER_XCD] worker_id=250 block=250 xcd=7
+[WORKER_XCD] worker_id=177 block=177 xcd=6
+[WORKER_XCD] worker_id=145 block=145 xcd=6
+[WORKER_XCD] worker_id=201 block=201 xcd=6
+[WORKER_XCD] worker_id=153 block=153 xcd=6
+[WORKER_XCD] worker_id=258 block=258 xcd=7
+[WORKER_XCD] worker_id=33 block=33 xcd=6
+[WORKER_XCD] worker_id=2 block=2 xcd=7
+[WORKER_XCD] worker_id=58 block=58 xcd=7
+[WORKER_XCD] worker_id=1 block=1 xcd=6
+[WORKER_XCD] worker_id=50 block=50 xcd=7
+[WORKER_XCD] worker_id=122 block=122 xcd=7
+[WORKER_XCD] worker_id=162 block=162 xcd=7
+[WORKER_XCD] worker_id=226 block=226 xcd=7
+[WORKER_XCD] worker_id=27 block=27 xcd=0
+[WORKER_XCD] worker_id=176 block=176 xcd=5
+[WORKER_XCD] worker_id=17 block=17 xcd=6
+[WORKER_XCD] worker_id=94 block=94 xcd=3
+[WORKER_XCD] worker_id=24 block=24 xcd=5
+[WORKER_XCD] worker_id=128 block=128 xcd=5
+[WORKER_XCD] worker_id=192 block=192 xcd=5
+[WORKER_XCD] worker_id=62 block=62 xcd=3
+[WORKER_XCD] worker_id=238 block=238 xcd=3
+[WORKER_XCD] worker_id=38 block=38 xcd=3
+[WORKER_XCD] worker_id=214 block=214 xcd=3
+[WORKER_XCD] worker_id=22 block=22 xcd=3
+[WORKER_XCD] worker_id=64 block=64 xcd=5
+[WORKER_XCD] worker_id=80 block=80 xcd=5
+[WORKER_XCD] worker_id=248 block=248 xcd=5
+[WORKER_XCD] worker_id=70 block=70 xcd=3
+[WORKER_XCD] worker_id=246 block=246 xcd=3
+[WORKER_XCD] worker_id=288 block=288 xcd=5
+[WORKER_XCD] worker_id=182 block=182 xcd=3
+[WORKER_XCD] worker_id=6 block=6 xcd=3
+[WORKER_XCD] worker_id=232 block=232 xcd=5
+[WORKER_XCD] worker_id=216 block=216 xcd=5
+[WORKER_XCD] worker_id=254 block=254 xcd=3
+[WORKER_XCD] worker_id=286 block=286 xcd=3
+[WORKER_XCD] worker_id=8 block=8 xcd=5
+[WORKER_XCD] worker_id=160 block=160 xcd=5
+[WORKER_XCD] worker_id=56 block=56 xcd=5
+[WORKER_XCD] worker_id=96 block=96 xcd=5
+[WORKER_XCD] worker_id=200 block=200 xcd=5
+[WORKER_XCD] worker_id=48 block=48 xcd=5
+[WORKER_XCD] worker_id=0 block=0 xcd=5
+[WORKER_XCD] worker_id=86 block=86 xcd=3
+[WORKER_XCD] worker_id=264 block=264 xcd=5
+[WORKER_XCD] worker_id=110 block=110 xcd=3
+[WORKER_XCD] worker_id=72 block=72 xcd=5
+[WORKER_XCD] worker_id=262 block=262 xcd=3
+[WORKER_XCD] worker_id=14 block=14 xcd=3
+[WORKER_XCD] worker_id=158 block=158 xcd=3
+[WORKER_XCD] worker_id=102 block=102 xcd=3
+[WORKER_XCD] worker_id=109 block=109 xcd=2
+[WORKER_XCD] worker_id=256 block=256 xcd=5
+[WORKER_XCD] worker_id=294 block=294 xcd=3
+[WORKER_XCD] worker_id=112 block=112 xcd=5
+[WORKER_XCD] worker_id=168 block=168 xcd=5
+[WORKER_XCD] worker_id=40 block=40 xcd=5
+[WORKER_XCD] worker_id=197 block=197 xcd=2
+[WORKER_XCD] worker_id=174 block=174 xcd=3
+[WORKER_XCD] worker_id=222 block=222 xcd=3
+[WORKER_XCD] worker_id=270 block=270 xcd=3
+[WORKER_XCD] worker_id=190 block=190 xcd=3
+[WORKER_XCD] worker_id=229 block=229 xcd=2
+[WORKER_XCD] worker_id=152 block=152 xcd=5
+[WORKER_XCD] worker_id=120 block=120 xcd=5
+[WORKER_XCD] worker_id=30 block=30 xcd=3
+[WORKER_XCD] worker_id=46 block=46 xcd=3
+[WORKER_XCD] worker_id=230 block=230 xcd=3
+[WORKER_XCD] worker_id=78 block=78 xcd=3
+[WORKER_XCD] worker_id=272 block=272 xcd=5
+[WORKER_XCD] worker_id=224 block=224 xcd=5
+[WORKER_XCD] worker_id=88 block=88 xcd=5
+[WORKER_XCD] worker_id=198 block=198 xcd=3
+[WORKER_XCD] worker_id=150 block=150 xcd=3
+[WORKER_XCD] worker_id=149 block=149 xcd=2
+[WORKER_XCD] worker_id=240 block=240 xcd=5
+[WORKER_XCD] worker_id=263 block=263 xcd=4
+[WORKER_XCD] worker_id=118 block=118 xcd=3
+[WORKER_XCD] worker_id=136 block=136 xcd=5
+[WORKER_XCD] worker_id=278 block=278 xcd=3
+[WORKER_XCD] worker_id=126 block=126 xcd=3
+[WORKER_XCD] worker_id=142 block=142 xcd=3
+[WORKER_XCD] worker_id=104 block=104 xcd=5
+[WORKER_XCD] worker_id=16 block=16 xcd=5
+[WORKER_XCD] worker_id=32 block=32 xcd=5
+[WORKER_XCD] worker_id=144 block=144 xcd=5
+[WORKER_XCD] worker_id=5 block=5 xcd=2
+[WORKER_XCD] worker_id=184 block=184 xcd=5
+[WORKER_XCD] worker_id=29 block=29 xcd=2
+[WORKER_XCD] worker_id=166 block=166 xcd=3
+[WORKER_XCD] worker_id=279 block=279 xcd=4
+[WORKER_XCD] worker_id=23 block=23 xcd=4
+[WORKER_XCD] worker_id=54 block=54 xcd=3
+[WORKER_XCD] worker_id=206 block=206 xcd=3
+[WORKER_XCD] worker_id=134 block=134 xcd=3
+[WORKER_XCD] worker_id=293 block=293 xcd=2
+[WORKER_XCD] worker_id=39 block=39 xcd=4
+[WORKER_XCD] worker_id=245 block=245 xcd=2
+[WORKER_XCD] worker_id=255 block=255 xcd=4
+[WORKER_XCD] worker_id=213 block=213 xcd=2
+[WORKER_XCD] worker_id=167 block=167 xcd=4
+[WORKER_XCD] worker_id=207 block=207 xcd=4
+[WORKER_XCD] worker_id=269 block=269 xcd=2
+[WORKER_XCD] worker_id=37 block=37 xcd=2
+[WORKER_XCD] worker_id=87 block=87 xcd=4
+[WORKER_XCD] worker_id=125 block=125 xcd=2
+[WORKER_XCD] worker_id=85 block=85 xcd=2
+[WORKER_XCD] worker_id=77 block=77 xcd=2
+[WORKER_XCD] worker_id=199 block=199 xcd=4
+[WORKER_XCD] worker_id=253 block=253 xcd=2
+[WORKER_XCD] worker_id=61 block=61 xcd=2
+[WORKER_XCD] worker_id=141 block=141 xcd=2
+[WORKER_XCD] worker_id=173 block=173 xcd=2
+[WORKER_XCD] worker_id=189 block=189 xcd=2
+[WORKER_XCD] worker_id=93 block=93 xcd=2
+[WORKER_XCD] worker_id=69 block=69 xcd=2
+[WORKER_XCD] worker_id=277 block=277 xcd=2
+[WORKER_XCD] worker_id=133 block=133 xcd=2
+[WORKER_XCD] worker_id=101 block=101 xcd=2
+[WORKER_XCD] worker_id=295 block=295 xcd=4
+[WORKER_XCD] worker_id=181 block=181 xcd=2
+[WORKER_XCD] worker_id=285 block=285 xcd=2
+[WORKER_XCD] worker_id=165 block=165 xcd=2
+[WORKER_XCD] worker_id=237 block=237 xcd=2
+[WORKER_XCD] worker_id=119 block=119 xcd=4
+[WORKER_XCD] worker_id=13 block=13 xcd=2
+[WORKER_XCD] worker_id=261 block=261 xcd=2
+[WORKER_XCD] worker_id=45 block=45 xcd=2
+[WORKER_XCD] worker_id=157 block=157 xcd=2
+[WORKER_XCD] worker_id=205 block=205 xcd=2
+[WORKER_XCD] worker_id=15 block=15 xcd=4
+[WORKER_XCD] worker_id=21 block=21 xcd=2
+[WORKER_XCD] worker_id=221 block=221 xcd=2
+[WORKER_XCD] worker_id=117 block=117 xcd=2
+[WORKER_XCD] worker_id=53 block=53 xcd=2
+[WORKER_XCD] worker_id=223 block=223 xcd=4
+[WORKER_XCD] worker_id=135 block=135 xcd=4
+[WORKER_XCD] worker_id=280 block=280 xcd=5
+[WORKER_XCD] worker_id=271 block=271 xcd=4
+[WORKER_XCD] worker_id=63 block=63 xcd=4
+[WORKER_XCD] worker_id=151 block=151 xcd=4
+[WORKER_XCD] worker_id=231 block=231 xcd=4
+[WORKER_XCD] worker_id=47 block=47 xcd=4
+[WORKER_XCD] worker_id=143 block=143 xcd=4
+[WORKER_XCD] worker_id=79 block=79 xcd=4
+[WORKER_XCD] worker_id=31 block=31 xcd=4
+[WORKER_XCD] worker_id=208 block=208 xcd=5
+[WORKER_XCD] worker_id=71 block=71 xcd=4
+[WORKER_XCD] worker_id=183 block=183 xcd=4
+[WORKER_XCD] worker_id=7 block=7 xcd=4
+[WORKER_XCD] worker_id=111 block=111 xcd=4
+[WORKER_XCD] worker_id=287 block=287 xcd=4
+[WORKER_XCD] worker_id=159 block=159 xcd=4
+[WORKER_XCD] worker_id=191 block=191 xcd=4
+[WORKER_XCD] worker_id=175 block=175 xcd=4
+[WORKER_XCD] worker_id=55 block=55 xcd=4
+[WORKER_XCD] worker_id=103 block=103 xcd=4
+[WORKER_XCD] worker_id=215 block=215 xcd=4
+[WORKER_XCD] worker_id=239 block=239 xcd=4
+[WORKER_XCD] worker_id=127 block=127 xcd=4
+[WORKER_XCD] worker_id=95 block=95 xcd=4
+[WORKER_XCD] worker_id=247 block=247 xcd=4
+[SCHED_XCD] sched_id=7 xcd=7 workers_on_xcd=37 block=1
+[SCHED_XCD] sched_id=0 xcd=0 workers_on_xcd=37 block=2
+[SCHED_XCD] sched_id=6 xcd=6 workers_on_xcd=37 block=0
+[SCHED_XCD] sched_id=5 xcd=5 workers_on_xcd=37 block=7
+[SCHED_XCD] sched_id=3 xcd=3 workers_on_xcd=37 block=5
+[SCHED_XCD] sched_id=2 xcd=2 workers_on_xcd=37 block=4
+[SCHED_XCD] sched_id=1 xcd=1 workers_on_xcd=37 block=3
+[SCHED_XCD] sched_id=4 xcd=4 workers_on_xcd=37 block=6
+[FWD_PASS] iter=1 time_ms=8.779 num_active_tokens=1
+[FWD_PASS] iter=2 time_ms=8.935 num_active_tokens=1
+[FWD_PASS] iter=3 time_ms=8.919 num_active_tokens=1
+[FWD_PASS] iter=4 time_ms=8.935 num_active_tokens=1
+[FWD_PASS] iter=5 time_ms=8.936 num_active_tokens=1
+[FWD_PASS] iter=6 time_ms=8.937 num_active_tokens=1
+[FWD_PASS] iter=7 time_ms=8.915 num_active_tokens=1
+[FWD_PASS] iter=8 time_ms=8.937 num_active_tokens=1
+[FWD_PASS] iter=9 time_ms=8.937 num_active_tokens=1
+[FWD_PASS] iter=10 time_ms=8.946 num_active_tokens=1
+[FWD_PASS] iter=11 time_ms=8.949 num_active_tokens=1
+[FWD_PASS] iter=12 time_ms=9.000 num_active_tokens=1
+[FWD_PASS] iter=13 time_ms=8.947 num_active_tokens=1
+[FWD_PASS] iter=14 time_ms=8.964 num_active_tokens=1
+[FWD_PASS] iter=15 time_ms=8.947 num_active_tokens=1
+[FWD_PASS] iter=16 time_ms=8.947 num_active_tokens=1
+[FWD_PASS] iter=17 time_ms=8.942 num_active_tokens=1
+[FWD_PASS] iter=18 time_ms=8.987 num_active_tokens=1
+[FWD_PASS] iter=19 time_ms=9.008 num_active_tokens=1
+[FWD_PASS] iter=20 time_ms=8.955 num_active_tokens=1
+[FWD_PASS] iter=21 time_ms=8.956 num_active_tokens=1
+[FWD_PASS] iter=22 time_ms=8.957 num_active_tokens=1
+[FWD_PASS] iter=23 time_ms=8.960 num_active_tokens=1
+[FWD_PASS] iter=24 time_ms=8.970 num_active_tokens=1
+[FWD_PASS] iter=25 time_ms=8.966 num_active_tokens=1
+[FWD_PASS] iter=26 time_ms=8.983 num_active_tokens=1
+[FWD_PASS] iter=27 time_ms=8.953 num_active_tokens=1
+[FWD_PASS] iter=28 time_ms=8.969 num_active_tokens=1
+[FWD_PASS] iter=29 time_ms=8.977 num_active_tokens=1
+[FWD_PASS] iter=30 time_ms=8.981 num_active_tokens=1
+[FWD_PASS] iter=31 time_ms=8.977 num_active_tokens=1
+[TIMING] worker=267 tasks=2243 poll_iters=553412 dep_iters=1667512 poll_cycles=319343864 dep_cycles=493495296 exec_cycles=61600948 signal_cycles=4799604
+[TIMING] worker=179 tasks=2243 poll_iters=458978 dep_iters=1599317 poll_cycles=294149380 dep_cycles=474917956 exec_cycles=79563960 signal_cycles=5119316
+[TIMING] worker=203 tasks=2243 poll_iters=333842 dep_iters=1631138 poll_cycles=192697852 dep_cycles=475730044 exec_cycles=79191876 signal_cycles=4783888
+[TIMING] worker=283 tasks=2243 poll_iters=479311 dep_iters=1755056 poll_cycles=277099760 dep_cycles=493798780 exec_cycles=61398960 signal_cycles=4639044
+[TIMING] worker=251 tasks=2243 poll_iters=470274 dep_iters=1684116 poll_cycles=271318576 dep_cycles=477319520 exec_cycles=77984384 signal_cycles=4499964
+[TIMING] worker=124 tasks=2276 poll_iters=438639 dep_iters=1643633 poll_cycles=253148876 dep_cycles=475647944 exec_cycles=80294780 signal_cycles=4891928
+[TIMING] worker=116 tasks=2276 poll_iters=291677 dep_iters=1709350 poll_cycles=168401516 dep_cycles=476500564 exec_cycles=79428200 signal_cycles=4770376
+[TIMING] worker=123 tasks=2276 poll_iters=291055 dep_iters=1734566 poll_cycles=168057936 dep_cycles=476733460 exec_cycles=79684568 signal_cycles=4569100
+[TASK_TIME] worker=267 linear=11075896/324 linear_res=4766524/195 attn=0/0 rms=3464/1 silu=56836/23 fused=0/0
+[TASK_TIME] worker=179 linear=10798608/320 linear_res=4701448/195 attn=0/0 rms=3524/1 silu=56260/23 fused=0/0
+[TASK_TIME] worker=283 linear=11071000/323 linear_res=4695812/193 attn=0/0 rms=3440/1 silu=56756/23 fused=0/0
+[TIMING] worker=59 tasks=2276 poll_iters=351545 dep_iters=1761955 poll_cycles=202881872 dep_cycles=476476964 exec_cycles=80313508 signal_cycles=4717812
+[TIMING] worker=259 tasks=2243 poll_iters=329690 dep_iters=1741815 poll_cycles=211339348 dep_cycles=493181268 exec_cycles=61988676 signal_cycles=4727532
+[TIMING] worker=260 tasks=2243 poll_iters=385462 dep_iters=1654721 poll_cycles=222442304 dep_cycles=492827748 exec_cycles=61850492 signal_cycles=4974856
+[TIMING] worker=163 tasks=2275 poll_iters=393765 dep_iters=1743035 poll_cycles=227176360 dep_cycles=475160160 exec_cycles=80875504 signal_cycles=4704764
+[TIMING] worker=27 tasks=3140 poll_iters=251672 dep_iters=1664462 poll_cycles=145285092 dep_cycles=438446228 exec_cycles=115712468 signal_cycles=6387872
+[TASK_TIME] worker=59 linear=12793420/357 linear_res=4584228/191 attn=0/0 rms=3564/1 silu=50840/21 fused=0/0
+[TIMING] worker=92 tasks=2276 poll_iters=424405 dep_iters=1681734 poll_cycles=244954396 dep_cycles=476070208 exec_cycles=80176720 signal_cycles=4806536
+[TASK_TIME] worker=123 linear=12426428/356 linear_res=4575900/193 attn=0/0 rms=3520/1 silu=51332/21 fused=0/0
+[TASK_TIME] worker=259 linear=11041196/322 linear_res=4763360/195 attn=0/0 rms=3412/1 silu=51512/21 fused=0/0
+[TASK_TIME2] worker=179 prep=0/0 attend=0/0 merge=0/0 router=456664/11 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=83 tasks=2276 poll_iters=264753 dep_iters=1657357 poll_cycles=152896576 dep_cycles=476313248 exec_cycles=80210348 signal_cycles=4833568
+[TASK_TIME2] worker=123 prep=0/0 attend=0/0 merge=0/0 router=485084/12 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=203 linear=10916664/323 linear_res=4688896/195 attn=0/0 rms=3492/1 silu=55900/23 fused=0/0
+[TIMING] worker=243 tasks=2243 poll_iters=282185 dep_iters=1578910 poll_cycles=180867644 dep_cycles=476430420 exec_cycles=78604720 signal_cycles=4778148
+[TASK_TIME2] worker=59 prep=0/0 attend=0/0 merge=0/0 router=528004/13 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=259 prep=0/0 attend=0/0 merge=0/0 router=536500/13 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=27 linear=12780204/355 linear_res=4687648/192 attn=0/0 rms=3408/1 silu=51312/21 fused=0/0
+[TIMING] worker=51 tasks=2276 poll_iters=255986 dep_iters=1588562 poll_cycles=147810428 dep_cycles=457009856 exec_cycles=99495612 signal_cycles=5161484
+[TASK_TIME] worker=163 linear=12496232/355 linear_res=4615968/195 attn=0/0 rms=3480/1 silu=53472/22 fused=0/0
+[TASK_TIME] worker=83 linear=12522836/358 linear_res=4536964/192 attn=0/0 rms=3468/1 silu=58092/24 fused=0/0
+[TIMING] worker=91 tasks=2276 poll_iters=380733 dep_iters=1775197 poll_cycles=219711800 dep_cycles=477000280 exec_cycles=79746580 signal_cycles=4553704
+[TIMING] worker=275 tasks=2243 poll_iters=484887 dep_iters=1771772 poll_cycles=279740336 dep_cycles=495250484 exec_cycles=59902536 signal_cycles=4582948
+[TIMING] worker=20 tasks=3140 poll_iters=391483 dep_iters=1609827 poll_cycles=225845448 dep_cycles=437247184 exec_cycles=115371588 signal_cycles=7787892
+[TIMING] worker=171 tasks=2275 poll_iters=350223 dep_iters=1621153 poll_cycles=224518356 dep_cycles=474718944 exec_cycles=80876708 signal_cycles=5020804
+[TASK_TIME] worker=251 linear=10992540/323 linear_res=4764136/195 attn=0/0 rms=3900/1 silu=56600/23 fused=0/0
+[TIMING] worker=99 tasks=2276 poll_iters=516207 dep_iters=1773330 poll_cycles=297853012 dep_cycles=476123568 exec_cycles=80417500 signal_cycles=4653164
+[TASK_TIME] worker=243 linear=11008152/322 linear_res=4751508/194 attn=0/0 rms=3560/1 silu=53900/22 fused=0/0
+[TIMING] worker=187 tasks=2243 poll_iters=402323 dep_iters=1705379 poll_cycles=232165124 dep_cycles=475865768 exec_cycles=79146932 signal_cycles=4706736
+[TIMING] worker=3 tasks=4004 poll_iters=521605 dep_iters=1398389 poll_cycles=300893028 dep_cycles=393203048 exec_cycles=153457296 signal_cycles=12123848
+[TIMING] worker=139 tasks=2276 poll_iters=371496 dep_iters=1653423 poll_cycles=214448008 dep_cycles=474753256 exec_cycles=81086460 signal_cycles=5035468
+[TASK_TIME2] worker=203 prep=0/0 attend=0/0 merge=0/0 router=458580/11 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=35 tasks=3140 poll_iters=474792 dep_iters=1722557 poll_cycles=273828284 dep_cycles=454311088 exec_cycles=100321764 signal_cycles=6011356
+[TIMING] worker=155 tasks=2275 poll_iters=298830 dep_iters=1745061 poll_cycles=172509480 dep_cycles=475810620 exec_cycles=80247292 signal_cycles=4680168
+[TASK_TIME2] worker=27 prep=0/0 attend=16773636/864 merge=0/0 router=529828/13 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=163 prep=0/0 attend=0/0 merge=0/0 router=538044/13 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=43 tasks=2276 poll_iters=481510 dep_iters=1612402 poll_cycles=277944248 dep_cycles=457415640 exec_cycles=99356200 signal_cycles=4915316
+[TIMING] worker=195 tasks=2243 poll_iters=360509 dep_iters=1705165 poll_cycles=207997644 dep_cycles=475905648 exec_cycles=79141628 signal_cycles=4656324
+[TIMING] worker=211 tasks=2243 poll_iters=471722 dep_iters=1608459 poll_cycles=272346716 dep_cycles=475957060 exec_cycles=78984460 signal_cycles=4882296
+[TIMING] worker=180 tasks=2243 poll_iters=511293 dep_iters=1682848 poll_cycles=295095648 dep_cycles=475907684 exec_cycles=78558768 signal_cycles=4948856
+[TASK_TIME2] worker=83 prep=0/0 attend=0/0 merge=0/0 router=408696/10 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=228 tasks=2243 poll_iters=479847 dep_iters=1630355 poll_cycles=276928548 dep_cycles=474705412 exec_cycles=79853352 signal_cycles=5093724
+[TIMING] worker=60 tasks=2276 poll_iters=379930 dep_iters=1668599 poll_cycles=219267176 dep_cycles=475635504 exec_cycles=80658476 signal_cycles=5048560
+[TASK_TIME2] worker=243 prep=0/0 attend=0/0 merge=0/0 router=454488/11 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=51 linear=12791808/357 linear_res=4608468/192 attn=0/0 rms=3484/1 silu=55660/23 fused=0/0
+[TASK_TIME] worker=91 linear=12450388/356 linear_res=4518732/191 attn=0/0 rms=3472/1 silu=50836/21 fused=0/0
+[TASK_TIME2] worker=283 prep=0/0 attend=0/0 merge=0/0 router=457596/11 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=171 linear=12438776/355 linear_res=4625384/195 attn=0/0 rms=3956/1 silu=58460/24 fused=0/0
+[TASK_TIME] worker=99 linear=12484728/357 linear_res=4558344/192 attn=0/0 rms=3516/1 silu=56412/23 fused=0/0
+[TIMING] worker=25 tasks=3140 poll_iters=306556 dep_iters=1569344 poll_cycles=176881792 dep_cycles=436891092 exec_cycles=120236184 signal_cycles=6690760
+[TIMING] worker=140 tasks=2275 poll_iters=423105 dep_iters=1744353 poll_cycles=244186116 dep_cycles=475980232 exec_cycles=79825004 signal_cycles=4862172
+[TASK_TIME] worker=35 linear=12645548/357 linear_res=4577156/193 attn=0/0 rms=3512/1 silu=55440/23 fused=0/0
+[TIMING] worker=52 tasks=2276 poll_iters=258505 dep_iters=1672893 poll_cycles=149227392 dep_cycles=457618080 exec_cycles=98552620 signal_cycles=5105744
+[TASK_TIME] worker=275 linear=10876436/324 linear_res=4671648/193 attn=0/0 rms=3436/1 silu=56116/23 fused=0/0
+[TASK_TIME] worker=187 linear=10877264/322 linear_res=4699204/195 attn=0/0 rms=3512/1 silu=53588/22 fused=0/0
+[TASK_TIME] worker=20 linear=12686856/355 linear_res=4662452/192 attn=0/0 rms=41148/12 silu=58144/24 fused=0/0
+[TASK_TIME] worker=139 linear=12445428/356 linear_res=4637200/195 attn=0/0 rms=0/0 silu=54020/22 fused=0/0
+[TIMING] worker=252 tasks=2243 poll_iters=255451 dep_iters=1597346 poll_cycles=163812568 dep_cycles=476239676 exec_cycles=78518924 signal_cycles=4805592
+[TIMING] worker=257 tasks=2243 poll_iters=357865 dep_iters=1659596 poll_cycles=206610784 dep_cycles=492164128 exec_cycles=65955596 signal_cycles=4933004
+[TIMING] worker=236 tasks=2243 poll_iters=504811 dep_iters=1683478 poll_cycles=291317348 dep_cycles=476874268 exec_cycles=77819332 signal_cycles=4808012
+[TASK_TIME] worker=211 linear=10897836/321 linear_res=4773460/195 attn=0/0 rms=3504/1 silu=58376/24 fused=0/0
+[TASK_TIME2] worker=251 prep=0/0 attend=0/0 merge=0/0 router=403064/10 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=180 linear=10783348/322 linear_res=4686832/195 attn=0/0 rms=38996/11 silu=53940/22 fused=0/0
+[TASK_TIME] worker=155 linear=12336028/353 linear_res=4634112/195 attn=0/0 rms=3532/1 silu=51728/21 fused=0/0
+[TASK_TIME] worker=3 linear=12952492/356 linear_res=4811488/194 attn=0/0 rms=3724/1 silu=58712/24 fused=0/0
+[TIMING] worker=194 tasks=2243 poll_iters=298409 dep_iters=1715618 poll_cycles=172195136 dep_cycles=478624708 exec_cycles=79043436 signal_cycles=4665256
+[TIMING] worker=227 tasks=2243 poll_iters=273332 dep_iters=1542941 poll_cycles=159821056 dep_cycles=472904440 exec_cycles=80995660 signal_cycles=6066160
+[TIMING] worker=97 tasks=2276 poll_iters=272434 dep_iters=1682366 poll_cycles=157230272 dep_cycles=474633260 exec_cycles=84721628 signal_cycles=4966668
+[TIMING] worker=148 tasks=2275 poll_iters=451393 dep_iters=1715861 poll_cycles=260482380 dep_cycles=475209996 exec_cycles=80239080 signal_cycles=5086164
+[TASK_TIME] worker=43 linear=12849780/358 linear_res=4698344/193 attn=0/0 rms=0/0 silu=53080/22 fused=0/0
+[TIMING] worker=292 tasks=2243 poll_iters=467053 dep_iters=1666037 poll_cycles=269418348 dep_cycles=492227396 exec_cycles=62212240 signal_cycles=5263176
+[TIMING] worker=100 tasks=2276 poll_iters=312123 dep_iters=1522018 poll_cycles=182197340 dep_cycles=472061496 exec_cycles=82448332 signal_cycles=6622916
+[TASK_TIME] worker=195 linear=10926960/322 linear_res=4702892/195 attn=0/0 rms=3536/1 silu=54176/22 fused=0/0
+[TIMING] worker=65 tasks=2276 poll_iters=289663 dep_iters=1674098 poll_cycles=167154212 dep_cycles=475680924 exec_cycles=84158392 signal_cycles=4809348
+[TIMING] worker=1 tasks=4004 poll_iters=259274 dep_iters=1313207 poll_cycles=149570996 dep_cycles=387899056 exec_cycles=160279500 signal_cycles=13795176
+[TIMING] worker=57 tasks=2276 poll_iters=269915 dep_iters=1672942 poll_cycles=155812200 dep_cycles=474908804 exec_cycles=84734588 signal_cycles=4988944
+[TIMING] worker=284 tasks=2243 poll_iters=438862 dep_iters=1667218 poll_cycles=253239272 dep_cycles=493140380 exec_cycles=61570924 signal_cycles=4890176
+[TIMING] worker=89 tasks=2276 poll_iters=286210 dep_iters=1679692 poll_cycles=165207832 dep_cycles=474150576 exec_cycles=85329828 signal_cycles=4910864
+[TIMING] worker=225 tasks=2243 poll_iters=296969 dep_iters=1630612 poll_cycles=171384876 dep_cycles=473077832 exec_cycles=84725008 signal_cycles=5192780
+[TIMING] worker=4 tasks=4004 poll_iters=540562 dep_iters=1319900 poll_cycles=311892296 dep_cycles=392428588 exec_cycles=153402016 signal_cycles=12773104
+[TASK_TIME2] worker=51 prep=0/0 attend=0/0 merge=0/0 router=452996/11 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=107 tasks=2276 poll_iters=501882 dep_iters=1648818 poll_cycles=289666964 dep_cycles=476530308 exec_cycles=79926056 signal_cycles=4670548
+[TASK_TIME2] worker=35 prep=0/0 attend=1925940/864 merge=0/0 router=454328/11 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=75 tasks=2276 poll_iters=503936 dep_iters=1681681 poll_cycles=290877692 dep_cycles=476545920 exec_cycles=80123036 signal_cycles=4652836
+[TASK_TIME2] worker=20 prep=0/0 attend=16833928/864 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=115 tasks=2276 poll_iters=406307 dep_iters=1624602 poll_cycles=234533968 dep_cycles=475858892 exec_cycles=80298920 signal_cycles=4885740
+[TIMING] worker=10 tasks=4004 poll_iters=282458 dep_iters=1446592 poll_cycles=162995904 dep_cycles=404464752 exec_cycles=148549548 signal_cycles=7874280
+[TASK_TIME2] worker=91 prep=0/0 attend=0/0 merge=0/0 router=530032/13 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=210 tasks=2243 poll_iters=277434 dep_iters=1625572 poll_cycles=160151372 dep_cycles=478764452 exec_cycles=78782512 signal_cycles=4741396
+[TIMING] worker=153 tasks=2275 poll_iters=267405 dep_iters=1651108 poll_cycles=154365428 dep_cycles=472292624 exec_cycles=86536036 signal_cycles=5157856
+[TASK_TIME2] worker=99 prep=0/0 attend=0/0 merge=0/0 router=496084/12 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=273 tasks=2243 poll_iters=334386 dep_iters=1867564 poll_cycles=193133236 dep_cycles=493089812 exec_cycles=64982700 signal_cycles=4745320
+[TIMING] worker=113 tasks=2276 poll_iters=361908 dep_iters=1708372 poll_cycles=208931696 dep_cycles=475321676 exec_cycles=83838608 signal_cycles=4844992
+[TIMING] worker=12 tasks=4004 poll_iters=435858 dep_iters=1512638 poll_cycles=251446332 dep_cycles=400786260 exec_cycles=149331560 signal_cycles=8277940
+[TIMING] worker=73 tasks=2276 poll_iters=268513 dep_iters=1778268 poll_cycles=155003296 dep_cycles=476835824 exec_cycles=82861276 signal_cycles=4724080
+[TASK_TIME2] worker=180 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=131 tasks=2276 poll_iters=311826 dep_iters=1732980 poll_cycles=179992068 dep_cycles=476064760 exec_cycles=80231344 signal_cycles=4640512
+[TIMING] worker=132 tasks=2276 poll_iters=284977 dep_iters=1641586 poll_cycles=164503864 dep_cycles=474741652 exec_cycles=81138336 signal_cycles=5058520
+[TASK_TIME2] worker=171 prep=0/0 attend=0/0 merge=0/0 router=409436/10 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=58 tasks=2276 poll_iters=257704 dep_iters=1771254 poll_cycles=148722528 dep_cycles=478991152 exec_cycles=80198144 signal_cycles=4691824
+[TIMING] worker=169 tasks=2275 poll_iters=346068 dep_iters=1703509 poll_cycles=199771260 dep_cycles=473765172 exec_cycles=85067248 signal_cycles=4912508
+[TIMING] worker=81 tasks=2276 poll_iters=292796 dep_iters=1746507 poll_cycles=169018932 dep_cycles=475441612 exec_cycles=83984056 signal_cycles=4815344
+[TIMING] worker=266 tasks=2243 poll_iters=301956 dep_iters=1685154 poll_cycles=174317488 dep_cycles=496426980 exec_cycles=61122028 signal_cycles=4584508
+[TIMING] worker=74 tasks=2276 poll_iters=338108 dep_iters=1697250 poll_cycles=195206312 dep_cycles=478844468 exec_cycles=80283116 signal_cycles=4521604
+[TIMING] worker=28 tasks=3140 poll_iters=377258 dep_iters=1567590 poll_cycles=217669460 dep_cycles=437345412 exec_cycles=116261604 signal_cycles=6829232
+[TIMING] worker=42 tasks=2276 poll_iters=322388 dep_iters=1629121 poll_cycles=186117396 dep_cycles=460841656 exec_cycles=98611388 signal_cycles=4587856
+[TIMING] worker=178 tasks=2243 poll_iters=245018 dep_iters=1616473 poll_cycles=157144264 dep_cycles=478158092 exec_cycles=78987200 signal_cycles=4910284
+[TIMING] worker=276 tasks=2243 poll_iters=347138 dep_iters=1868765 poll_cycles=200390868 dep_cycles=495284644 exec_cycles=59517012 signal_cycles=4667672
+[TIMING] worker=161 tasks=2275 poll_iters=312468 dep_iters=1655321 poll_cycles=180357820 dep_cycles=473682112 exec_cycles=85160504 signal_cycles=4977900
+[TIMING] worker=188 tasks=2243 poll_iters=287585 dep_iters=1617930 poll_cycles=184451784 dep_cycles=474750320 exec_cycles=79583184 signal_cycles=5172876
+[TIMING] worker=196 tasks=2243 poll_iters=302639 dep_iters=1617254 poll_cycles=174737860 dep_cycles=474755560 exec_cycles=79688800 signal_cycles=5029420
+[TIMING] worker=106 tasks=2276 poll_iters=278881 dep_iters=1664182 poll_cycles=160974688 dep_cycles=478894524 exec_cycles=79998088 signal_cycles=4533472
+[TIMING] worker=172 tasks=2275 poll_iters=292814 dep_iters=1705565 poll_cycles=169091764 dep_cycles=475274496 exec_cycles=80263056 signal_cycles=4950020
+[TASK_TIME2] worker=275 prep=0/0 attend=0/0 merge=0/0 router=409444/10 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=36 tasks=3140 poll_iters=413372 dep_iters=1622812 poll_cycles=238473560 dep_cycles=453475392 exec_cycles=100393596 signal_cycles=6485896
+[TIMING] worker=154 tasks=2275 poll_iters=316555 dep_iters=1751855 poll_cycles=182763112 dep_cycles=477228712 exec_cycles=81071580 signal_cycles=4796576
+[TASK_TIME2] worker=211 prep=0/0 attend=0/0 merge=0/0 router=409616/10 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=155 prep=0/0 attend=0/0 merge=0/0 router=490664/12 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=2 tasks=4004 poll_iters=259218 dep_iters=1409504 poll_cycles=149546560 dep_cycles=397044432 exec_cycles=152157728 signal_cycles=11884788
+[TIMING] worker=137 tasks=2275 poll_iters=358922 dep_iters=1745822 poll_cycles=207187988 dep_cycles=474934316 exec_cycles=84222712 signal_cycles=4879520
+[TASK_TIME2] worker=187 prep=0/0 attend=0/0 merge=0/0 router=446340/11 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=43 prep=0/0 attend=0/0 merge=0/0 router=408388/10 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=9 tasks=4004 poll_iters=296846 dep_iters=1517585 poll_cycles=171283532 dep_cycles=400805564 exec_cycles=152696932 signal_cycles=8231072
+[TASK_TIME] worker=252 linear=11001256/322 linear_res=4748292/195 attn=0/0 rms=43064/12 silu=58464/24 fused=0/0
+[TIMING] worker=170 tasks=2275 poll_iters=282844 dep_iters=1637054 poll_cycles=171030264 dep_cycles=477647956 exec_cycles=80570672 signal_cycles=4796252
+[TIMING] worker=90 tasks=2276 poll_iters=276655 dep_iters=1784902 poll_cycles=159670652 dep_cycles=479363096 exec_cycles=79676208 signal_cycles=4566072
+[TIMING] worker=121 tasks=2276 poll_iters=282262 dep_iters=1645474 poll_cycles=162962656 dep_cycles=474163468 exec_cycles=85101660 signal_cycles=4857052
+[TASK_TIME] worker=228 linear=11060584/323 linear_res=4789568/196 attn=0/0 rms=44436/12 silu=51548/21 fused=0/0
+[TASK_TIME2] worker=3 prep=0/0 attend=16830868/864 merge=35890420/864 router=413100/10 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=50 tasks=2276 poll_iters=260208 dep_iters=1603631 poll_cycles=150179880 dep_cycles=459824268 exec_cycles=99134944 signal_cycles=4912560
+[TASK_TIME] worker=4 linear=12991128/357 linear_res=4670472/192 attn=0/0 rms=47956/14 silu=53576/22 fused=0/0
+[TIMING] worker=202 tasks=2243 poll_iters=314738 dep_iters=1649001 poll_cycles=181740232 dep_cycles=478931928 exec_cycles=78788440 signal_cycles=4509180
+[TIMING] worker=114 tasks=2276 poll_iters=271286 dep_iters=1638882 poll_cycles=156610028 dep_cycles=478073820 exec_cycles=80570332 signal_cycles=4643684
+[TIMING] worker=204 tasks=2243 poll_iters=357469 dep_iters=1717769 poll_cycles=206321700 dep_cycles=476262648 exec_cycles=78514800 signal_cycles=4770564
+[TIMING] worker=290 tasks=2243 poll_iters=270249 dep_iters=1762520 poll_cycles=172962924 dep_cycles=495260744 exec_cycles=62174272 signal_cycles=4859272
+[TASK_TIME2] worker=139 prep=0/0 attend=0/0 merge=0/0 router=456728/11 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=41 tasks=2276 poll_iters=258478 dep_iters=1698924 poll_cycles=149218564 dep_cycles=457061344 exec_cycles=102830924 signal_cycles=4856848
+[TIMING] worker=156 tasks=2275 poll_iters=447608 dep_iters=1653208 poll_cycles=258351788 dep_cycles=474228468 exec_cycles=81195904 signal_cycles=5157788
+[TASK_TIME] worker=284 linear=11074684/323 linear_res=4672284/193 attn=0/0 rms=39556/11 silu=56352/23 fused=0/0
+[TIMING] worker=226 tasks=2243 poll_iters=262651 dep_iters=1728807 poll_cycles=151607356 dep_cycles=478854960 exec_cycles=78739168 signal_cycles=4634464
+[TASK_TIME] worker=236 linear=10881840/322 linear_res=4732600/194 attn=0/0 rms=49828/14 silu=56652/23 fused=0/0
+[TASK_TIME2] worker=195 prep=0/0 attend=0/0 merge=0/0 router=527748/13 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=82 tasks=2276 poll_iters=293180 dep_iters=1673232 poll_cycles=169236552 dep_cycles=478905500 exec_cycles=80092024 signal_cycles=4518372
+[TIMING] worker=281 tasks=2243 poll_iters=359897 dep_iters=1667435 poll_cycles=207784520 dep_cycles=492043088 exec_cycles=66030792 signal_cycles=4894724
+[TIMING] worker=66 tasks=2276 poll_iters=332756 dep_iters=1774437 poll_cycles=191984820 dep_cycles=480142188 exec_cycles=79007204 signal_cycles=4693520
+[TIMING] worker=235 tasks=2243 poll_iters=455865 dep_iters=1601102 poll_cycles=292112564 dep_cycles=476562580 exec_cycles=78538264 signal_cycles=4699412
+[TIMING] worker=68 tasks=2276 poll_iters=449666 dep_iters=1669653 poll_cycles=259434968 dep_cycles=476491216 exec_cycles=80033168 signal_cycles=4827444
+[TIMING] worker=44 tasks=2276 poll_iters=340766 dep_iters=1699340 poll_cycles=196721840 dep_cycles=457966880 exec_cycles=98601516 signal_cycles=4853680
+[TIMING] worker=250 tasks=2243 poll_iters=276031 dep_iters=1694308 poll_cycles=159319352 dep_cycles=480320584 exec_cycles=77405324 signal_cycles=4514356
+[TIMING] worker=130 tasks=2276 poll_iters=320085 dep_iters=1742763 poll_cycles=184786068 dep_cycles=478889004 exec_cycles=79828396 signal_cycles=4595012
+[TIMING] worker=138 tasks=2275 poll_iters=267554 dep_iters=1672569 poll_cycles=154512972 dep_cycles=478414160 exec_cycles=80215592 signal_cycles=4603620
+[TIMING] worker=76 tasks=2276 poll_iters=432102 dep_iters=1775276 poll_cycles=249379280 dep_cycles=477606012 exec_cycles=78790148 signal_cycles=4684796
+[TIMING] worker=185 tasks=2243 poll_iters=266952 dep_iters=1618280 poll_cycles=171147548 dep_cycles=472175808 exec_cycles=85363136 signal_cycles=5446980
+[TIMING] worker=249 tasks=2243 poll_iters=290932 dep_iters=1597638 poll_cycles=186480168 dep_cycles=473861788 exec_cycles=84273764 signal_cycles=4860024
+[TIMING] worker=201 tasks=2243 poll_iters=271634 dep_iters=1718416 poll_cycles=156780120 dep_cycles=474696028 exec_cycles=83350916 signal_cycles=4827844
+[TIMING] worker=258 tasks=2243 poll_iters=238975 dep_iters=1751283 poll_cycles=153253596 dep_cycles=496001580 exec_cycles=61547296 signal_cycles=4691828
+[TASK_TIME] worker=75 linear=12444940/358 linear_res=4516588/192 attn=0/0 rms=0/0 silu=50840/21 fused=0/0
+[TIMING] worker=289 tasks=2243 poll_iters=286918 dep_iters=1667609 poll_cycles=165557640 dep_cycles=491405988 exec_cycles=66449900 signal_cycles=5167696
+[TIMING] worker=98 tasks=2276 poll_iters=284814 dep_iters=1781770 poll_cycles=164380348 dep_cycles=478298716 exec_cycles=80489232 signal_cycles=4636364
+[TIMING] worker=282 tasks=2243 poll_iters=290046 dep_iters=1764711 poll_cycles=167677168 dep_cycles=496461136 exec_cycles=61036680 signal_cycles=4637788
+[TIMING] worker=17 tasks=3140 poll_iters=252108 dep_iters=1612187 poll_cycles=145439720 dep_cycles=436890860 exec_cycles=119795060 signal_cycles=7079764
+[TIMING] worker=177 tasks=2243 poll_iters=275401 dep_iters=1682072 poll_cycles=158984700 dep_cycles=474638568 exec_cycles=83098696 signal_cycles=4961548
+[TIMING] worker=34 tasks=3140 poll_iters=279905 dep_iters=1713201 poll_cycles=161469576 dep_cycles=452120472 exec_cycles=104752652 signal_cycles=6062352
+[TIMING] worker=219 tasks=2243 poll_iters=552343 dep_iters=1720402 poll_cycles=318644240 dep_cycles=476990776 exec_cycles=78372436 signal_cycles=4473340
+[TASK_TIME] worker=12 linear=12883700/358 linear_res=4664660/192 attn=0/0 rms=37908/11 silu=56504/23 fused=0/0
+[TIMING] worker=49 tasks=2276 poll_iters=301021 dep_iters=1671680 poll_cycles=173741556 dep_cycles=456464848 exec_cycles=103117436 signal_cycles=4955460
+[TIMING] worker=26 tasks=3140 poll_iters=265302 dep_iters=1674129 poll_cycles=153078420 dep_cycles=440956396 exec_cycles=115303356 signal_cycles=6687316
+[TIMING] worker=11 tasks=4004 poll_iters=540156 dep_iters=1424306 poll_cycles=311617020 dep_cycles=400230596 exec_cycles=150269484 signal_cycles=8176400
+[TIMING] worker=234 tasks=2243 poll_iters=302834 dep_iters=1618118 poll_cycles=175903244 dep_cycles=479753288 exec_cycles=77951220 signal_cycles=4458272
+[TIMING] worker=217 tasks=2243 poll_iters=321537 dep_iters=1628883 poll_cycles=185612020 dep_cycles=473276328 exec_cycles=84793680 signal_cycles=4975832
+[TIMING] worker=84 tasks=2276 poll_iters=412417 dep_iters=1746701 poll_cycles=237981228 dep_cycles=477059768 exec_cycles=79183420 signal_cycles=4743580
+[TIMING] worker=33 tasks=3140 poll_iters=258347 dep_iters=1519682 poll_cycles=150559416 dep_cycles=451419108 exec_cycles=104998368 signal_cycles=7360684
+[TIMING] worker=209 tasks=2243 poll_iters=320792 dep_iters=1691665 poll_cycles=185129236 dep_cycles=474511360 exec_cycles=83479080 signal_cycles=4879756
+[TASK_TIME2] worker=228 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=164 tasks=2275 poll_iters=467401 dep_iters=1654351 poll_cycles=269748668 dep_cycles=475011728 exec_cycles=80607384 signal_cycles=4912888
+[TIMING] worker=129 tasks=2276 poll_iters=299124 dep_iters=1644753 poll_cycles=172677808 dep_cycles=473475804 exec_cycles=85473428 signal_cycles=5104024
+[TIMING] worker=145 tasks=2275 poll_iters=266293 dep_iters=1715892 poll_cycles=153715788 dep_cycles=473615564 exec_cycles=85110004 signal_cycles=5065836
+[TASK_TIME] worker=260 linear=11033000/324 linear_res=4743392/195 attn=0/0 rms=38884/11 silu=50980/21 fused=0/0
+[TIMING] worker=147 tasks=2275 poll_iters=351847 dep_iters=1629956 poll_cycles=203069888 dep_cycles=474795212 exec_cycles=80929456 signal_cycles=5128872
+[TIMING] worker=19 tasks=3140 poll_iters=360121 dep_iters=1520675 poll_cycles=207796672 dep_cycles=437108212 exec_cycles=116225444 signal_cycles=7342648
+[TIMING] worker=162 tasks=2275 poll_iters=255471 dep_iters=1626357 poll_cycles=149020232 dep_cycles=475548620 exec_cycles=82077728 signal_cycles=5588964
+[TASK_TIME2] worker=4 prep=0/0 attend=16814900/864 merge=35544824/864 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=186 tasks=2243 poll_iters=284181 dep_iters=1716934 poll_cycles=164078556 dep_cycles=479169504 exec_cycles=78398436 signal_cycles=4592104
+[TIMING] worker=18 tasks=3140 poll_iters=313759 dep_iters=1538507 poll_cycles=181058792 dep_cycles=440776868 exec_cycles=115724036 signal_cycles=6463240
+[TASK_TIME] worker=28 linear=12859780/357 linear_res=4699140/193 attn=0/0 rms=38032/11 silu=50872/21 fused=0/0
+[TIMING] worker=193 tasks=2243 poll_iters=275731 dep_iters=1620043 poll_cycles=159125372 dep_cycles=473136244 exec_cycles=84601836 signal_cycles=5084416
+[TASK_TIME] worker=148 linear=12299784/353 linear_res=4624916/195 attn=0/0 rms=43040/12 silu=56552/23 fused=0/0
+[TIMING] worker=274 tasks=2243 poll_iters=310410 dep_iters=1790152 poll_cycles=179173204 dep_cycles=498080080 exec_cycles=59641760 signal_cycles=4390796
+[TIMING] worker=146 tasks=2275 poll_iters=303331 dep_iters=1644802 poll_cycles=175168708 dep_cycles=476875660 exec_cycles=81256888 signal_cycles=4938372
+[TIMING] worker=105 tasks=2276 poll_iters=280977 dep_iters=1735034 poll_cycles=162202848 dep_cycles=475792256 exec_cycles=83574012 signal_cycles=4772896
+[TASK_TIME2] worker=284 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=252 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=122 tasks=2276 poll_iters=260376 dep_iters=1742656 poll_cycles=150289712 dep_cycles=478642960 exec_cycles=80090084 signal_cycles=4646652
+[TASK_TIME] worker=132 linear=12690456/356 linear_res=4606884/195 attn=0/0 rms=41880/12 silu=50712/21 fused=0/0
+[TIMING] worker=242 tasks=2243 poll_iters=285911 dep_iters=1594968 poll_cycles=183285032 dep_cycles=479309196 exec_cycles=78325240 signal_cycles=4535224
+[TASK_TIME] worker=10 linear=12951036/358 linear_res=4681928/192 attn=0/0 rms=32656/10 silu=58288/24 fused=0/0
+[TASK_TIME] worker=188 linear=10885692/322 linear_res=4686712/195 attn=0/0 rms=42576/12 silu=58088/24 fused=0/0
+[TIMING] worker=67 tasks=2276 poll_iters=410301 dep_iters=1763395 poll_cycles=236701680 dep_cycles=477243912 exec_cycles=79684632 signal_cycles=4573692
+[TASK_TIME2] worker=236 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=137 linear=12460924/355 linear_res=4613388/195 attn=0/0 rms=0/0 silu=60416/24 fused=0/0
+[TASK_TIME] worker=235 linear=10966544/323 linear_res=4797924/196 attn=0/0 rms=3544/1 silu=58892/24 fused=0/0
+[TASK_TIME] worker=90 linear=12508592/357 linear_res=4504736/192 attn=0/0 rms=39824/12 silu=55800/23 fused=0/0
+[TASK_TIME] worker=124 linear=12470924/356 linear_res=4579308/194 attn=0/0 rms=42576/12 silu=55820/23 fused=0/0
+[TASK_TIME2] worker=75 prep=0/0 attend=0/0 merge=0/0 router=456772/11 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=265 tasks=2243 poll_iters=258894 dep_iters=1757785 poll_cycles=165739668 dep_cycles=493300256 exec_cycles=64895940 signal_cycles=4889232
+[TASK_TIME] worker=178 linear=10839964/322 linear_res=4687228/195 attn=0/0 rms=37224/11 silu=53556/22 fused=0/0
+[TIMING] worker=233 tasks=2243 poll_iters=289895 dep_iters=1681827 poll_cycles=167306652 dep_cycles=475233120 exec_cycles=82952760 signal_cycles=4822960
+[TIMING] worker=220 tasks=2243 poll_iters=393990 dep_iters=1631389 poll_cycles=227407576 dep_cycles=475427952 exec_cycles=79327940 signal_cycles=4891768
+[TASK_TIME] worker=185 linear=11044272/322 linear_res=4677500/195 attn=0/0 rms=3360/1 silu=55012/22 fused=0/0
+[TASK_TIME] worker=289 linear=11561588/324 linear_res=4791804/193 attn=0/0 rms=3444/1 silu=60916/24 fused=0/0
+[TASK_TIME] worker=204 linear=10874928/321 linear_res=4742128/195 attn=0/0 rms=49144/14 silu=56296/23 fused=0/0
+[TASK_TIME] worker=97 linear=12551808/357 linear_res=4538816/192 attn=0/0 rms=3520/1 silu=58896/23 fused=0/0
+[TIMING] worker=212 tasks=2243 poll_iters=412978 dep_iters=1692442 poll_cycles=238311780 dep_cycles=476219716 exec_cycles=78398340 signal_cycles=4931068
+[TASK_TIME2] worker=12 prep=0/0 attend=16785272/864 merge=33694252/864 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=42 linear=12937168/357 linear_res=4589336/192 attn=0/0 rms=36844/11 silu=55828/23 fused=0/0
+[TIMING] worker=218 tasks=2243 poll_iters=297719 dep_iters=1730698 poll_cycles=171847268 dep_cycles=479703736 exec_cycles=78035856 signal_cycles=4525996
+[TIMING] worker=268 tasks=2243 poll_iters=462693 dep_iters=1753877 poll_cycles=268855180 dep_cycles=493755920 exec_cycles=60974852 signal_cycles=4863328
+[TASK_TIME] worker=156 linear=12549984/355 linear_res=4623148/195 attn=0/0 rms=38944/11 silu=55956/23 fused=0/0
+[TASK_TIME] worker=50 linear=12811060/357 linear_res=4573204/191 attn=0/0 rms=43472/13 silu=50776/21 fused=0/0
+[TASK_TIME] worker=106 linear=12454496/355 linear_res=4550084/193 attn=0/0 rms=37460/11 silu=56112/23 fused=0/0
+[TASK_TIME] worker=276 linear=10793688/323 linear_res=4646448/193 attn=0/0 rms=42756/12 silu=58776/24 fused=0/0
+[TASK_TIME] worker=266 linear=11086076/324 linear_res=4725512/194 attn=0/0 rms=33836/10 silu=56432/23 fused=0/0
+[TASK_TIME] worker=209 linear=10892172/320 linear_res=4772440/196 attn=0/0 rms=3372/1 silu=55540/22 fused=0/0
+[TASK_TIME] worker=34 linear=12891244/358 linear_res=4688328/193 attn=0/0 rms=32180/10 silu=53408/22 fused=0/0
+[TASK_TIME] worker=33 linear=12692660/357 linear_res=4558756/193 attn=0/0 rms=3264/1 silu=54888/22 fused=0/0
+[TASK_TIME2] worker=137 prep=3119916/10 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=291 tasks=2243 poll_iters=442147 dep_iters=1752631 poll_cycles=283031260 dep_cycles=492662620 exec_cycles=62318060 signal_cycles=4952208
+[TASK_TIME] worker=193 linear=10983288/323 linear_res=4684168/195 attn=0/0 rms=3400/1 silu=57932/23 fused=0/0
+[TASK_TIME2] worker=185 prep=4073656/13 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=225 linear=11119848/323 linear_res=4789244/196 attn=0/0 rms=3424/1 silu=60596/24 fused=0/0
+[TASK_TIME2] worker=289 prep=3447392/11 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=140 linear=12432372/354 linear_res=4611356/195 attn=0/0 rms=46040/13 silu=56716/23 fused=0/0
+[TASK_TIME2] worker=260 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=90 prep=308060/1 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=113 linear=12327088/356 linear_res=4583040/194 attn=0/0 rms=3396/1 silu=53168/21 fused=0/0
+[TASK_TIME2] worker=148 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=244 tasks=2243 poll_iters=350137 dep_iters=1659626 poll_cycles=202037624 dep_cycles=476946564 exec_cycles=77854716 signal_cycles=4808632
+[TASK_TIME2] worker=178 prep=315744/1 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=2 linear=13073912/357 linear_res=4787072/193 attn=0/0 rms=35960/11 silu=51832/21 fused=0/0
+[TASK_TIME2] worker=33 prep=3042912/10 attend=1544524/864 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=73 linear=12449408/358 linear_res=4489604/192 attn=0/0 rms=3344/1 silu=60264/24 fused=0/0
+[TASK_TIME2] worker=267 prep=0/0 attend=0/0 merge=0/0 router=462104/11 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=98 linear=12456392/357 linear_res=4530292/192 attn=0/0 rms=33948/10 silu=56388/23 fused=0/0
+[TASK_TIME] worker=169 linear=12352436/353 linear_res=4676904/195 attn=0/0 rms=0/0 silu=57476/23 fused=0/0
+[TASK_TIME] worker=233 linear=10930184/322 linear_res=4746732/195 attn=0/0 rms=0/0 silu=55628/22 fused=0/0
+[TASK_TIME] worker=161 linear=12522200/355 linear_res=4598376/195 attn=0/0 rms=3316/1 silu=59460/24 fused=0/0
+[TASK_TIME] worker=66 linear=12930344/358 linear_res=4579640/192 attn=0/0 rms=37280/11 silu=51404/21 fused=0/0
+[TASK_TIME] worker=162 linear=12728392/355 linear_res=4608544/195 attn=0/0 rms=33320/10 silu=58204/24 fused=0/0
+[TASK_TIME2] worker=193 prep=3538412/11 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=92 linear=12428232/357 linear_res=4517212/192 attn=0/0 rms=38308/11 silu=52900/22 fused=0/0
+[TIMING] worker=108 tasks=2276 poll_iters=339074 dep_iters=1736308 poll_cycles=195724440 dep_cycles=476974600 exec_cycles=79097468 signal_cycles=4784356
+[TASK_TIME] worker=257 linear=11188200/324 linear_res=4740040/195 attn=0/0 rms=3372/1 silu=58260/23 fused=0/0
+[TASK_TIME] worker=242 linear=11051012/323 linear_res=4758080/195 attn=0/0 rms=34316/10 silu=56264/23 fused=0/0
+[TASK_TIME] worker=114 linear=12412872/356 linear_res=4561656/193 attn=0/0 rms=40748/12 silu=51100/21 fused=0/0
+[TASK_TIME] worker=68 linear=12664428/358 linear_res=4490400/192 attn=0/0 rms=45704/13 silu=50828/21 fused=0/0
+[TASK_TIME2] worker=106 prep=307520/1 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=249 linear=11124028/322 linear_res=4745404/195 attn=0/0 rms=3388/1 silu=52892/21 fused=0/0
+[TASK_TIME2] worker=233 prep=3560820/11 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=100 linear=12773472/357 linear_res=4574252/193 attn=0/0 rms=45472/13 silu=51716/21 fused=0/0
+[TIMING] worker=241 tasks=2243 poll_iters=278401 dep_iters=1657752 poll_cycles=160650672 dep_cycles=475147944 exec_cycles=82834876 signal_cycles=4868004
+[TASK_TIME] worker=138 linear=12484524/354 linear_res=4614412/195 attn=0/0 rms=33568/10 silu=58836/24 fused=0/0
+[TASK_TIME] worker=258 linear=11064708/324 linear_res=4742056/195 attn=0/0 rms=37432/11 silu=56288/23 fused=0/0
+[TASK_TIME] worker=52 linear=12692332/357 linear_res=4561748/191 attn=0/0 rms=38524/11 silu=55808/23 fused=0/0
+[TASK_TIME] worker=210 linear=11012144/320 linear_res=4779308/196 attn=0/0 rms=37112/11 silu=53528/22 fused=0/0
+[TASK_TIME] worker=36 linear=12676676/358 linear_res=4448976/192 attn=0/0 rms=48732/14 silu=50412/21 fused=0/0
+[TASK_TIME2] worker=235 prep=0/0 attend=0/0 merge=0/0 router=408012/10 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=144 tasks=2275 poll_iters=75173 dep_iters=1625961 poll_cycles=43727732 dep_cycles=472872664 exec_cycles=80170652 signal_cycles=5244204
+[TASK_TIME] worker=154 linear=12515380/355 linear_res=4613976/195 attn=0/0 rms=44304/13 silu=53932/22 fused=0/0
+[TASK_TIME] worker=196 linear=10901604/323 linear_res=4787476/196 attn=0/0 rms=39048/11 silu=51072/21 fused=0/0
+[TASK_TIME2] worker=204 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=1 linear=13141244/356 linear_res=4762584/193 attn=0/0 rms=6972/1 silu=52700/21 fused=0/0
+[TASK_TIME] worker=116 linear=12346196/356 linear_res=4560744/193 attn=0/0 rms=39136/11 silu=53680/22 fused=0/0
+[TASK_TIME] worker=60 linear=12750084/357 linear_res=4581248/192 attn=0/0 rms=41936/12 silu=52960/22 fused=0/0
+[TASK_TIME] worker=273 linear=10898600/323 linear_res=4639412/193 attn=0/0 rms=3356/1 silu=58280/23 fused=0/0
+[TASK_TIME] worker=105 linear=12335948/355 linear_res=4553240/193 attn=0/0 rms=3376/1 silu=58344/23 fused=0/0
+[TASK_TIME] worker=250 linear=11066240/322 linear_res=4747476/195 attn=0/0 rms=44176/13 silu=51740/21 fused=0/0
+[TASK_TIME] worker=292 linear=11359440/324 linear_res=4798296/194 attn=0/0 rms=42944/12 silu=51288/21 fused=0/0
+[TASK_TIME2] worker=42 prep=309688/1 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=131 linear=12444608/356 linear_res=4600696/194 attn=0/0 rms=3496/1 silu=55876/23 fused=0/0
+[TASK_TIME] worker=218 linear=11065064/322 linear_res=4773628/196 attn=0/0 rms=43452/13 silu=51100/21 fused=0/0
+[TASK_TIME] worker=122 linear=12492300/356 linear_res=4574912/194 attn=0/0 rms=40284/12 silu=56356/23 fused=0/0
+[TASK_TIME] worker=194 linear=11200280/323 linear_res=4692424/195 attn=0/0 rms=37772/11 silu=56160/23 fused=0/0
+[TASK_TIME] worker=89 linear=12517488/357 linear_res=4500348/191 attn=0/0 rms=3304/1 silu=57792/23 fused=0/0
+[TASK_TIME] worker=281 linear=11112196/323 linear_res=4669564/193 attn=0/0 rms=3444/1 silu=54264/21 fused=0/0
+[TASK_TIME] worker=290 linear=11563980/324 linear_res=4806628/194 attn=0/0 rms=33476/10 silu=58984/24 fused=0/0
+[TIMING] worker=271 tasks=2244 poll_iters=40849 dep_iters=1759300 poll_cycles=24264336 dep_cycles=495527180 exec_cycles=60345024 signal_cycles=4981008
+[TASK_TIME2] worker=138 prep=312624/1 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=164 linear=12481652/355 linear_res=4696192/196 attn=0/0 rms=42024/12 silu=50864/21 fused=0/0
+[TASK_TIME] worker=41 linear=12931284/357 linear_res=4597036/192 attn=0/0 rms=3340/1 silu=57724/23 fused=0/0
+[TASK_TIME] worker=11 linear=12817076/357 linear_res=4790484/193 attn=0/0 rms=0/0 silu=51268/21 fused=0/0
+[TASK_TIME] worker=81 linear=12308544/356 linear_res=4512336/192 attn=0/0 rms=3412/1 silu=53224/21 fused=0/0
+[TASK_TIME2] worker=97 prep=3099052/10 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=74 linear=12518172/358 linear_res=4477344/192 attn=0/0 rms=33152/10 silu=58036/24 fused=0/0
+[TASK_TIME] worker=129 linear=12429324/356 linear_res=4582056/194 attn=0/0 rms=3452/1 silu=55268/22 fused=0/0
+[TASK_TIME] worker=227 linear=11081384/322 linear_res=4822752/196 attn=0/0 rms=3888/1 silu=52276/21 fused=0/0
+[TASK_TIME2] worker=114 prep=309392/1 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=18 linear=12844348/355 linear_res=4676144/192 attn=0/0 rms=42156/13 silu=51028/21 fused=0/0
+[TASK_TIME2] worker=162 prep=321660/1 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=242 prep=313440/1 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=34 prep=0/0 attend=6947564/864 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=82 linear=12420276/356 linear_res=4480528/191 attn=0/0 rms=43372/13 silu=51208/21 fused=0/0
+[TASK_TIME] worker=274 linear=10944764/323 linear_res=4648580/193 attn=0/0 rms=37096/11 silu=55900/23 fused=0/0
+[TASK_TIME2] worker=28 prep=0/0 attend=16763892/864 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=73 prep=3066192/10 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=249 prep=4056560/13 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=172 linear=12399760/352 linear_res=4680144/195 attn=0/0 rms=49476/14 silu=59112/24 fused=0/0
+[TASK_TIME] worker=220 linear=11041140/322 linear_res=4776512/196 attn=0/0 rms=38616/11 silu=55476/23 fused=0/0
+[TASK_TIME2] worker=154 prep=312116/1 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=132 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=57 linear=12950668/357 linear_res=4573364/191 attn=0/0 rms=3324/1 silu=59752/24 fused=0/0
+[TASK_TIME] worker=202 linear=10984944/321 linear_res=4750292/195 attn=0/0 rms=33308/10 silu=58420/24 fused=0/0
+[TIMING] worker=94 tasks=2276 poll_iters=210220 dep_iters=1678647 poll_cycles=121793400 dep_cycles=476956272 exec_cycles=79842536 signal_cycles=5153764
+[TASK_TIME2] worker=258 prep=315036/1 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=115 linear=12436600/355 linear_res=4581808/193 attn=0/0 rms=3528/1 silu=56188/23 fused=0/0
+[TASK_TIME] worker=84 linear=12339948/356 linear_res=4489512/191 attn=0/0 rms=42456/12 silu=58140/24 fused=0/0
+[TASK_TIME] worker=44 linear=12854824/357 linear_res=4576500/192 attn=0/0 rms=42344/12 silu=58440/24 fused=0/0
+[TASK_TIME2] worker=250 prep=312072/1 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=282 linear=11096468/323 linear_res=4670680/193 attn=0/0 rms=44496/13 silu=52204/21 fused=0/0
+[TASK_TIME2] worker=218 prep=312148/1 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=290 prep=314120/1 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=25 linear=13008056/357 linear_res=4696644/192 attn=0/0 rms=3296/1 silu=58140/23 fused=0/0
+[TASK_TIME] worker=58 linear=12922464/357 linear_res=4583852/192 attn=0/0 rms=36548/11 silu=58520/24 fused=0/0
+[TASK_TIME2] worker=105 prep=3513100/11 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=201 linear=10933980/322 linear_res=4739820/195 attn=0/0 rms=0/0 silu=59860/24 fused=0/0
+[TASK_TIME] worker=268 linear=10987748/324 linear_res=4700856/193 attn=0/0 rms=50012/14 silu=54512/22 fused=0/0
+[TASK_TIME] worker=145 linear=12290944/353 linear_res=4649196/196 attn=0/0 rms=3460/1 silu=53164/21 fused=0/0
+[TASK_TIME2] worker=41 prep=3530160/11 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=26 linear=12885172/357 linear_res=4704668/193 attn=0/0 rms=36180/11 silu=56224/23 fused=0/0
+[TASK_TIME] worker=153 linear=12588480/355 linear_res=4621620/195 attn=0/0 rms=3412/1 silu=55208/22 fused=0/0
+[TASK_TIME] worker=17 linear=12800228/355 linear_res=4681116/192 attn=0/0 rms=3356/1 silu=52752/21 fused=0/0
+[TASK_TIME2] worker=188 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=9 linear=12912116/358 linear_res=4685156/192 attn=0/0 rms=3276/1 silu=60492/24 fused=0/0
+[TASK_TIME2] worker=276 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=156 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=67 linear=12587952/357 linear_res=4516700/192 attn=0/0 rms=3512/1 silu=58600/24 fused=0/0
+[TIMING] worker=55 tasks=2277 poll_iters=35185 dep_iters=1673995 poll_cycles=20684292 dep_cycles=458900644 exec_cycles=98377768 signal_cycles=5262380
+[TASK_TIME] worker=234 linear=11053724/322 linear_res=4757660/195 attn=0/0 rms=37552/11 silu=53836/22 fused=0/0
+[TASK_TIME] worker=177 linear=10815348/322 linear_res=4704096/196 attn=0/0 rms=3384/1 silu=55596/22 fused=0/0
+[TASK_TIME] worker=217 linear=11103556/322 linear_res=4772972/196 attn=0/0 rms=3336/1 silu=52488/21 fused=0/0
+[TASK_TIME] worker=146 linear=12417960/353 linear_res=4626144/195 attn=0/0 rms=40704/12 silu=51340/21 fused=0/0
+[TASK_TIME] worker=212 linear=10822788/320 linear_res=4778532/196 attn=0/0 rms=42664/12 silu=56288/23 fused=0/0
+[TASK_TIME] worker=226 linear=11023156/323 linear_res=4788260/196 attn=0/0 rms=34256/10 silu=59144/24 fused=0/0
+[TASK_TIME2] worker=66 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=265 linear=11028924/324 linear_res=4713972/194 attn=0/0 rms=0/0 silu=59128/23 fused=0/0
+[TASK_TIME2] worker=50 prep=311104/1 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=76 linear=12409380/358 linear_res=4491448/192 attn=0/0 rms=41732/12 silu=56152/23 fused=0/0
+[TASK_TIME2] worker=172 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=107 linear=12486236/357 linear_res=4574032/193 attn=0/0 rms=0/0 silu=55936/23 fused=0/0
+[TASK_TIME] worker=19 linear=12894916/358 linear_res=4687008/192 attn=0/0 rms=3384/1 silu=57976/24 fused=0/0
+[TASK_TIME] worker=147 linear=12475272/354 linear_res=4650384/195 attn=0/0 rms=3596/1 silu=58852/24 fused=0/0
+[TASK_TIME2] worker=10 prep=308580/1 attend=16618508/864 merge=32671432/864 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=100 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=49 linear=12779052/357 linear_res=4597220/192 attn=0/0 rms=3356/1 silu=52668/21 fused=0/0
+[TASK_TIME] worker=244 linear=10999392/323 linear_res=4752488/195 attn=0/0 rms=39252/11 silu=54348/22 fused=0/0
+[TIMING] worker=48 tasks=2276 poll_iters=132417 dep_iters=1580526 poll_cycles=76684008 dep_cycles=455170324 exec_cycles=98729696 signal_cycles=5185560
+[TASK_TIME] worker=219 linear=10868776/320 linear_res=4785988/196 attn=0/0 rms=3504/1 silu=53488/22 fused=0/0
+[TASK_TIME] worker=121 linear=12511140/356 linear_res=4560272/193 attn=0/0 rms=3360/1 silu=58136/23 fused=0/0
+[TIMING] worker=184 tasks=2243 poll_iters=79523 dep_iters=1695400 poll_cycles=46233244 dep_cycles=473767960 exec_cycles=78412748 signal_cycles=4919256
+[TASK_TIME] worker=65 linear=12722132/357 linear_res=4501644/192 attn=0/0 rms=3672/1 silu=53132/21 fused=0/0
+[TASK_TIME] worker=186 linear=10992464/322 linear_res=4680116/195 attn=0/0 rms=43716/13 silu=53956/22 fused=0/0
+[TASK_TIME2] worker=52 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=127 tasks=2276 poll_iters=35592 dep_iters=1649585 poll_cycles=20957900 dep_cycles=476884504 exec_cycles=80275892 signal_cycles=5083336
+[TASK_TIME] worker=108 linear=12403832/355 linear_res=4552748/193 attn=0/0 rms=46152/13 silu=58892/24 fused=0/0
+[TASK_TIME2] worker=169 prep=3577800/11 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=92 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=130 linear=12467672/356 linear_res=4574076/194 attn=0/0 rms=37496/11 silu=53844/22 fused=0/0
+[TASK_TIME] worker=170 linear=12442292/352 linear_res=4682856/195 attn=0/0 rms=37016/11 silu=56372/23 fused=0/0
+[TASK_TIME] worker=291 linear=11413176/323 linear_res=4796392/193 attn=0/0 rms=3392/1 silu=51492/21 fused=0/0
+[TASK_TIME2] worker=89 prep=4112592/13 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=116 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=161 prep=3087920/10 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=68 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=140 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=74 prep=306772/1 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=82 prep=309136/1 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=196 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=36 prep=0/0 attend=1489476/864 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=26 prep=307320/1 attend=16649764/864 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=113 prep=3406064/11 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=81 prep=3706500/12 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=173 tasks=2275 poll_iters=45709 dep_iters=1596779 poll_cycles=29694132 dep_cycles=470950040 exec_cycles=84501852 signal_cycles=5050292
+[TIMING] worker=64 tasks=2276 poll_iters=155115 dep_iters=1590351 poll_cycles=91435676 dep_cycles=472526556 exec_cycles=80830276 signal_cycles=5665508
+[TASK_TIME2] worker=266 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=25 prep=3821312/12 attend=16579624/864 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=217 prep=4044776/13 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=206 tasks=2243 poll_iters=68972 dep_iters=1715101 poll_cycles=40211252 dep_cycles=477197120 exec_cycles=78180048 signal_cycles=5033180
+[TASK_TIME2] worker=58 prep=308532/1 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=11 prep=0/0 attend=16753676/864 merge=34064284/864 router=456108/11 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=282 prep=317432/1 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=57 prep=3706204/12 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=241 linear=11005800/323 linear_res=4748036/195 attn=0/0 rms=3424/1 silu=58552/23 fused=0/0
+[TASK_TIME2] worker=18 prep=310408/1 attend=16618876/864 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=88 tasks=2276 poll_iters=72991 dep_iters=1762951 poll_cycles=42424748 dep_cycles=475049804 exec_cycles=78830360 signal_cycles=4706728
+[TASK_TIME2] worker=202 prep=311744/1 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=201 prep=3109624/10 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=273 prep=3510516/11 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=145 prep=3457252/11 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=152 tasks=2275 poll_iters=85860 dep_iters=1732173 poll_cycles=49886048 dep_cycles=473646756 exec_cycles=79805576 signal_cycles=4844900
+[TASK_TIME2] worker=234 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=292 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=67 prep=0/0 attend=0/0 merge=0/0 router=445392/11 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=200 tasks=2243 poll_iters=145817 dep_iters=1626574 poll_cycles=84503280 dep_cycles=473558444 exec_cycles=78753148 signal_cycles=4871040
+[TASK_TIME2] worker=209 prep=3569340/11 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=1 prep=3585976/11 attend=16616312/864 merge=36953968/864 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=220 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=49 prep=3734268/12 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=177 prep=3153560/10 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=226 prep=315172/1 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=65 prep=3497948/11 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=164 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=170 prep=313880/1 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=17 prep=4028196/13 attend=16606128/864 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=60 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=168 tasks=2275 poll_iters=100447 dep_iters=1614039 poll_cycles=59416592 dep_cycles=473097588 exec_cycles=80086924 signal_cycles=5002912
+[TASK_TIME2] worker=131 prep=0/0 attend=0/0 merge=0/0 router=488852/12 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=257 prep=3598400/11 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=0 tasks=4004 poll_iters=121252 dep_iters=1388842 poll_cycles=70202024 dep_cycles=391762240 exec_cycles=152734116 signal_cycles=11784704
+[TASK_TIME2] worker=124 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=130 prep=310612/1 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=121 prep=4000752/13 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=84 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=281 prep=4113788/13 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=186 prep=312920/1 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=198 tasks=2243 poll_iters=91734 dep_iters=1616793 poll_cycles=53294896 dep_cycles=475620144 exec_cycles=79417276 signal_cycles=5343460
+[TASK_TIME2] worker=44 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=98 prep=431492/1 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=61 tasks=2276 poll_iters=41187 dep_iters=1742855 poll_cycles=24145192 dep_cycles=473183012 exec_cycles=83072160 signal_cycles=5139636
+[TIMING] worker=128 tasks=2276 poll_iters=196780 dep_iters=1723352 poll_cycles=113935548 dep_cycles=474337460 exec_cycles=79252800 signal_cycles=4780900
+[TIMING] worker=69 tasks=2276 poll_iters=41606 dep_iters=1740861 poll_cycles=24333972 dep_cycles=473240092 exec_cycles=83315376 signal_cycles=4772608
+[TASK_TIME2] worker=115 prep=0/0 attend=0/0 merge=0/0 router=453040/11 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=194 prep=311068/1 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=2 prep=0/0 attend=16697196/864 merge=35049208/864 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=210 prep=314740/1 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=19 prep=0/0 attend=16771496/864 merge=0/0 router=408232/10 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=241 prep=3140332/10 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=268 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=147 prep=0/0 attend=0/0 merge=0/0 router=411124/10 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=212 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=274 prep=308632/1 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=227 prep=0/0 attend=0/0 merge=0/0 router=596136/13 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=225 prep=3141520/10 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=76 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=244 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=108 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=291 prep=0/0 attend=0/0 merge=0/0 router=536324/13 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=122 prep=307560/1 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=265 prep=3165704/10 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=107 prep=0/0 attend=0/0 merge=0/0 router=407000/10 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=219 prep=0/0 attend=0/0 merge=0/0 router=448804/11 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=129 prep=3550056/11 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=153 prep=4057968/13 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=293 tasks=2243 poll_iters=50359 dep_iters=1731753 poll_cycles=32252432 dep_cycles=489186008 exec_cycles=64943344 signal_cycles=5417104
+[TASK_TIME2] worker=146 prep=314960/1 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=221 tasks=2243 poll_iters=44546 dep_iters=1696838 poll_cycles=26156096 dep_cycles=472957652 exec_cycles=81719360 signal_cycles=4784560
+[TASK_TIME2] worker=9 prep=3076188/10 attend=16628244/864 merge=34050012/864 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=80 tasks=2276 poll_iters=136397 dep_iters=1653036 poll_cycles=79008004 dep_cycles=474420880 exec_cycles=79453200 signal_cycles=4799752
+[TIMING] worker=86 tasks=2276 poll_iters=116735 dep_iters=1744144 poll_cycles=67741912 dep_cycles=477854904 exec_cycles=78983560 signal_cycles=5032180
+[TIMING] worker=213 tasks=2243 poll_iters=50293 dep_iters=1588864 poll_cycles=29509100 dep_cycles=472646508 exec_cycles=82050264 signal_cycles=4903912
+[TIMING] worker=181 tasks=2243 poll_iters=42875 dep_iters=1575726 poll_cycles=27838560 dep_cycles=471418800 exec_cycles=82881636 signal_cycles=5137464
+[TIMING] worker=232 tasks=2243 poll_iters=112562 dep_iters=1593801 poll_cycles=65456704 dep_cycles=474680752 exec_cycles=77809696 signal_cycles=4767808
+[TIMING] worker=174 tasks=2275 poll_iters=106145 dep_iters=1701162 poll_cycles=61708964 dep_cycles=476384848 exec_cycles=79781852 signal_cycles=5159920
+[TIMING] worker=31 tasks=3141 poll_iters=33295 dep_iters=1571019 poll_cycles=19597428 dep_cycles=438796028 exec_cycles=115746344 signal_cycles=7243948
+[TIMING] worker=229 tasks=2243 poll_iters=60912 dep_iters=1474306 poll_cycles=38060584 dep_cycles=469146452 exec_cycles=83895752 signal_cycles=6502800
+[TIMING] worker=16 tasks=3140 poll_iters=74660 dep_iters=1517398 poll_cycles=43328068 dep_cycles=435273676 exec_cycles=115281260 signal_cycles=7608012
+[TIMING] worker=21 tasks=3140 poll_iters=39500 dep_iters=1502560 poll_cycles=23154880 dep_cycles=434599660 exec_cycles=118992436 signal_cycles=6812840
+[TIMING] worker=120 tasks=2276 poll_iters=98189 dep_iters=1724715 poll_cycles=56959000 dep_cycles=474769796 exec_cycles=78918776 signal_cycles=4762524
+[TIMING] worker=37 tasks=3140 poll_iters=57263 dep_iters=1699152 poll_cycles=33342096 dep_cycles=450604452 exec_cycles=103445904 signal_cycles=6333940
+[TIMING] worker=38 tasks=3140 poll_iters=100741 dep_iters=1599449 poll_cycles=58416728 dep_cycles=448712636 exec_cycles=105589744 signal_cycles=6891956
+[TIMING] worker=119 tasks=2276 poll_iters=40500 dep_iters=1710004 poll_cycles=23805368 dep_cycles=477373948 exec_cycles=79670552 signal_cycles=5059236
+[TIMING] worker=272 tasks=2243 poll_iters=101616 dep_iters=1767365 poll_cycles=58900004 dep_cycles=493061512 exec_cycles=59339492 signal_cycles=4685060
+[TIMING] worker=175 tasks=2276 poll_iters=36356 dep_iters=1707837 poll_cycles=21405732 dep_cycles=476833092 exec_cycles=80012080 signal_cycles=5093960
+[TIMING] worker=160 tasks=2275 poll_iters=98440 dep_iters=1731551 poll_cycles=57110092 dep_cycles=473449336 exec_cycles=79863764 signal_cycles=4858600
+[TIMING] worker=72 tasks=2276 poll_iters=98318 dep_iters=1678221 poll_cycles=57026656 dep_cycles=474902340 exec_cycles=79225568 signal_cycles=4712228
+[TIMING] worker=102 tasks=2276 poll_iters=118562 dep_iters=1676706 poll_cycles=68759300 dep_cycles=476028152 exec_cycles=80673364 signal_cycles=5259172
+[TIMING] worker=207 tasks=2244 poll_iters=62549 dep_iters=1720321 poll_cycles=36619856 dep_cycles=477190808 exec_cycles=78490600 signal_cycles=4930344
+[TIMING] worker=109 tasks=2276 poll_iters=110252 dep_iters=1625493 poll_cycles=64179912 dep_cycles=473027792 exec_cycles=83044764 signal_cycles=4802000
+[TIMING] worker=135 tasks=2276 poll_iters=38940 dep_iters=1648507 poll_cycles=22921540 dep_cycles=476435772 exec_cycles=80526920 signal_cycles=5192280
+[TIMING] worker=104 tasks=2276 poll_iters=78227 dep_iters=1641723 poll_cycles=45446928 dep_cycles=474738924 exec_cycles=79082992 signal_cycles=4781564
+[TIMING] worker=254 tasks=2243 poll_iters=114220 dep_iters=1597216 poll_cycles=73502688 dep_cycles=477101164 exec_cycles=78214336 signal_cycles=5087268
+[TIMING] worker=22 tasks=3140 poll_iters=117427 dep_iters=1608790 poll_cycles=68057480 dep_cycles=438945772 exec_cycles=114977936 signal_cycles=7331016
+[TIMING] worker=222 tasks=2243 poll_iters=91201 dep_iters=1628347 poll_cycles=53012416 dep_cycles=476559304 exec_cycles=78822040 signal_cycles=5153464
+[TIMING] worker=136 tasks=2275 poll_iters=82456 dep_iters=1650446 poll_cycles=47951248 dep_cycles=473144536 exec_cycles=80194524 signal_cycles=5096216
+[TIMING] worker=166 tasks=2275 poll_iters=70962 dep_iters=1649881 poll_cycles=41340156 dep_cycles=475330984 exec_cycles=80861940 signal_cycles=5255296
+[TIMING] worker=141 tasks=2275 poll_iters=51788 dep_iters=1631347 poll_cycles=30336400 dep_cycles=470914080 exec_cycles=84697276 signal_cycles=5041140
+[TIMING] worker=159 tasks=2276 poll_iters=36429 dep_iters=1656758 poll_cycles=21454960 dep_cycles=475840704 exec_cycles=80967868 signal_cycles=5222024
+[TIMING] worker=182 tasks=2243 poll_iters=105180 dep_iters=1677470 poll_cycles=61098052 dep_cycles=476745104 exec_cycles=78346116 signal_cycles=5193812
+[TIMING] worker=96 tasks=2276 poll_iters=139680 dep_iters=1761375 poll_cycles=80859324 dep_cycles=474366912 exec_cycles=79339156 signal_cycles=4807388
+[TIMING] worker=263 tasks=2244 poll_iters=84960 dep_iters=1661801 poll_cycles=49552004 dep_cycles=494467512 exec_cycles=61372000 signal_cycles=5161640
+[TIMING] worker=24 tasks=3140 poll_iters=155368 dep_iters=1651601 poll_cycles=89879216 dep_cycles=436126840 exec_cycles=114649112 signal_cycles=7325840
+[TIMING] worker=110 tasks=2276 poll_iters=91085 dep_iters=1731855 poll_cycles=52945868 dep_cycles=477864872 exec_cycles=78787852 signal_cycles=5109836
+[TIMING] worker=262 tasks=2243 poll_iters=124785 dep_iters=1654714 poll_cycles=72401420 dep_cycles=493756708 exec_cycles=61473620 signal_cycles=5247768
+[TIMING] worker=167 tasks=2276 poll_iters=41456 dep_iters=1656550 poll_cycles=24354376 dep_cycles=475919924 exec_cycles=81030696 signal_cycles=5088156
+[TIMING] worker=280 tasks=2243 poll_iters=49981 dep_iters=1742479 poll_cycles=29341820 dep_cycles=491697764 exec_cycles=60638280 signal_cycles=4787544
+[TIMING] worker=29 tasks=3140 poll_iters=59084 dep_iters=1641046 poll_cycles=34467016 dep_cycles=434521096 exec_cycles=118798600 signal_cycles=7010040
+[TIMING] worker=189 tasks=2243 poll_iters=52807 dep_iters=1686119 poll_cycles=30898000 dep_cycles=472394852 exec_cycles=82074064 signal_cycles=4932668
+[TIMING] worker=157 tasks=2275 poll_iters=43941 dep_iters=1721654 poll_cycles=25802344 dep_cycles=471761676 exec_cycles=83705472 signal_cycles=4994336
+[TIMING] worker=125 tasks=2276 poll_iters=46793 dep_iters=1715638 poll_cycles=27405928 dep_cycles=473381968 exec_cycles=82634344 signal_cycles=4811900
+[TIMING] worker=253 tasks=2243 poll_iters=48244 dep_iters=1664902 poll_cycles=28252020 dep_cycles=473759956 exec_cycles=80924748 signal_cycles=4779892
+[TIMING] worker=40 tasks=2276 poll_iters=103177 dep_iters=1605772 poll_cycles=59885248 dep_cycles=455930644 exec_cycles=98339044 signal_cycles=4952940
+[TIMING] worker=87 tasks=2277 poll_iters=52618 dep_iters=1750678 poll_cycles=30838716 dep_cycles=478286116 exec_cycles=79280020 signal_cycles=4927136
+[TIMING] worker=288 tasks=2243 poll_iters=159084 dep_iters=1739799 poll_cycles=98227724 dep_cycles=490394296 exec_cycles=61618808 signal_cycles=5114432
+[TIMING] worker=133 tasks=2276 poll_iters=46022 dep_iters=1710415 poll_cycles=26947768 dep_cycles=471840068 exec_cycles=84013140 signal_cycles=4892984
+[TIMING] worker=269 tasks=2243 poll_iters=58543 dep_iters=1644597 poll_cycles=34283756 dep_cycles=489245332 exec_cycles=65335508 signal_cycles=4882816
+[TIMING] worker=15 tasks=4005 poll_iters=35771 dep_iters=1515980 poll_cycles=21006476 dep_cycles=401728940 exec_cycles=148945960 signal_cycles=9038100
+[TIMING] worker=32 tasks=3140 poll_iters=70237 dep_iters=1710869 poll_cycles=40718892 dep_cycles=452766124 exec_cycles=98982924 signal_cycles=6355984
+[TIMING] worker=5 tasks=4004 poll_iters=67597 dep_iters=1378825 poll_cycles=39354368 dep_cycles=388776240 exec_cycles=156015476 signal_cycles=13708236
+[TIMING] worker=270 tasks=2243 poll_iters=88833 dep_iters=1751163 poll_cycles=51749880 dep_cycles=494705224 exec_cycles=60680796 signal_cycles=5030024
+[TIMING] worker=214 tasks=2243 poll_iters=147413 dep_iters=1689806 poll_cycles=85432932 dep_cycles=477302424 exec_cycles=78042496 signal_cycles=5143956
+[TIMING] worker=240 tasks=2243 poll_iters=83204 dep_iters=1570834 poll_cycles=53567920 dep_cycles=474181388 exec_cycles=78069488 signal_cycles=4869704
+[TIMING] worker=286 tasks=2243 poll_iters=111214 dep_iters=1664344 poll_cycles=64557696 dep_cycles=494068512 exec_cycles=61253928 signal_cycles=5155624
+[TIMING] worker=246 tasks=2243 poll_iters=163542 dep_iters=1654559 poll_cycles=94739372 dep_cycles=477670272 exec_cycles=77671292 signal_cycles=5159152
+[TIMING] worker=54 tasks=2276 poll_iters=66457 dep_iters=1668495 poll_cycles=38694824 dep_cycles=458520172 exec_cycles=98355496 signal_cycles=5310636
+[TIMING] worker=165 tasks=2275 poll_iters=44785 dep_iters=1719829 poll_cycles=26245208 dep_cycles=471404408 exec_cycles=84140276 signal_cycles=4871956
+[TIMING] worker=279 tasks=2244 poll_iters=44214 dep_iters=1873435 poll_cycles=26038196 dep_cycles=496625624 exec_cycles=59130344 signal_cycles=4792696
+[TIMING] worker=190 tasks=2243 poll_iters=88841 dep_iters=1617398 poll_cycles=57284080 dep_cycles=475756068 exec_cycles=79230576 signal_cycles=5361412
+[TIMING] worker=261 tasks=2243 poll_iters=41045 dep_iters=1722110 poll_cycles=26709280 dep_cycles=489568004 exec_cycles=64938012 signal_cycles=5000968
+[TIMING] worker=237 tasks=2243 poll_iters=42541 dep_iters=1575313 poll_cycles=27625728 dep_cycles=472236168 exec_cycles=82393620 signal_cycles=4791492
+[TIMING] worker=30 tasks=3140 poll_iters=80029 dep_iters=1564325 poll_cycles=46509940 dep_cycles=438183004 exec_cycles=115694344 signal_cycles=7386548
+[TIMING] worker=256 tasks=2243 poll_iters=102931 dep_iters=1731794 poll_cycles=66215104 dep_cycles=491255924 exec_cycles=61069336 signal_cycles=4832636
+[TIMING] worker=294 tasks=2243 poll_iters=108800 dep_iters=1663053 poll_cycles=63061856 dep_cycles=493350752 exec_cycles=61801204 signal_cycles=5422984
+[TIMING] worker=93 tasks=2276 poll_iters=42703 dep_iters=1752382 poll_cycles=25045572 dep_cycles=473335852 exec_cycles=82893408 signal_cycles=4736612
+[TIMING] worker=158 tasks=2275 poll_iters=112573 dep_iters=1650415 poll_cycles=65403132 dep_cycles=475288252 exec_cycles=80768948 signal_cycles=5430508
+[TIMING] worker=285 tasks=2243 poll_iters=46712 dep_iters=1732471 poll_cycles=27618760 dep_cycles=490026044 exec_cycles=64562512 signal_cycles=4860628
+[TIMING] worker=112 tasks=2276 poll_iters=102416 dep_iters=1616145 poll_cycles=59423608 dep_cycles=473740872 exec_cycles=79656024 signal_cycles=4956976
+[TIMING] worker=134 tasks=2276 poll_iters=66416 dep_iters=1641990 poll_cycles=38741284 dep_cycles=475875380 exec_cycles=80513060 signal_cycles=5323288
+[TIMING] worker=239 tasks=2244 poll_iters=38381 dep_iters=1684842 poll_cycles=22536992 dep_cycles=478076236 exec_cycles=77651772 signal_cycles=4946236
+[TIMING] worker=278 tasks=2243 poll_iters=88054 dep_iters=1866119 poll_cycles=51232016 dep_cycles=496219808 exec_cycles=59291164 signal_cycles=4827716
+[TIMING] worker=126 tasks=2276 poll_iters=82690 dep_iters=1643267 poll_cycles=48108852 dep_cycles=476470132 exec_cycles=80096076 signal_cycles=5227604
+[TIMING] worker=230 tasks=2243 poll_iters=82358 dep_iters=1463381 poll_cycles=50295880 dep_cycles=473676432 exec_cycles=80571724 signal_cycles=6324616
+[TIMING] worker=117 tasks=2276 poll_iters=41591 dep_iters=1600646 poll_cycles=24380596 dep_cycles=472235852 exec_cycles=83633240 signal_cycles=4962292
+[TIMING] worker=149 tasks=2275 poll_iters=61717 dep_iters=1610130 poll_cycles=36086648 dep_cycles=471411264 exec_cycles=83980116 signal_cycles=5250872
+[TIMING] worker=142 tasks=2275 poll_iters=80460 dep_iters=1740296 poll_cycles=46883276 dep_cycles=476313992 exec_cycles=79917772 signal_cycles=5235684
+[TIMING] worker=118 tasks=2276 poll_iters=80623 dep_iters=1704898 poll_cycles=46906096 dep_cycles=477367532 exec_cycles=79195804 signal_cycles=5105720
+[TIMING] worker=245 tasks=2243 poll_iters=48101 dep_iters=1555326 poll_cycles=31163364 dep_cycles=472672672 exec_cycles=82020016 signal_cycles=4835428
+[TIMING] worker=238 tasks=2243 poll_iters=173095 dep_iters=1678670 poll_cycles=100288624 dep_cycles=477763932 exec_cycles=77462996 signal_cycles=5122420
+[TIMING] worker=53 tasks=2276 poll_iters=40414 dep_iters=1564860 poll_cycles=23654640 dep_cycles=453353336 exec_cycles=102809120 signal_cycles=5346184
+[TIMING] worker=224 tasks=2243 poll_iters=94210 dep_iters=1704505 poll_cycles=54620936 dep_cycles=473320484 exec_cycles=78912032 signal_cycles=4906004
+[TIMING] worker=77 tasks=2276 poll_iters=56561 dep_iters=1660906 poll_cycles=33087584 dep_cycles=473139104 exec_cycles=83264388 signal_cycles=4727788
+[TIMING] worker=192 tasks=2243 poll_iters=183951 dep_iters=1695560 poll_cycles=106484248 dep_cycles=473924308 exec_cycles=78328924 signal_cycles=4779628
+[TIMING] worker=295 tasks=2244 poll_iters=28097 dep_iters=1530261 poll_cycles=27986248 dep_cycles=492045168 exec_cycles=63359936 signal_cycles=5594296
+[TIMING] worker=247 tasks=2244 poll_iters=38284 dep_iters=1660126 poll_cycles=22466964 dep_cycles=477820696 exec_cycles=77913428 signal_cycles=4964168
+[TIMING] worker=223 tasks=2244 poll_iters=42197 dep_iters=1635327 poll_cycles=24800052 dep_cycles=477063388 exec_cycles=78804712 signal_cycles=5069548
+[TIMING] worker=277 tasks=2243 poll_iters=48503 dep_iters=1751783 poll_cycles=28441104 dep_cycles=492055656 exec_cycles=62701488 signal_cycles=4640728
+[TIMING] worker=150 tasks=2275 poll_iters=88458 dep_iters=1713609 poll_cycles=51430360 dep_cycles=476191052 exec_cycles=79975872 signal_cycles=5357208
+[TIMING] worker=13 tasks=4004 poll_iters=40231 dep_iters=1404430 poll_cycles=23574320 dep_cycles=396948460 exec_cycles=153181792 signal_cycles=8174128
+[TIMING] worker=47 tasks=2277 poll_iters=36715 dep_iters=1700789 poll_cycles=21638628 dep_cycles=459349600 exec_cycles=98201220 signal_cycles=5165256
+[TIMING] worker=79 tasks=2277 poll_iters=36465 dep_iters=1777661 poll_cycles=21513992 dep_cycles=478389072 exec_cycles=79257768 signal_cycles=4822180
+[TIMING] worker=264 tasks=2243 poll_iters=139306 dep_iters=1663890 poll_cycles=80700428 dep_cycles=491614088 exec_cycles=60855076 signal_cycles=4877980
+[TIMING] worker=248 tasks=2243 poll_iters=172163 dep_iters=1673092 poll_cycles=99674464 dep_cycles=474998816 exec_cycles=77447912 signal_cycles=4714496
+[TASK_TIME] worker=88 linear=12316052/357 linear_res=4490444/191 attn=0/0 rms=44376/13 silu=55160/23 fused=0/0
+[TIMING] worker=7 tasks=4005 poll_iters=32817 dep_iters=1325024 poll_cycles=19290712 dep_cycles=393994200 exec_cycles=153383944 signal_cycles=12613996
+[TIMING] worker=56 tasks=2276 poll_iters=115643 dep_iters=1752276 poll_cycles=66970976 dep_cycles=474711284 exec_cycles=79384588 signal_cycles=4960788
+[TIMING] worker=8 tasks=4004 poll_iters=131173 dep_iters=1421882 poll_cycles=75978948 dep_cycles=398430200 exec_cycles=149116492 signal_cycles=8651952
+[TIMING] worker=103 tasks=2276 poll_iters=35598 dep_iters=1683530 poll_cycles=20957396 dep_cycles=476571868 exec_cycles=80670984 signal_cycles=5095696
+[TIMING] worker=45 tasks=2276 poll_iters=41845 dep_iters=1590765 poll_cycles=24618132 dep_cycles=454353480 exec_cycles=102200140 signal_cycles=4969772
+[TIMING] worker=46 tasks=2276 poll_iters=85375 dep_iters=1694837 poll_cycles=49690344 dep_cycles=458839788 exec_cycles=98316856 signal_cycles=5136772
+[TIMING] worker=216 tasks=2243 poll_iters=109398 dep_iters=1707814 poll_cycles=63444684 dep_cycles=474757872 exec_cycles=77755124 signal_cycles=4688840
+[TIMING] worker=208 tasks=2243 poll_iters=43710 dep_iters=1604275 poll_cycles=25557116 dep_cycles=473891496 exec_cycles=78293428 signal_cycles=5017116
+[TIMING] worker=23 tasks=3141 poll_iters=37860 dep_iters=1615435 poll_cycles=22250476 dep_cycles=439225076 exec_cycles=114726016 signal_cycles=7784000
+[TIMING] worker=231 tasks=2244 poll_iters=40183 dep_iters=1633185 poll_cycles=23584124 dep_cycles=475930004 exec_cycles=79670004 signal_cycles=5331928
+[TIMING] worker=85 tasks=2276 poll_iters=58345 dep_iters=1637745 poll_cycles=34098448 dep_cycles=473208448 exec_cycles=83039048 signal_cycles=4800176
+[TIMING] worker=101 tasks=2276 poll_iters=43988 dep_iters=1748078 poll_cycles=25737720 dep_cycles=471923488 exec_cycles=84086832 signal_cycles=4957420
+[TIMING] worker=14 tasks=4004 poll_iters=99487 dep_iters=1505852 poll_cycles=57714820 dep_cycles=400363856 exec_cycles=150248716 signal_cycles=8554452
+[TIMING] worker=197 tasks=2243 poll_iters=82902 dep_iters=1683395 poll_cycles=48326020 dep_cycles=471782280 exec_cycles=82649072 signal_cycles=4963260
+[TIMING] worker=95 tasks=2276 poll_iters=35204 dep_iters=1685012 poll_cycles=20768200 dep_cycles=477380624 exec_cycles=80071024 signal_cycles=4976360
+[TIMING] worker=191 tasks=2244 poll_iters=34655 dep_iters=1624398 poll_cycles=22515704 dep_cycles=476222136 exec_cycles=79369224 signal_cycles=5314676
+[TASK_TIME] worker=293 linear=11434424/325 linear_res=4834952/194 attn=0/0 rms=0/0 silu=52072/21 fused=0/0
+[TIMING] worker=6 tasks=4004 poll_iters=110269 dep_iters=1313615 poll_cycles=63906004 dep_cycles=389862488 exec_cycles=153984440 signal_cycles=15653636
+[TASK_TIME] worker=206 linear=10909596/321 linear_res=4808624/196 attn=0/0 rms=43536/12 silu=55800/23 fused=0/0
+[TASK_TIME] worker=69 linear=12783996/357 linear_res=4527904/192 attn=0/0 rms=0/0 silu=51644/21 fused=0/0
+[TASK_TIME] worker=152 linear=12449364/355 linear_res=4612012/195 attn=0/0 rms=45732/13 silu=53496/22 fused=0/0
+[TIMING] worker=78 tasks=2276 poll_iters=89074 dep_iters=1771468 poll_cycles=51800980 dep_cycles=478046056 exec_cycles=78935020 signal_cycles=4971060
+[TASK_TIME] worker=229 linear=11050488/323 linear_res=4821300/196 attn=0/0 rms=0/0 silu=52476/21 fused=0/0
+[TASK_TIME] worker=181 linear=10931968/322 linear_res=4732388/195 attn=0/0 rms=0/0 silu=53548/22 fused=0/0
+[TIMING] worker=183 tasks=2244 poll_iters=39063 dep_iters=1683961 poll_cycles=22947000 dep_cycles=476921216 exec_cycles=78657476 signal_cycles=5228808
+[TASK_TIME] worker=144 linear=12353692/354 linear_res=4645248/196 attn=0/0 rms=35188/10 silu=50768/21 fused=0/0
+[TASK_TIME] worker=61 linear=12935872/358 linear_res=4615152/192 attn=0/0 rms=0/0 silu=53464/22 fused=0/0
+[TASK_TIME] worker=80 linear=12413300/358 linear_res=4513820/192 attn=0/0 rms=34512/10 silu=49808/21 fused=0/0
+[TASK_TIME] worker=200 linear=10927564/321 linear_res=4746824/195 attn=0/0 rms=38392/11 silu=57452/24 fused=0/0
+[TIMING] worker=71 tasks=2277 poll_iters=36031 dep_iters=1676029 poll_cycles=21202112 dep_cycles=477747192 exec_cycles=79848832 signal_cycles=5000504
+[TASK_TIME] worker=93 linear=12492856/356 linear_res=4553468/192 attn=0/0 rms=0/0 silu=53924/22 fused=0/0
+[TASK_TIME] worker=253 linear=11112108/323 linear_res=4780444/195 attn=0/0 rms=0/0 silu=59680/24 fused=0/0
+[TASK_TIME] worker=189 linear=11027072/323 linear_res=4715884/195 attn=0/0 rms=0/0 silu=59652/24 fused=0/0
+[TIMING] worker=199 tasks=2244 poll_iters=57026 dep_iters=1623369 poll_cycles=33407688 dep_cycles=476230848 exec_cycles=79455232 signal_cycles=5078512
+[TIMING] worker=255 tasks=2244 poll_iters=54545 dep_iters=1603518 poll_cycles=35267576 dep_cycles=477716220 exec_cycles=78190092 signal_cycles=4962664
+[TASK_TIME] worker=77 linear=12549976/358 linear_res=4541908/192 attn=0/0 rms=0/0 silu=55376/23 fused=0/0
+[TASK_TIME] worker=261 linear=11050292/323 linear_res=4780764/195 attn=0/0 rms=0/0 silu=51764/21 fused=0/0
+[TIMING] worker=151 tasks=2276 poll_iters=38600 dep_iters=1719719 poll_cycles=22662828 dep_cycles=476431040 exec_cycles=80305204 signal_cycles=5287388
+[TIMING] worker=143 tasks=2276 poll_iters=37961 dep_iters=1746894 poll_cycles=22332052 dep_cycles=476669900 exec_cycles=80192932 signal_cycles=5151332
+[TIMING] worker=70 tasks=2276 poll_iters=152082 dep_iters=1668857 poll_cycles=88110168 dep_cycles=476757128 exec_cycles=80059376 signal_cycles=5439876
+[TIMING] worker=111 tasks=2276 poll_iters=36226 dep_iters=1738055 poll_cycles=21350456 dep_cycles=478220504 exec_cycles=79018980 signal_cycles=4909724
+[TASK_TIME] worker=64 linear=12648496/358 linear_res=4493344/192 attn=0/0 rms=34276/10 silu=50536/21 fused=0/0
+[TIMING] worker=62 tasks=2276 poll_iters=117463 dep_iters=1668537 poll_cycles=68175032 dep_cycles=476462008 exec_cycles=80394284 signal_cycles=5435144
+[TASK_TIME] worker=32 linear=12516932/356 linear_res=4558376/193 attn=0/0 rms=37892/11 silu=52360/22 fused=0/0
+[TASK_TIME] worker=38 linear=12951440/358 linear_res=4619100/192 attn=0/0 rms=45272/13 silu=49924/21 fused=0/0
+[TIMING] worker=176 tasks=2243 poll_iters=192390 dep_iters=1590993 poll_cycles=123563940 dep_cycles=472606136 exec_cycles=79029604 signal_cycles=5335188
+[TASK_TIME] worker=16 linear=12748036/357 linear_res=4660968/192 attn=0/0 rms=37056/11 silu=49868/21 fused=0/0
+[TASK_TIME] worker=128 linear=12390180/357 linear_res=4568508/194 attn=0/0 rms=34520/10 silu=53096/22 fused=0/0
+[TASK_TIME] worker=29 linear=12888292/356 linear_res=4722992/193 attn=0/0 rms=0/0 silu=51700/21 fused=0/0
+[TASK_TIME] worker=102 linear=12665852/356 linear_res=4591580/193 attn=0/0 rms=46976/13 silu=51020/21 fused=0/0
+[TASK_TIME] worker=272 linear=10978656/324 linear_res=4655668/193 attn=0/0 rms=34444/10 silu=54924/23 fused=0/0
+[TASK_TIME] worker=254 linear=11096280/323 linear_res=4783836/195 attn=0/0 rms=36432/10 silu=57880/24 fused=0/0
+[TASK_TIME] worker=48 linear=12746132/358 linear_res=4580508/192 attn=0/0 rms=37928/11 silu=49772/21 fused=0/0
+[TASK_TIME] worker=5 linear=13099340/357 linear_res=4702712/192 attn=0/0 rms=0/0 silu=54468/22 fused=0/0
+[TASK_TIME] worker=270 linear=11111208/324 linear_res=4740244/193 attn=0/0 rms=47964/13 silu=54288/22 fused=0/0
+[TASK_TIME] worker=285 linear=11125844/322 linear_res=4713232/193 attn=0/0 rms=0/0 silu=57736/23 fused=0/0
+[TASK_TIME] worker=141 linear=12549796/354 linear_res=4665420/195 attn=0/0 rms=0/0 silu=56708/23 fused=0/0
+[TIMING] worker=287 tasks=2244 poll_iters=38788 dep_iters=1670727 poll_cycles=22791448 dep_cycles=494566356 exec_cycles=61248368 signal_cycles=5004336
+[TASK_TIME] worker=40 linear=12866156/358 linear_res=4575544/192 attn=0/0 rms=34128/10 silu=54720/23 fused=0/0
+[TASK_TIME] worker=72 linear=12422992/357 linear_res=4494824/192 attn=0/0 rms=37996/11 silu=56724/24 fused=0/0
+[TASK_TIME] worker=182 linear=10888236/322 linear_res=4728600/195 attn=0/0 rms=40140/11 silu=53376/22 fused=0/0
+[TASK_TIME] worker=173 linear=12556172/353 linear_res=4729420/195 attn=0/0 rms=0/0 silu=58524/24 fused=0/0
+[TASK_TIME] worker=86 linear=12463740/357 linear_res=4521296/191 attn=0/0 rms=35852/10 silu=57696/24 fused=0/0
+[TASK_TIME] worker=221 linear=10954140/321 linear_res=4804660/196 attn=0/0 rms=0/0 silu=56932/23 fused=0/0
+[TASK_TIME] worker=37 linear=12753816/358 linear_res=4486560/192 attn=0/0 rms=0/0 silu=51212/21 fused=0/0
+[TASK_TIME] worker=198 linear=10933112/321 linear_res=4799896/195 attn=0/0 rms=47580/13 silu=50556/21 fused=0/0
+[TASK_TIME] worker=21 linear=12932540/356 linear_res=4701304/192 attn=0/0 rms=0/0 silu=57840/24 fused=0/0
+[TASK_TIME] worker=184 linear=10901716/322 linear_res=4673148/195 attn=0/0 rms=45148/13 silu=52916/22 fused=0/0
+[TASK_TIME] worker=232 linear=10997232/323 linear_res=4754904/195 attn=0/0 rms=35316/10 silu=53256/22 fused=0/0
+[TASK_TIME] worker=245 linear=11108752/323 linear_res=4800060/195 attn=0/0 rms=0/0 silu=53880/22 fused=0/0
+[TASK_TIME] worker=157 linear=12522796/354 linear_res=4662276/195 attn=0/0 rms=0/0 silu=56708/23 fused=0/0
+[TASK_TIME] worker=278 linear=10951968/324 linear_res=4692984/193 attn=0/0 rms=36360/10 silu=58384/24 fused=0/0
+[TASK_TIME] worker=136 linear=12421248/354 linear_res=4614812/195 attn=0/0 rms=38904/11 silu=57720/24 fused=0/0
+[TASK_TIME] worker=96 linear=12364408/356 linear_res=4532956/192 attn=0/0 rms=38664/11 silu=55604/23 fused=0/0
+[TASK_TIME] worker=256 linear=11036676/323 linear_res=4738492/195 attn=0/0 rms=41864/12 silu=55320/23 fused=0/0
+[TASK_TIME] worker=53 linear=12855488/356 linear_res=4606792/191 attn=0/0 rms=0/0 silu=54932/23 fused=0/0
+[TASK_TIME] worker=192 linear=10952104/323 linear_res=4679896/195 attn=0/0 rms=38248/11 silu=55676/23 fused=0/0
+[TASK_TIME] worker=168 linear=12409928/354 linear_res=4681008/195 attn=0/0 rms=34916/10 silu=54988/23 fused=0/0
+[TASK_TIME] worker=125 linear=12632652/357 linear_res=4618244/194 attn=0/0 rms=0/0 silu=56644/23 fused=0/0
+[TASK_TIME] worker=213 linear=11058868/322 linear_res=4827528/196 attn=0/0 rms=0/0 silu=55772/23 fused=0/0
+[TASK_TIME] worker=222 linear=11078764/321 linear_res=4814948/196 attn=0/0 rms=40000/11 silu=54844/23 fused=0/0
+[TASK_TIME] worker=24 linear=12791640/356 linear_res=4655320/192 attn=0/0 rms=44032/13 silu=55624/23 fused=0/0
+[TASK_TIME] worker=165 linear=12497620/354 linear_res=4734392/196 attn=0/0 rms=0/0 silu=51428/21 fused=0/0
+[TASK_TIME] worker=237 linear=11018912/322 linear_res=4779424/194 attn=0/0 rms=0/0 silu=56092/23 fused=0/0
+[TASK_TIME] worker=166 linear=12541308/354 linear_res=4714992/195 attn=0/0 rms=46772/13 silu=50080/21 fused=0/0
+[TASK_TIME] worker=13 linear=12949856/357 linear_res=4705656/192 attn=0/0 rms=0/0 silu=55852/23 fused=0/0
+[TASK_TIME] worker=112 linear=12296992/356 linear_res=4582620/194 attn=0/0 rms=38768/11 silu=50728/21 fused=0/0
+[TASK_TIME] worker=224 linear=10993892/321 linear_res=4784972/196 attn=0/0 rms=42372/12 silu=58584/24 fused=0/0
+[TASK_TIME] worker=110 linear=12463848/356 linear_res=4613000/194 attn=0/0 rms=36200/10 silu=58264/24 fused=0/0
+[TASK_TIME] worker=54 linear=12779560/356 linear_res=4605620/191 attn=0/0 rms=39680/11 silu=55308/23 fused=0/0
+[TASK_TIME] worker=127 linear=12757812/357 linear_res=4612296/195 attn=0/0 rms=0/0 silu=58796/24 fused=0/0
+[TASK_TIME] worker=159 linear=12630208/353 linear_res=4736140/196 attn=0/0 rms=0/0 silu=49100/20 fused=0/0
+[TASK_TIME] worker=150 linear=12525144/355 linear_res=4669620/195 attn=0/0 rms=36544/10 silu=56184/23 fused=0/0
+[TIMING] worker=39 tasks=3141 poll_iters=37862 dep_iters=1626772 poll_cycles=22226764 dep_cycles=455248960 exec_cycles=99915692 signal_cycles=6523864
+[TASK_TIME] worker=94 linear=12562540/356 linear_res=4544772/192 attn=0/0 rms=39860/11 silu=52208/22 fused=0/0
+[TASK_TIME] worker=0 linear=12898904/357 linear_res=4743336/193 attn=0/0 rms=33792/10 silu=50768/21 fused=0/0
+[TASK_TIME] worker=269 linear=11119588/324 linear_res=4747660/193 attn=0/0 rms=0/0 silu=54256/22 fused=0/0
+[TASK_TIME] worker=134 linear=12504660/354 linear_res=4636684/195 attn=0/0 rms=46648/13 silu=50016/21 fused=0/0
+[TASK_TIME] worker=263 linear=11025356/321 linear_res=4667896/194 attn=0/0 rms=0/0 silu=51404/21 fused=0/0
+[TASK_TIME] worker=56 linear=12771576/356 linear_res=4552980/191 attn=0/0 rms=44732/13 silu=57224/24 fused=0/0
+[TASK_TIME] worker=216 linear=10985172/322 linear_res=4765564/196 attn=0/0 rms=44780/13 silu=50388/21 fused=0/0
+[TASK_TIME] worker=230 linear=11171244/323 linear_res=4802456/195 attn=0/0 rms=43404/12 silu=51732/21 fused=0/0
+[TASK_TIME] worker=8 linear=12831020/357 linear_res=4663404/192 attn=0/0 rms=37220/11 silu=57264/24 fused=0/0
+[TASK_TIME] worker=142 linear=12471552/354 linear_res=4673872/196 attn=0/0 rms=40076/11 silu=56268/23 fused=0/0
+[TASK_TIME] worker=240 linear=11015464/322 linear_res=4756144/195 attn=0/0 rms=39028/11 silu=55724/23 fused=0/0
+[TASK_TIME] worker=208 linear=10926500/321 linear_res=4778896/196 attn=0/0 rms=34772/10 silu=52536/22 fused=0/0
+[TASK_TIME] worker=160 linear=12387532/354 linear_res=4593196/195 attn=0/0 rms=37848/11 silu=57324/24 fused=0/0
+[TASK_TIME] worker=104 linear=12440424/356 linear_res=4554576/193 attn=0/0 rms=34648/10 silu=55084/23 fused=0/0
+[TASK_TIME] worker=120 linear=12374476/356 linear_res=4550712/193 attn=0/0 rms=45152/13 silu=55316/23 fused=0/0
+[TASK_TIME] worker=133 linear=12500888/354 linear_res=4639432/195 attn=0/0 rms=0/0 silu=51184/21 fused=0/0
+[TASK_TIME] worker=109 linear=12525932/356 linear_res=4601928/193 attn=0/0 rms=0/0 silu=58552/24 fused=0/0
+[TASK_TIME] worker=246 linear=11098616/323 linear_res=4798912/195 attn=0/0 rms=41140/11 silu=54216/22 fused=0/0
+[TASK_TIME] worker=126 linear=12711092/357 linear_res=4612368/194 attn=0/0 rms=36404/10 silu=55112/23 fused=0/0
+[TASK_TIME] worker=294 linear=11448768/325 linear_res=4797168/193 attn=0/0 rms=40120/11 silu=50416/21 fused=0/0
+[TASK_TIME] worker=87 linear=12624708/357 linear_res=4576464/194 attn=0/0 rms=0/0 silu=58740/24 fused=0/0
+[TASK_TIME] worker=280 linear=11123356/324 linear_res=4667244/193 attn=0/0 rms=42340/12 silu=51304/21 fused=0/0
+[TASK_TIME] worker=23 linear=12760296/358 linear_res=4573684/191 attn=0/0 rms=0/0 silu=58708/24 fused=0/0
+[TASK_TIME] worker=288 linear=11369756/322 linear_res=4766224/193 attn=0/0 rms=45276/13 silu=57792/24 fused=0/0
+[TASK_TIME] worker=31 linear=12819248/355 linear_res=4682040/192 attn=0/0 rms=0/0 silu=50956/21 fused=0/0
+[TASK_TIME] worker=207 linear=10914720/326 linear_res=4746500/194 attn=0/0 rms=0/0 silu=56480/23 fused=0/0
+[TASK_TIME] worker=248 linear=11060952/323 linear_res=4741700/195 attn=0/0 rms=42092/12 silu=50988/21 fused=0/0
+[TASK_TIME] worker=22 linear=12856856/356 linear_res=4696036/192 attn=0/0 rms=34948/10 silu=57676/24 fused=0/0
+[TASK_TIME] worker=14 linear=12909664/357 linear_res=4684216/192 attn=0/0 rms=39136/11 silu=55872/23 fused=0/0
+[TASK_TIME] worker=190 linear=10991892/323 linear_res=4717844/195 attn=0/0 rms=36016/10 silu=57388/24 fused=0/0
+[TASK_TIME] worker=174 linear=12443556/353 linear_res=4745968/196 attn=0/0 rms=39668/11 silu=58092/24 fused=0/0
+[TASK_TIME] worker=262 linear=11049316/323 linear_res=4758240/194 attn=0/0 rms=43644/12 silu=50384/21 fused=0/0
+[TASK_TIME] worker=119 linear=12556840/355 linear_res=4721736/196 attn=0/0 rms=0/0 silu=48944/20 fused=0/0
+[TIMING] worker=215 tasks=2244 poll_iters=38223 dep_iters=1695931 poll_cycles=22481012 dep_cycles=477473868 exec_cycles=78256628 signal_cycles=5079628
+[TASK_TIME] worker=78 linear=12517424/358 linear_res=4523120/192 attn=0/0 rms=39644/11 silu=55416/23 fused=0/0
+[TASK_TIME] worker=149 linear=12661660/355 linear_res=4672224/195 attn=0/0 rms=0/0 silu=56064/23 fused=0/0
+[TASK_TIME] worker=158 linear=12640604/354 linear_res=4661076/195 attn=0/0 rms=40440/11 silu=55536/23 fused=0/0
+[TASK_TIME] worker=46 linear=12876364/358 linear_res=4618884/192 attn=0/0 rms=36048/10 silu=57800/24 fused=0/0
+[TASK_TIME] worker=277 linear=10956736/324 linear_res=4698532/193 attn=0/0 rms=0/0 silu=58592/24 fused=0/0
+[TASK_TIME] worker=247 linear=11083836/326 linear_res=4741760/193 attn=0/0 rms=0/0 silu=54652/22 fused=0/0
+[TASK_TIME] worker=238 linear=10934816/322 linear_res=4793308/195 attn=0/0 rms=43928/12 silu=56404/23 fused=0/0
+[TASK_TIME] worker=279 linear=10826212/323 linear_res=4597408/193 attn=0/0 rms=0/0 silu=57212/23 fused=0/0
+[TASK_TIME] worker=79 linear=12612320/358 linear_res=4635292/194 attn=0/0 rms=0/0 silu=51124/21 fused=0/0
+[TASK_TIME] worker=62 linear=12975880/358 linear_res=4619752/192 attn=0/0 rms=35820/10 silu=52528/22 fused=0/0
+[TASK_TIME] worker=85 linear=12581304/357 linear_res=4541324/191 attn=0/0 rms=0/0 silu=58080/24 fused=0/0
+[TASK_TIME] worker=223 linear=11015640/321 linear_res=4748136/194 attn=0/0 rms=0/0 silu=50812/21 fused=0/0
+[TASK_TIME] worker=6 linear=13066848/357 linear_res=4627760/192 attn=0/0 rms=45620/13 silu=53048/22 fused=0/0
+[TASK_TIME] worker=286 linear=11202636/322 linear_res=4716088/193 attn=0/0 rms=40460/11 silu=55812/23 fused=0/0
+[TASK_TIME] worker=175 linear=12540704/353 linear_res=4683108/194 attn=0/0 rms=0/0 silu=56836/23 fused=0/0
+[TASK_TIME] worker=47 linear=12771192/355 linear_res=4617460/193 attn=0/0 rms=0/0 silu=56128/23 fused=0/0
+[TASK_TIME] worker=214 linear=10996372/322 linear_res=4821812/196 attn=0/0 rms=36424/10 silu=55788/23 fused=0/0
+[TIMING] worker=63 tasks=2277 poll_iters=37513 dep_iters=1675208 poll_cycles=22092828 dep_cycles=477050984 exec_cycles=80412492 signal_cycles=5152972
+[TASK_TIME] worker=30 linear=12941048/356 linear_res=4734836/193 attn=0/0 rms=39040/11 silu=50676/21 fused=0/0
+[TASK_TIME] worker=135 linear=12485556/353 linear_res=4592808/194 attn=0/0 rms=0/0 silu=53972/22 fused=0/0
+[TASK_TIME] worker=231 linear=11091468/324 linear_res=4786336/195 attn=0/0 rms=0/0 silu=58656/24 fused=0/0
+[TASK_TIME] worker=239 linear=11017220/323 linear_res=4756896/194 attn=0/0 rms=0/0 silu=51904/21 fused=0/0
+[TASK_TIME] worker=271 linear=10978052/325 linear_res=4667232/194 attn=0/0 rms=0/0 silu=56936/23 fused=0/0
+[TASK_TIME] worker=103 linear=12674528/357 linear_res=4580872/193 attn=0/0 rms=0/0 silu=58412/24 fused=0/0
+[TASK_TIME] worker=117 linear=12576564/356 linear_res=4611568/193 attn=0/0 rms=0/0 silu=53784/22 fused=0/0
+[TASK_TIME2] worker=254 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=167 linear=12760552/357 linear_res=4691160/195 attn=0/0 rms=0/0 silu=58012/24 fused=0/0
+[TASK_TIME] worker=191 linear=10949860/322 linear_res=4796040/196 attn=0/0 rms=0/0 silu=58464/24 fused=0/0
+[TASK_TIME] worker=7 linear=12978264/354 linear_res=4652940/193 attn=0/0 rms=0/0 silu=53924/22 fused=0/0
+[TASK_TIME] worker=55 linear=12694776/357 linear_res=4605312/192 attn=0/0 rms=0/0 silu=51180/21 fused=0/0
+[TASK_TIME2] worker=80 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=15 linear=12818784/358 linear_res=4596104/192 attn=0/0 rms=0/0 silu=53728/22 fused=0/0
+[TASK_TIME] worker=95 linear=12584644/355 linear_res=4555524/193 attn=0/0 rms=0/0 silu=50728/21 fused=0/0
+[TASK_TIME] worker=70 linear=12950588/357 linear_res=4615040/192 attn=0/0 rms=46980/13 silu=50168/21 fused=0/0
+[TASK_TIME] worker=199 linear=11016364/322 linear_res=4781524/195 attn=0/0 rms=0/0 silu=48720/20 fused=0/0
+[TASK_TIME] worker=255 linear=11053256/324 linear_res=4748776/194 attn=0/0 rms=0/0 silu=58688/24 fused=0/0
+[TASK_TIME2] worker=38 prep=0/0 attend=6890308/864 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=143 linear=12546804/355 linear_res=4613656/194 attn=0/0 rms=0/0 silu=56472/23 fused=0/0
+[TASK_TIME] worker=176 linear=10759112/321 linear_res=4708484/196 attn=0/0 rms=38612/11 silu=52628/22 fused=0/0
+[TASK_TIME2] worker=206 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=272 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TIMING] worker=205 tasks=2243 poll_iters=45600 dep_iters=1607723 poll_cycles=26771212 dep_cycles=471373156 exec_cycles=83285116 signal_cycles=4834436
+[TASK_TIME] worker=197 linear=10924316/321 linear_res=4824516/196 attn=0/0 rms=0/0 silu=51968/21 fused=0/0
+[TASK_TIME] worker=183 linear=10858916/322 linear_res=4688052/194 attn=0/0 rms=0/0 silu=53912/22 fused=0/0
+[TASK_TIME2] worker=72 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=88 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=64 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=222 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=32 prep=0/0 attend=1553200/864 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=71 linear=12644172/354 linear_res=4613312/193 attn=0/0 rms=0/0 silu=53184/22 fused=0/0
+[TASK_TIME2] worker=48 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=86 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=200 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=118 linear=12440892/356 linear_res=4603892/193 attn=0/0 rms=40388/11 silu=53488/22 fused=0/0
+[TASK_TIME2] worker=112 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=215 linear=10897952/322 linear_res=4757248/194 attn=0/0 rms=0/0 silu=59332/24 fused=0/0
+[TASK_TIME] worker=295 linear=11370652/325 linear_res=4738128/193 attn=0/0 rms=0/0 silu=58756/24 fused=0/0
+[TASK_TIME2] worker=40 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=126 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=151 linear=12527192/352 linear_res=4744688/196 attn=0/0 rms=0/0 silu=59812/24 fused=0/0
+[TASK_TIME2] worker=182 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=54 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=16 prep=0/0 attend=16490444/864 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=287 linear=11138112/324 linear_res=4599220/192 attn=0/0 rms=0/0 silu=51536/21 fused=0/0
+[TASK_TIME2] worker=144 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=278 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=110 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=158 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=56 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=69 prep=3923244/13 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=134 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=160 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=152 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=6 prep=0/0 attend=16555192/864 merge=36815188/864 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=45 linear=12943896/358 linear_res=4628924/192 attn=0/0 rms=0/0 silu=57768/24 fused=0/0
+[TASK_TIME2] worker=30 prep=0/0 attend=16498908/864 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=168 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=166 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=102 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=280 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=198 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=174 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=24 prep=0/0 attend=16499480/864 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=150 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=288 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=262 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=8 prep=0/0 attend=16486672/864 merge=34099484/864 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=176 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=214 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=111 linear=12453300/352 linear_res=4695576/195 attn=0/0 rms=0/0 silu=56872/23 fused=0/0
+[TASK_TIME2] worker=94 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=294 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=240 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=246 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=230 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=142 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=181 prep=3569512/11 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=286 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=270 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=216 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=78 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=159 prep=0/0 attend=0/0 merge=0/0 router=536896/13 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=101 linear=12576888/356 linear_res=4601236/193 attn=0/0 rms=0/0 silu=52552/21 fused=0/0
+[TASK_TIME2] worker=14 prep=0/0 attend=16511028/864 merge=35523436/864 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=248 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=62 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=136 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=96 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=70 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=0 prep=0/0 attend=16455800/864 merge=36379860/864 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=192 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=256 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=190 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=238 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=22 prep=0/0 attend=16515568/864 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=184 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=128 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=104 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=46 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=224 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=232 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=118 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=208 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=264 linear=11071048/323 linear_res=4725488/194 attn=0/0 rms=39352/11 silu=55996/23 fused=0/0
+[TASK_TIME2] worker=120 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=173 prep=3723140/12 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=61 prep=3060808/10 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=63 linear=12878996/359 linear_res=4574404/191 attn=0/0 rms=0/0 silu=58156/24 fused=0/0
+[TASK_TIME2] worker=5 prep=4047980/13 attend=16570740/864 merge=35005380/864 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=77 prep=3471356/11 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=157 prep=3528524/11 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=261 prep=3444980/11 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=223 prep=0/0 attend=0/0 merge=0/0 router=535728/13 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=264 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=125 prep=3043012/10 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=29 prep=3476252/11 attend=16501212/864 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=31 prep=0/0 attend=16525240/864 merge=0/0 router=530052/13 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=293 prep=3104144/10 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=229 prep=3422528/11 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=285 prep=3572760/11 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=253 prep=3084960/10 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=93 prep=3468272/11 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=141 prep=3837696/12 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=205 linear=10965784/321 linear_res=4794184/195 attn=0/0 rms=0/0 silu=55880/23 fused=0/0
+[TASK_TIME2] worker=165 prep=3667192/12 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=245 prep=3557444/11 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=85 prep=3059384/10 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=213 prep=3101428/10 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=37 prep=3917284/13 attend=1489652/864 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=109 prep=3350576/11 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=13 prep=3479848/11 attend=16502640/864 merge=33974672/864 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=21 prep=3071132/10 attend=16483112/864 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=53 prep=3518468/11 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=133 prep=4007788/13 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=237 prep=4016904/13 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=221 prep=3518256/11 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=269 prep=4071644/13 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME] worker=39 linear=12704856/358 linear_res=4573848/193 attn=0/0 rms=0/0 silu=55492/23 fused=0/0
+[TASK_TIME2] worker=189 prep=3100464/10 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=197 prep=3675404/12 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=277 prep=3045048/10 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=149 prep=3109456/10 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=117 prep=3507212/11 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=45 prep=3062284/10 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=101 prep=3988568/13 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=279 prep=0/0 attend=0/0 merge=0/0 router=450216/11 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=205 prep=4136356/13 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=167 prep=0/0 attend=0/0 merge=0/0 router=408256/10 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=87 prep=0/0 attend=0/0 merge=0/0 router=408452/10 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=95 prep=0/0 attend=0/0 merge=0/0 router=536008/13 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=7 prep=0/0 attend=16501740/864 merge=36033452/864 router=493472/12 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=255 prep=0/0 attend=0/0 merge=0/0 router=408320/10 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=247 prep=0/0 attend=0/0 merge=0/0 router=499584/12 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=127 prep=0/0 attend=0/0 merge=0/0 router=405804/10 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=239 prep=0/0 attend=0/0 merge=0/0 router=490264/12 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=55[EVENT_TIMING] 12032 event firings recorded
+
+================================================================================
+PER-EVENT WALL-CLOCK TIMING (barrier-to-barrier)
+================================================================================
+Event TaskType              Count    Avg(us)    Min(us)    Max(us)    Std(us)
+-------------------------------------------------------------------------
+    1 UNKNOWN                  30     183.21     150.00     241.80      19.00
+    2 UNKNOWN                  31      14.35      13.29      16.13       0.65
+    3 UNKNOWN                  31       4.15       3.94       4.50       0.15
+    4 UNKNOWN                  31      22.97      21.01      25.94       1.27
+    5 UNKNOWN                  31     150.79     148.38     155.94       1.62
+    6 UNKNOWN                  31      12.76      12.25      15.80       0.99
+    7 UNKNOWN                  31      26.94      23.32      27.92       1.20
+    8 UNKNOWN                  31      13.44      12.89      13.92       0.26
+    9 UNKNOWN                  31       4.85       3.87       5.43       0.52
+   10 UNKNOWN                  31      32.40      31.06      33.88       0.83
+   11 UNKNOWN                  31      51.43      49.94      53.26       0.85
+   12 UNKNOWN                  31       4.63       3.94       4.90       0.22
+   13 UNKNOWN                  31      13.18      12.65      13.94       0.33
+   14 UNKNOWN                  31     149.54     146.29     152.60       1.51
+   15 UNKNOWN                  31      12.46      11.98      12.82       0.25
+   16 UNKNOWN                  31      23.67      22.97      24.40       0.37
+   17 UNKNOWN                  31      13.68      12.92      14.12       0.29
+   18 UNKNOWN                  31       4.26       4.00       4.51       0.12
+   19 UNKNOWN                  31      23.65      21.93      27.89       1.33
+   20 UNKNOWN                  31      41.07      38.83      46.12       1.69
+   21 UNKNOWN                  31       5.57       4.15       6.80       1.07
+   22 UNKNOWN                  31      22.57      21.23      24.24       1.12
+   23 UNKNOWN                  31       4.98       4.68       5.40       0.17
+   24 UNKNOWN                  31       4.42       3.93       4.78       0.29
+   25 UNKNOWN                  31      13.73      13.03      14.38       0.37
+   26 UNKNOWN                  31     149.83     147.75     152.47       1.39
+   27 UNKNOWN                  31      12.65      12.19      13.15       0.27
+   28 UNKNOWN                  31      24.00      23.10      26.36       0.79
+   29 UNKNOWN                  31      14.05      13.01      18.04       1.41
+   30 UNKNOWN                  31       3.61       3.44       3.81       0.08
+   31 UNKNOWN                  31      23.95      22.23      30.63       1.60
+   32 UNKNOWN                  31      42.65      40.29      45.61       1.62
+   33 UNKNOWN                  31       6.04       4.13       8.72       1.17
+   34 UNKNOWN                  31      21.68      20.48      23.39       1.02
+   35 UNKNOWN                  31       5.69       4.96       7.13       0.63
+   36 UNKNOWN                  31       4.64       3.98       4.89       0.18
+   37 UNKNOWN                  31      13.29      12.86      14.09       0.29
+   38 UNKNOWN                  31     149.70     146.57     152.52       1.46
+   39 UNKNOWN                  31      12.74      12.45      13.15       0.17
+   40 UNKNOWN                  31      23.82      23.32      24.28       0.26
+   41 UNKNOWN                  31      13.39      12.81      14.16       0.36
+   42 UNKNOWN                  31       4.20       4.03       4.48       0.12
+   43 UNKNOWN                  31      23.84      21.97      24.45       0.68
+   44 UNKNOWN                  31      42.00      38.82      45.61       1.37
+   45 UNKNOWN                  31       5.48       4.06       6.58       1.05
+   46 UNKNOWN                  31      22.44      20.40      24.38       1.08
+   47 UNKNOWN                  31       4.65       4.08       7.08       0.87
+   48 UNKNOWN                  31       4.39       3.97       4.78       0.25
+   49 UNKNOWN                  31      13.45      12.80      14.21       0.39
+   50 UNKNOWN                  31     150.27     147.81     153.10       1.39
+   51 UNKNOWN                  31      12.98      12.51      13.39       0.20
+   52 UNKNOWN                  31      23.67      22.88      24.36       0.37
+   53 UNKNOWN                  31      13.53      12.93      14.36       0.36
+   54 UNKNOWN                  31       3.62       3.48       3.76       0.06
+   55 UNKNOWN                  31      24.02      22.15      29.59       1.39
+   56 UNKNOWN                  31      40.19      38.59      42.34       1.13
+   57 UNKNOWN                  31       6.04       4.24       6.76       0.87
+   58 UNKNOWN                  31      22.13      21.20      24.12       0.99
+   59 UNKNOWN                  31       4.89       4.49       5.84       0.23
+   60 UNKNOWN                  31       4.54       3.87       4.75       0.23
+   61 UNKNOWN                  31      13.08      12.41      13.79       0.34
+   62 UNKNOWN                  31     150.15     146.35     159.03       2.22
+   63 UNKNOWN                  31      12.23      11.84      12.64       0.22
+   64 UNKNOWN                  31      23.69      22.68      24.40       0.35
+   65 UNKNOWN                  31      13.44      12.74      14.16       0.36
+   66 UNKNOWN                  31       4.19       3.92       4.36       0.11
+   67 UNKNOWN                  31      23.10      22.25      27.73       1.08
+   68 UNKNOWN                  31      41.94      39.79      43.47       0.86
+   69 UNKNOWN                  31       5.66       4.16       6.76       0.98
+   70 UNKNOWN                  31      22.33      21.23      23.84       1.03
+   71 UNKNOWN                  31       4.94       4.56       5.60       0.21
+   72 UNKNOWN                  31       4.30       3.82       4.75       0.28
+   73 UNKNOWN                  31      13.51      13.02      14.19       0.28
+   74 UNKNOWN                  31     150.35     147.88     153.45       1.42
+   75 UNKNOWN                  31      12.59      12.09      15.88       0.66
+   76 UNKNOWN                  31      26.00      24.04      27.19       0.75
+   77 UNKNOWN                  31      13.39      12.78      14.12       0.36
+   78 UNKNOWN                  31       3.67       3.44       4.00       0.12
+   79 UNKNOWN                  31      23.78      22.03      28.07       1.22
+   80 UNKNOWN                  31      39.85      38.73      41.62       0.95
+   81 UNKNOWN                  31       6.02       4.21       7.61       0.92
+   82 UNKNOWN                  31      22.09      20.75      24.18       0.98
+   83 UNKNOWN                  31       4.99       4.64       5.44       0.19
+   84 UNKNOWN                  31       4.29       3.87       4.91       0.33
+   85 UNKNOWN                  31      13.52      12.92      14.05       0.32
+   86 UNKNOWN                  31     150.00     146.64     157.93       2.10
+   87 UNKNOWN                  31      12.37      11.86      12.72       0.21
+   88 UNKNOWN                  31      23.73      23.19      24.28       0.28
+   89 UNKNOWN                  31      13.41      12.57      14.16       0.43
+   90 UNKNOWN                  31       4.16       4.00       4.36       0.08
+   91 UNKNOWN                  31      22.53      21.57      27.13       1.05
+   92 UNKNOWN                  31      40.89      39.19      44.19       1.12
+   93 UNKNOWN                  31       5.71       4.10       6.92       1.01
+   94 UNKNOWN                  31      22.01      20.73      24.12       1.10
+   95 UNKNOWN                  31       4.18       4.02       4.53       0.09
+   96 UNKNOWN                  31       4.23       3.81       4.70       0.30
+   97 UNKNOWN                  31      13.54      12.96      14.21       0.34
+   98 UNKNOWN                  31     150.52     146.21     153.15       1.53
+   99 UNKNOWN                  31      12.66      12.01      13.29       0.33
+  100 UNKNOWN                  31      23.79      23.15      25.17       0.49
+  101 UNKNOWN                  31      13.37      12.84      14.20       0.35
+  102 UNKNOWN                  31       3.66       3.48       3.88       0.10
+  103 UNKNOWN                  31      23.12      21.31      24.23       1.11
+  104 UNKNOWN                  31      42.38      38.81      47.80       1.91
+  105 UNKNOWN                  31       5.72       4.14       6.58       0.93
+  106 UNKNOWN                  31      21.56      20.24      23.07       0.90
+  107 UNKNOWN                  31       5.18       4.67       7.29       0.62
+  108 UNKNOWN                  31       4.40       3.91       4.79       0.32
+  109 UNKNOWN                  31      13.33      12.73      13.89       0.36
+  110 UNKNOWN                  31     150.02     147.14     152.81       1.51
+  111 UNKNOWN                  31      12.29      11.94      12.64       0.21
+  112 UNKNOWN                  31      24.04      22.82      26.92       0.94
+  113 UNKNOWN                  31      13.54      13.14      14.24       0.28
+  114 UNKNOWN                  31       4.26       4.08       4.63       0.13
+  115 UNKNOWN                  31      21.97      21.37      23.81       0.63
+  116 UNKNOWN                  31      41.06      38.83      44.69       1.19
+  117 UNKNOWN                  31       6.13       4.32       7.92       0.94
+  118 UNKNOWN                  31      21.80      20.60      23.40       0.90
+  119 UNKNOWN                  31       5.49       4.66       6.94       0.62
+  120 UNKNOWN                  31       4.09       3.89       4.73       0.18
+  121 UNKNOWN                  31      13.76      13.05      14.14       0.22
+  122 UNKNOWN                  31     150.44     146.47     153.14       1.52
+  123 UNKNOWN                  31      12.82      12.17      13.32       0.29
+  124 UNKNOWN                  31      23.82      23.13      26.08       0.62
+  125 UNKNOWN                  31      13.40      12.61      14.08       0.41
+  126 UNKNOWN                  31       3.70       3.52       4.00       0.12
+  127 UNKNOWN                  31      23.22      21.51      24.59       1.13
+  128 UNKNOWN                  31      41.82      38.98      43.93       1.39
+  129 UNKNOWN                  31       6.03       4.11       7.09       0.91
+  130 UNKNOWN                  31      21.76      20.48      23.84       0.87
+  131 UNKNOWN                  31       5.06       4.69       6.76       0.42
+  132 UNKNOWN                  31       4.51       3.90       4.79       0.30
+  133 UNKNOWN                  31      13.40      12.81      14.10       0.38
+  134 UNKNOWN                  31     149.72     147.04     152.49       1.52
+  135 UNKNOWN                  31      12.82      12.25      13.15       0.20
+  136 UNKNOWN                  31      23.84      23.14      24.20       0.31
+  137 UNKNOWN                  31      13.60      13.00      14.24       0.31
+  138 UNKNOWN                  31       4.25       4.00       4.40       0.09
+  139 UNKNOWN                  31      23.29      21.57      24.13       0.93
+  140 UNKNOWN                  31      40.60      38.52      43.68       1.38
+  141 UNKNOWN                  31       5.26       3.83       6.74       1.11
+  142 UNKNOWN                  31      22.64      20.25      24.46       1.27
+  143 UNKNOWN                  31       4.32       4.04       5.56       0.27
+  144 UNKNOWN                  31       4.20       3.85       4.85       0.35
+  145 UNKNOWN                  31      13.58      12.87      14.37       0.42
+  146 UNKNOWN                  31     150.12     146.19     153.23       1.55
+  147 UNKNOWN                  31      12.33      11.83      13.03       0.28
+  148 UNKNOWN                  31      25.65      23.01      27.76       1.45
+  149 UNKNOWN                  31      13.50      12.94      14.24       0.36
+  150 UNKNOWN                  31       3.68       3.44       3.83       0.10
+  151 UNKNOWN                  31      23.50      21.95      25.35       1.01
+  152 UNKNOWN                  31      40.07      38.63      42.45       1.09
+  153 UNKNOWN                  31       5.90       4.24       6.69       0.94
+  154 UNKNOWN                  31      21.90      20.45      23.71       0.97
+  155 UNKNOWN                  31       5.23       4.66       7.42       0.68
+  156 UNKNOWN                  31       4.59       4.03       4.92       0.28
+  157 UNKNOWN                  31      13.08      12.52      13.78       0.34
+  158 UNKNOWN                  31     149.39     146.50     152.40       1.56
+  159 UNKNOWN                  31      12.24      11.83      15.88       0.69
+  160 UNKNOWN                  31      25.25      23.32      26.75       1.23
+  161 UNKNOWN                  31      13.92      12.89      17.40       1.09
+  162 UNKNOWN                  31       4.26       4.11       4.41       0.08
+  163 UNKNOWN                  31      23.57      21.69      23.89       0.51
+  164 UNKNOWN                  31      40.29      38.44      43.45       1.46
+  165 UNKNOWN                  31       5.29       4.01       6.68       1.06
+  166 UNKNOWN                  31      22.22      20.28      23.64       1.11
+  167 UNKNOWN                  31       5.06       4.72       5.96       0.30
+  168 UNKNOWN                  31       4.45       3.85       4.73       0.23
+  169 UNKNOWN                  31      13.31      12.85      13.94       0.30
+  170 UNKNOWN                  31     149.97     146.12     152.58       1.56
+  171 UNKNOWN                  31      12.63      11.87      15.76       0.69
+  172 UNKNOWN                  31      24.74      23.07      26.61       1.01
+  173 UNKNOWN                  31      13.47      12.92      14.16       0.28
+  174 UNKNOWN                  31       3.71       3.56       3.88       0.09
+  175 UNKNOWN                  31      23.47      21.91      25.59       1.03
+  176 UNKNOWN                  31      39.94      38.45      42.32       1.12
+  177 UNKNOWN                  31       6.15       4.13       6.72       0.82
+  178 UNKNOWN                  31      21.51      20.52      24.04       0.92
+  179 UNKNOWN                  31       4.86       4.53       5.11       0.15
+  180 UNKNOWN                  31       4.66       3.99       4.91       0.22
+  181 UNKNOWN                  31      13.21      12.69      13.77       0.24
+  182 UNKNOWN                  31     149.57     146.53     152.36       1.57
+  183 UNKNOWN                  31      12.58      12.11      13.11       0.28
+  184 UNKNOWN                  31      23.75      23.17      24.43       0.26
+  185 UNKNOWN                  31      13.56      12.97      14.37       0.35
+  186 UNKNOWN                  31       4.23       4.04       4.51       0.12
+  187 UNKNOWN                  31      23.69      21.77      24.13       0.70
+  188 UNKNOWN                  31      39.32      38.29      41.43       0.94
+  189 UNKNOWN                  31       5.50       3.81       7.44       1.14
+  190 UNKNOWN                  31      22.49      20.17      25.92       1.51
+  191 UNKNOWN                  31       4.70       4.07       6.68       0.75
+  192 UNKNOWN                  31       4.18       3.75       4.64       0.28
+  193 UNKNOWN                  31      13.46      12.98      14.23       0.25
+  194 UNKNOWN                  31     150.00     147.81     152.79       1.36
+  195 UNKNOWN                  31      12.49      11.81      13.20       0.35
+  196 UNKNOWN                  31      23.51      22.86      26.84       0.72
+  197 UNKNOWN                  31      13.59      12.81      17.68       0.80
+  198 UNKNOWN                  31       3.66       3.52       3.96       0.11
+  199 UNKNOWN                  31      23.51      21.67      24.07       0.60
+  200 UNKNOWN                  31      39.37      38.26      41.02       0.73
+  201 UNKNOWN                  31       6.16       4.23       6.93       0.71
+  202 UNKNOWN                  31      21.75      20.20      24.71       1.00
+  203 UNKNOWN                  31       5.25       4.47       7.26       0.67
+  204 UNKNOWN                  31       4.53       3.90       4.99       0.36
+  205 UNKNOWN                  31      13.13      12.25      13.94       0.39
+  206 UNKNOWN                  31     149.55     146.65     152.49       1.49
+  207 UNKNOWN                  31      12.41      11.88      16.04       0.95
+  208 UNKNOWN                  31      23.70      23.11      25.24       0.49
+  209 UNKNOWN                  31      13.50      12.70      14.48       0.37
+  210 UNKNOWN                  31       4.22       4.04       4.47       0.10
+  211 UNKNOWN                  31      23.35      21.33      24.29       0.66
+  212 UNKNOWN                  31      39.74      38.52      42.71       1.11
+  213 UNKNOWN                  31       5.93       4.17       8.68       1.10
+  214 UNKNOWN                  31      21.73      20.60      23.16       0.87
+  215 UNKNOWN                  31       5.12       4.41       7.07       0.60
+  216 UNKNOWN                  31       4.23       3.73       4.71       0.27
+  217 UNKNOWN                  31      13.37      12.85      13.90       0.25
+  218 UNKNOWN                  31     150.05     147.68     152.82       1.37
+  219 UNKNOWN                  31      12.46      11.93      13.21       0.29
+  220 UNKNOWN                  31      23.37      22.72      24.12       0.35
+  221 UNKNOWN                  31      13.24      12.61      14.00       0.39
+  222 UNKNOWN                  31       3.63       3.51       3.89       0.08
+  223 UNKNOWN                  31      23.63      21.95      24.47       0.69
+  224 UNKNOWN                  31      40.16      38.86      44.93       1.31
+  225 UNKNOWN                  31       6.17       4.15       6.66       0.70
+  226 UNKNOWN                  31      21.59      20.37      23.61       0.79
+  227 UNKNOWN                  31       5.13       4.57       6.68       0.54
+  228 UNKNOWN                  31       4.28       3.86       4.89       0.30
+  229 UNKNOWN                  31      13.61      12.90      14.05       0.29
+  230 UNKNOWN                  31     149.60     146.34     152.54       1.52
+  231 UNKNOWN                  31      12.50      11.94      12.94       0.27
+  232 UNKNOWN                  31      24.92      23.06      27.31       1.29
+  233 UNKNOWN                  31      13.92      12.65      17.60       1.25
+  234 UNKNOWN                  31       4.12       3.96       4.24       0.06
+  235 UNKNOWN                  31      22.39      21.25      23.61       0.72
+  236 UNKNOWN                  31      40.73      38.87      44.06       1.21
+  237 UNKNOWN                  31       5.22       3.90       6.96       1.13
+  238 UNKNOWN                  31      22.49      20.52      26.48       1.44
+  239 UNKNOWN                  31       4.78       4.05       7.32       1.06
+  240 UNKNOWN                  31       3.89       3.61       4.31       0.19
+  241 UNKNOWN                  31      13.67      13.15      14.07       0.22
+  242 UNKNOWN                  31     150.37     147.83     152.81       1.49
+  243 UNKNOWN                  31      12.55      12.04      13.21       0.33
+  244 UNKNOWN                  31      25.55      23.30      27.36       1.04
+  245 UNKNOWN                  31      13.51      12.76      15.78       0.58
+  246 UNKNOWN                  31       3.61       3.48       3.75       0.06
+  247 UNKNOWN                  31      23.23      21.59      24.31       0.76
+  248 UNKNOWN                  31      41.95      38.85      45.94       1.51
+  249 UNKNOWN                  31       6.36       4.21       7.81       0.64
+  250 UNKNOWN                  31      21.34      20.36      23.40       0.69
+  251 UNKNOWN                  31       4.84       4.64       6.37       0.30
+  252 UNKNOWN                  31       4.38       3.86       4.86       0.31
+  253 UNKNOWN                  31      13.30      12.45      14.24       0.41
+  254 UNKNOWN                  31     149.71     146.61     152.37       1.56
+  255 UNKNOWN                  31      12.23      11.87      12.72       0.23
+  256 UNKNOWN                  31      25.45      23.52      27.28       1.29
+  257 UNKNOWN                  31      13.68      13.04      14.32       0.30
+  258 UNKNOWN                  31       4.18       4.04       4.36       0.08
+  259 UNKNOWN                  31      22.88      21.61      24.77       0.77
+  260 UNKNOWN                  31      41.02      39.10      45.02       1.51
+  261 UNKNOWN                  31       6.05       4.00       7.37       0.81
+  262 UNKNOWN                  31      22.20      20.68      24.72       1.07
+  263 UNKNOWN                  31       5.35       4.55       6.21       0.43
+  264 UNKNOWN                  31       4.43       3.82       4.72       0.28
+  265 UNKNOWN                  31      13.35      12.67      14.15       0.36
+  266 UNKNOWN                  31     150.37     146.65     153.09       1.49
+  267 UNKNOWN                  31      12.89      12.32      13.29       0.27
+  268 UNKNOWN                  31      23.54      23.00      24.32       0.37
+  269 UNKNOWN                  31      13.57      12.67      16.36       0.65
+  270 UNKNOWN                  31       3.65       3.48       3.85       0.08
+  271 UNKNOWN                  31      23.27      21.55      24.19       0.87
+  272 UNKNOWN                  31      41.88      39.76      43.78       1.08
+  273 UNKNOWN                  31       5.59       3.95       6.65       1.02
+  274 UNKNOWN                  31      22.29      20.48      24.92       1.20
+  275 UNKNOWN                  31       5.13       4.65       6.24       0.43
+  276 UNKNOWN                  31       4.58       3.94       4.91       0.30
+  277 UNKNOWN                  31      13.44      12.99      14.28       0.34
+  278 UNKNOWN                  31     149.70     146.21     152.67       1.51
+  279 UNKNOWN                  31      12.83      12.51      13.11       0.14
+  280 UNKNOWN                  31      23.80      23.09      27.72       0.80
+  281 UNKNOWN                  31      13.51      12.77      14.28       0.41
+  282 UNKNOWN                  31       4.25       4.08       4.40       0.09
+  283 UNKNOWN                  31      22.75      21.73      24.69       0.76
+  284 UNKNOWN                  31      40.56      38.45      42.14       0.95
+  285 UNKNOWN                  31       6.02       3.99       6.63       0.80
+  286 UNKNOWN                  31      21.51      20.04      24.41       1.07
+  287 UNKNOWN                  31       4.53       4.13       7.50       0.74
+  288 UNKNOWN                  31       4.31       3.73       4.63       0.30
+  289 UNKNOWN                  31      13.41      12.87      14.21       0.40
+  290 UNKNOWN                  31     150.19     146.37     152.87       1.56
+  291 UNKNOWN                  31      12.86      12.21      13.29       0.27
+  292 UNKNOWN                  31      23.68      22.91      25.74       0.63
+  293 UNKNOWN                  31      13.51      12.72      14.64       0.42
+  294 UNKNOWN                  31       3.66       3.51       3.96       0.10
+  295 UNKNOWN                  31      23.22      21.67      23.99       0.90
+  296 UNKNOWN                  31      39.84      38.61      41.92       0.91
+  297 UNKNOWN                  31       6.00       3.96       6.96       0.90
+  298 UNKNOWN                  31      21.60      20.52      23.72       0.93
+  299 UNKNOWN                  31       4.82       4.49       5.13       0.14
+  300 UNKNOWN                  31       4.53       3.98       4.82       0.30
+  301 UNKNOWN                  31      13.21      12.60      14.06       0.36
+  302 UNKNOWN                  31     150.07     146.96     152.96       1.50
+  303 UNKNOWN                  31      12.24      11.83      12.60       0.19
+  304 UNKNOWN                  31      23.67      22.96      24.08       0.32
+  305 UNKNOWN                  31      13.42      12.84      14.24       0.39
+  306 UNKNOWN                  31       4.20       4.04       4.47       0.09
+  307 UNKNOWN                  31      22.68      21.81      24.13       0.67
+  308 UNKNOWN                  31      40.31      39.34      42.22       0.75
+  309 UNKNOWN                  31       6.05       4.16       6.74       0.86
+  310 UNKNOWN                  31      21.73      20.40      24.12       0.94
+  311 UNKNOWN                  31       4.90       4.53       5.25       0.18
+  312 UNKNOWN                  31       4.47       3.85       4.90       0.26
+  313 UNKNOWN                  31      13.28      12.83      14.25       0.35
+  314 UNKNOWN                  31     150.27     146.35     153.44       1.52
+  315 UNKNOWN                  31      12.59      11.84      13.16       0.39
+  316 UNKNOWN                  31      24.35      23.11      26.68       1.00
+  317 UNKNOWN                  31      13.51      12.87      15.27       0.58
+  318 UNKNOWN                  31       3.69       3.56       3.88       0.07
+  319 UNKNOWN                  31      23.33      21.51      24.11       0.83
+  320 UNKNOWN                  31      39.78      38.52      42.40       0.96
+  321 UNKNOWN                  31       5.48       4.04       6.88       1.06
+  322 UNKNOWN                  31      22.17      20.67      23.87       1.06
+  323 UNKNOWN                  31       4.96       4.47       5.48       0.23
+  324 UNKNOWN                  31       5.75       3.94       6.40       0.93
+  325 UNKNOWN                  26       0.23       0.01       0.67       0.16
+  326 UNKNOWN                  29       0.26       0.02       1.72       0.35
+  327 UNKNOWN                  29       0.34       0.01       1.83       0.39
+  328 UNKNOWN                  28       0.35       0.02       1.13       0.35
+  329 UNKNOWN                  28       0.36       0.01       1.75       0.40
+  330 UNKNOWN                  27       9.31       0.02      82.04      25.33
+  331 UNKNOWN                  28       0.25       0.01       1.15       0.26
+  332 UNKNOWN                  27       0.25       0.01       0.96       0.25
+  333 UNKNOWN                  28       0.16       0.01       0.70       0.16
+  334 UNKNOWN                  29       0.25       0.01       1.21       0.26
+  335 UNKNOWN                  30       5.77       0.03      80.48      19.86
+  336 UNKNOWN                  29       0.25       0.01       2.00       0.40
+  337 UNKNOWN                  28       0.30       0.03       1.26       0.29
+  338 UNKNOWN                  30       3.33       0.01      85.02      15.18
+  339 UNKNOWN                  29       0.22       0.04       0.96       0.19
+  340 UNKNOWN                  28       0.18       0.02       0.96       0.20
+  341 UNKNOWN                  28       0.17       0.01       0.78       0.17
+  342 UNKNOWN                  28       0.36       0.02       1.24       0.34
+  343 UNKNOWN                  29       5.93       0.02      81.44      20.31
+  344 UNKNOWN                  27       0.26       0.01       0.84       0.25
+  345 UNKNOWN                  24       0.22       0.04       0.68       0.19
+  346 UNKNOWN                  29       0.40       0.03       3.51       0.64
+  347 UNKNOWN                  29       0.29       0.01       1.12       0.31
+  348 UNKNOWN                  29       0.30       0.01       1.26       0.32
+  349 UNKNOWN                  25       0.23       0.01       1.08       0.31
+  350 UNKNOWN                  29       0.33       0.01       1.85       0.37
+  351 UNKNOWN                  26       0.45       0.01       1.40       0.39
+  352 UNKNOWN                  31       0.26       0.01       1.61       0.30
+  353 UNKNOWN                  26       0.37       0.03       1.18       0.34
+  354 UNKNOWN                  28       0.30       0.02       1.74       0.37
+  355 UNKNOWN                  28       6.22       0.02      82.62      20.99
+  356 UNKNOWN                  29       3.13       0.03      81.46      14.81
+  357 UNKNOWN                  30       5.93       0.03      81.08      19.93
+  358 UNKNOWN                  31      26.44       0.01      84.74      37.18
+  359 UNKNOWN                  29       8.99       0.03      82.57      24.54
+  360 UNKNOWN                  28       8.89       0.02      80.53      24.54
+  361 UNKNOWN                  30       5.86       0.01      83.51      20.49
+  362 UNKNOWN                  29       7.64       0.04      36.13      14.08
+  363 UNKNOWN                  30       0.52       0.01       3.13       0.68
+  364 UNKNOWN                  27       7.02       0.03      36.24      13.29
+  365 UNKNOWN                  31       0.42       0.01       1.44       0.40
+  366 UNKNOWN                  28       1.86       0.04      35.82       6.55
+  367 UNKNOWN                  30       6.04       0.04      36.48      12.42
+  368 UNKNOWN                  26       1.83       0.01      35.82       6.81
+  369 UNKNOWN                  26       3.35       0.01      36.42       9.34
+  370 UNKNOWN                  30       3.89       0.01      36.42      10.50
+  371 UNKNOWN                  29       1.75       0.01      36.19       6.54
+  372 UNKNOWN                  31       7.24       0.01      37.16      13.82
+  373 UNKNOWN                  30       1.77       0.01      35.72       6.34
+  374 UNKNOWN                  31       0.66       0.02       3.04       0.69
+  375 UNKNOWN                  31       6.32       6.00       6.65       0.15
+  376 UNKNOWN                  31       5.46       5.33       5.65       0.07
+
+================================================================================
+PER-TYPE SUMMARY (sum of avg durations across all events)
+================================================================================
+TaskType             Events    Total(us)  Total(ms)        %
+----------------------------------------------------------
+UNKNOWN                 376       8964.3      8.964   100.0%
+TOTAL                             8964.3      8.964
+
+Saved raw event timing to event_timing.json
