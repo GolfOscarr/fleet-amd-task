@@ -16,6 +16,8 @@ Inputs (all optional; what is present is reported):
                         TCC_EA0_WRREQ_sum, TCC_EA0_WRREQ_64B_sum, TCC_HIT_sum, TCC_MISS_sum
                         (two counters per rocprofv3 run; concatenate or pass the run directory)
   wall.json             {"mpk_wall_s": ..., "iters": K} from run_fleet.py
+  fleet_run_meta.json   the run's shape; for a --graph stream run (L6) it carries ops, tasks_per_op,
+                        kb and gang, from which every operator's gap becomes a GB/s
 
     python harness/measure.py --run harness/fleet_out [--kernel-trace k.csv] [--pmc p.csv]
 """
@@ -337,6 +339,32 @@ def traffic_from_counters(c, iters):
 # ----------------------------------------------------------------------------
 
 
+def stream_bytes_per_op(meta):
+    """L6 (M7 of docs/gpu-experiments/04-kernels/01-gemv-ideas.md): the bytes one operator of a
+    --graph stream run reads. A regular operator is `tasks_per_op` tasks of `kb` kilobytes; a gang
+    operator is 8 XCD slots of `tasks_per_op` tiles, each tile reading `kb`. None for any other
+    run, so the GB/s column appears on the probe's runs only."""
+    if not meta or meta.get("graph") != "stream":
+        return None
+    kb, tasks = meta.get("kb"), meta.get("tasks_per_op")
+    if not kb or not tasks:
+        return None
+    return (8 * tasks if meta.get("gang") else tasks) * kb * 1024
+
+
+def add_stream_rates(per_op, bytes_per_op):
+    """A GB/s on every operator row of a stream run (bytes over the gap) and the median over the
+    operators after the first, which is the probe's number: the first operator of an iteration
+    starts behind the iteration's own event and its gap carries that start."""
+    ops = [r for r in per_op if r["op"] not in ("unused", "iteration_start")]
+    for r in ops:
+        r["gb_per_s"] = bytes_per_op / (r["mean_us"] * 1e-6) / 1e9 if r["mean_us"] > 0 else None
+    rates = [r["gb_per_s"] for r in ops[1:] if r.get("gb_per_s")]
+    return {"bytes_per_op": bytes_per_op, "operators": len(ops),
+            "median_gb_per_s": statistics.median(rates) if rates else None,
+            "operators_in_median": len(rates)}
+
+
 def measure(run_dir: Path, kernel_trace=None, pmc=None, kernel_filter=DEFAULT_KERNEL_FILTER):
     run_dir = Path(run_dir)
     m = {"run_dir": str(run_dir), "predicted": PREDICTED, "kernel_filter": kernel_filter}
@@ -364,6 +392,10 @@ def measure(run_dir: Path, kernel_trace=None, pmc=None, kernel_filter=DEFAULT_KE
         m["clock"] = clock_summary(parse_clock_log(cl.read_text()))
     et = run_dir / "event_timing.json"
     plan = json.loads((run_dir / "plan.json").read_text()) if (run_dir / "plan.json").exists() else None
+    rm = run_dir / "fleet_run_meta.json"
+    run_meta = json.loads(rm.read_text()) if rm.exists() else None
+    if run_meta:
+        m["run_meta"] = {k: run_meta.get(k) for k in ("graph", "ops", "tasks_per_op", "kb", "gang", "iters")}
     if et.exists():
         data = json.loads(et.read_text())
         entries = [(int(e), int(t)) for e, t in data["entries"]]
@@ -385,6 +417,9 @@ def measure(run_dir: Path, kernel_trace=None, pmc=None, kernel_filter=DEFAULT_KE
         m["event_timing"] = {"num_events": num_events, "firings": len(entries),
                              "per_iteration_us": percentiles(iter_us),
                              "per_op": event_per_op(entries, num_events, op_names)}
+        bpo = stream_bytes_per_op(run_meta)                # L6: the probe's rate per operator
+        if bpo:
+            m["stream"] = add_stream_rates(m["event_timing"]["per_op"], bpo)
     if kernel_trace:
         m["launches"] = parse_kernel_trace(kernel_trace, kernel_filter)
         if m["launches"].get("megakernel_total_us") and iters:
@@ -452,7 +487,19 @@ def report_table(m):
                   "| Class | tasks | cycles per task | us per task |", "|---|---|---|---|"]
         lines += [f"| {k} | {v['count']} | {v['cycles_per_task']:.0f} | {f(v['us_per_task'], 2)} |" for k, v in classes.items()]
     ops = g("event_timing", "per_op") or []
-    if ops:
+    st = g("stream")
+    if ops and st:
+        # L6: the stream probe. Every operator reads the same bytes, so its gap is a rate; the
+        # probe's number is the median over the operators after the first.
+        lines += ["", f"## Per-operator time and rate (stream probe, {st['bytes_per_op'] / 2 ** 20:.1f} MiB "
+                  "per operator)", "",
+                  "| Event | Operator | mean us | min us | max us | n | GB/s |",
+                  "|---|---|---|---|---|---|---|"]
+        lines += [f"| {r['event']} | {r['op']} | {r['mean_us']:.2f} | {r['min_us']:.2f} | {r['max_us']:.2f} "
+                  f"| {r['n']} | {f(r.get('gb_per_s'), 1)} |" for r in ops]
+        lines += ["", f"stream probe: {f(st['median_gb_per_s'], 1)} GB/s, the median over the "
+                  f"{st['operators_in_median']} operators after the first"]
+    elif ops:
         lines += ["", "## Per-operator time (event gaps, mean over iterations after the first)", "",
                   "| Event | Operator | mean us | min us | max us | n |", "|---|---|---|---|---|---|"]
         lines += [f"| {r['event']} | {r['op']} | {r['mean_us']:.2f} | {r['min_us']:.2f} | {r['max_us']:.2f} | {r['n']} |"

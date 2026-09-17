@@ -79,6 +79,7 @@ OUTPUT_ARGS = {
     "gang_moe_w2_linear_layer": ["output"], "gang_moe_w2_silu_linear_layer": ["output", "scratch"],
     "moe_mul_sum_add_layer": ["output"],
     "argmax_partial_layer": ["output"], "argmax_reduce_layer": ["output"], "copy_layer": ["output"],
+    "stream_layer": ["dummy"], "stream_gang_layer": ["dummy"],
 }
 
 
@@ -524,6 +525,59 @@ def build_empty_plan(ops: int, tasks: int, spin: int = 0, dims: Dims = REAL_DIMS
         src, dst = ("empty_a", "empty_b") if k % 2 == 0 else ("empty_b", "empty_a")
         p.op("copy_layer", tasks, status="new", label=f"E{k}.copy", input=src, output=dst,
              grid_dim=(tasks, 1, 1), block_dim=(256, 1, 1), spin=spin, spin_print=1 if (spin and k == 0) else 0)
+    return p
+
+
+STREAM_K = 2048                              # the probe's row width: one BF16 row is exactly 4 KB
+STREAM_ROW_BYTES = STREAM_K * 2
+
+
+def stream_rows(kb: int) -> int:
+    """Rows of the probe's [*, STREAM_K] BF16 tensor a task or a tile reads for `kb` kilobytes.
+
+    A task reads whole rows (the GEMV's batch of eight rows is the load loop this probe
+    measures), so `kb` must be a multiple of the 4 KB row: a byte count that did not follow
+    from the rows would corrupt the one number the probe exists to produce. w13's tile, given
+    as 305 KB in docs/gpu-experiments/04-kernels, is run at 304 KB (76 rows), 0.3% below it."""
+    assert kb > 0, kb
+    assert (kb * 1024) % STREAM_ROW_BYTES == 0, (
+        f"--kb {kb}: a task reads whole {STREAM_ROW_BYTES // 1024} KB rows of the [*, {STREAM_K}] "
+        f"BF16 tensor, so --kb must be a multiple of {STREAM_ROW_BYTES // 1024} "
+        f"({kb // 4 * 4} or {(kb + 3) // 4 * 4} here)")
+    return kb * 1024 // STREAM_ROW_BYTES
+
+
+def build_stream_plan(ops: int, tasks: int, kb: int, gang: bool = False,
+                      dims: Dims = REAL_DIMS, s_max: int = 1056) -> Plan:
+    """L6 (M7 of docs/gpu-experiments/04-kernels/01-gemv-ideas.md): the stream probe, M operators
+    of N tasks (or of 8 tiles x N tiles_per_xcd, --gang) that read `kb` kilobytes each with the
+    GEMV's load loop and no multiply, on the empty ladder's machinery (I3).
+
+    Two weight tensors alternate as the empty ladder's two copy tensors do, so an operator never
+    reads the tensor the operator before it has just read. The weight is an input and never an
+    output, so it cannot be what makes an operator a consumer of its predecessor, which the
+    runtime requires of every operator (runtime.cc, register_mugraph: assert(num_shared_tensors
+    >= 1)): two dummies alternate as well, each operator writing one and reading the other, and
+    that second dummy is an input of the task the kernel never touches (fleet/patches/hunks/
+    L6-stream.md, the last note). Every tensor is `new` (a zeroed buffer): the probe measures the
+    time the bytes take to arrive, not their values."""
+    assert ops >= 1 and tasks >= 1
+    rows = stream_rows(kb)
+    p = Plan(dims, s_max, 0, False, False)
+    tiles = XCDS * tasks if gang else tasks          # the tasks, or the tiles over the 8 XCD slots
+    for s in ("a", "b"):
+        p.t(f"stream_w_{s}", (tiles * rows, STREAM_K))
+        p.t(f"stream_dummy_{s}", (tiles, 4), "i32")
+    for k in range(ops):
+        cur, prev = ("a", "b") if k % 2 == 0 else ("b", "a")
+        args = dict(weight=f"stream_w_{cur}", prev=f"stream_dummy_{prev}", dummy=f"stream_dummy_{cur}",
+                    block_dim=(256, 1, 1))
+        if gang:
+            p.op("stream_gang_layer", XCDS, tasks, status="new", label=f"S{k}.stream",
+                 rows_per_tile=rows, tiles_per_xcd=tasks, **args)
+        else:
+            p.op("stream_layer", tasks, status="new", label=f"S{k}.stream",
+                 grid_dim=(tasks, 1, 1), **args)
     return p
 
 

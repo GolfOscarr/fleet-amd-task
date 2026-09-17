@@ -6,6 +6,7 @@
                                 [--event-timing] [--nt-weights] [--pad-alloc GB] [--align-alloc BYTES]
                                 [--workspaces-first] [--tile-linears] [--attend-tasks] [--split N]
                                 [--gemv-linears [--linear-grid N] [--head-grid N]]
+    python harness/run_fleet.py --graph stream --ops M --tasks N --kb K [--gang] [--iters K] [--event-timing]
 
 --align-alloc BYTES re-bases every weight, capture and workspace on an aligned address and
 --workspaces-first allocates the workspaces before the weights (the candidate M4 fault fixes,
@@ -198,11 +199,19 @@ def build_parser():
     ap.add_argument("--worker-timing", action="store_true",
                     help="compile with MPK_TIMING=1: every worker's [TIMING], [TASK_TIME] and [TASK_TIME2] lines "
                          "in fwd_pass.log (I1, docs/gpu-experiments/03-acceleration)")
-    ap.add_argument("--graph", choices=["model", "empty"], default="model",
-                    help="empty: the empty-task ladder (I3), --ops operators of --tasks copy tasks, no model")
-    ap.add_argument("--ops", type=int, default=100, help="--graph empty: operators per iteration")
-    ap.add_argument("--tasks", type=int, default=8, help="--graph empty: tasks per operator")
+    ap.add_argument("--graph", choices=["model", "empty", "stream"], default="model",
+                    help="empty: the empty-task ladder (I3), --ops operators of --tasks copy tasks, no model; "
+                         "stream: the stream probe (L6, docs/gpu-experiments/04-kernels), --ops operators of "
+                         "--tasks tasks reading --kb kilobytes each with the GEMV's load loop and no multiply")
+    ap.add_argument("--ops", type=int, default=100, help="--graph empty or stream: operators per iteration")
+    ap.add_argument("--tasks", type=int, default=8,
+                    help="--graph empty or stream: tasks per operator; under --gang, tiles per XCD")
     ap.add_argument("--spin", type=int, default=0, help="--graph empty: the shader-clock spin per task (I2)")
+    ap.add_argument("--kb", type=int, default=256,
+                    help="--graph stream: kilobytes one task or tile reads (a multiple of 4: a row of the "
+                         "probe's [*, 2048] BF16 tensor is 4 KB)")
+    ap.add_argument("--gang", action="store_true",
+                    help="--graph stream: one gang operator of 8 x --tasks tiles instead of --tasks regular tasks")
     ap.add_argument("--prefetch", action="store_true",
                     help="the side operators of O8 (docs/gpu-experiments/03-acceleration): weight prefetches on the "
                          "idle workers beside qkva, o_proj and w13 (needs the runtime patch's side-operator branch)")
@@ -271,6 +280,9 @@ def run_name(args):
     if args.graph == "empty":      # I3: no layers, no head
         return (f"E{args.ops}x{args.tasks}" + (f"_spin{args.spin}" if args.spin else "") + f"_it{args.iters}"
                 + wt + rf + al + ws + pad)
+    if args.graph == "stream":     # L6: the stream probe, the empty ladder's name with the bytes read
+        return (f"S{args.ops}x{args.tasks}_{args.kb}kb" + ("_gang" if args.gang else "") + f"_it{args.iters}"
+                + wt + rf + al + ws + pad)
     return (f"L{args.layers}{'_head' if args.head else ''}_it{args.iters}"
             + (f"_{args.stop_after}" if args.stop_after else "") + ("_scores" if args.debug_scores else "")
             + tile + at + fn1 + fn2 + fs + pf + probe + nt + nts + mf + wt + rf + sp + al + ws + pad
@@ -278,11 +290,15 @@ def run_name(args):
 
 
 def run_empty(args, out, prompt, n_prompt, s_max, t0, torch, B):
-    """I3: the empty-task ladder. No model, no weights, no reference: the plan's two workspaces, the
-    meta tensors, the run and the log; the record has the same files (ids are zeros)."""
+    """I3 and L6: the synthetic graphs. The empty-task ladder (--graph empty) and the stream probe
+    (--graph stream) share this path: no model, no weights, no reference, just the plan's own
+    workspaces, the meta tensors, the run and the log; the record has the same files (ids are
+    zeros). measure.py reads the stream run's shape back from fleet_run_meta.json for its GB/s
+    column."""
     import json as _json
     from fleet import graph_plan as G
-    plan = G.build_empty_plan(args.ops, args.tasks, args.spin)
+    plan = (G.build_stream_plan(args.ops, args.tasks, args.kb, args.gang) if args.graph == "stream"
+            else G.build_empty_plan(args.ops, args.tasks, args.spin))
     meta = B.make_meta(torch, s_max, prompt, n_prompt)
     t1 = time.time()
     mpk, host, plan = B.build({}, {}, meta, s_max=s_max, layers=0, head=False, align=args.align_alloc, plan=plan)
@@ -297,7 +313,8 @@ def run_empty(args, out, prompt, n_prompt, s_max, t0, torch, B):
     meta["tokens"][0, n_prompt:] = 0
     torch.cuda.synchronize()
     meta_out = {
-        "graph": "empty", "ops": args.ops, "tasks_per_op": args.tasks, "spin": args.spin, "iters": args.iters,
+        "graph": args.graph, "ops": args.ops, "tasks_per_op": args.tasks, "spin": args.spin,
+        "kb": args.kb, "gang": args.gang, "iters": args.iters,
         "s_max": s_max, "n_prompt": n_prompt, "worker_timing": args.worker_timing,
         "plan_ops": len(pj["calls"]), "plan_tasks": sum(c["tasks"] for c in pj["calls"]),
         "env": {k: os.environ.get(k) for k in ("MPK_EVENT_TIMING", "MPK_TIMING", "USE_GANG", "AMDGPU_TARGETS",
@@ -320,7 +337,9 @@ def run_empty(args, out, prompt, n_prompt, s_max, t0, torch, B):
     (out / "fleet_output_ids.json").write_text(_json.dumps([0] * args.iters) + "\n")
     meta_out.update({"timings_s": wall, "completed": True})
     (out / "fleet_run_meta.json").write_text(_json.dumps(meta_out, indent=2) + "\n")
-    print(f"empty ladder {args.ops} x {args.tasks}; mpk() {t_mpk * 1e3:.1f} ms for {args.iters} iterations -> {out}")
+    what = (f"stream probe {args.ops} x {args.tasks}{' gang' if args.gang else ''} at {args.kb} KB"
+            if args.graph == "stream" else f"empty ladder {args.ops} x {args.tasks}")
+    print(f"{what}; mpk() {t_mpk * 1e3:.1f} ms for {args.iters} iterations -> {out}")
 
 
 def tensor_addresses(host):
@@ -332,7 +351,8 @@ def main():
     ap = build_parser()
     args = ap.parse_args()
     if args.graph == "model" and (args.layers is None or args.model_dir is None):
-        ap.error("--layers and --model-dir are required for the model graph (--graph empty needs neither)")
+        ap.error("--layers and --model-dir are required for the model graph (--graph empty and --graph stream "
+                 "need neither)")
 
     import torch
     from safetensors.torch import load_file, save_file
@@ -374,7 +394,7 @@ def main():
         pad = torch.empty(int(args.pad_alloc * 2 ** 30), dtype=torch.uint8, device="cuda")
         print(f"pad-alloc {args.pad_alloc:g} GiB at 0x{pad.data_ptr():x}")
     t0 = time.time()
-    if args.graph == "empty":
+    if args.graph in ("empty", "stream"):
         return run_empty(args, out, prompt, n_prompt, s_max, t0, torch, B)
     dims = Dims.from_config(json.loads((Path(args.model_dir) / "config.json").read_text()))
     if args.align_alloc:

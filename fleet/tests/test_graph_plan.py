@@ -492,6 +492,62 @@ def test_empty_ladder_is_a_chain_of_copy_operators_with_one_event_per_boundary()
     assert rec and rec[0]["params"] == [REAL_DIMS.H] and rec[0]["imaps"] == [[-1, -1, -1], [-1, -1, -1]]
 
 
+def test_stream_probe_plan_counts_tensors_and_chain():
+    """L6 (M7 of docs/gpu-experiments/04-kernels/01-gemv-ideas.md): M operators of N tasks reading
+    kb kilobytes each over two weight tensors and two dummies, the empty ladder's alternation;
+    every operator reads the dummy the one before it wrote, which is what the runtime's chain rule
+    needs from an operator whose only output is that dummy."""
+    from fleet.graph_plan import build_stream_plan, stream_rows, STREAM_K
+    plan = build_stream_plan(ops=10, tasks=96, kb=152)          # qkva's shape: 38 rows per task
+    rows = stream_rows(152)
+    assert rows == 38 and plan.n_ops == 10 and plan.n_tasks == 960 and not plan.chain_violations()
+    assert plan.tensors["stream_w_a"].shape == (96 * rows, STREAM_K)
+    assert plan.tensors["stream_w_a"].kind == "new" and plan.tensors["stream_dummy_a"].dtype == "i32"
+    assert plan.tensors["stream_dummy_a"].shape == (96, 4)
+    assert [c.args["weight"] for c in plan.calls[:3]] == ["stream_w_a", "stream_w_b", "stream_w_a"]
+    assert [c.args["dummy"] for c in plan.calls[:3]] == ["stream_dummy_a", "stream_dummy_b", "stream_dummy_a"]
+    assert [c.args["prev"] for c in plan.calls[:3]] == ["stream_dummy_b", "stream_dummy_a", "stream_dummy_b"]
+    assert [c.label for c in plan.calls[:2]] == ["S0.stream", "S1.stream"]
+    _, calls = B.dry_run(plan=plan)
+    rec = [c for c in calls if c["task_type"] == "stream_mi300"]
+    assert len(rec) == 10 and rec[0]["params"] == [] and rec[0]["grid_dim"] == (96, 1, 1)
+    # the weight by the grid, the chain's dummy whole and ignored, the task's dummy row out
+    assert rec[0]["imaps"] == [[0, -1, -1], [-1, -1, -1], [0, -1, -1]]
+    assert rec[0]["inputs"] == ["stream_w_a", "stream_dummy_b", "stream_dummy_a"]
+    # the 296-task row of G5, one task per CU at 256 KB
+    plan = build_stream_plan(ops=10, tasks=296, kb=256)
+    assert plan.n_ops == 10 and plan.n_tasks == 2960 and not plan.chain_violations()
+    assert plan.tensors["stream_w_a"].shape == (296 * 64, STREAM_K)
+
+
+def test_stream_probe_gang_plan_is_eight_tasks_of_tiles_per_xcd():
+    """The gang row of G5: 8 XCD slots x 37 tiles, each tile reading 304 KB of one whole tensor
+    (w13's shape at 8 active experts), the dummy whole with a row per tile."""
+    from fleet.graph_plan import build_stream_plan, stream_rows, STREAM_K
+    plan = build_stream_plan(ops=10, tasks=37, kb=304, gang=True)
+    rows = stream_rows(304)
+    assert rows == 76 and plan.n_ops == 10 and plan.n_tasks == 80 and not plan.chain_violations()
+    assert all(c.tasks == 8 and c.tiles == 37 for c in plan.calls)
+    assert plan.tensors["stream_w_a"].shape == (8 * 37 * rows, STREAM_K)
+    assert plan.tensors["stream_dummy_a"].shape == (8 * 37, 4)
+    assert 8 * 37 * 304 * 1024 == 8 * 37 * rows * STREAM_K * 2        # 90 MiB, w13's eight experts
+    _, calls = B.dry_run(plan=plan)
+    rec = [c for c in calls if c["task_type"] == "stream_gang_mi300"]
+    assert len(rec) == 10 and rec[0]["params"] == [rows, 37] and rec[0]["grid_dim"] == (8, 1, 1)
+    assert rec[0]["imaps"] == [[-1, -1, -1], [-1, -1, -1], [-1, -1, -1]]
+
+
+def test_stream_probe_kb_must_be_whole_rows():
+    """A task reads whole 4 KB rows, so a --kb that is not a multiple of 4 is refused rather than
+    rounded: the byte count is the numerator of the rate the probe reports. w13's 305 KB of the
+    pages is run at 304."""
+    from fleet.graph_plan import build_stream_plan, stream_rows
+    with pytest.raises(AssertionError) as e:
+        build_stream_plan(ops=2, tasks=4, kb=305, gang=True)
+    assert "304" in str(e.value) and "308" in str(e.value)
+    assert stream_rows(4) == 1 and stream_rows(256) == 64
+
+
 def test_probe_before_inserts_a_one_task_copy_and_rewires_the_consumer():
     """O5 (docs/gpu-experiments/03-acceleration): a copy of the chain's tensor in front of the
     named operator, which then reads the twin; one more operator and task, the chain intact."""

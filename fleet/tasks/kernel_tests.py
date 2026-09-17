@@ -14,7 +14,7 @@ binary once per test over all trial directories, reads the outputs back and
 compares them with harness/numpy_ref.py output by output.
 
 Tests (--kernel selects; default all):
-  mla_prep, mla_attend, mla_merge_uv, moe_router, copy, prefetch, prefetch_moe
+  mla_prep, mla_attend, mla_merge_uv, moe_router, copy, prefetch, prefetch_moe, stream
       n random trials each, one launch per trial (the two prefetch suites, O8: the XOR of the
       streamed slice per wave, so the stripe and the expert (slot, part) indexing are exact)
   linear_gemv, linear_gemv_norm, linear_gemv_res
@@ -566,6 +566,44 @@ def check_prefetch(t, p, exp, got):
     return [row_exact("dummy", got["dummy"], exp["dummy"], "the XOR of every word of the stripe, per wave")]
 
 
+# --- stream (L6) ------------------------------------------------------------
+
+STREAM_GRID, STREAM_ROWS, STREAM_BATCH = 4, 38, 8   # the launcher's constants; 38 rows is 5 batches
+
+
+def stream_xor_per_wave(rows_bf16):
+    """What stream_mi300.cuh writes for one task: the task's rows are cut into batches of eight
+    (the last one filled by loading the task's last row again), batch b is wave b % 4's, and a
+    wave's word is the XOR of every 32-bit word of its batches' rows (the 64 lanes of a wave read
+    a row exactly once between them, and the butterfly XORs their words)."""
+    n = rows_bf16.shape[0]
+    words = np.ascontiguousarray(to_file(rows_bf16, "bf16")).reshape(n, -1).view(np.uint32)
+    per_row = np.bitwise_xor.reduce(words, axis=1)
+    out = np.zeros(4, np.uint32)
+    for b in range(-(-n // STREAM_BATCH)):
+        for u in range(STREAM_BATCH):
+            out[b % 4] ^= per_row[min(b * STREAM_BATCH + u, n - 1)]
+    return out.view(np.int32)
+
+
+def tensors_stream(params):
+    return [T("w", "bf16", (STREAM_GRID * STREAM_ROWS, D.H)), T("dummy", "i32", (STREAM_GRID, 4), True)]
+
+
+def make_stream(rng):
+    return {"w": bf16_normal(rng, (STREAM_GRID * STREAM_ROWS, D.H)), "dummy": sentinel("i32", (STREAM_GRID, 4))}, {}
+
+
+def ref_stream(t, p):
+    dummy = np.stack([stream_xor_per_wave(t["w"][b * STREAM_ROWS:(b + 1) * STREAM_ROWS])
+                      for b in range(STREAM_GRID)])
+    return {"dummy": dummy}
+
+
+def check_stream(t, p, exp, got):
+    return [row_exact("dummy", got["dummy"], exp["dummy"], "the XOR of every word the task loaded, per wave")]
+
+
 def tensors_prefetch_moe(params):
     return [T("w", "bf16", (N_TOTAL, PF_N, PF_K)), T("mask", "i32", (N_TOTAL + 1,)),
             T("dummy", "i32", (N_SLOTS * PF_PARTS, 4), True)]
@@ -682,6 +720,7 @@ KERNELS = {
     "copy": Kernel("copy", tensors_copy, make_copy, ref_copy, check_copy),
     "prefetch": Kernel("prefetch", tensors_prefetch, make_prefetch, ref_prefetch, check_prefetch),
     "prefetch_moe": Kernel("prefetch_moe", tensors_prefetch_moe, make_prefetch_moe, ref_prefetch_moe, check_prefetch_moe),
+    "stream": Kernel("stream", tensors_stream, make_stream, ref_stream, check_stream),
     "linear_gemv": Kernel("linear_gemv", tensors_linear_gemv, make_linear_gemv, ref_linear_gemv,
                           check_linear_gemv),
     "linear_gemv_norm": Kernel("linear_gemv_norm", tensors_linear_gemv_norm, make_linear_gemv_norm,
@@ -861,6 +900,7 @@ TESTS = {
     "copy": lambda ctx: run_single(ctx, "copy", KERNELS["copy"]),
     "prefetch": lambda ctx: run_single(ctx, "prefetch", KERNELS["prefetch"]),
     "prefetch_moe": lambda ctx: run_single(ctx, "prefetch_moe", KERNELS["prefetch_moe"]),
+    "stream": lambda ctx: run_single(ctx, "stream", KERNELS["stream"]),
     "linear_gemv": lambda ctx: run_single(ctx, "linear_gemv", KERNELS["linear_gemv"]),
     "linear_gemv_norm": lambda ctx: run_single(ctx, "linear_gemv_norm", KERNELS["linear_gemv_norm"]),
     "linear_gemv_res": lambda ctx: run_single(ctx, "linear_gemv_res", KERNELS["linear_gemv_res"]),

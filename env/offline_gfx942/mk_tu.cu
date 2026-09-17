@@ -14,6 +14,11 @@
 // task_header.cuh until then, so it is included here
 #include "tasks/mi300/linear_gemv_mi300.cuh"
 #define MK_TASK_LINEAR_GEMV_MI300 ((TaskType)195)
+// L6: the stream probe beside it, on the types its hunk adds (197 regular, 203 gang; 198 is the
+// fork's TASK_HOPPER_TASK_END), with the same local-define treatment
+#include "tasks/mi300/stream_mi300.cuh"
+#define MK_TASK_STREAM_MI300 ((TaskType)197)
+#define MK_TASK_STREAM_GANG_MI300 ((TaskType)203)
 #endif
 
 using namespace mirage::runtime;
@@ -82,6 +87,17 @@ void _execute_task(TaskDesc const *task_desc, RuntimeConfig const &runtime_confi
         task_desc->output_ptrs[0], 256, 102400, 1e-6f);
 #endif
   }
+  // L6: the stream probe's regular form, the two rows of G5 (152 KB over 96 tasks, qkva's shape,
+  // and 256 KB over 296, one task per CU); the second is variant 1 as the registration emits it
+  else if (task_desc->task_type == MK_TASK_STREAM_MI300 && task_desc->variant_id == 0) {
+    kernel::stream_mi300_task_impl<bfloat16, 2048>(
+        task_desc->input_ptrs[0], task_desc->output_ptrs[0], 38);
+#ifndef MK_GEMV_ONE
+  } else if (task_desc->task_type == MK_TASK_STREAM_MI300 && task_desc->variant_id == 1) {
+    kernel::stream_mi300_task_impl<bfloat16, 2048>(
+        task_desc->input_ptrs[0], task_desc->output_ptrs[0], 64);
+#endif
+  }
 #endif
 #ifdef MK_CK_LINEAR
   // O3: the per-tile linear with the norm prologue at the model's dims (batch 1, K 2048); the
@@ -128,4 +144,12 @@ void _execute_gang_task(TaskDesc const *task_desc, RuntimeConfig const &runtime_
         task_desc->input_ptrs[0], task_desc->input_ptrs[1], task_desc->output_ptrs[0],
         runtime_config.step[0], 32, 33, 2, 2, 0, 1, 1, tile_idx);   // tiles_per_xcd == heads_per_xcd == 2
   }
+#ifdef MK_GEMV
+  // L6: the stream probe's gang form, G5's w13 row (76 rows of 2,048 per tile, 304 KB, 37 tiles
+  // per XCD); the tile decode is the merge's
+  else if (task_desc->task_type == MK_TASK_STREAM_GANG_MI300 && task_desc->variant_id == 0) {
+    kernel::stream_gang_mi300_task_impl<bfloat16, 2048>(
+        task_desc->input_ptrs[0], task_desc->output_ptrs[0], 76, 37, tile_idx);
+  }
+#endif
 }

@@ -279,6 +279,39 @@ def test_measure_end_to_end(tmp_path):
     assert "| time per iteration from the kernel trace (us) |  | 2000.0 |" in md
 
 
+def test_stream_run_gets_a_rate_per_operator(tmp_path):
+    """L6: on a --graph stream run measure.py turns every operator's event gap into a GB/s (the
+    bytes the operator read over the gap) and reports the median over the operators after the
+    first, whose gap carries the iteration's own start."""
+    from fleet import graph_plan as G
+    run = tmp_path / "run"
+    run.mkdir()
+    plan, _ = B.dry_run(plan=G.build_stream_plan(ops=4, tasks=96, kb=152))
+    (run / "plan.json").write_text(json.dumps(B.plan_json(plan)))
+    (run / "fleet_run_meta.json").write_text(json.dumps(
+        {"graph": "stream", "ops": 4, "tasks_per_op": 96, "kb": 152, "gang": False, "iters": 3}))
+    (run / "wall.json").write_text(json.dumps({"mpk_wall_s": 0.001, "iters": 3}))
+    # five events per iteration (unused, the iteration start, the four operators); the gap of
+    # event e is 100 ticks (1 us) times e, so operator i's gap is (i + 2) us
+    entries, t = [], 0
+    for _ in range(3):
+        for e in range(6):
+            t += 100 * e
+            entries.append([e, t])
+    (run / "event_timing.json").write_text(json.dumps({"entries": entries, "num_events": 498}))
+    m = measure.measure(run)
+    bytes_per_op = 96 * 152 * 1024
+    assert m["stream"]["bytes_per_op"] == bytes_per_op and m["stream"]["operators"] == 4
+    ops = [r for r in m["event_timing"]["per_op"] if r["op"] == "stream_layer"]
+    assert len(ops) == 4 and [round(r["mean_us"], 3) for r in ops] == [2.0, 3.0, 4.0, 5.0]
+    assert all(abs(r["gb_per_s"] - bytes_per_op / (r["mean_us"] * 1e-6) / 1e9) < 1e-12 for r in ops)
+    # the median over operators 2, 3 and 4: 1 us is 14.95 GB/s of these bytes, so 4 us is a quarter
+    assert abs(m["stream"]["median_gb_per_s"] - bytes_per_op / 4e-6 / 1e9) < 1e-9
+    assert m["stream"]["operators_in_median"] == 3
+    md = measure.report_table(m)
+    assert "| GB/s |" in md and "stream probe:" in md and "MiB per operator" in md
+
+
 # ---- P1 of docs/gpu-experiments/02-validation/01-preparation.md: the address-shift flag ----------------
 
 def test_pad_alloc_argument_and_run_name():
@@ -308,6 +341,15 @@ def test_pad_alloc_argument_and_run_name():
     a = p.parse_args(["--graph", "empty", "--ops", "100", "--tasks", "40", "--iters", "32", "--event-timing",
                       "--worker-timing", "--spin", "1000", "--model-dir", "x"])
     assert run_fleet.run_name(a) == "E100x40_spin1000_it32_wt"                    # I3
+    # the stream probe's three rows of G5 (L6): the empty ladder's name with the bytes read
+    a = p.parse_args(["--graph", "stream", "--ops", "10", "--tasks", "96", "--kb", "152",
+                      "--iters", "32", "--event-timing"])
+    assert (a.kb, a.gang) == (152, False) and run_fleet.run_name(a) == "S10x96_152kb_it32"
+    a = p.parse_args(["--graph", "stream", "--ops", "10", "--tasks", "296", "--kb", "256", "--iters", "32"])
+    assert run_fleet.run_name(a) == "S10x296_256kb_it32"
+    a = p.parse_args(["--graph", "stream", "--ops", "10", "--tasks", "37", "--kb", "304", "--gang",
+                      "--iters", "32", "--worker-timing"])
+    assert a.gang and run_fleet.run_name(a) == "S10x37_304kb_gang_it32_wt"
     # the = form: a value starting with a dash is an option to argparse otherwise
     a = p.parse_args(["--layers", "2", "--iters", "32", "--runtime-flags=-DMPK_NO_COMPLETION_FENCE",
                       "--runtime-flags=-DMPK_POLL_SLEEP=8", "--model-dir", "x"])

@@ -10,6 +10,7 @@ the reused wrappers' assertions, and writes the call list as JSON.
 
     python fleet/build_graph.py --dry-run [--layers N] [--no-head] [--debug] [--out calls.json]
                                [--gemv-linears [--linear-grid N] [--head-grid N]]
+    python fleet/build_graph.py --dry-run --graph stream --ops M --tasks N --kb K [--gang]
 
 On the machine (from run_fleet.py):
     mpk, tensors = build(packed, capture, meta, layers=N, head=True)
@@ -235,6 +236,43 @@ def prefetch_moe_layer(mpk, weight, moe_mask, dummy, parts, block_dim=(256, 1, 1
               "prefetch_moe_mi300", [parts])
 
 
+def stream_layer(mpk, weight, prev, dummy, grid_dim, block_dim=(256, 1, 1)):
+    """L6 of docs/gpu-experiments/04-kernels (M7): the stream probe as regular tasks. Each of the
+    grid_dim[0] tasks reads its share (rows / grid) of a [rows, 2048] BF16 tensor with the GEMV's
+    load loop and no multiply, and writes one XOR word per wave into its row of dummy [grid, 4]
+    int32, so the loads are not elided. `prev` is the dummy the previous operator wrote, read
+    whole and never touched by the kernel: it is what makes this operator a consumer of that one
+    (the runtime rejects a graph whose operator shares no tensor with its predecessor).
+    Registration stream_mi300: inputs W, prev; output dummy; no params."""
+    assert weight.num_dims == 2 and dummy.num_dims == 2 and prev.num_dims == 2
+    assert weight.dim(0) % grid_dim[0] == 0, (weight.shape, grid_dim)
+    assert weight.dim(1) % 512 == 0, weight.dim(1)      # the kernel's static_assert: K % (8 x wave)
+    assert dummy.dim(0) == grid_dim[0] and dummy.dim(1) == 4, (dummy.shape, grid_dim)
+    assert prev.dim(1) == 4 and prev is not dummy, "the chain's dummy is the other one"
+    _new_task(mpk, grid_dim, block_dim,
+              [(weight, (0, -1, -1), 1), (prev, (-1, -1, -1), -1), (dummy, (0, -1, -1), -1)],
+              "stream_mi300", [])
+
+
+def stream_gang_layer(mpk, weight, prev, dummy, rows_per_tile, tiles_per_xcd, block_dim=(256, 1, 1)):
+    """L6: the stream probe as a gang operator, 8 slots x tiles_per_xcd tiles. Tile
+    xcd * tiles_per_xcd + t reads its rows_per_tile rows of the whole [8 * tiles_per_xcd *
+    rows_per_tile, 2048] tensor (the decode of mla_merge_uv; the runtime sets n_tile_start =
+    bid.x * tiles_per_xcd for this type) and writes its row of the whole dummy
+    [8 * tiles_per_xcd, 4] int32. `prev` is the chain's dummy, as in stream_layer.
+    Registration stream_gang_mi300: inputs W, prev; output dummy; params [rows_per_tile,
+    tiles_per_xcd]."""
+    assert weight.num_dims == 2 and dummy.num_dims == 2 and prev.num_dims == 2
+    tiles = XCDS * tiles_per_xcd
+    assert weight.dim(0) == tiles * rows_per_tile, (weight.shape, tiles, rows_per_tile)
+    assert weight.dim(1) % 512 == 0, weight.dim(1)
+    assert dummy.dim(0) == tiles and dummy.dim(1) == 4, (dummy.shape, tiles)
+    assert prev.dim(1) == 4 and prev is not dummy, "the chain's dummy is the other one"
+    _new_task(mpk, (XCDS, 1, 1), block_dim,
+              [(weight, (-1, -1, -1), 1), (prev, (-1, -1, -1), -1), (dummy, (-1, -1, -1), -1)],
+              "stream_gang_mi300", [rows_per_tile, tiles_per_xcd])
+
+
 def copy_layer(mpk, input, output, grid_dim=(1, 1, 1), block_dim=(256, 1, 1), spin=0, spin_print=0):
     """The identity task: a snapshot of the residual (--debug), the probe of O5, and the empty
     ladder of I3. With grid_dim[0] > 1 the output is partitioned on dim 0 (one row per task; the
@@ -259,6 +297,8 @@ NEW_LAYERS = {
     "linear_gemv_layer": linear_gemv_layer,
     "prefetch_layer": prefetch_layer,
     "prefetch_moe_layer": prefetch_moe_layer,
+    "stream_layer": stream_layer,
+    "stream_gang_layer": stream_gang_layer,
     "moe_router_layer": moe_router_layer,
     "copy_layer": copy_layer,
 }
@@ -625,12 +665,27 @@ def main():
     ap.add_argument("--head-grid", type=int, default=None, metavar="N",
                     help="--gemv-linears: tasks for lm_head (N must divide the vocabulary; L5)")
     ap.add_argument("--out", default=None)
+    # L6: the stream probe's plan, on the empty ladder's machinery (--graph empty is not built here:
+    # its plan has no model arithmetic to check, and run_fleet.py builds it on the machine)
+    ap.add_argument("--graph", choices=["model", "stream"], default="model",
+                    help="stream: the stream probe (L6, docs/gpu-experiments/04-kernels), --ops operators "
+                         "of --tasks tasks reading --kb kilobytes each, no model")
+    ap.add_argument("--ops", type=int, default=10, help="--graph stream: operators per iteration")
+    ap.add_argument("--tasks", type=int, default=296,
+                    help="--graph stream: tasks per operator, or tiles per XCD under --gang")
+    ap.add_argument("--kb", type=int, default=256,
+                    help="--graph stream: kilobytes one task or tile reads (a multiple of 4)")
+    ap.add_argument("--gang", action="store_true",
+                    help="--graph stream: one gang operator of 8 x --tasks tiles instead of --tasks regular tasks")
     args = ap.parse_args()
     if not args.dry_run:
         sys.exit("the real build is driven from harness/run_fleet.py on the machine; use --dry-run here")
-    plan, calls = dry_run(REAL_DIMS, args.s_max, args.layers, not args.no_head, args.debug, args.stop_after,
-                          args.debug_scores, args.tile_linears, gemv_linears=args.gemv_linears,
-                          linear_grid=args.linear_grid, head_grid=args.head_grid)
+    if args.graph == "stream":
+        plan, calls = dry_run(plan=G.build_stream_plan(args.ops, args.tasks, args.kb, args.gang))
+    else:
+        plan, calls = dry_run(REAL_DIMS, args.s_max, args.layers, not args.no_head, args.debug, args.stop_after,
+                              args.debug_scores, args.tile_linears, gemv_linears=args.gemv_linears,
+                              linear_grid=args.linear_grid, head_grid=args.head_grid)
     s = G.summary(plan)
     print(json.dumps({k: v for k, v in s.items()}, indent=None))
     print(f"{len(calls)} calls recorded; task types: {sorted(set(c['task_type'] for c in calls))}")

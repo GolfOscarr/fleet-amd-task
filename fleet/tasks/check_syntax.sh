@@ -11,7 +11,7 @@ KDIR="$ROOT/fleet/tasks/mi300"
 CXX="${CXX:-clang++}"
 # "tasks/mi300/<name>.cuh" resolves under fleet/ (fleet/tasks/mi300), "tasks/common/..." under the stub
 fail=0
-for f in mla_prep_mi300 mla_attend_mi300 mla_attend_mfma_mi300 mla_merge_uv_mi300 moe_router_mi300 copy_mi300 prefetch_mi300 linear_gemv_mi300 gang_moe_w2_silu_mi300; do
+for f in mla_prep_mi300 mla_attend_mi300 mla_attend_mfma_mi300 mla_merge_uv_mi300 moe_router_mi300 copy_mi300 prefetch_mi300 linear_gemv_mi300 stream_mi300 gang_moe_w2_silu_mi300; do
   src="$KDIR/$f.cuh"
   # instantiate each template at the real dims so the bodies are parsed and type-checked
   case "$f" in
@@ -24,6 +24,8 @@ for f in mla_prep_mi300 mla_attend_mi300 mla_attend_mfma_mi300 mla_merge_uv_mi30
     prefetch_mi300) inst='kernel::prefetch_mi300_task_impl<bfloat16,32,2048>(0,0); kernel::prefetch_moe_mi300_task_impl<bfloat16,66,2048,1408,32>(0,0,0,0);' ;;   # O8
     # L1: the three forms of the GEMV linear (the norm, the residual, and the plain one)
     linear_gemv_mi300) inst='kernel::linear_gemv_mi300_task_impl<bfloat16,2048,true,false>(0,0,0,0,0,38,3648,1e-6f); kernel::linear_gemv_mi300_task_impl<bfloat16,2048,false,true>(0,0,0,0,0,32,2048,0.0f); kernel::linear_gemv_mi300_task_impl<bfloat16,2048,false,false>(0,0,0,0,0,38,3648,0.0f);' ;;
+    # L6: the stream probe, the regular and the gang entry points
+    stream_mi300) inst='kernel::stream_mi300_task_impl<bfloat16,2048>(0,0,38); kernel::stream_gang_mi300_task_impl<bfloat16,2048>(0,0,76,37,0);' ;;
     gang_moe_w2_silu_mi300) inst='kernel::gang_moe_w2_silu_linear_kernel<bfloat16,1,2048,2048,1408,2816,66,8,32,32,32>(0,0,0,0,0,0,0);' ;;   # L3: the GEMV form, the default path (the MPK_W2_CK_TILE one needs CK)
   esac
   tu="$(mktemp -t "$f.XXXXXX").cpp"

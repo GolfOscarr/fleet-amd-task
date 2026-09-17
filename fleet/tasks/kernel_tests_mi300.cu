@@ -29,7 +29,7 @@
  * The defines are the ones persistent_kernel.py passes on its ROCm path.
  *
  * Usage: kernel_tests <test> <dir> [<dir> ...]
- *   test  mla_prep | mla_attend | mla_merge_uv | moe_router | copy | prefetch | prefetch_moe
+ *   test  mla_prep | mla_attend | mla_merge_uv | moe_router | copy | prefetch | prefetch_moe | stream
  *         | linear_gemv | linear_gemv_norm | linear_gemv_res
  *   dir   params.txt ("name value" per line, integers; floats as IEEE-754
  *         bit patterns) and one raw little-endian file <name>.bin per tensor
@@ -48,6 +48,7 @@
 #include "tasks/mi300/moe_router_mi300.cuh"
 #include "tasks/mi300/copy_mi300.cuh"
 #include "tasks/mi300/prefetch_mi300.cuh"
+#include "tasks/mi300/stream_mi300.cuh"
 #include "tasks/mi300/linear_gemv_mi300.cuh"
 
 #include <cstdint>
@@ -77,6 +78,10 @@ constexpr int P_ROW = ((D_C + 1 + 3) / 4) * 4;   // padded partials row (P2), ma
 // and an expert weight [N_TOTAL, PF_N, PF_K] whose active experts (mask) are streamed in PF_PARTS parts
 constexpr int PF_GRID = 4, PF_ROWS = 32;
 constexpr int PF_N = 32, PF_K = 256, PF_PARTS = 2;
+// the stream probe (L6): STREAM_GRID tasks of STREAM_ROWS rows of a [*, 2048] BF16 tensor; 38
+// rows is five batches of eight over four waves, so the round-robin and the clamped last batch
+// are both exercised
+constexpr int STREAM_GRID = 4, STREAM_ROWS = 38;
 // the GEMV linear (L1): the qkva grid of the model (3,648 rows of 2,048 in tasks of 38, the plain
 // and the norm form) and the o_proj grid (2,048 rows in tasks of 32, the residual form)
 constexpr int GEMV_ROWS = 38, GEMV_GRID = QKVA / GEMV_ROWS;              // 96 tasks
@@ -180,6 +185,16 @@ __global__ __launch_bounds__(256, 1) void k_prefetch(void const *w, void *dummy)
   int b = blockIdx.x;
   kernel::prefetch_mi300_task_impl<bf16, PF_ROWS, HIDDEN>(
       static_cast<bf16 const *>(w) + (size_t)b * PF_ROWS * HIDDEN, static_cast<int *>(dummy) + b * 4);
+}
+
+// grid (STREAM_GRID): block b reads rows [b * STREAM_ROWS, ...) of w into row b of dummy
+// [STREAM_GRID, 4] (one XOR word per wave), the pointers offset the way the runtime offsets them
+// for a weight partitioned on dim 0
+__global__ __launch_bounds__(256, 1) void k_stream(void const *w, void *dummy) {
+  int b = blockIdx.x;
+  kernel::stream_mi300_task_impl<bf16, HIDDEN>(
+      static_cast<bf16 const *>(w) + (size_t)b * STREAM_ROWS * HIDDEN,
+      static_cast<int *>(dummy) + b * 4, STREAM_ROWS);
 }
 
 // grid (N_SLOTS x PF_PARTS): block b is (slot b / PF_PARTS, part b % PF_PARTS) of the active experts in mask,
@@ -289,6 +304,10 @@ static const Spec SPEC_MOE_ROUTER[] = {   // the fused form, NORM = true (O1)
 static const Spec SPEC_PREFETCH[] = {
     {"w", (size_t)PF_GRID * PF_ROWS * HIDDEN * 2, false},
     {"dummy", (size_t)PF_GRID * 4 * 4, true},
+};
+static const Spec SPEC_STREAM[] = {
+    {"w", (size_t)STREAM_GRID * STREAM_ROWS * HIDDEN * 2, false},
+    {"dummy", (size_t)STREAM_GRID * 4 * 4, true},
 };
 static const Spec SPEC_PREFETCH_MOE[] = {
     {"w", (size_t)N_TOTAL * PF_N * PF_K * 2, false},
@@ -585,6 +604,16 @@ void run_prefetch(std::string const &dir) {
   b.store_outputs();
 }
 
+void run_stream(std::string const &dir) {
+  (void)read_params(dir);
+  Buffers b{dir, specs_of(SPEC_STREAM), {}};
+  b.load();
+  allow_full_lds(k_stream);
+  hipLaunchKernelGGL(k_stream, dim3(STREAM_GRID), dim3(256), SMEM_BYTES, 0, b.get("w"), b.get("dummy"));
+  finish_launch();
+  b.store_outputs();
+}
+
 void run_prefetch_moe(std::string const &dir) {
   (void)read_params(dir);
   Buffers b{dir, specs_of(SPEC_PREFETCH_MOE), {}};
@@ -680,7 +709,7 @@ int main(int argc, char **argv) {
   if (argc < 3) {
     std::fprintf(stderr,
                  "usage: %s <mla_prep|mla_attend|mla_merge_uv|moe_router|copy|prefetch|prefetch_moe"
-                 "|linear_gemv|linear_gemv_norm|linear_gemv_res> <dir>...\n",
+                 "|stream|linear_gemv|linear_gemv_norm|linear_gemv_res> <dir>...\n",
                  argv[0]);
     return 1;
   }
@@ -700,6 +729,8 @@ int main(int argc, char **argv) {
     run = run_prefetch;
   } else if (test == "prefetch_moe") {
     run = run_prefetch_moe;
+  } else if (test == "stream") {
+    run = run_stream;
   } else if (test == "linear_gemv") {
     run = run_linear_gemv;
   } else if (test == "linear_gemv_norm") {
