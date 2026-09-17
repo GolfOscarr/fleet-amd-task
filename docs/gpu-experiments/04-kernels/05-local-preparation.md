@@ -53,7 +53,7 @@ flags. It replaces the CK tile whose K loop keeps one step in flight.
   (38, 32 or 256), the weight pointer already offset to its rows by the
   runtime, `out` to its columns, `o_stride` the full N.
 - Wave w owns rows `w * RPW .. min((w + 1) * RPW, rows) - 1` with
-  `RPW = ceil(rows / 4)` (10, 10, 9, 9 for 38); it walks them in batches
+  `RPW = ceil(rows / 4)` (10, 10, 10, 8 for 38); it walks them in batches
   of `GEMV_BATCH` (8) rows under `#pragma unroll 1`. A row is four
   16-byte loads per lane at chunks `8 l + 512 i` through `load16_from`
   (`StreamSrc`, the `sc1 nt` policy of the linears; plain loads without
@@ -130,7 +130,7 @@ number is L2-cold, and the graph's exec counter is the HBM number (the
 `ktime` stage (which gains a `linear_gemv` grid).
 
 **Files.** `kernel_tests_mi300.cu`, `kernel_tests.py`, `harness/numpy_ref.py`
-(two one-line references), `fleet/tests/test_numpy_ref.py`,
+(two one-line references), `harness/tests/test_numpy_ref.py`,
 `env/session/vm.sh` (the builds, the `ktime` grid), `fleet/tasks/README.md`.
 
 **Checks here.** `kernel_tests.py --dry-run` (the rows parse and their

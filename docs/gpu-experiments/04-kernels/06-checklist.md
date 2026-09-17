@@ -17,23 +17,23 @@ bash env/offline_gfx942/run.sh                                            # ever
 
 ## L1. The GEMV tile kernel (5 h)
 
-- [ ] `fleet/tasks/mi300/linear_gemv_mi300.cuh`: `linear_gemv_mi300_task_impl<T, K, NORM, RESIDUAL>(x, w_norm, W, residual, out, rows, o_stride, eps)`; the wave's rows (`ceil(rows / 4)`, the tail masked), batches of `GEMV_BATCH` = 8 under `#pragma unroll 1`, the K9 map (`8 l + 512 i`) for the rows and the x slice, the loads through `StreamSrc`
-- [ ] the first batch's loads and the residual's values (one 2-byte load per lane: the 38-row task's columns are not 16-byte aligned) issued before the prologue; NORM through `rmsnorm_row` with `out = nullptr` and the LDS row; the null guard added to the helper
-- [ ] the halving butterfly (`butterfly_sum` in `mla_common_mi300.cuh`), lane l < 8 holding row `r0 + l`; the epilogue (the residual add in FP32, `bf16r`, `nt_store`, the column tail)
-- [ ] 256 rows (the head) as eight batches per wave with the norm once
-- [ ] `check_syntax.sh` with the three instantiations
+- [x] `fleet/tasks/mi300/linear_gemv_mi300.cuh`: `linear_gemv_mi300_task_impl<T, K, NORM, RESIDUAL>(x, w_norm, W, residual, out, rows, o_stride, eps)`; the wave's rows (`ceil(rows / 4)`, the tail masked), batches of `GEMV_BATCH` = 8 under `#pragma unroll 1`, the K9 map (`8 l + 512 i`) for the rows and the x slice, the loads through `StreamSrc`
+- [x] the first batch's loads and the residual's values (one 2-byte load per lane: the 38-row task's columns are not 16-byte aligned) issued before the prologue; NORM through `rmsnorm_row` with `out = nullptr` and the LDS row; the null guard added to the helper
+- [x] the halving butterfly (`butterfly_sum` in `mla_common_mi300.cuh`), lane l < 8 holding row `r0 + l`; the epilogue (the residual add in FP32, `bf16r`, `nt_store`, the column tail)
+- [x] 256 rows (the head) as eight batches per wave with the norm once
+- [x] `check_syntax.sh` with the three instantiations
 
-Status:
+Status: done 2026-09-18, commit 9d52661 (cherry-picked as the L1 commit on `local/round-4`; wave 1, agent A). The wave split is the formula's (10, 10, 10, 8 for 38 rows; the page's "10, 10, 9, 9" was a slip, corrected). The epilogue stores through `st` (2 bytes per lane), not the CK header's `nt_store`, which would put the file outside the host stub; the non-temporal hint on the output is open for the offline pass. `o_stride` is unused at one token and kept for the registration's parity. Rows past the wave's range skip their loads and FMAs through wave-uniform branches. Live registers at depth 8: 128 raw words across the prologue, about 168 in the multiply (the x slice held for the task). Checks: 10 PASS, the offline line and wait sequence follow with wave 1's compile.
 
 ## L1b. The suite rows (3 h)
 
-- [ ] `k_linear_gemv`, `k_linear_gemv_norm`, `k_linear_gemv_res` in `kernel_tests_mi300.cu` with `rows` and `o_stride` as arguments; `KT_TIME` and `KT_COLD` (the weight's rotation) over 96 blocks of 38 rows
-- [ ] `kernel_tests.py`: `linear_gemv`, `linear_gemv_norm`, `linear_gemv_res` (tensors, make, ref, check); `RUNS`; the `--dry-run` passes
-- [ ] `numpy_ref.py`: the two one-line references; `test_numpy_ref` rows
+- [x] `k_linear_gemv`, `k_linear_gemv_norm`, `k_linear_gemv_res` in `kernel_tests_mi300.cu` with `rows` and `o_stride` as arguments; `KT_TIME` and `KT_COLD` (the weight's rotation) over 96 blocks of 38 rows
+- [x] `kernel_tests.py`: `linear_gemv`, `linear_gemv_norm`, `linear_gemv_res` (tensors, make, ref, check); `RUNS`; the `--dry-run` passes
+- [x] `numpy_ref.py`: the two one-line references; `test_numpy_ref` rows
 - [ ] `vm.sh`: the four binaries (`_gemv4`, `_gemv8`, `_gemv16`, `_gemv8s`) in the `kernels` stage; the `ktime` stage's `linear_gemv` grid
-- [ ] `fleet/tasks/README.md`: the kernel's row
+- [x] `fleet/tasks/README.md`: the kernel's row
 
-Status:
+Status: rows done 2026-09-18, commit 122220d (cherry-picked; wave 1, agent A). Three wrappers with `rows` and `o_stride` as arguments; the weight's `KT_COLD` rotation modelled on the attention's (the merge has none); the numpy rows in `harness/tests/test_numpy_ref.py` (the page's path corrected). The dry run at `--n 2` (a trial writes the 15 MB weight; 100 trials would be 4.5 GB of files): the three rows PASS. 185 tests. The `vm.sh` binaries and the `ktime` grid are the L8 pass.
 
 ## L1c. The union, offline (1 h)
 
