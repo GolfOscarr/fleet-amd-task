@@ -46,3 +46,20 @@ def test_knob_rows_use_the_equals_form():
     for toks in rows(ROOT / "env/session/queue-c4.txt"):
         for t in toks:
             assert not t.startswith("--runtime-flags ") and (not t.startswith("--runtime-flags") or "=" in t), toks
+
+
+def test_queue_flag_removes_a_failed_lever(tmp_path):
+    """The agent's mid-session edit: a lever that failed its compare taken out of the stacked rows."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("queue_flag", ROOT / "env/session/queue_flag.py")
+    qf = importlib.util.module_from_spec(spec); spec.loader.exec_module(qf)
+    text = ("# comment\n--layers 27 --head --iters 32 --fuse-norm2 --fuse-silu --fuse-norm1 table compare continue   # G9\n"
+            "--layers 2 --iters 32 --runtime-flags=-DMPK_POLL_SLEEP=8 --fuse-silu table continue\n")
+    out = qf.remove_flags(text, {"--fuse-silu"})
+    assert out.splitlines()[1].startswith("--layers 27 --head --iters 32 --fuse-norm2 --fuse-norm1 table compare continue")
+    assert out.splitlines()[1].endswith("# G9") and "--fuse-silu" not in out
+    assert "--runtime-flags=-DMPK_POLL_SLEEP=8" in out.splitlines()[2]
+    # a flag with a separate value goes with its value; keywords and comments stay
+    out = qf.remove_flags("--layers 2 --iters 32 --probe-before L0.o_proj table continue\n", {"--probe-before"})
+    assert out == "--layers 2 --iters 32 table continue\n"
+    assert qf.add_flags(out, ["--nt-streams"]) == "--layers 2 --iters 32 --nt-streams table continue\n"
