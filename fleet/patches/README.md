@@ -28,6 +28,14 @@ Item L13 of `docs/design-doc/10-local-work.md`; the problems are
 | `python/mirage/mpk/persistent_kernel.py` | `argmax_reduce_layer(..., output_to_tokens=False)`; the `MPK_DEBUG_SCORES` flag |
 | `python/mirage/mpk/profiler_persistent.py` | the names in the profiler map |
 
+`hunks/` holds C++ written for the patch away from the fork (the laptop
+has no `repos/fleet-chiplet-megakernel`): each file lists the blocks to add
+with their target file and anchor, to be applied on the patched fork and
+folded into `new_tasks.patch` by the regeneration flow above.
+`hunks/L2-linear-gemv.md` is the GEMV linear's task type 195, its
+registration and its dispatcher branch (L2 of
+`docs/gpu-experiments/04-kernels`).
+
 The host C++ additions are parsed and type-checked with the ROCm clang by
 the host step of `env/offline_gfx942/run.sh` (`graph.cc`, `runtime.cc`,
 `task_register.cc` against the fork's headers, since 2026-09-17); the

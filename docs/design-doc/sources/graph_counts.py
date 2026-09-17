@@ -10,6 +10,13 @@ Task-count rules from docs/fleet/04-repo-map.md (code-verified):
   rmsnorm         -> max_num_batched_tokens = 1 task
   moe_silu_mul    -> batch x topk tasks
   moe_mul_sum_add -> batch x hidden/256 tasks
+
+This is the shipped graph, the one the plan builds with no flag: 326 operators
+and 2,285 tasks. The plan's optional forms move both counts (the fusions of
+O1 to O3, the per-tile linears, and --gemv-linears with --linear-grid and
+--head-grid, L2 and L5 of docs/gpu-experiments/04-kernels); their counts are
+not enumerated here but are asserted, flag by flag, in
+fleet/tests/test_graph_plan.py against fleet/graph_plan.py.
 """
 
 MiB = 1024 * 1024

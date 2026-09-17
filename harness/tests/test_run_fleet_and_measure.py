@@ -315,6 +315,16 @@ def test_pad_alloc_argument_and_run_name():
     assert run_fleet.run_name(a) == "L2_it32_rf_nocompletionfence+pollsleep8"     # I4
     assert run_fleet.runtime_flags_slug(["-DMPK_NO_BCAST_CAS"]) == "nobcastcas" and run_fleet.runtime_flags_slug([]) == ""
     assert run_fleet.runtime_flags_slug(['"-DMPK_NO_BCAST_CAS"']) == "nobcastcas"   # a stray quote from a queue row
+    # the GEMV linear and its grids, last in the name (L2 and L5, docs/gpu-experiments/04-kernels)
+    a = p.parse_args(["--layers", "2", "--iters", "32", "--gemv-linears", "--model-dir", "x"])
+    assert a.gemv_linears and a.linear_grid is None and a.head_grid is None
+    assert run_fleet.run_name(a) == "L2_it32_gv"
+    a = p.parse_args(["--layers", "27", "--head", "--iters", "32", "--gemv-linears", "--linear-grid", "48",
+                      "--head-grid", "320", "--nt-streams", "--model-dir", "x"])
+    assert (a.linear_grid, a.head_grid) == (48, 320)
+    assert run_fleet.run_name(a) == "L27_head_it32_nts_gv_lg48_hg320"
+    a = p.parse_args(["--layers", "2", "--iters", "32", "--model-dir", "x"])
+    assert not a.gemv_linears and run_fleet.run_name(a) == "L2_it32"        # unchanged without the flag
 
 
 def test_tensor_addresses_records_every_host_tensor():

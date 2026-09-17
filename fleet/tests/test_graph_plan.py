@@ -315,6 +315,110 @@ def test_fuse_norm1_default_off_and_debug_keep_the_stock_norms():
     assert not plan_dbg.chain_violations()
 
 
+# ---- the GEMV linear (docs/gpu-experiments/04-kernels, L2 and L5) --------------------------
+
+def test_gemv_linears_flips_the_four_dense_linears():
+    """L2: qkva, o_proj, layer 0's down and lm_head become one GEMV task type, with the input norm
+    and the residual add as its flags; no norm operator, no scratch tensor, and the chain holds."""
+    from fleet.graph_plan import grid_for_linear, REAL_DIMS as D
+    plan, calls = B.dry_run(layers=27, head=True, gemv_linears=True)
+    labels = [c.label for c in plan.calls]
+    assert not any(l.endswith(".norm1") for l in labels) and "head.norm" not in labels
+    assert "qkva_scratch" not in plan.tensors and "lm_scratch" not in plan.tensors
+    assert not plan.chain_violations()
+    by = {c.label: c for c in plan.calls}
+    for label in ("L5.qkva", "L5.o_proj", "L0.down", "head.lm_head"):
+        assert by[label].method == "linear_gemv_layer" and by[label].status == "new"
+    q = by["L5.qkva"]
+    assert q.tasks == grid_for_linear(D.Q_OUT + D.KVA_OUT) == 96 and q.args["input"] == "x_res"
+    assert q.args["w_norm"] == "w_norm1_5" and q.args["norm"] and not q.args["residual_add"]
+    assert q.args["residual"] is None and q.args["eps"] == G.RMS_EPS
+    o = by["L5.o_proj"]
+    assert o.tasks == grid_for_linear(D.H) == 64 and o.args["input"] == "attn"
+    assert o.args["residual"] == "x_res" and o.args["output"] == "x_res" and o.args["residual_add"]
+    assert o.args["w_norm"] is None and not o.args["norm"]
+    dn = by["L0.down"]
+    assert dn.args["input"] == "act" and dn.args["weight"] == "W_down_pad" and dn.args["residual_add"]
+    lm = by["head.lm_head"]
+    assert lm.tasks == grid_for_linear(D.V) == 400 and lm.args["w_norm"] == "w_final_norm" and lm.args["norm"]
+    # the gate-up and the MoE linears stay gang, as under --tile-linears
+    assert by["L0.gate_up"].method == "gang_linear_silu_layer"
+    assert by["L5.w13"].method == "gang_moe_w13_linear_layer"
+    # the recorded calls: the registration's input order, the imaps of the fused per-tile linear
+    # plus the residual partitioned like the output, and the three params
+    rec = [c for c in calls if c["method"] == "linear_gemv_mi300@new"]
+    assert len(rec) == 27 + 27 + 1 + 1
+    assert rec[0]["inputs"] == ["x_res", "w_norm1_0", "W_qkva_0", "qkva"]
+    assert rec[0]["imaps"] == [[-1, -1, -1], [-1, -1, -1], [0, -1, -1], [1, -1, -1]]
+    assert rec[0]["params"] == [1, 0, G.float_bits(G.RMS_EPS)]
+    assert rec[1]["inputs"] == ["attn", "W_o_0", "x_res", "x_res"]
+    assert rec[1]["imaps"] == [[-1, -1, -1], [0, -1, -1], [1, -1, -1], [1, -1, -1]]
+    assert rec[1]["params"] == [0, 1, G.float_bits(0.0)]
+    assert rec[2]["inputs"] == ["act", "W_down_pad", "x_res", "x_res"]      # layer 0's down
+    assert rec[-1]["inputs"] == ["x_res", "w_final_norm", "W_lm", "logits"]
+    assert rec[-1]["params"] == [1, 0, G.float_bits(G.RMS_EPS)]
+
+
+def test_gemv_linears_keeps_the_counts_of_the_fused_per_tile_plan():
+    """L2: the operator count is unchanged and so is the task count at the default grids: the flag
+    swaps the kernel of the four linears, it does not add or remove an operator or a task."""
+    plan, _ = B.dry_run(layers=27, head=True, gemv_linears=True)
+    ref, _ = B.dry_run(layers=27, head=True, fuse_norm1=True, tile_linears=True)
+    assert (plan.n_ops, plan.n_tasks) == (ref.n_ops, ref.n_tasks) == (298, 6593)
+    plan2, _ = B.dry_run(layers=27, head=True, fuse_norm2=True, fuse_silu=True, gemv_linears=True)
+    ref2, _ = B.dry_run(layers=27, head=True, fuse_norm2=True, fuse_silu=True, fuse_norm1=True, tile_linears=True)
+    assert (plan2.n_ops, plan2.n_tasks) == (ref2.n_ops, ref2.n_tasks) == (246, 6359)
+    assert not plan2.chain_violations()
+
+
+def test_gemv_linears_grid_overrides():
+    """L2's --linear-grid and L5's --head-grid: the task count is the only thing that moves, and an
+    override that does not divide an operator's rows (48 against o_proj's 2,048) leaves it alone."""
+    from fleet.graph_plan import REAL_DIMS as D
+    base, _ = B.dry_run(layers=27, head=True, gemv_linears=True)
+    lg48, _ = B.dry_run(layers=27, head=True, gemv_linears=True, linear_grid=48)
+    by = {c.label: c for c in lg48.calls}
+    assert by["L5.qkva"].tasks == 48 and by["L5.qkva"].args["grid_dim"] == (48, 1, 1)
+    assert by["L5.o_proj"].tasks == 64 and by["L0.down"].tasks == 64      # 48 does not divide 2,048
+    assert lg48.n_ops == base.n_ops and lg48.n_tasks == base.n_tasks - 27 * (96 - 48) == 5297
+    lg32, _ = B.dry_run(layers=27, head=True, gemv_linears=True, linear_grid=32)
+    by32 = {c.label: c for c in lg32.calls}
+    assert by32["L5.qkva"].tasks == 32 and by32["L5.o_proj"].tasks == 32
+    assert by32["L0.down"].tasks == 64                                   # the page's override names qkva and o_proj
+    assert lg32.n_tasks == base.n_tasks - 27 * (96 - 32) - 27 * (64 - 32) == 4001
+    hg320, _ = B.dry_run(layers=27, head=True, gemv_linears=True, head_grid=320)
+    assert {c.label: c for c in hg320.calls}["head.lm_head"].tasks == 320
+    assert hg320.n_ops == base.n_ops and hg320.n_tasks == base.n_tasks - 80 == 6513
+    for plan in (lg48, lg32, hg320):
+        assert not plan.chain_violations()
+    # the head's override is a single operator: it must divide the vocabulary
+    with pytest.raises(AssertionError):
+        B.dry_run(layers=1, head=True, gemv_linears=True, head_grid=300)
+    with pytest.raises(AssertionError):
+        B.dry_run(layers=1, head=True, gemv_linears=True, linear_grid=100)   # divides neither 3,648 nor 2,048
+    with pytest.raises(AssertionError):
+        B.dry_run(layers=1, head=True, linear_grid=32)                       # only under the flag
+    assert D.V % 320 == 0
+
+
+def test_gemv_linears_default_off_and_debug_keep_the_stock_plan():
+    plan_off, calls_off = B.dry_run(layers=27, head=True)
+    assert plan_off.n_ops == 326 and not any(c["method"] == "linear_gemv_mi300@new" for c in calls_off)
+    assert {c.label: c.method for c in plan_off.calls}["L0.qkva"] == "gang_linear_layer"
+    # under --debug the stock norms and the snapshot wiring stay, as with --fuse-norm1
+    plan_dbg, calls_dbg = B.dry_run(layers=27, head=True, debug=True, gemv_linears=True)
+    plan_dbg0, _ = B.dry_run(layers=27, head=True, debug=True)
+    assert plan_dbg.n_ops == plan_dbg0.n_ops and plan_dbg.n_tasks == plan_dbg0.n_tasks
+    assert not any(c["method"] == "linear_gemv_mi300@new" for c in calls_dbg)
+    assert not plan_dbg.chain_violations()
+
+
+@pytest.mark.parametrize("head,layers", [(True, 27), (False, 2), (True, 1)])
+def test_gemv_linears_keeps_the_chain_rule(head, layers):
+    plan, _ = B.dry_run(layers=layers, head=head, gemv_linears=True, fuse_norm2=True, fuse_silu=True)
+    assert plan.chain_violations() == []
+
+
 def test_prefetch_adds_side_operators_that_the_chain_rule_skips():
     """O8 (docs/gpu-experiments/03-acceleration): --prefetch adds three side operators per layer
     (the layer's W_o after qkva, the next layer's W_qkva after o_proj, the active experts' W2 after

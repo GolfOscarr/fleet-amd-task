@@ -9,6 +9,7 @@ docs/fleet/04-repo-map.md), and compiles. Runs on the machine; locally,
 the reused wrappers' assertions, and writes the call list as JSON.
 
     python fleet/build_graph.py --dry-run [--layers N] [--no-head] [--debug] [--out calls.json]
+                               [--gemv-linears [--linear-grid N] [--head-grid N]]
 
 On the machine (from run_fleet.py):
     mpk, tensors = build(packed, capture, meta, layers=N, head=True)
@@ -170,6 +171,45 @@ def linear_norm_layer(mpk, input, w_norm, weight, output, scratch, grid_dim, eps
               "linear_norm_mi300", [G.float_bits(eps)])
 
 
+def linear_gemv_layer(mpk, input, w_norm, weight, residual, output, grid_dim, norm, residual_add,
+                      eps, block_dim=(256, 1, 1)):
+    """L1 and L2 of docs/gpu-experiments/04-kernels: one GEMV task type for every dense linear at
+    batch 1. Each of the grid_dim[0] tasks multiplies its share (N / grid_dim[0]) of the weight's
+    rows by the whole [1, K] input row and writes the matching columns of the output; the input norm
+    (norm) and the residual add (residual_add) are the kernel's template flags, so neither a norm
+    operator nor a scratch tensor is needed. The imaps are linear_norm_layer's (input whole, weight
+    on dim 0, output on dim 1), and the residual, like the output, is partitioned on dim 1: the
+    kernel indexes it by the task's row, that is by the task's columns (linear_gemv_mi300.cuh, the
+    header and the store; the stock gang residual linear partitions it the same way,
+    docs/fleet/04-repo-map.md). Registration linear_gemv_mi300: inputs x, w_norm (norm), W,
+    residual (residual_add); output out; params [norm, residual, eps bits]."""
+    assert input.num_dims == 2 and weight.num_dims == 2 and output.num_dims == 2
+    assert input.dim(0) == 1 and output.dim(0) == 1, (input.shape, output.shape)   # batch 1
+    assert weight.dim(1) == input.dim(1), (weight.dim(1), input.dim(1))    # reduction
+    assert weight.dim(0) == output.dim(1), (weight.dim(0), output.dim(1))  # output size
+    assert output.dim(1) % grid_dim[0] == 0, (output.dim(1), grid_dim[0])
+    assert input.dim(1) % 512 == 0, input.dim(1)     # the kernel's static_assert: K % (8 x wave)
+    if norm:
+        assert w_norm is not None and w_norm.num_dims == 1, "norm needs the [K] norm weight"
+        assert w_norm.dim(0) == input.dim(1), (w_norm.shape, input.dim(1))
+    else:
+        assert w_norm is None, "the plain form takes no norm weight"
+    if residual_add:
+        assert residual is not None and residual.num_dims == 2, "the residual add needs a [1, N]"
+        assert residual.dim(0) == 1 and residual.dim(1) == output.dim(1), (residual.shape, output.shape)
+    else:
+        assert residual is None, "the plain form takes no residual"
+    inputs = [(input, (-1, -1, -1), 1)]
+    if norm:
+        inputs.append((w_norm, (-1, -1, -1), -1))
+    inputs.append((weight, (0, -1, -1), 1))
+    if residual_add:
+        inputs.append((residual, (1, -1, -1), -1))
+    inputs.append((output, (1, -1, -1), -1))
+    _new_task(mpk, grid_dim, block_dim, inputs,
+              "linear_gemv_mi300", [int(norm), int(residual_add), G.float_bits(eps)])
+
+
 def prefetch_layer(mpk, weight, dummy, grid_dim, block_dim=(256, 1, 1)):
     """O8 (docs/gpu-experiments/03-acceleration): a side operator streaming a dense weight [N, K]
     in grid_dim[0] stripes (the weight partitioned on dim 0, as the per-tile linear's) into a dummy
@@ -216,6 +256,7 @@ NEW_LAYERS = {
     "mla_merge_uv_layer": mla_merge_uv_layer,
     "gang_moe_w2_silu_linear_layer": gang_moe_w2_silu_linear_layer,
     "linear_norm_layer": linear_norm_layer,
+    "linear_gemv_layer": linear_gemv_layer,
     "prefetch_layer": prefetch_layer,
     "prefetch_moe_layer": prefetch_moe_layer,
     "moe_router_layer": moe_router_layer,
@@ -356,7 +397,8 @@ def plan_json(plan):
 def build(packed, capture, meta, dims=REAL_DIMS, s_max=1056, layers=27, head=True, debug=False,
           stop_after=None, debug_scores=False, tile_linears=False, attend_tasks=False, num_workers=296, num_schedulers=8,
           profiler_tensor=None, align=0, workspaces=None, fuse_norm2=False, fuse_silu=False,
-          probe_before=None, fuse_norm1=False, prefetch=False, plan=None):
+          probe_before=None, fuse_norm1=False, prefetch=False, gemv_linears=False, linear_grid=None,
+          head_grid=None, plan=None):
     """On the machine: construct the PersistentKernel, attach, issue, return (mpk, host tensors, plan).
     plan: a ready plan (the empty ladder of I3) instead of the model's."""
     import torch
@@ -364,7 +406,7 @@ def build(packed, capture, meta, dims=REAL_DIMS, s_max=1056, layers=27, head=Tru
 
     if plan is None:
         plan = G.build_plan(dims, s_max, layers, head, debug, debug_scores, tile_linears, attend_tasks, fuse_norm2,
-                            fuse_silu, fuse_norm1, prefetch)
+                            fuse_silu, fuse_norm1, prefetch, gemv_linears, linear_grid, head_grid)
     if probe_before:
         plan.insert_probe(probe_before)
     if stop_after:
@@ -549,10 +591,11 @@ class FakeMPK:
 
 def dry_run(dims=REAL_DIMS, s_max=1056, layers=27, head=True, debug=False, stop_after=None,
             debug_scores=False, tile_linears=False, attend_tasks=False, fuse_norm2=False, fuse_silu=False,
-            probe_before=None, fuse_norm1=False, prefetch=False, plan=None):
+            probe_before=None, fuse_norm1=False, prefetch=False, gemv_linears=False, linear_grid=None,
+            head_grid=None, plan=None):
     if plan is None:
         plan = G.build_plan(dims, s_max, layers, head, debug, debug_scores, tile_linears, attend_tasks, fuse_norm2,
-                            fuse_silu, fuse_norm1, prefetch)
+                            fuse_silu, fuse_norm1, prefetch, gemv_linears, linear_grid, head_grid)
     if probe_before:
         plan.insert_probe(probe_before)
     if stop_after:
@@ -574,12 +617,20 @@ def main():
     ap.add_argument("--stop-after", default=None, help="operator label, e.g. L1.o_proj")
     ap.add_argument("--debug-scores", action="store_true")
     ap.add_argument("--tile-linears", action="store_true")
+    ap.add_argument("--gemv-linears", action="store_true",
+                    help="the four dense linears as the GEMV task (L2, docs/gpu-experiments/04-kernels)")
+    ap.add_argument("--linear-grid", type=int, default=None, metavar="N",
+                    help="--gemv-linears: tasks for qkva and o_proj (3648 by 96, 48, 32; 2048 by 64, 32; "
+                         "an operator N does not divide keeps the heuristic)")
+    ap.add_argument("--head-grid", type=int, default=None, metavar="N",
+                    help="--gemv-linears: tasks for lm_head (N must divide the vocabulary; L5)")
     ap.add_argument("--out", default=None)
     args = ap.parse_args()
     if not args.dry_run:
         sys.exit("the real build is driven from harness/run_fleet.py on the machine; use --dry-run here")
     plan, calls = dry_run(REAL_DIMS, args.s_max, args.layers, not args.no_head, args.debug, args.stop_after,
-                          args.debug_scores, args.tile_linears)
+                          args.debug_scores, args.tile_linears, gemv_linears=args.gemv_linears,
+                          linear_grid=args.linear_grid, head_grid=args.head_grid)
     s = G.summary(plan)
     print(json.dumps({k: v for k, v in s.items()}, indent=None))
     print(f"{len(calls)} calls recorded; task types: {sorted(set(c['task_type'] for c in calls))}")
