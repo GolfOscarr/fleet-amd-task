@@ -129,6 +129,39 @@ def test_queue_stops_on_fail_without_continue(tree):
     assert not (tmp / "fleet_out/L2_it1").exists()
 
 
+def test_queue_bitdiff_dry_run_prints_the_command(tree):
+    """DRY=1: no directories need to exist, the command is printed instead of run (L7)."""
+    tmp, env = tree
+    env["DRY"] = "1"
+    r = sh([str(SESSION / "queue.sh"), "bitdiff", "run_a", "run_b"], env)
+    assert r.returncode == 0, r.stdout + r.stderr
+    expect = (f"+ {PY} harness/bitdiff.py {tmp / 'fleet_out/run_a'} {tmp / 'fleet_out/run_b'} "
+             f"--out {tmp / 'record/bitdiff_run_a_run_b.md'}")
+    assert expect in r.stdout
+
+
+def test_queue_bitdiff_missing_args_usage(tree):
+    tmp, env = tree
+    r = sh([str(SESSION / "queue.sh"), "bitdiff", "run_a"], env)
+    assert r.returncode == 2 and "usage: queue.sh bitdiff" in r.stdout
+
+
+def test_queue_bitdiff_writes_the_record_and_prints_its_path(tree):
+    tmp, env = tree
+    env["BITDIFF"] = f"{PY} {tmp / 'bitdiff_fake.py'}"
+    (tmp / "bitdiff_fake.py").write_text(
+        "import sys\nfrom pathlib import Path\n"
+        "out = Path(sys.argv[sys.argv.index('--out') + 1])\n"
+        "out.parent.mkdir(parents=True, exist_ok=True)\n"
+        "out.write_text('# Bit-diff report\\n')\n"
+    )
+    r = sh([str(SESSION / "queue.sh"), "bitdiff", "run_a", "run_b"], env)
+    assert r.returncode == 0, r.stdout + r.stderr
+    report = tmp / "record/bitdiff_run_a_run_b.md"
+    assert r.stdout.strip().splitlines()[-1] == str(report)
+    assert report.exists() and report.read_text() == "# Bit-diff report\n"
+
+
 @pytest.mark.parametrize("fault_at,expect_runs", [("L7.w13", 5), ("L7.norm1", 5), ("head.argmax_reduce", 5)])
 def test_bisect_finds_the_first_faulting_label(tree, fault_at, expect_runs):
     tmp, env = tree

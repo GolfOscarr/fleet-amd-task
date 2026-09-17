@@ -3,6 +3,7 @@
 #
 #   bash env/session/queue.sh run <queue file>
 #   bash env/session/queue.sh bisect <label file> -- <base run_fleet.py args>
+#   bash env/session/queue.sh bitdiff <run-a> <run-b>
 #
 # Queue file: one row per run, the run_fleet.py arguments (without --model-dir, added here),
 # with optional trailing words:  compare   run compare.py on the result
@@ -24,7 +25,13 @@
 # and STOP <name> when a FAIL without 'continue' ends the queue.
 # Guards, before a row runs: --iters at most 32; --debug only with --iters 1; compare (and any
 # untruncated run) needs harness/ref/ref_cache.safetensors; measure needs the profiler on PATH.
-# Overrides for the tests: RUN_FLEET, COMPARE, MEASURE, PROFILER, PY, SNAP, FLEET_OUT, RECORD, LOGDIR, REF_DIR.
+#
+# Bitdiff: harness/bitdiff.py (L7, docs/gpu-experiments/04-kernels/05-local-preparation.md) on
+# two FLEET_OUT run directories that persist for the session; the fleet venv is activated here
+# (fleet_env, common.sh), since run and bisect only get it from vm.sh's stage wrapper and this
+# subcommand has none. The report goes to RECORD/bitdiff_<run-a>_<run-b>.md; the path is printed.
+#
+# Overrides for the tests: RUN_FLEET, COMPARE, MEASURE, BITDIFF, PROFILER, PY, SNAP, FLEET_OUT, RECORD, LOGDIR, REF_DIR.
 set -uo pipefail
 # shellcheck disable=SC1091
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
@@ -35,6 +42,7 @@ REF_DIR="${REF_DIR:-$ROOT/harness/ref}"
 RUN_FLEET="${RUN_FLEET:-$PY harness/run_fleet.py}"
 COMPARE="${COMPARE:-$PY harness/compare.py}"
 MEASURE="${MEASURE:-$PY harness/measure.py}"
+BITDIFF="${BITDIFF:-$PY harness/bitdiff.py}"
 PROFILER="${PROFILER:-rocprofv3}"
 PMC_SETS=(
   "TCC_EA0_RDREQ_sum TCC_EA0_RDREQ_32B_sum"
@@ -224,8 +232,22 @@ queue_bisect() {
   row "$QSTATUS" "BISECT $verdict runs=$runs"
 }
 
+# harness/bitdiff.py on two run directories under FLEET_OUT, report to RECORD (L7)
+queue_bitdiff() {
+  local a="${1:-}" b="${2:-}"
+  if [ -z "$a" ] || [ -z "$b" ]; then echo "usage: queue.sh bitdiff <run-a> <run-b>"; return 2; fi
+  fleet_env
+  local out="$RECORD/bitdiff_${a}_${b}.md"
+  if [ "$DRY" = "1" ]; then echo "+ $BITDIFF $FLEET_OUT/$a $FLEET_OUT/$b --out $out"; return 0; fi
+  mkdir -p "$RECORD"
+  # shellcheck disable=SC2086
+  $BITDIFF "$FLEET_OUT/$a" "$FLEET_OUT/$b" --out "$out" || return 1
+  echo "$out"
+}
+
 case "${1:-}" in
   run) shift; queue_run "$@";;
   bisect) shift; queue_bisect "$@";;
-  *) sed -n 2,26p "$0"; exit 2;;
+  bitdiff) shift; queue_bitdiff "$@";;
+  *) sed -n 2,34p "$0"; exit 2;;
 esac
