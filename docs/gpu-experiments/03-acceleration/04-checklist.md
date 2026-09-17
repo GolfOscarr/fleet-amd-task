@@ -131,7 +131,9 @@ Found and fixed (commit below): a probe before `argmax_reduce` did not rewire it
 
 ## Before the VM
 
-- [ ] every ticked item is on `main` (or the round's branch) with its test
-- [ ] `env/preflight.sh` 8 PASS; `OFFLINE_COMPILE=1` adds the compile
-- [ ] the README's status paragraph corrected (it still says the GPU days have not started)
-- [ ] the balance read; the image on GHCR listed; `grab.sh` ready
+- [x] every ticked item is on the round's branch `local/round-3` with its test (14 commits over `main`, 52 files; the tree clean, the fork pristine)
+- [x] `env/preflight.sh` 8 PASS; `OFFLINE_COMPILE=1` adds the compile (the result in the status line below)
+- [x] the README's status paragraph corrected (the three rounds; the docs tree lists `03-acceleration/`)
+- [x] the balance read on 2026-09-17: $20.13, no VM, rate $0.00; the image `ghcr.io/golfoscarr/fleet-amd-task:20260916` listed on GHCR (private); `grab.sh` parses
+
+Status: gate passed 2026-09-17 (commit below, the branch pushed): `OFFLINE_COMPILE=1 env/preflight.sh` 10 PASS (the eight laptop checks, the offline compile of every variant of the megakernel with the host syntax check, the six hardware probes); the balance $20.13 against the plan's $7.48 per session plus the reserve. Round 3's laptop work ends here; what follows is the VM, row C0 of `05-session-plan.md`.

@@ -20,7 +20,7 @@ three times (the plain, the streaming and the MFMA builds).
 
 | | |
 |---|---|
-| Balance | $20.23 (read after round 2's deletion, 2026-09-16; the gate of row C0) |
+| Balance | $20.13 (read from the team page on 2026-09-17 at the gate, no VM, rate $0.00; $20.23 after round 2's deletion) |
 | Shape | 1x MI300X, $2.99 per hour, billed per minute (149 minutes cost $7.33 in round 2) |
 | Hours | 6.7 |
 | Session C | up to 2.5 hours ($7.48): the setup, the suites, the timings, the ladder, the knobs, the fusions, the probes and the streams |
