@@ -84,10 +84,12 @@ __device__ __forceinline__ float block_sum(float x, float *red) {
 // DeepseekV2RMSNorm on BF16 input, as numpy_ref.rmsnorm: FP32 statistics,
 // the normalized value rounded to BF16, then the BF16 weight multiply.
 // Each thread handles the elements i = tid, tid + 256, ...; `red` is 4
-// floats of LDS.
+// floats of LDS. `out_s`, when given, receives the same row in LDS so the
+// caller can read it back without a round trip through global memory
+// (the router's norm prologue, docs/gpu-experiments/03-acceleration O1).
 template <typename T, int N>
 __device__ __forceinline__ void rmsnorm_row(T const *x, T const *w, T *out, float eps,
-                                            float *red) {
+                                            float *red, T *out_s = nullptr) {
   float ss = 0.0f;
   for (int i = threadIdx.x; i < N; i += NUM_THREADS) {
     float v = ld(x + i);
@@ -97,7 +99,11 @@ __device__ __forceinline__ void rmsnorm_row(T const *x, T const *w, T *out, floa
   float rinv = 1.0f / sqrtf(var + eps);
   for (int i = threadIdx.x; i < N; i += NUM_THREADS) {
     float xn = bf16r(ld(x + i) * rinv);
-    st(out + i, bf16r(ld(w + i) * xn));
+    float y = bf16r(ld(w + i) * xn);
+    st(out + i, y);
+    if (out_s != nullptr) {
+      st(out_s + i, y);
+    }
   }
 }
 

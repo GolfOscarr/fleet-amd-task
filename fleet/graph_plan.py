@@ -23,6 +23,7 @@ N_FORCED = 2           # D6: experts 64, 65 at weight 1.0
 TOPK_TOTAL_SLOTS = 8
 SOFTMAX_SCALE = 0.1147213867929261
 ROUTED_SCALING = 1.0
+RMS_EPS = 1e-6                 # rms_norm_eps of config.json; the fused router's norm (O1)
 
 
 def float_bits(x: float) -> int:
@@ -66,7 +67,7 @@ OUTPUT_ARGS = {
     "gang_linear_with_residual_layer": ["output"], "gang_linear_silu_layer": ["output"],
     "linear_layer": ["output"], "linear_with_residual_layer": ["output"],
     "mla_prep_layer": ["c_kv", "k_pe", "ql_nope", "q_pe"], "mla_attend_layer": ["partials", "scores"],
-    "mla_merge_uv_layer": ["output"], "moe_router_layer": ["topk_w", "routing", "mask", "logits", "route_log"],
+    "mla_merge_uv_layer": ["output"], "moe_router_layer": ["h", "topk_w", "routing", "mask", "logits", "route_log"],
     "gang_moe_w13_linear_layer": ["output"], "moe_silu_mul_layer": ["output"],
     "gang_moe_w2_linear_layer": ["output"], "moe_mul_sum_add_layer": ["output"],
     "argmax_partial_layer": ["output"], "argmax_reduce_layer": ["output"], "copy_layer": ["output"],
@@ -167,12 +168,16 @@ def grid_for_linear(size):
 
 def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head: bool = True,
                debug: bool = False, debug_scores: bool = False, tile_linears: bool = False,
-               attend_tasks: bool = False) -> Plan:
+               attend_tasks: bool = False, fuse_norm2: bool = False) -> Plan:
     """debug_scores: the mla_attend kernel also writes the scaled pre-softmax scores
     [NH, s_max] FP32 (boundary B5); needs the MLA_ATTEND_DEBUG_SCORES build (MPK_DEBUG_SCORES=1).
     tile_linears: issue the four dense linears (qkva, o_proj, down, lm_head) as per-tile
     linear_layer tasks over all workers instead of 8-task gangs (MAJ-7; docs/gpu-experiments/02-validation P5). The
-    silu-fused gate_up and the MoE linears stay gang (no drop-in non-gang equivalent)."""
+    silu-fused gate_up and the MoE linears stay gang (no drop-in non-gang equivalent).
+    fuse_norm2: in the MoE layers the post-attention norm is folded into the router
+    (docs/gpu-experiments/03-acceleration, O1): no L{l}.norm2 operator, the router reads x_res
+    and the norm weight and writes h for the expert gate-up (kernel NORM = true). Layer 0
+    keeps its norm (its consumer is the stock silu gang kernel)."""
     d = dims
     assert 1 <= layers <= d.L
     assert d.H % 256 == 0                   # K of every CK linear (silent truncation otherwise)
@@ -262,8 +267,9 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
             p.op("gang_linear_with_residual_layer", XCDS, gang_tiles(d.H, TILE_N_O), label=f"L{l}.o_proj",
                  input="attn", weight=f"W_o_{l}", residual="x_res", output="x_res",
                  tile_n=TILE_N_O, output_stride=d.H)
-        p.op("rmsnorm_layer", 1, label=f"L{l}.norm2", input="x_res", weight=f"w_norm2_{l}", output="h",
-             grid_dim=(1, 1, 1), block_dim=(256, 1, 1))
+        if not (fuse_norm2 and l > 0):
+            p.op("rmsnorm_layer", 1, label=f"L{l}.norm2", input="x_res", weight=f"w_norm2_{l}", output="h",
+                 grid_dim=(1, 1, 1), block_dim=(256, 1, 1))
         if l == 0:
             p.t("W_gu_shuffled", (2 * d.I_DENSE_PAD, d.H), kind="input", source="W_gu_shuffled_0")
             p.t("W_down_pad", (d.H, d.I_DENSE_PAD), kind="input", source="W_down_pad_0")
@@ -284,11 +290,13 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
             p.t(f"W_gate_{l}", (d.E, d.H), kind="input", source=f"W_gate_{l}")
             p.t(f"W13_{l}", (d.E_TOTAL, 2 * d.I_MOE, d.H), kind="input", source=f"W13_{l}")
             p.t(f"W2_{l}", (d.E_TOTAL, d.H, d.I_MOE), kind="input", source=f"W2_{l}")
+            router_io = (dict(input="x_res", w_norm=f"w_norm2_{l}", h="h", eps=RMS_EPS) if fuse_norm2
+                         else dict(input="h"))
             p.op("moe_router_layer", 1, status="new", label=f"L{l}.router",
-                 input="h", w_gate=f"W_gate_{l}", topk_w="topk_w", routing="routing", mask="mask",
+                 w_gate=f"W_gate_{l}", topk_w="topk_w", routing="routing", mask="mask",
                  logits="logits_router", route_log="route_log", layer_index=l - 1,
                  topk=d.TOPK, n_experts=d.E, n_forced=N_FORCED, scaling=ROUTED_SCALING,
-                 block_dim=(256, 1, 1))
+                 block_dim=(256, 1, 1), **router_io)
             p.op("gang_moe_w13_linear_layer", XCDS, (2 * d.I_MOE) // 64, label=f"L{l}.w13",
                  input="h", weight=f"W13_{l}", moe_routing_indices="routing", moe_mask="mask",
                  output="mid")

@@ -1,8 +1,8 @@
 diff --git a/include/mirage/kernel/task_register.h b/include/mirage/kernel/task_register.h
-index 2aab442..e1292f8 100755
+index 2aab442..9220956 100755
 --- a/include/mirage/kernel/task_register.h
 +++ b/include/mirage/kernel/task_register.h
-@@ -172,6 +172,19 @@ public:
+@@ -172,6 +172,20 @@ public:
                                       bool w13_linear);
    int register_moe_mul_sum_add_mi300_task(threadblock::Graph const &bgraph,
                                            std::vector<int> const &params);
@@ -16,7 +16,8 @@ index 2aab442..e1292f8 100755
 +  int register_mla_merge_uv_mi300_task(threadblock::Graph const &bgraph,
 +                                       std::vector<int> const &params);
 +  int register_moe_router_mi300_task(threadblock::Graph const &bgraph,
-+                                     std::vector<int> const &params);
++                                     std::vector<int> const &params,
++                                     bool norm = false);   // norm: moe_router_norm_mi300 (O1)
 +  int register_copy_mi300_task(threadblock::Graph const &bgraph,
 +                               std::vector<int> const &params);
    // SM100 tasks
@@ -37,7 +38,7 @@ index 28aade0..8c8a08d 100755
  
  __device__ __forceinline__ bool is_termination_event(size_t event_loc,
 diff --git a/include/mirage/persistent_kernel/runtime_header.h b/include/mirage/persistent_kernel/runtime_header.h
-index f2dfe4e..1bd7407 100755
+index f2dfe4e..e27b308 100755
 --- a/include/mirage/persistent_kernel/runtime_header.h
 +++ b/include/mirage/persistent_kernel/runtime_header.h
 @@ -83,7 +83,7 @@ unsigned long long int const EVENT_INVALID_ID = 0x7ffffffffffffffe;
@@ -45,7 +46,7 @@ index f2dfe4e..1bd7407 100755
  
  int const MAX_INPUTS_PER_TASK = 7;
 -int const MAX_OUTPUTS_PER_TASK = 3;
-+int const MAX_OUTPUTS_PER_TASK = 5; // mla_prep writes 4, moe_router 5 (was 3)
++int const MAX_OUTPUTS_PER_TASK = 6; // mla_prep writes 4, moe_router 5, moe_router_norm 6 (was 3)
  // Increased to 304 to support full CU utilization on AMD MI300X (304 CUs)
  // and NVIDIA Blackwell (160+ SMs which uses 144 workers)
  int const MAX_NUM_WORKERS = 304;
@@ -185,10 +186,10 @@ index f3f98ad..50bf2b6 100755
      150: "TASK_HOPPER_TASK_BEGIN",
      151: "TASK_LINEAR_WITH_RESIDUAL_HOPPER",
 diff --git a/src/kernel/graph.cc b/src/kernel/graph.cc
-index 97c4923..1935d5f 100755
+index 97c4923..34ee2d6 100755
 --- a/src/kernel/graph.cc
 +++ b/src/kernel/graph.cc
-@@ -841,6 +841,36 @@ void Graph::register_task(char const *task_type, std::vector<int> params) {
+@@ -841,6 +841,42 @@ void Graph::register_task(char const *task_type, std::vector<int> params) {
          customized->bgraph, params);
      task_config[op] =
          std::make_tuple(3, 1, TASK_MOE_MUL_SUM_ADD_MI300, variant_id);
@@ -218,6 +219,12 @@ index 97c4923..1935d5f 100755
 +    assert(params.size() == 6);
 +    int variant_id = task_register->register_moe_router_mi300_task(customized->bgraph, params);
 +    task_config[op] = std::make_tuple(2, 5, TASK_MOE_ROUTER_MI300, variant_id);
++  } else if (name == "moe_router_norm_mi300") {
++    // O1 (docs/gpu-experiments/03-acceleration): the post-attention norm folded in;
++    // inputs x_res, w_norm, W_gate; outputs h, topk_w, routing, mask, logits, route_log
++    assert(params.size() == 7);
++    int variant_id = task_register->register_moe_router_mi300_task(customized->bgraph, params, true);
++    task_config[op] = std::make_tuple(3, 6, TASK_MOE_ROUTER_MI300, variant_id);
 +  } else if (name == "copy_mi300") {
 +    assert(params.size() == 1);
 +    int variant_id = task_register->register_copy_mi300_task(customized->bgraph, params);
@@ -297,7 +304,7 @@ index 9dde169..5b6eb30 100755
        for (size_t variant_id = 0; variant_id < task.second.size();
             variant_id++) {
 diff --git a/src/kernel/task_register.cc b/src/kernel/task_register.cc
-index a4e2602..f831d65 100755
+index a4e2602..ec8cbbf 100755
 --- a/src/kernel/task_register.cc
 +++ b/src/kernel/task_register.cc
 @@ -15,6 +15,8 @@
@@ -337,7 +344,7 @@ index a4e2602..f831d65 100755
    return register_task_variant(TASK_ARGMAX_REDUCE, code.to_string());
  }
  
-@@ -4583,5 +4593,263 @@ int TaskRegister::register_paged_attention_split_kv_hopper_task(
+@@ -4583,5 +4593,275 @@ int TaskRegister::register_paged_attention_split_kv_hopper_task(
                                 code.to_string());
  }
  
@@ -545,40 +552,52 @@ index a4e2602..f831d65 100755
 +}
 +
 +// params: [topk, n_experts, n_forced, scaling_bits, layer_index, hidden];
-+// inputs h, W_gate; outputs topk_w, routing, mask, logits, route_log
++// inputs h, W_gate; outputs topk_w, routing, mask, logits, route_log.
++// norm = true (moe_router_norm_mi300, O1 of docs/gpu-experiments/03-acceleration): the
++// post-attention norm folded in; params gain [eps_bits]; inputs x_res, w_norm, W_gate;
++// outputs h, topk_w, routing, mask, logits, route_log; the kernel's NORM template flag.
 +int TaskRegister::register_moe_router_mi300_task(
-+    threadblock::Graph const &bgraph, std::vector<int> const &params) {
-+  assert(params.size() == 6);
++    threadblock::Graph const &bgraph, std::vector<int> const &params, bool norm) {
++  assert(params.size() == (norm ? 7u : 6u));
 +  int topk = params[0], n_experts = params[1], n_forced = params[2];
 +  int layer_index = params[4], hidden = params[5];
 +  std::vector<tb::TBInputOp *> input_ops, output_ops;
-+  int num_inputs = 2, num_outputs = 5;
++  int num_inputs = norm ? 3 : 2, num_outputs = norm ? 6 : 5;
 +  assert(bgraph.operators.size() == (size_t)num_inputs + num_outputs);
 +  split_io(bgraph, num_inputs, input_ops, output_ops);
-+  assert(input_ops[0]->dtensor.dim[1] == hidden);
-+  assert(input_ops[1]->dtensor.dim[0] == n_experts && input_ops[1]->dtensor.dim[1] == hidden);
-+  assert(output_ops[0]->dtensor.dim[1] == topk + n_forced);
-+  assert(output_ops[1]->dtensor.dim[0] == n_experts + n_forced);
-+  assert(output_ops[2]->dtensor.dim[0] == n_experts + n_forced + 1);
-+  assert(output_ops[3]->dtensor.dim[1] == n_experts);
-+  assert(output_ops[4]->dtensor.num_dims == 3 && output_ops[4]->dtensor.dim[2] == topk + n_forced);
-+  int route_steps = output_ops[4]->dtensor.dim[0];
-+  int route_layers = output_ops[4]->dtensor.dim[1];
++  int in_gate = norm ? 2 : 1;     // W_gate's input slot
++  int out0 = norm ? 1 : 0;        // topk_w's output slot (h takes slot 0 when norm)
++  assert(input_ops[0]->dtensor.dim[1] == hidden);                       // h, or x_res
++  if (norm) {
++    assert(input_ops[1]->dtensor.dim[0] == hidden);                     // w_norm [hidden]
++    assert(output_ops[0]->dtensor.dim[1] == hidden);                    // h [1, hidden]
++  }
++  assert(input_ops[in_gate]->dtensor.dim[0] == n_experts && input_ops[in_gate]->dtensor.dim[1] == hidden);
++  assert(output_ops[out0 + 0]->dtensor.dim[1] == topk + n_forced);
++  assert(output_ops[out0 + 1]->dtensor.dim[0] == n_experts + n_forced);
++  assert(output_ops[out0 + 2]->dtensor.dim[0] == n_experts + n_forced + 1);
++  assert(output_ops[out0 + 3]->dtensor.dim[1] == n_experts);
++  assert(output_ops[out0 + 4]->dtensor.num_dims == 3 && output_ops[out0 + 4]->dtensor.dim[2] == topk + n_forced);
++  int route_steps = output_ops[out0 + 4]->dtensor.dim[0];
++  int route_layers = output_ops[out0 + 4]->dtensor.dim[1];
 +  mirage::transpiler::CodeKeeper code;
 +  code.inc_indent();
-+  code.e("kernel::moe_router_mi300_task_impl<bfloat16, $, $, $, $, $, $>(",
-+         hidden, n_experts, n_forced, topk, route_steps, route_layers);
-+  code.e("    task_desc->input_ptrs[0],");   // h
-+  code.e("    task_desc->input_ptrs[1],");   // W_gate
-+  code.e("    task_desc->output_ptrs[0],");  // topk_w
-+  code.e("    task_desc->output_ptrs[1],");  // routing
-+  code.e("    task_desc->output_ptrs[2],");  // mask
-+  code.e("    task_desc->output_ptrs[3],");  // logits (boundary B8)
-+  code.e("    task_desc->output_ptrs[4],");  // route_log
++  code.e("kernel::moe_router_mi300_task_impl<bfloat16, $, $, $, $, $, $, $>(",
++         hidden, n_experts, n_forced, topk, route_steps, route_layers, norm ? "true" : "false");
++  code.e("    task_desc->input_ptrs[0],");                                   // h, or x_res
++  code.e("    $,", norm ? "task_desc->input_ptrs[1]" : "nullptr");          // w_norm
++  code.e("    task_desc->input_ptrs[$],", in_gate);                          // W_gate
++  code.e("    $,", norm ? "task_desc->output_ptrs[0]" : "nullptr");         // h out
++  code.e("    task_desc->output_ptrs[$],", out0 + 0);  // topk_w
++  code.e("    task_desc->output_ptrs[$],", out0 + 1);  // routing
++  code.e("    task_desc->output_ptrs[$],", out0 + 2);  // mask
++  code.e("    task_desc->output_ptrs[$],", out0 + 3);  // logits (boundary B8)
++  code.e("    task_desc->output_ptrs[$],", out0 + 4);  // route_log
 +  code.e("    runtime_config.step[0],");
 +  code.e("    runtime_config.prompt_length[0],");   // row = step - (prompt_len - 1)
 +  code.e("    $,", layer_index);
-+  code.e("    $);", float_literal(params[3]));      // routed_scaling_factor
++  code.e("    $,", float_literal(params[3]));       // routed_scaling_factor
++  code.e("    $);", norm ? float_literal(params[6]) : std::string("0.0f"));   // eps
 +  return register_task_variant(TASK_MOE_ROUTER_MI300, code.to_string());
 +}
 +

@@ -18,7 +18,7 @@ for f in mla_prep_mi300 mla_attend_mi300 mla_merge_uv_mi300 moe_router_mi300 cop
     mla_prep_mi300) inst='kernel::mla_prep_mi300_task_impl<bfloat16,16,128,64,512>(0,0,0,0,0,0,0,0,0,0,1e-6f);' ;;
     mla_attend_mi300) inst='kernel::mla_attend_mi300_task_impl<bfloat16,16,512,64,1056>(0,0,0,0,0,0,0.1f,32,33,5,4,0,0);' ;;
     mla_merge_uv_mi300) inst='kernel::mla_merge_uv_mi300_task_impl<bfloat16,16,128,512>(0,0,0,0,32,33,2,2,0,1,1,0);' ;;
-    moe_router_mi300) inst='kernel::moe_router_mi300_task_impl<bfloat16,2048,64,2,6,32,26>(0,0,0,0,0,0,0,0,0,0,1.0f);' ;;
+    moe_router_mi300) inst='kernel::moe_router_mi300_task_impl<bfloat16,2048,64,2,6,32,26,false>(0,0,0,0,0,0,0,0,0,0,0,0,1.0f,0.0f); kernel::moe_router_mi300_task_impl<bfloat16,2048,64,2,6,32,26,true>(0,0,0,0,0,0,0,0,0,0,0,0,1.0f,1e-6f);' ;;
     copy_mi300) inst='kernel::copy_mi300_task_impl<bfloat16,2048>(0,0);' ;;
   esac
   tu="$(mktemp -t "$f.XXXXXX").cpp"

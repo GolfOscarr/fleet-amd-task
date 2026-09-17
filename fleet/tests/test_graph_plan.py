@@ -208,3 +208,33 @@ def test_tile_linears_output_sizes_divide_the_grid():
 def test_tile_linears_keeps_the_chain_rule(head, debug):
     plan, _ = B.dry_run(layers=27, head=head, debug=debug, tile_linears=True)
     assert plan.chain_violations() == []
+
+
+def test_fuse_norm2_folds_the_post_attention_norm_into_the_router():
+    """O1 (docs/gpu-experiments/03-acceleration): no L{l}.norm2 in the MoE layers, the router
+    reads x_res and the norm weight and writes h; layer 0 keeps its norm; the chain holds."""
+    plan, calls = B.dry_run(layers=27, head=True, fuse_norm2=True)
+    labels = [c.label for c in plan.calls]
+    assert "L0.norm2" in labels and not any(l.endswith(".norm2") for l in labels if l != "L0.norm2")
+    assert plan.n_ops == 300 and plan.n_tasks == 1854 and not plan.chain_violations()
+    by = {c.label: c for c in plan.calls}
+    r = by["L5.router"]
+    assert r.args["input"] == "x_res" and r.args["w_norm"] == "w_norm2_5" and r.args["h"] == "h"
+    assert r.args["eps"] == G.RMS_EPS
+    # the recorded call: the fused registration with three inputs, six outputs and seven params
+    rec = [c for c in calls if c["method"] == "moe_router_norm_mi300@new"]
+    assert len(rec) == 26
+    assert rec[0]["inputs"] == ["x_res", "w_norm2_1", "W_gate_1", "h", "topk_w", "routing", "mask",
+                                "logits_router", "route_log"]
+    assert len(rec[0]["params"]) == 7 and rec[0]["params"][6] == G.float_bits(G.RMS_EPS)
+    # the gate-up still reads h, now written by the router (the chain's shared tensor)
+    assert by["L5.w13"].args["input"] == "h"
+
+
+def test_fuse_norm2_default_off_leaves_the_plan_unchanged():
+    plan_off, calls_off = B.dry_run(layers=27, head=True)
+    assert plan_off.n_ops == 326 and plan_off.n_tasks == 1880
+    assert not any(c["method"] == "moe_router_norm_mi300@new" for c in calls_off)
+    assert sum(c["method"] == "moe_router_mi300@new" for c in calls_off) == 26
+    r = {c.label: c for c in plan_off.calls}["L5.router"]
+    assert r.args["input"] == "h" and "w_norm" not in r.args and "h" not in r.args

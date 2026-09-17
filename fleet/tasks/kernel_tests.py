@@ -457,7 +457,9 @@ def check_mla_merge_uv(t, p, exp, got):
 # --- moe_router -------------------------------------------------------------
 
 def tensors_moe_router(params):
-    return [T("h", "bf16", (D.H,)), T("w_gate", "bf16", (D.E, D.H)),
+    # the fused form (O1, docs/gpu-experiments/03-acceleration): the norm folded in, NORM = true
+    return [T("x_res", "bf16", (D.H,)), T("w_norm", "bf16", (D.H,)), T("w_gate", "bf16", (D.E, D.H)),
+            T("h", "bf16", (D.H,), True),
             T("topk_w", "f32", (N_SLOTS,), True), T("routing", "i32", (N_TOTAL,), True),
             T("mask", "i32", (N_TOTAL + 1,), True), T("logits", "f32", (D.E,), True),
             T("route_log", "i32", ROUTE_SHAPE, True)]
@@ -466,8 +468,10 @@ def tensors_moe_router(params):
 def make_moe_router(rng):
     p = {"step": random_step(rng), "prompt_length": common.N_PROMPT,
          "layer_index": int(rng.integers(0, ROUTE_SHAPE[1])),
-         "scaling_bits": G.float_bits(G.ROUTED_SCALING)}
-    t = {"h": bf16_normal(rng, (D.H,)), "w_gate": bf16_normal(rng, (D.E, D.H), D.H ** -0.5),
+         "scaling_bits": G.float_bits(G.ROUTED_SCALING), "eps_bits": G.float_bits(G.RMS_EPS)}
+    t = {"x_res": bf16_normal(rng, (D.H,), 4.0), "w_norm": bf16_normal(rng, (D.H,)),
+         "w_gate": bf16_normal(rng, (D.E, D.H), D.H ** -0.5),
+         "h": sentinel("bf16", (D.H,)),
          "topk_w": sentinel("f32", (N_SLOTS,)), "routing": sentinel("i32", (N_TOTAL,)),
          "mask": sentinel("i32", (N_TOTAL + 1,)), "logits": sentinel("f32", (D.E,)),
          "route_log": np.full(ROUTE_SHAPE, -1, np.int32)}
@@ -490,16 +494,18 @@ def route_log_expected(initial, p, mask):
 
 
 def ref_moe_router(t, p):
-    logits, topk_w, routing, mask = R.moe_router(t["h"], t["w_gate"], topk=D.TOPK, n_experts=D.E,
-                                                 forced=FORCED, scaling=bits_to_float(p["scaling_bits"]))
-    return {"topk_w": topk_w, "routing": routing, "mask": mask, "logits": logits,
+    h, logits, topk_w, routing, mask = R.moe_router_norm(
+        t["x_res"], t["w_norm"], t["w_gate"], eps=bits_to_float(p["eps_bits"]), topk=D.TOPK,
+        n_experts=D.E, forced=FORCED, scaling=bits_to_float(p["scaling_bits"]))
+    return {"h": h, "topk_w": topk_w, "routing": routing, "mask": mask, "logits": logits,
             "route_log": route_log_expected(t["route_log"], p, mask)}
 
 
 def check_moe_router(t, p, exp, got):
     """The GEMV with a tolerance; the selection exactly, derived from the kernel's own
     logits so that a near tie at the FP32 noise level cannot fail the exact checks."""
-    rows = [row_rel("logits", got["logits"], exp["logits"], F32_REL)]
+    rows = [row_rel("h", got["h"], exp["h"], BF16_REL),          # the folded norm (O1)
+            row_rel("logits", got["logits"], exp["logits"], F32_REL)]
     if not np.all(np.isfinite(got["logits"])):
         rows.append(row_exact("selection", got["mask"], exp["mask"], note="logits not finite"))
         return rows

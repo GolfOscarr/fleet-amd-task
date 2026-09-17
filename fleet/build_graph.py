@@ -100,17 +100,30 @@ def mla_merge_uv_layer(mpk, partials, w_uv, output, split, n_splits, block_dim=(
 
 
 def moe_router_layer(mpk, input, w_gate, topk_w, routing, mask, logits, route_log, layer_index,
-                     topk, n_experts, n_forced, scaling, block_dim=(256, 1, 1)):
-    """One task per MoE layer: FP32 GEMV, softmax, top-k, forced experts; also logs the routing."""
+                     topk, n_experts, n_forced, scaling, block_dim=(256, 1, 1),
+                     w_norm=None, h=None, eps=None):
+    """One task per MoE layer: FP32 GEMV, softmax, top-k, forced experts; also logs the routing.
+    With w_norm, h and eps (O1, docs/gpu-experiments/03-acceleration): the post-attention norm is
+    folded in; `input` is then x_res, and h [1, H] is written for the expert gate-up
+    (registration moe_router_norm_mi300: inputs x_res, w_norm, W_gate; outputs h, ...)."""
     assert w_gate.dim(0) == n_experts and routing.dim(0) == n_experts + n_forced
     assert mask.dim(0) == n_experts + n_forced + 1 and topk_w.dim(1) == topk + n_forced
     assert logits.dim(1) == n_experts
-    _new_task(mpk, (1, 1, 1), block_dim,
-              [(input, (-1, -1, -1), -1), (w_gate, (-1, -1, -1), -1),
-               (topk_w, (-1, -1, -1), -1), (routing, (-1, -1, -1), -1), (mask, (-1, -1, -1), -1),
-               (logits, (-1, -1, -1), -1), (route_log, (-1, -1, -1), -1)],
-              "moe_router_mi300",
-              [topk, n_experts, n_forced, G.float_bits(scaling), layer_index, input.dim(1)])
+    fused = w_norm is not None
+    assert fused == (h is not None) == (eps is not None), "w_norm, h and eps come together"
+    ins = [(input, (-1, -1, -1), -1)]
+    outs = []
+    params = [topk, n_experts, n_forced, G.float_bits(scaling), layer_index, input.dim(1)]
+    if fused:
+        assert w_norm.dim(0) == input.dim(1) and h.dim(1) == input.dim(1)
+        ins.append((w_norm, (-1, -1, -1), -1))
+        outs.append((h, (-1, -1, -1), -1))
+        params.append(G.float_bits(eps))
+    ins.append((w_gate, (-1, -1, -1), -1))
+    outs += [(topk_w, (-1, -1, -1), -1), (routing, (-1, -1, -1), -1), (mask, (-1, -1, -1), -1),
+             (logits, (-1, -1, -1), -1), (route_log, (-1, -1, -1), -1)]
+    _new_task(mpk, (1, 1, 1), block_dim, ins + outs,
+              "moe_router_norm_mi300" if fused else "moe_router_mi300", params)
 
 
 def copy_layer(mpk, input, output, grid_dim=(1, 1, 1), block_dim=(256, 1, 1)):
@@ -261,12 +274,12 @@ def plan_json(plan):
 
 def build(packed, capture, meta, dims=REAL_DIMS, s_max=1056, layers=27, head=True, debug=False,
           stop_after=None, debug_scores=False, tile_linears=False, attend_tasks=False, num_workers=296, num_schedulers=8,
-          profiler_tensor=None, align=0, workspaces=None):
+          profiler_tensor=None, align=0, workspaces=None, fuse_norm2=False):
     """On the machine: construct the PersistentKernel, attach, issue, return (mpk, host tensors, plan)."""
     import torch
     import mirage as mi
 
-    plan = G.build_plan(dims, s_max, layers, head, debug, debug_scores, tile_linears, attend_tasks)
+    plan = G.build_plan(dims, s_max, layers, head, debug, debug_scores, tile_linears, attend_tasks, fuse_norm2)
     if stop_after:
         plan.truncate(stop_after)
     assert not plan.chain_violations(), f"the runtime would reject this graph: {plan.chain_violations()}"
@@ -448,8 +461,8 @@ class FakeMPK:
 
 
 def dry_run(dims=REAL_DIMS, s_max=1056, layers=27, head=True, debug=False, stop_after=None,
-            debug_scores=False, tile_linears=False, attend_tasks=False):
-    plan = G.build_plan(dims, s_max, layers, head, debug, debug_scores, tile_linears, attend_tasks)
+            debug_scores=False, tile_linears=False, attend_tasks=False, fuse_norm2=False):
+    plan = G.build_plan(dims, s_max, layers, head, debug, debug_scores, tile_linears, attend_tasks, fuse_norm2)
     if stop_after:
         plan.truncate(stop_after)
     assert not plan.chain_violations(), f"the runtime would reject this graph: {plan.chain_violations()}"

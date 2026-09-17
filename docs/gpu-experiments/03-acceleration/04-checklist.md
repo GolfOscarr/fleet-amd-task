@@ -22,16 +22,16 @@ Status: done 2026-09-17, commit 654b931 on `local/round-3`. Found on the way: `c
 
 ## O1. The router folds the post-attention norm (3 h)
 
-- [ ] `numpy_ref.moe_router` takes `x_res` and `w_norm` and applies `rmsnorm` first; `test_numpy_ref` compares the composition against the tiny model's norm and router modules
-- [ ] `moe_router_mi300.cuh`: the norm prologue (FP32 sum of squares over the row, the reference's rounding order, 16-byte stores of `h`), one more input (`w_norm`), `h` as the first output, `eps` as a float bit pattern
-- [ ] `new_tasks.patch`: `register_moe_router_mi300_task` with the new pointer count and the emitted call; `build_graph.moe_router_layer` pointer order
-- [ ] `graph_plan.py --fuse-norm2`: `L{l}.norm2` dropped for MoE layers, the router reads `x_res`; the dry run reports 300 operators and no chain violation; a test
-- [ ] the kernel suite's router case covers the norm (`kernel_tests_mi300.cu`, `kernel_tests.py --dry-run`)
-- [ ] `compare.py`: B7 (`h` after the norm) still resolves to its last writer
-- [ ] `check_syntax.sh`; tests; the offline compile (`mk_tu.cu` call updated)
+- [x] `numpy_ref.moe_router` takes `x_res` and `w_norm` and applies `rmsnorm` first; `test_numpy_ref` compares the composition against the tiny model's norm and router modules
+- [x] `moe_router_mi300.cuh`: the norm prologue (FP32 sum of squares over the row, the reference's rounding order, 16-byte stores of `h`), one more input (`w_norm`), `h` as the first output, `eps` as a float bit pattern
+- [x] `new_tasks.patch`: `register_moe_router_mi300_task` with the new pointer count and the emitted call; `build_graph.moe_router_layer` pointer order
+- [x] `graph_plan.py --fuse-norm2`: `L{l}.norm2` dropped for MoE layers, the router reads `x_res`; the dry run reports 300 operators and no chain violation; a test
+- [x] the kernel suite's router case covers the norm (`kernel_tests_mi300.cu`, `kernel_tests.py --dry-run`)
+- [x] `compare.py`: B7 (`h` after the norm) still resolves to its last writer
+- [x] `check_syntax.sh`; tests; the offline compile (`mk_tu.cu` call updated)
 - [ ] VM: router suite 100 of 100; `L2_it32` compare PASS; 27-layer ids equal
 
-Status:
+Status: laptop part done 2026-09-17 (commit below on `local/round-3`). The kernel keeps one template with a `NORM` flag; the un-fused registration is byte-for-byte the old task (its emitted call gained two `nullptr`s and `0.0f`), the fused one is `moe_router_norm_mi300` (3 inputs, 6 outputs, 7 params) under the same task type; `MAX_OUTPUTS_PER_TASK` 5 to 6. The plan flag `--fuse-norm2` is default off: 27 layers give 300 operators and 1,854 tasks with it, 326 and 1,880 without. `L{l}.norm2` is not a boundary (B7 is the norm's input), so the compare is unchanged; the dump keeps the `L{l}.norm2` key from the router as last writer. Checks: 158 tests; the suite's dry run (the `h` row exact); check_syntax 7 PASS (both `NORM` instantiations); the offline compile of all five variants exit 0: the worker union 234 to 237 VGPRs, no VGPR spills, static LDS +256 B (the sixth output pointer over the 16-entry descriptor buffer); preflight 8 PASS.
 
 ## O2. The silu-mul into the expert down projection's prologue (4 h)
 

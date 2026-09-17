@@ -20,11 +20,18 @@ void _execute_task(TaskDesc const *task_desc, RuntimeConfig const &runtime_confi
         task_desc->output_ptrs[0], task_desc->output_ptrs[1], task_desc->output_ptrs[2],
         task_desc->output_ptrs[3], runtime_config.step[0], 1e-6f);
   } else if (task_desc->task_type == TASK_MOE_ROUTER_MI300 && task_desc->variant_id == 0) {
-    kernel::moe_router_mi300_task_impl<bfloat16, 2048, 64, 2, 6, 32, 26>(
-        task_desc->input_ptrs[0], task_desc->input_ptrs[1],
+    kernel::moe_router_mi300_task_impl<bfloat16, 2048, 64, 2, 6, 32, 26, false>(
+        task_desc->input_ptrs[0], nullptr, task_desc->input_ptrs[1], nullptr,
         task_desc->output_ptrs[0], task_desc->output_ptrs[1], task_desc->output_ptrs[2],
         task_desc->output_ptrs[3], task_desc->output_ptrs[4],
-        runtime_config.step[0], runtime_config.prompt_length[0], 1, 1.0f);
+        runtime_config.step[0], runtime_config.prompt_length[0], 1, 1.0f, 0.0f);
+  } else if (task_desc->task_type == TASK_MOE_ROUTER_MI300 && task_desc->variant_id == 1) {
+    // moe_router_norm_mi300 (O1): the norm folded in; in a real graph it is variant 0 of its own build
+    kernel::moe_router_mi300_task_impl<bfloat16, 2048, 64, 2, 6, 32, 26, true>(
+        task_desc->input_ptrs[0], task_desc->input_ptrs[1], task_desc->input_ptrs[2], task_desc->output_ptrs[0],
+        task_desc->output_ptrs[1], task_desc->output_ptrs[2], task_desc->output_ptrs[3],
+        task_desc->output_ptrs[4], task_desc->output_ptrs[5],
+        runtime_config.step[0], runtime_config.prompt_length[0], 1, 1.0f, 1e-6f);
   } else if (task_desc->task_type == TASK_COPY_MI300 && task_desc->variant_id == 0) {
     kernel::copy_mi300_task_impl<bfloat16, 2048>(task_desc->input_ptrs[0], task_desc->output_ptrs[0]);
   }

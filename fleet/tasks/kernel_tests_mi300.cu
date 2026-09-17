@@ -142,8 +142,10 @@ __global__ __launch_bounds__(256, 1) void k_mla_merge_uv(void const *partials,
       0, 1, 1, tile_idx);
 }
 
-__global__ __launch_bounds__(256, 1) void k_moe_router(void const *h,
+__global__ __launch_bounds__(256, 1) void k_moe_router(void const *x_res,
+                                                       void const *w_norm,
                                                        void const *w_gate,
+                                                       void *h,
                                                        void *topk_w,
                                                        void *routing,
                                                        void *mask,
@@ -151,11 +153,13 @@ __global__ __launch_bounds__(256, 1) void k_moe_router(void const *h,
                                                        void *route_log,
                                                        Meta meta,
                                                        int layer_index,
-                                                       float scaling) {
+                                                       float scaling,
+                                                       float eps) {
+  // the fused form (O1): NORM = true, the norm of x_res written to h and routed from LDS
   kernel::moe_router_mi300_task_impl<bf16, HIDDEN, N_EXPERTS, N_FORCED, TOPK, ROUTE_STEPS,
-                                     ROUTE_LAYERS>(
-      h, w_gate, topk_w, routing, mask, logits, route_log, meta.step[0], meta.prompt_length[0],
-      layer_index, scaling);
+                                     ROUTE_LAYERS, true>(
+      x_res, w_norm, w_gate, h, topk_w, routing, mask, logits, route_log, meta.step[0],
+      meta.prompt_length[0], layer_index, scaling, eps);
 }
 
 __global__ __launch_bounds__(256, 1) void k_copy(void const *x, void *y) {
@@ -210,9 +214,11 @@ static const Spec SPEC_MLA_MERGE_UV[] = {
     {"attn", (size_t)NH * D_V * 2, true},
 };
 
-static const Spec SPEC_MOE_ROUTER[] = {
-    {"h", (size_t)HIDDEN * 2, false},
+static const Spec SPEC_MOE_ROUTER[] = {   // the fused form, NORM = true (O1)
+    {"x_res", (size_t)HIDDEN * 2, false},
+    {"w_norm", (size_t)HIDDEN * 2, false},
     {"w_gate", (size_t)N_EXPERTS * HIDDEN * 2, false},
+    {"h", (size_t)HIDDEN * 2, true},
     {"topk_w", (size_t)N_SLOTS * 4, true},
     {"routing", (size_t)N_TOTAL * 4, true},
     {"mask", (size_t)(N_TOTAL + 1) * 4, true},
@@ -473,9 +479,10 @@ void run_moe_router(std::string const &dir) {
   DeviceMeta m((int)param(p, "step"), (int)param(p, "prompt_length"));
   allow_full_lds(k_moe_router);
   hipLaunchKernelGGL(k_moe_router, dim3(1), dim3(256), SMEM_BYTES, 0,
-                     b.get("h"), b.get("w_gate"), b.get("topk_w"), b.get("routing"), b.get("mask"),
-                     b.get("logits"), b.get("route_log"), m.meta, (int)param(p, "layer_index"),
-                     float_from_bits(param(p, "scaling_bits")));
+                     b.get("x_res"), b.get("w_norm"), b.get("w_gate"), b.get("h"), b.get("topk_w"),
+                     b.get("routing"), b.get("mask"), b.get("logits"), b.get("route_log"), m.meta,
+                     (int)param(p, "layer_index"), float_from_bits(param(p, "scaling_bits")),
+                     float_from_bits(param(p, "eps_bits")));
   finish_launch();
   b.store_outputs();
 }
