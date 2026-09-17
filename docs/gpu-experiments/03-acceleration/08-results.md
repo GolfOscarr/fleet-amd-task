@@ -96,12 +96,36 @@ in the L2.
 
 ## What remains for 4.5 ms and below
 
-- The CK linears (2.7 ms): every tile runs an 8-step K loop with one step
-  in flight, about 1.4 us per step; a deeper prefetch (a CK pipeline with
-  more stages, KPerBlock 128 to fit the LDS) or a split-K are the paths.
+The ladder's slope is the key: an operator of N regular tasks costs about
+0.19 us per task in the runtime (2.3 us at N = 1, 8 at N = 40, 56 at
+N = 296, with empty tasks), and the per-tile linears sit on that line:
+qkva at 96 tasks 18 us predicted, 14.8 measured; `o_proj` and `down` at 64
+tasks 12 predicted, 14.8 measured. They are not memory-bound (15 MB in
+15 us is 1 TB/s of a 5.3 TB/s machine): they pay a serial cost per task,
+which the completion path explains (every task of an operator increments
+one event counter with an agent-scope atomic, 96 of them from eight XCDs;
+the gang path counts per XCD first and touches the global counter once
+per XCD, and the head's 400-task operator is chunked into events of 8 by
+the runtime for the same reason). Removing either fence around the atomic
+changed nothing (the knob rows), so the atomic itself is the cost.
+
+- **A per-XCD completion hierarchy for regular tasks** (the runtime, next
+  round): each event gets eight local counters filled at prelaunch (the
+  scheduler knows every task's worker and XCD), the last task per XCD
+  touches the global counter. At stake: 82 per-tile operators at 10 us
+  each, about 0.8 ms per token, plus the same effect on every multi-task
+  operator. This is the one lever that reaches 4.5 ms and below.
+- The CK linears' K loop (2.7 ms of gaps, but see above: part of it is the
+  per-task cost): the memory-bound CK pipeline (`GemmPipelineAgBgCrMem`)
+  computes two prefetch stages for this tile (32 KB in flight per
+  workgroup), the same as the current pipeline; more stages need a policy
+  with the shuffled register distributions and a smaller K block for the
+  registers.
 - w13 (1.1 ms): 44 tiles per XCD over 37 workers, two rounds for seven
-  workers and one for the rest; the tile shape is the pipeline's.
-- The iteration start (0.18 ms): the prelaunch of about 7,000 descriptors.
+  workers and one for the rest; 128-row tiles would make it one round of
+  22 workers at 64 KB per step.
+- The iteration start (0.18 ms): the prelaunch of about 7,000 descriptors;
+  fewer tasks per operator once the completion hierarchy makes wide
+  operators cheap is the other side of the same coin.
 - The router (0.5 ms): one task; its GEMV split over four tasks with the
-  top-k as a second operator would trade a boundary for a quarter of the
-  loads.
+  top-k as a second operator.

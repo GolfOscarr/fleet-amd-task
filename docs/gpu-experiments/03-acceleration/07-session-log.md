@@ -39,6 +39,7 @@ provision at 09:35:09. The numbers are in `08-results.md`; the record is
 | 11:27 | 112 | S11 | the knob queue stopped after five rows (a misread of the wall clock, not a hang; the stop was incomplete, next row): `MPK_NO_COMPLETION_FENCE` and `MPK_NO_ACQUIRE_FENCE` both fail the step-0 compare (stale data), the first also no faster (626.8 against 618.3 us on the 2-layer graph); the CAS and sleep knobs not run |
 | 11:27 | 112 | | the finals with the deeper batches started while the knob queue's loop was still alive (the kill took the stage's shell, not the queue's): two graph runs at once until 11:35; every row of both queues in that window is discarded (the sleep knob rows, the first finals) |
 | 11:39 | 124 | | the finals rerun alone on the GPU with the deeper batches: 4,620.6, 4,639.4, 4,654.4 (regular attention), 4,666.3 (gang), `FWD_PASS` 4,606: 1% slower than 11:15, register pressure; the two constants reverted |
+| 11:53 | 138 | | the record pulled, the branch pushed; the user chose to keep the VM for the CK pipeline; reading CK's memory pipeline: two stages for this tile by its own formula, the same as now; the ladder's 0.19 us per task explains the per-tile linears (`08`, what remains): a runtime change, next round; the session closed |
 | 11:47 | 132 | | the finals with the reverted kernels: **4,583.1, 4,571.2, 4,596.8** (regular attention), 4,575.6 (gang), `FWD_PASS` 4,590.0; ids PASS; the record pulled |
 
 ## What the measurements said, in order
