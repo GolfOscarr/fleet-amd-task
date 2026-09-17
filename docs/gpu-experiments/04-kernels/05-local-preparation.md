@@ -469,7 +469,7 @@ and the last-arriving task routes.
 - `moe_router_mi300_task_impl` gains `SPLIT` (1 or 4) and a `part`
   argument (the task index from `expert_offset`, the prep rule: the
   runtime hunk that fills `expert_offset` for a type gains
-  `TASK_MOE_ROUTER4_MI300 = 200`). With `SPLIT = 4`: every task runs the
+  `TASK_MOE_ROUTER4_MI300 = 204`). With `SPLIT = 4`: every task runs the
   norm (task 0 stores `h`; the others pass `out = nullptr`), multiplies
   experts `16 part .. 16 part + 15` (four rows per wave, one batch of 16
   loads per lane, issued before the norm), writes its 16 logits to the `logits` tensor, then all threads
@@ -481,7 +481,7 @@ and the last-arriving task routes.
   XCD's L2 lines invalidated for its own loads), wave 0 reads the 64
   logits, runs the softmax and the top-k, the writes of
   N1's phase 5, and thread 0 stores `counter = 0`.
-- The registration `moe_router_norm4_mi300` (type 200): the fused
+- The registration `moe_router_norm4_mi300` (type 204): the fused
   router's three inputs plus `counter [1]` int32, its six outputs, params
   `[..., part_count]`; grid `(4, 1, 1)`, every imap whole; 4 inputs and 6
   outputs against the descriptor's 7 and 6. The counter is a 1-D `[1]`
@@ -551,7 +551,7 @@ the head and the half from the task index: the shape M5 builds on.
 
 **Core approach.** `mla_merge_uv_mi300_task_impl` gains `HALVES` (1 or 2)
 and, in the regular form, takes `h = idx / HALVES` and `half = idx %
-HALVES` from `expert_offset` (`TASK_MLA_MERGE_UV_TILE_MI300 = 201` in the
+HALVES` from `expert_offset` (`TASK_MLA_MERGE_UV_TILE_MI300 = 205` in the
 runtime's `expert_offset` list); with `HALVES = 2` the task multiplies
 `W_uv` rows `64 half .. 64 half + 63` (16 per wave, one batch) after the
 whole head's merge. The registration `mla_merge_uv_tile_mi300`: inputs
@@ -578,7 +578,7 @@ order with the residual into `x_res`.
 
 **Core approach.**
 
-- `mla_merge_oproj_mi300.cuh` (new; `TASK_MLA_MERGE_OPROJ_MI300 = 202`,
+- `mla_merge_oproj_mi300.cuh` (new; `TASK_MLA_MERGE_OPROJ_MI300 = 207`,
   regular, in the `expert_offset` list): N3's and N4's merge to the
   point where the task's 64 (or 128) `attn` values are BF16-rounded in
   LDS and stored to `attn` (the boundary keeps its row); then phase 4:
@@ -700,9 +700,12 @@ What was read in the source for this page and holds:
 - `linear_with_residual_layer` already names `x_res` as residual and
   output (`graph_plan.py`, line 353): N5's in-place `x_res` has a
   precedent in the registration path.
-- The free task-type values: 195 to 197 (below the fork's 198), 200 to
-  229 (between its 199 and 230); the Hopper-range branch of the
-  generated loader is under `MPK_ENABLE_TMA`.
+- The free task-type values: 195 to 197 (below the fork's 198) and 204 to
+  229: the integration of 2026-09-18 found 200 to 203 are the fork's
+  scheduler task types (`TASK_SCHD_TASKS` to `TASK_GET_NEXT_TASK`), which
+  a plain enum grep had missed, so the router split is 204, the merge tile
+  form 205, the stream gang form 206 and the o_proj fold 207; the
+  Hopper-range branch of the generated loader is under `MPK_ENABLE_TMA`.
 - The task descriptor holds 7 inputs and, with the patch, 6 outputs
   (`runtime_header.h`, lines 85 and 86; `new_tasks.patch`, line 267):
   every registration of this page fits (N5's 5 and 3 are the largest).

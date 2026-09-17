@@ -44,13 +44,13 @@ Status: done 2026-09-18 (commits 5bbf16d, e75806d, the resources refreshed). The
 
 ## L2. The task type and the plan flag (5 h, with L5's grid options)
 
-- [ ] `new_tasks.patch`: `TASK_LINEAR_GEMV_MI300 = 195`, the name map, `register_linear_gemv_mi300_task` (params `[norm, residual, eps_bits]`; the inputs by flag; the weight on dim 0 by the grid, the output on dim 1), the dispatcher case; the patch regenerated on the pristine fork, the fork reset to zero dirty lines
-- [ ] `build_graph.py`: `linear_gemv_layer`; `OUTPUT_ARGS`
-- [ ] `graph_plan.py`: `--gemv-linears` (qkva, o_proj, `L0.down`, the head; no scratch tensors), `--linear-grid N`, `--head-grid N`; the dry run's counts with and without; `task_graph_check.py` on the dry run's graph
-- [ ] `test_graph_plan.py`: the flag's rows and the grid overrides; `graph_counts.py`'s note; `fleet/tasks/README.md`
-- [ ] tests; the offline compile
+- [x] `new_tasks.patch`: `TASK_LINEAR_GEMV_MI300 = 195`, the name map, `register_linear_gemv_mi300_task` (params `[norm, residual, eps_bits]`; the inputs by flag; the weight on dim 0 by the grid, the output on dim 1), the dispatcher case; the patch regenerated on the pristine fork, the fork reset to zero dirty lines
+- [x] `build_graph.py`: `linear_gemv_layer`; `OUTPUT_ARGS`
+- [x] `graph_plan.py`: `--gemv-linears` (qkva, o_proj, `L0.down`, the head; no scratch tensors), `--linear-grid N`, `--head-grid N`; the dry run's counts with and without; `task_graph_check.py` on the dry run's graph
+- [x] `test_graph_plan.py`: the flag's rows and the grid overrides; `graph_counts.py`'s note; `fleet/tasks/README.md`
+- [x] tests; the offline compile
 
-Status:
+Status: done 2026-09-18, commits efe462d and b20353a (wave 2, agent F; cherry-picked): the registration as the hunk file `fleet/patches/hunks/L2-linear-gemv.md`, folded into `new_tasks.patch` by the integration (fcaad6e). The residual is partitioned on dim 1 like the output (the kernel indexes it by the task-local row); the name branch lives in `graph.cc`; `--linear-grid` is per operator (48 divides qkva's rows, not o_proj's); `--gemv-linears` implies the fused-norm form and is off under `--debug`; layer 0's dense down (K 11,264) stays the stock linear, the kernel bounds K at 4,096. Counts: 298 operators and 6,593 tasks, the same as `--fuse-norm1 --tile-linears`; 5,297 at `--linear-grid 48`, 6,513 at `--head-grid 320`. Checks: 201 tests, the dry runs, `task_graph_check.py` needs the VM's compiled graph.
 
 ## N1. The router, one level deeper (4 h)
 
@@ -78,7 +78,7 @@ Status: kernel done 2026-09-18, commit 60ad996 on `local/round-4` (wave 1, agent
 ## L3. The w2 form (4 h)
 
 - [x] `gang_moe_w2_silu_mi300.cuh`: the activation row into LDS; the GEMV over 64 rows with the 176-chunk map (three loads per lane, two for lanes 48 to 63); the scatter epilogue; the CK multiply kept under `MPK_W2_CK_TILE`
-- [ ] the suite row `gang_w2_gemv` (`-DKT_FAKE_XCD`, the `(32, 8)` launch); `numpy_ref.moe_w2`; `kernel_tests.py`
+- [x] the suite row `gang_w2_gemv` (`-DKT_FAKE_XCD`, the `(32, 8)` launch); `numpy_ref.moe_w2`; `kernel_tests.py` (wave 2, agent G, commit 57b7b6b: eight expert slabs per trial with a mask naming ids 0 to 7, since the model's 66 would be 761 MB; the row SKIPs without the `kernel_tests_xcd` binary, which L8's `vm.sh` builds)
 - [x] `check_syntax.sh` (the entry `gang_moe_w2_silu_mi300`, 11 PASS); `run.sh`: the `ckgang` variant on the GEMV form, `w2ck` on the CK form; the registers and the wait sequence recorded here
 
 Offline (2026-09-18): both variants compile; the GEMV form's function (a `__noinline__` call) 248 VGPRs and 32 AGPRs with 92 bytes of scratch (its 22 callee-saved stores), its 24 loads per batch issued in sequence before one `vmcnt(0)` (flat loads in the plain build; the streaming build makes them buffer loads); `W2_BATCH=4` takes the union to 101 AGPRs and 64 bytes.
@@ -87,13 +87,13 @@ Status: kernel done 2026-09-18, commit 69fe6b1 on `local/round-4` (wave 1, agent
 
 ## L4. The w13 form, one round per XCD (4 h)
 
-- [ ] `gang_moe_w13_gemv_mi300.cuh`: type 196 (gang); the expert decode; the tile's rows by arithmetic (`static_assert(4 * 77 + 33 * 76 == 2816)`); 19- or 20-row waves in batches of eight; x from `h` with the K9 map; the scatter epilogue
-- [ ] `new_tasks.patch`: the type in `is_gang_task_type`, in the runtime's gang list (the `tiles_per_xcd` lookup, `n_tile_start = 0`) and in the Python API's gang wrapper; `register_gang_moe_w13_gemv_mi300_task` with `tiles_per_expert` = 37 (the recorded count 9 x 37); the dispatcher case in `_execute_gang_task`; regenerated
-- [ ] `build_graph._gang_moe(tiles=...)`, `gang_moe_w13_gemv_layer`; `graph_plan.py --gemv-w13` with the worker-count assert; the counts
-- [ ] the range test (37 ranges cover 2,816 once); the suite row `gang_w13_gemv` (the `(37, 8)` launch); `numpy_ref.moe_w13`
-- [ ] `check_syntax.sh`; `mk_tu.cu` (the gang instantiation under `MK_GEMV`); the offline registers recorded here
+- [x] `gang_moe_w13_gemv_mi300.cuh`: type 196 (gang); the expert decode; the tile's rows by arithmetic (`static_assert(4 * 77 + 33 * 76 == 2816)`); 19- or 20-row waves in batches of eight; x from `h` with the K9 map; the scatter epilogue
+- [x] `new_tasks.patch`: the type in `is_gang_task_type`, in the runtime's gang list (the `tiles_per_xcd` lookup, `n_tile_start = 0`) and in the Python API's gang wrapper; `register_gang_moe_w13_gemv_mi300_task` with `tiles_per_expert` = 37 (the recorded count 9 x 37); the dispatcher case in `_execute_gang_task`; regenerated
+- [x] `build_graph._gang_moe(tiles=...)`, `gang_moe_w13_gemv_layer`; `graph_plan.py --gemv-w13` with the worker-count assert; the counts
+- [x] the range test (37 ranges cover 2,816 once); the suite row `gang_w13_gemv` (the `(37, 8)` launch); `numpy_ref.moe_w13`
+- [x] `check_syntax.sh`; `mk_tu.cu` (the gang instantiation under `MK_GEMV`); the offline registers recorded here
 
-Status:
+Status: done 2026-09-18, commit 57b7b6b (wave 2, agent G; cherry-picked), the hunk folded in at fcaad6e. The wave split of a 77-row tile is the formula's 20, 20, 20, 17; `gang_task_tiles_per_xcd` is a C++ map filled by `Graph::register_task` (no Python hunk); the layer's argument is `tiles_per_expert`; `NUM_WORKERS = 296` is asserted in the plan and `num_workers` in `build`; the `(37, 8)` launch does not reach the early return for the inactive expert slots (the runtime's loop does). Offline: `k_gang_w13_gemv` 248 VGPRs, 30 AGPRs, no scratch; the union with every round-4 task 256 VGPRs and 125 AGPRs. Checks: 14 PASS, 214 tests, the dry run moves the 26 w13 operators only.
 
 ## L7. The bit-diff (2 h)
 
@@ -104,39 +104,39 @@ Status: done 2026-09-18, commit 4072de4 on `local/round-4` (wave 1, agent D; che
 
 ## L6. The stream probe (3 h)
 
-- [ ] `stream_mi300.cuh`: type 197, the regular and the gang form (the K9 load loop, the XOR into a dummy word); `new_tasks.patch` (both registrations, the gang lists); regenerated
-- [ ] `graph_plan.py --graph stream --tasks N --kb K [--gang]`; `build_graph.py`; `run_fleet.py`'s run name; `measure.py`'s GB/s column; the tests (the counts, the arithmetic on a fixture)
-- [ ] `check_syntax.sh`; `mk_tu.cu`; the offline variant
+- [x] `stream_mi300.cuh`: type 197, the regular and the gang form (the K9 load loop, the XOR into a dummy word); `new_tasks.patch` (both registrations, the gang lists); regenerated
+- [x] `graph_plan.py --graph stream --tasks N --kb K [--gang]`; `build_graph.py`; `run_fleet.py`'s run name; `measure.py`'s GB/s column; the tests (the counts, the arithmetic on a fixture)
+- [x] `check_syntax.sh`; `mk_tu.cu`; the offline variant
 
-Status:
+Status: done 2026-09-18, commit a3edf62 (wave 2, agent J; cherry-picked), the hunk folded in at fcaad6e with two corrections by the integrator (the gang form is 206, not 203; it belongs on both partition lists of `runtime.cc`). `--kb` must be a multiple of 4 (whole 4 KB rows): the gang row runs at 304 KB, w13's shape to 0.3%; the rows are cut into whole batches round-robin over the waves so no partial batch re-loads rows; the chain's dummy is a real input of every stream operator; the regular form has a suite row checking the XOR exactly. `queue.sh`'s `ref_cache` guard must learn `--graph stream` (L8). Checks: 12 PASS, 205 tests, the three dry runs.
 
 ## N4. The merge as regular tasks (3 h)
 
-- [ ] `mla_merge_uv_mi300.cuh`: `HALVES`, the regular form's head and half from `expert_offset`; `new_tasks.patch`: type 201 in the `expert_offset` list, `register_mla_merge_uv_tile_mi300_task` (whole imaps, params `[split, n_splits, halves]`), the dispatcher case; regenerated
-- [ ] `build_graph.py`; `graph_plan.py --merge-tasks [--merge-halves 2]`; the counts; `task_graph_check.py`; a test on the plan
-- [ ] `check_syntax.sh`; `mk_tu.cu`; the offline variant
+- [x] `mla_merge_uv_mi300.cuh`: `HALVES`, the regular form's head and half from `expert_offset`; `new_tasks.patch`: type 201 in the `expert_offset` list, `register_mla_merge_uv_tile_mi300_task` (whole imaps, params `[split, n_splits, halves]`), the dispatcher case; regenerated
+- [x] `build_graph.py`; `graph_plan.py --merge-tasks [--merge-halves 2]`; the counts; `task_graph_check.py`; a test on the plan
+- [x] `check_syntax.sh`; `mk_tu.cu`; the offline variant
 
-Status:
+Status: done 2026-09-18, commit 0f6eec3 (wave 2, agent I; cherry-picked). The shared body is `mla_merge_uv_head<T, NH, D_V, D_C, HALVES>`, the gang entry point unchanged, the tile entry point new (type 205 after the integration); `--merge-halves` needs `--merge-tasks`; the suite's `mla_merge_uv_tile` and `mla_merge_uv_tile2` rows compare `attn` bit for bit against the gang row. Counts: 2,501 tasks at 16 per layer, 2,933 at 32. Checks: 219 tests.
 
 ## N2. The router in four tasks (4 h)
 
-- [ ] `moe_router_mi300.cuh`: `SPLIT` and `part`; the 16-expert batch before the norm; the logits to the tensor; the release fence, thread 0's acq-rel atomic at agent scope, the last task's acquire fence by every thread, top-k, writes and reset
-- [ ] `new_tasks.patch`: type 200 in the `expert_offset` list, `register_moe_router_norm4_mi300_task` (the counter input, grid 4), the dispatcher case; regenerated
-- [ ] `build_graph.py`; `graph_plan.py --router-tasks` (`router_counter`); the counts
-- [ ] the suite row `k_moe_router4` (four blocks, a zeroed counter, bit-exact against the one-task row)
-- [ ] `check_syntax.sh`; `mk_tu.cu`; the offline variant
+- [x] `moe_router_mi300.cuh`: `SPLIT` and `part`; the 16-expert batch before the norm; the logits to the tensor; the release fence, thread 0's acq-rel atomic at agent scope, the last task's acquire fence by every thread, top-k, writes and reset
+- [x] `new_tasks.patch`: type 200 in the `expert_offset` list, `register_moe_router_norm4_mi300_task` (the counter input, grid 4), the dispatcher case; regenerated
+- [x] `build_graph.py`; `graph_plan.py --router-tasks` (`router_counter`); the counts
+- [x] the suite row `k_moe_router4` (four blocks, a zeroed counter, bit-exact against the one-task row)
+- [x] `check_syntax.sh`; `mk_tu.cu`; the offline variant
 
-Status:
+Status: done 2026-09-18, commit 3f406e6 (wave 2, agent I; cherry-picked), type 204 after the integration. The split form keeps `butterfly_sum<ROUTER_BATCH>` over eight rows with the unused rows zero, so the bits equal the one-task form's (a batch of four would change the association); `--router-tasks` implies the fused norm; the stub header gained the fence, atomic and scope macros for the host check; the suite's `moe_router4` row compares every output bit for bit and the counter's reset. Registers about 64 below the one-task form. Counts: 300 operators, 2,337 tasks. Checks: 224 tests.
 
 ## N5. The merge with o_proj folded in (8 h)
 
-- [ ] `mla_merge_oproj_mi300.cuh`: type 202; N3's and N4's merge; `attn` stored; the `W_o` slice (eight lanes per row, eight rows per wave-load, two batches of 32 under `#pragma unroll 1`), the three-step row reduction, the partial vector to `workspace[t]`; the release, the counter; the last task's acquire, the fixed-order sum with the residual into `x_res`, the reset
-- [ ] `new_tasks.patch`: the type in the `expert_offset` list, the registration (inputs `partials, W_uv, W_o, x_res, counter`; outputs `x_res, attn, workspace`; grid 32), the dispatcher case; regenerated
-- [ ] `build_graph.py`; `graph_plan.py --merge-oproj` (`oproj_ws`, `oproj_counter`; the merge and o_proj replaced by one call labelled `L{l}.o_proj`); the counts; `compare.py`'s boundary list checked (the `x_res` and `attn` rows keep their keys)
-- [ ] the suite row `mla_merge_oproj` (32 blocks, a zeroed counter; `x_res` within the linear tolerance, `attn` bit-exact)
-- [ ] `check_syntax.sh`; `mk_tu.cu`; the offline variant (at most 200 VGPRs for the kernel; the worker line recorded here)
+- [x] `mla_merge_oproj_mi300.cuh`: type 202; N3's and N4's merge; `attn` stored; the `W_o` slice (eight lanes per row, eight rows per wave-load, two batches of 32 under `#pragma unroll 1`), the three-step row reduction, the partial vector to `workspace[t]`; the release, the counter; the last task's acquire, the fixed-order sum with the residual into `x_res`, the reset
+- [x] `new_tasks.patch`: the type in the `expert_offset` list, the registration (inputs `partials, W_uv, W_o, x_res, counter`; outputs `x_res, attn, workspace`; grid 32), the dispatcher case; regenerated
+- [x] `build_graph.py`; `graph_plan.py --merge-oproj` (`oproj_ws`, `oproj_counter`; the merge and o_proj replaced by one call labelled `L{l}.o_proj`); the counts; `compare.py`'s boundary list checked (the `x_res` and `attn` rows keep their keys)
+- [x] the suite row `mla_merge_oproj` (32 blocks, a zeroed counter; `x_res` within the linear tolerance, `attn` bit-exact)
+- [x] `check_syntax.sh`; `mk_tu.cu`; the offline variant (at most 200 VGPRs for the kernel; the worker line recorded here)
 
-Status:
+Status: done 2026-09-18, commit 9231083 (wave 2, agent K; cherry-picked), type 207 (f49dba2), the hunk's integration and the offline line pending the second pass. The shared merge body gained an optional LDS copy of the attn values and a constexpr LDS size; `x_res` is one argument (input 3 and output 0 share the address); `--merge-oproj` always uses two halves and overrides `--merge-tasks`; not gated by `--debug`. Counts: 299 operators and 2,717 tasks alone, 245 and 5,565 with every wave-2 flag. An emulation of phases 4 and 5 reproduced the residual linear bit for bit. Checks: 15 PASS, 232 tests, the suite's `mla_merge_oproj` row.
 
 ## L8 and N6. The session tooling (4 h)
 
