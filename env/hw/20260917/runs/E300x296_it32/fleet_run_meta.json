@@ -1,0 +1,31 @@
+{
+  "graph": "empty",
+  "ops": 300,
+  "tasks_per_op": 296,
+  "spin": 0,
+  "iters": 32,
+  "s_max": 1056,
+  "n_prompt": 1024,
+  "worker_timing": false,
+  "plan_ops": 300,
+  "plan_tasks": 88800,
+  "env": {
+    "MPK_EVENT_TIMING": "1",
+    "MPK_TIMING": null,
+    "USE_GANG": "1",
+    "AMDGPU_TARGETS": "gfx942",
+    "MPK_EXTRA_HIPCC_FLAGS": null
+  },
+  "align_alloc": 0,
+  "addresses": {
+    "empty_a": 137895253914624,
+    "empty_b": 137895254066176
+  },
+  "completed": true,
+  "timings_s": {
+    "mpk_wall_s": 0.6088306903839111,
+    "iters": 32,
+    "pack_s": 0.0,
+    "build_s": 30.87301778793335
+  }
+}

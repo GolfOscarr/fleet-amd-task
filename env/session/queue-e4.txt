@@ -1,0 +1,8 @@
+# Round 3: the vectorized norm helper and the restructured merge (suites first), on the step-0
+# boundaries, the 2-layer timing and the model; then the attention as regular per-split tasks
+# (--attend-tasks, the same MFMA kernel: 33 tasks instead of a gang broadcast) on both graphs.
+--layers 2 --iters 1 --tile-linears --nt-weights --event-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend compare continue
+--layers 2 --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend table continue
+--layers 27 --head --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend table compare continue
+--layers 2 --iters 1 --tile-linears --nt-weights --event-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend --attend-tasks compare continue
+--layers 27 --head --iters 32 --tile-linears --nt-weights --event-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend --attend-tasks table compare continue

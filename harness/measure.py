@@ -370,10 +370,17 @@ def measure(run_dir: Path, kernel_trace=None, pmc=None, kernel_filter=DEFAULT_KE
         num_events = int(data.get("num_events", 0))
         op_names = None
         if plan:
-            # event index i marks the completion of operator i - 1 (event 0 is the begin-graph event);
-            # verify on the machine against task_graph.json (docs/design-doc/03-synchronization.md)
-            op_names = ["begin"] + [c["method"] for c in plan["calls"] if not c.get("side")]   # side operators (O8) add no event
-        end_idx = num_events - 1 if num_events else max(e for e, _ in entries)
+            # Verified against task_graph_rank0.json on the VM (2026-09-17, round 3, S5): event 0 is
+            # unused, event 1 is the begin event triggered by the begin task (its gap is the iteration
+            # start), and event i >= 2 is triggered by the tasks of the (i - 1)-th operator in chain
+            # order, so its gap is that operator's own duration; the last event (end of graph) is
+            # triggered by the last operator. Round 2's tables named every gap after the operator
+            # that follows the one that produced it. Side operators (O8) add no event.
+            op_names = ["unused", "iteration_start"] + [c["method"] for c in plan["calls"] if not c.get("side")]
+        # num_events is the runtime's event buffer capacity (498 on both a 2-layer and a 27-layer graph),
+        # not the graph's count: the iteration marker is the highest index that fires (the last
+        # operator's event; every index fires once per iteration)
+        end_idx = max(e for e, _ in entries)
         iter_us = event_iterations(entries, end_idx)
         m["event_timing"] = {"num_events": num_events, "firings": len(entries),
                              "per_iteration_us": percentiles(iter_us),

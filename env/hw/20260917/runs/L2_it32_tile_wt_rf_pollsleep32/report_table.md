@@ -1,0 +1,63 @@
+# Measurement report
+
+| Quantity | Predicted | Measured |
+|---|---|---|
+| bytes per iteration (read, MiB) | 4709.9 weights + cache; about 4772.0 with activations | - |
+| time per iteration, median (us) | 1148.5-1349.4 + 326 t_b + T_serial | 1839.0 |
+| time per iteration, P95 (us) |  | 6473.2 |
+| time per iteration from event timing, median (us) |  | 662.7 |
+| time per iteration from host wall clock (us) |  | 65468.7 |
+| time per iteration from the kernel trace (us) |  | - |
+| achieved read bandwidth (TB/s) | 3.66-4.3 over T_bw | - |
+| launches per generation | 3 | - |
+| L2 hit rate | 16-17% (Fleet's batch-1 figure) | - |
+| tokens per second |  | 543.8 |
+| workers with tasks (of those reporting) |  | 296 of 296 |
+| tasks per XCD (placement) |  | 0:5286 1:5284 2:5281 3:5252 4:5249 5:5286 6:5285 7:5285 |
+| shader clock from the spin (MHz) |  | - |
+| exec cycles per task, busy workers |  | 40600.5 |
+| exec us per task (at the spin's SCLK) |  | - |
+| dep-wait us per iteration per busy worker |  | - |
+| GFX clock from amd-smi during the run, median / max (MHz) | 2100 max (D2 of round 1) | 2103 / 2104 over 38 samples |
+| memory clock from amd-smi, median (MHz) |  | 900 |
+
+## Exec time per task by class (worker timing, I1)
+
+| Class | tasks | cycles per task | us per task |
+|---|---|---|---|
+| attend | 2432 | 92313 | - |
+| linear | 11776 | 36289 | - |
+| linear_res | 6144 | 46490 | - |
+| merge | 960 | 37953 | - |
+| prep | 969 | 15946 | - |
+| rms | 128 | 3813 | - |
+| router | 18 | 32622 | - |
+| silu | 256 | 2296 | - |
+
+## Per-operator time (event gaps, mean over iterations after the first)
+
+| Event | Operator | mean us | min us | max us | n |
+|---|---|---|---|---|---|
+| 1 | iteration_start | 146.61 | 9.64 | 193.16 | 30 |
+| 2 | embed_layer | 16.40 | 13.68 | 18.98 | 31 |
+| 3 | rmsnorm_layer | 5.49 | 4.87 | 6.15 | 31 |
+| 4 | linear_layer | 21.37 | 19.47 | 23.51 | 31 |
+| 5 | mla_prep_layer | 13.56 | 12.78 | 14.42 | 31 |
+| 6 | mla_attend_layer | 67.04 | 65.44 | 68.80 | 31 |
+| 7 | mla_merge_uv_layer | 25.10 | 23.14 | 25.76 | 31 |
+| 8 | linear_with_residual_layer | 14.92 | 14.37 | 15.30 | 31 |
+| 9 | rmsnorm_layer | 4.58 | 4.09 | 5.30 | 31 |
+| 10 | gang_linear_silu_layer | 33.17 | 32.48 | 36.52 | 31 |
+| 11 | linear_with_residual_layer | 51.86 | 50.97 | 52.84 | 31 |
+| 12 | rmsnorm_layer | 4.86 | 4.27 | 5.55 | 31 |
+| 13 | linear_layer | 14.59 | 14.27 | 15.03 | 31 |
+| 14 | mla_prep_layer | 13.26 | 12.58 | 14.30 | 31 |
+| 15 | mla_attend_layer | 65.31 | 64.64 | 66.06 | 31 |
+| 16 | mla_merge_uv_layer | 22.69 | 22.12 | 24.40 | 31 |
+| 17 | linear_with_residual_layer | 14.44 | 13.86 | 15.92 | 31 |
+| 18 | rmsnorm_layer | 4.77 | 3.93 | 5.53 | 31 |
+| 19 | moe_router_layer | 18.90 | 17.67 | 19.75 | 31 |
+| 20 | gang_moe_w13_linear_layer | 42.17 | 41.51 | 45.35 | 31 |
+| 21 | moe_silu_mul_layer | 5.27 | 4.79 | 5.76 | 31 |
+| 22 | gang_moe_w2_linear_layer | 21.98 | 21.00 | 23.09 | 31 |
+| 23 | moe_mul_sum_add_layer | 4.54 | 4.04 | 5.34 | 31 |

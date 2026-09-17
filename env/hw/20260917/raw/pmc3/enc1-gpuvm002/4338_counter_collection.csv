@@ -1,0 +1,27 @@
+"Correlation_Id","Dispatch_Id","Agent_Id","Queue_Id","Process_Id","Thread_Id","Grid_Size","Kernel_Id","Kernel_Name","Workgroup_Size","LDS_Block_Size","Scratch_Size","VGPR_Count","Accum_VGPR_Count","SGPR_Count","Counter_Name","Counter_Value","Start_Timestamp","End_Timestamp"
+1,1,"Agent 1",1,4338,4338,262144,3,"fill_kernel(HIP_vector_type<unsigned int, 4u>*, unsigned long)",256,0,0,12,4,32,"TCC_HIT_sum",8391880.000000,1003575499369,1003575881410
+1,1,"Agent 1",1,4338,4338,262144,3,"fill_kernel(HIP_vector_type<unsigned int, 4u>*, unsigned long)",256,0,0,12,4,32,"TCC_MISS_sum",8389407.000000,1003575499369,1003575881410
+2,2,"Agent 1",1,4338,4338,77824,13,"__amd_rocclr_fillBufferAligned",256,0,0,12,4,48,"TCC_HIT_sum",8393128.000000,1003576937083,1003577243269
+2,2,"Agent 1",1,4338,4338,77824,13,"__amd_rocclr_fillBufferAligned",256,0,0,12,4,48,"TCC_MISS_sum",8389281.000000,1003576937083,1003577243269
+3,3,"Agent 1",1,4338,4338,65536,13,"__amd_rocclr_fillBufferAligned",256,0,0,12,4,48,"TCC_HIT_sum",12480.000000,1003577352321,1003577355207
+3,3,"Agent 1",1,4338,4338,65536,13,"__amd_rocclr_fillBufferAligned",256,0,0,12,4,48,"TCC_MISS_sum",8320.000000,1003577352321,1003577355207
+4,4,"Agent 1",1,4338,4338,65536,2,"warmup_kernel(HIP_vector_type<unsigned int, 4u> const*, HIP_vector_type<unsigned int, 4u>*, unsigned long)",256,0,0,8,0,16,"TCC_HIT_sum",10943.000000,1003577500823,1003577503870
+4,4,"Agent 1",1,4338,4338,65536,2,"warmup_kernel(HIP_vector_type<unsigned int, 4u> const*, HIP_vector_type<unsigned int, 4u>*, unsigned long)",256,0,0,8,0,16,"TCC_MISS_sum",16464.000000,1003577500823,1003577503870
+5,5,"Agent 1",1,4338,4338,67108864,1,"copy_kernel(HIP_vector_type<unsigned int, 4u> const*, HIP_vector_type<unsigned int, 4u>*, unsigned long)",256,0,0,8,0,16,"TCC_HIT_sum",8391568.000000,1003577632767,1003578390715
+5,5,"Agent 1",1,4338,4338,67108864,1,"copy_kernel(HIP_vector_type<unsigned int, 4u> const*, HIP_vector_type<unsigned int, 4u>*, unsigned long)",256,0,0,8,0,16,"TCC_MISS_sum",16777296.000000,1003577632767,1003578390715
+6,6,"Agent 1",1,4338,4338,512,9,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_HIT_sum",11.000000,1003578535890,1003578538977
+6,6,"Agent 1",1,4338,4338,512,9,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_MISS_sum",76.000000,1003578535890,1003578538977
+7,7,"Agent 1",1,4338,4338,512,9,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_HIT_sum",11.000000,1003578639128,1003578642175
+7,7,"Agent 1",1,4338,4338,512,9,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_MISS_sum",76.000000,1003578639128,1003578642175
+8,8,"Agent 1",1,4338,4338,512,9,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_HIT_sum",11.000000,1003578742526,1003578745733
+8,8,"Agent 1",1,4338,4338,512,9,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_MISS_sum",76.000000,1003578742526,1003578745733
+9,9,"Agent 1",1,4338,4338,512,9,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_HIT_sum",11.000000,1003578846646,1003578849653
+9,9,"Agent 1",1,4338,4338,512,9,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_MISS_sum",76.000000,1003578846646,1003578849653
+10,10,"Agent 1",1,4338,4338,512,9,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_HIT_sum",11.000000,1003578951167,1003578954174
+10,10,"Agent 1",1,4338,4338,512,9,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_MISS_sum",76.000000,1003578951167,1003578954174
+11,11,"Agent 1",1,4338,4338,512,9,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_HIT_sum",11.000000,1003579061381,1003579064348
+11,11,"Agent 1",1,4338,4338,512,9,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_MISS_sum",76.000000,1003579061381,1003579064348
+12,12,"Agent 1",1,4338,4338,512,9,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_HIT_sum",11.000000,1003579164459,1003579167827
+12,12,"Agent 1",1,4338,4338,512,9,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_MISS_sum",76.000000,1003579164459,1003579167827
+13,13,"Agent 1",1,4338,4338,512,9,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_HIT_sum",11.000000,1003579372819,1003579375626
+13,13,"Agent 1",1,4338,4338,512,9,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_MISS_sum",76.000000,1003579372819,1003579375626

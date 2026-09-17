@@ -1,0 +1,21 @@
+FAIL         L0.B3.c_kv                   rel_err 1.000 thr 0.181
+FAIL         L0.B3.k_pe                   rel_err 1.000 thr 0.021
+FAIL         L1.B2.q                      rel_err 0.932 thr 0.013
+FAIL         L1.B3.c_kv                   rel_err 1.168 thr 0.181
+FAIL         L1.B3.k_pe                   rel_err 0.640 thr 0.021
+FAIL         L1.B4.q_pe                   rel_err 0.943 thr 0.021
+FAIL         L1.B6.attn                   rel_err 1.070 thr 0.040
+FAIL         L1.B8.router_logits          rel_err 2.225 thr 0.014
+FAIL         L1.B9.topk_idx               fleet [1, 2, 8, 19, 28, 39] ref [2, 19, 39, 40, 47, 49]
+FAIL         L1.B10.topk_w                expert sets differ: fleet [1, 2, 8, 19, 28, 39] ref [2, 19, 39, 40, 47, 49]
+MISSING_REF  L1.B11.expert_1              
+FAIL         L1.B11.expert_19             rel_err 1.000 thr 0.044
+FAIL         L1.B11.expert_2              rel_err 1.000 thr 0.044
+MISSING_REF  L1.B11.expert_28             
+FAIL         L1.B11.expert_39             rel_err 1.000 thr 0.044
+MISSING_REF  L1.B11.expert_8              
+FAIL         L1.B12.shared                rel_err 1.000 thr 0.044
+FAIL         L1.B13.layer_out             rel_err 0.686 thr 0.017
+SKIP         output_ids
+FAIL         route_log
+overall: FAIL  -> /home/hotaisle/metalOps/harness/fleet_out/L2_it1_tile_wt_rf_nocompletionfence/correctness_report.md

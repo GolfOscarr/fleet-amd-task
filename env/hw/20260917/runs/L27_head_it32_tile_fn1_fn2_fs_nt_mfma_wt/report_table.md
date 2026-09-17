@@ -1,0 +1,337 @@
+# Measurement report
+
+| Quantity | Predicted | Measured |
+|---|---|---|
+| bytes per iteration (read, MiB) | 4709.9 weights + cache; about 4772.0 with activations | - |
+| time per iteration, median (us) | 1148.5-1349.4 + 326 t_b + T_serial | 5203.0 |
+| time per iteration, P95 (us) |  | 5235.5 |
+| time per iteration from event timing, median (us) |  | 5204.0 |
+| time per iteration from host wall clock (us) |  | 103001.5 |
+| time per iteration from the kernel trace (us) |  | - |
+| achieved read bandwidth (TB/s) | 3.66-4.3 over T_bw | - |
+| launches per generation | 3 | - |
+| L2 hit rate | 16-17% (Fleet's batch-1 figure) | - |
+| tokens per second |  | 192.2 |
+| workers with tasks (of those reporting) |  | 296 of 296 |
+| tasks per XCD (placement) |  | 0:90337 1:90336 2:90336 3:90367 4:90304 5:90336 6:90336 7:90336 |
+| shader clock from the spin (MHz) |  | - |
+| exec cycles per task, busy workers |  | 36812.8 |
+| exec us per task (at the spin's SCLK) |  | - |
+| dep-wait us per iteration per busy worker |  | - |
+| GFX clock from amd-smi during the run, median / max (MHz) | 2100 max (D2 of round 1) | 2103 / 2104 over 54 samples |
+| memory clock from amd-smi, median (MHz) |  | 900 |
+
+## Exec time per task by class (worker timing, I1)
+
+| Class | tasks | cycles per task | us per task |
+|---|---|---|---|
+| attend | 33696 | 15549 | - |
+| linear | 5632 | 54749 | - |
+| linear_res | 57344 | 23886 | - |
+| lnorm | 90855 | 44644 | - |
+| merge | 12960 | 40504 | - |
+| prep | 13192 | 12796 | - |
+| rms | 32 | 3627 | - |
+| router | 802 | 51277 | - |
+| w2silu | 233792 | 30679 | - |
+
+## Per-operator time (event gaps, mean over iterations after the first)
+
+| Event | Operator | mean us | min us | max us | n |
+|---|---|---|---|---|---|
+| 1 | iteration_start | 157.09 | 104.72 | 199.48 | 30 |
+| 2 | embed_layer | 14.40 | 13.09 | 15.65 | 31 |
+| 3 | linear_norm_layer | 30.80 | 28.40 | 33.16 | 31 |
+| 4 | mla_prep_layer | 10.79 | 10.45 | 11.25 | 31 |
+| 5 | mla_attend_layer | 12.66 | 12.08 | 14.36 | 31 |
+| 6 | mla_merge_uv_layer | 25.75 | 23.15 | 26.80 | 31 |
+| 7 | linear_with_residual_layer | 13.44 | 12.79 | 14.12 | 31 |
+| 8 | rmsnorm_layer | 4.44 | 3.76 | 5.57 | 31 |
+| 9 | gang_linear_silu_layer | 33.24 | 31.71 | 34.85 | 31 |
+| 10 | linear_with_residual_layer | 52.09 | 49.76 | 53.84 | 31 |
+| 11 | linear_norm_layer | 18.97 | 18.44 | 20.01 | 31 |
+| 12 | mla_prep_layer | 11.42 | 11.01 | 11.77 | 31 |
+| 13 | mla_attend_layer | 12.22 | 11.71 | 12.94 | 31 |
+| 14 | mla_merge_uv_layer | 24.04 | 23.14 | 24.52 | 31 |
+| 15 | linear_with_residual_layer | 12.69 | 12.11 | 13.84 | 31 |
+| 16 | moe_router_layer | 27.78 | 26.89 | 29.39 | 31 |
+| 17 | gang_moe_w13_linear_layer | 42.47 | 40.60 | 44.56 | 31 |
+| 18 | gang_moe_w2_silu_linear_layer | 25.15 | 23.67 | 26.56 | 31 |
+| 19 | moe_mul_sum_add_layer | 5.52 | 4.86 | 6.26 | 31 |
+| 20 | linear_norm_layer | 19.28 | 18.44 | 20.19 | 31 |
+| 21 | mla_prep_layer | 11.39 | 11.03 | 11.90 | 31 |
+| 22 | mla_attend_layer | 12.26 | 11.91 | 12.63 | 31 |
+| 23 | mla_merge_uv_layer | 23.88 | 23.12 | 26.08 | 31 |
+| 24 | linear_with_residual_layer | 13.44 | 12.99 | 13.92 | 31 |
+| 25 | moe_router_layer | 29.50 | 28.41 | 30.01 | 31 |
+| 26 | gang_moe_w13_linear_layer | 41.75 | 39.20 | 46.88 | 31 |
+| 27 | gang_moe_w2_silu_linear_layer | 24.01 | 22.12 | 26.68 | 31 |
+| 28 | moe_mul_sum_add_layer | 5.65 | 4.88 | 6.27 | 31 |
+| 29 | linear_norm_layer | 19.12 | 18.45 | 20.02 | 31 |
+| 30 | mla_prep_layer | 11.33 | 11.00 | 11.98 | 31 |
+| 31 | mla_attend_layer | 11.97 | 11.62 | 12.48 | 31 |
+| 32 | mla_merge_uv_layer | 25.71 | 23.24 | 27.44 | 31 |
+| 33 | linear_with_residual_layer | 13.60 | 12.56 | 16.47 | 31 |
+| 34 | moe_router_layer | 27.86 | 25.48 | 32.06 | 31 |
+| 35 | gang_moe_w13_linear_layer | 42.17 | 38.93 | 47.61 | 31 |
+| 36 | gang_moe_w2_silu_linear_layer | 24.78 | 23.05 | 26.60 | 31 |
+| 37 | moe_mul_sum_add_layer | 5.48 | 4.74 | 6.04 | 31 |
+| 38 | linear_norm_layer | 19.25 | 18.49 | 19.93 | 31 |
+| 39 | mla_prep_layer | 10.87 | 10.64 | 11.35 | 31 |
+| 40 | mla_attend_layer | 12.23 | 11.83 | 12.64 | 31 |
+| 41 | mla_merge_uv_layer | 23.85 | 22.87 | 24.28 | 31 |
+| 42 | linear_with_residual_layer | 13.43 | 12.94 | 14.08 | 31 |
+| 43 | moe_router_layer | 27.79 | 27.12 | 31.64 | 31 |
+| 44 | gang_moe_w13_linear_layer | 42.92 | 40.97 | 45.09 | 31 |
+| 45 | gang_moe_w2_silu_linear_layer | 23.56 | 21.82 | 26.40 | 31 |
+| 46 | moe_mul_sum_add_layer | 6.09 | 5.22 | 8.37 | 31 |
+| 47 | linear_norm_layer | 19.06 | 18.48 | 19.97 | 31 |
+| 48 | mla_prep_layer | 11.18 | 10.82 | 12.11 | 31 |
+| 49 | mla_attend_layer | 12.24 | 11.57 | 13.10 | 31 |
+| 50 | mla_merge_uv_layer | 23.91 | 23.08 | 24.59 | 31 |
+| 51 | linear_with_residual_layer | 13.62 | 12.89 | 16.09 | 31 |
+| 52 | moe_router_layer | 27.65 | 27.07 | 28.42 | 31 |
+| 53 | gang_moe_w13_linear_layer | 43.06 | 40.63 | 46.04 | 31 |
+| 54 | gang_moe_w2_silu_linear_layer | 24.17 | 22.27 | 26.44 | 31 |
+| 55 | moe_mul_sum_add_layer | 5.34 | 4.61 | 7.33 | 31 |
+| 56 | linear_norm_layer | 19.49 | 18.57 | 20.17 | 31 |
+| 57 | mla_prep_layer | 10.79 | 10.25 | 11.41 | 31 |
+| 58 | mla_attend_layer | 12.32 | 11.84 | 12.73 | 31 |
+| 59 | mla_merge_uv_layer | 24.02 | 23.16 | 24.44 | 31 |
+| 60 | linear_with_residual_layer | 13.15 | 12.73 | 13.84 | 31 |
+| 61 | moe_router_layer | 28.72 | 26.83 | 32.03 | 31 |
+| 62 | gang_moe_w13_linear_layer | 41.30 | 38.44 | 43.96 | 31 |
+| 63 | gang_moe_w2_silu_linear_layer | 24.09 | 22.06 | 26.33 | 31 |
+| 64 | moe_mul_sum_add_layer | 5.51 | 4.80 | 6.91 | 31 |
+| 65 | linear_norm_layer | 19.35 | 18.75 | 20.33 | 31 |
+| 66 | mla_prep_layer | 11.05 | 10.64 | 11.91 | 31 |
+| 67 | mla_attend_layer | 12.15 | 11.71 | 16.16 | 31 |
+| 68 | mla_merge_uv_layer | 23.86 | 23.42 | 24.40 | 31 |
+| 69 | linear_with_residual_layer | 13.43 | 12.74 | 14.08 | 31 |
+| 70 | moe_router_layer | 28.27 | 26.75 | 33.32 | 31 |
+| 71 | gang_moe_w13_linear_layer | 42.41 | 39.30 | 46.66 | 31 |
+| 72 | gang_moe_w2_silu_linear_layer | 23.91 | 22.25 | 25.41 | 31 |
+| 73 | moe_mul_sum_add_layer | 6.38 | 5.10 | 10.36 | 31 |
+| 74 | linear_norm_layer | 19.36 | 18.75 | 20.20 | 31 |
+| 75 | mla_prep_layer | 10.91 | 10.62 | 11.34 | 31 |
+| 76 | mla_attend_layer | 12.38 | 11.84 | 13.12 | 31 |
+| 77 | mla_merge_uv_layer | 24.24 | 22.91 | 27.54 | 31 |
+| 78 | linear_with_residual_layer | 13.64 | 13.00 | 14.16 | 31 |
+| 79 | moe_router_layer | 28.71 | 26.60 | 34.12 | 31 |
+| 80 | gang_moe_w13_linear_layer | 42.44 | 39.13 | 45.84 | 31 |
+| 81 | gang_moe_w2_silu_linear_layer | 23.85 | 22.66 | 27.88 | 31 |
+| 82 | moe_mul_sum_add_layer | 5.33 | 4.46 | 5.85 | 31 |
+| 83 | linear_norm_layer | 19.30 | 18.69 | 20.17 | 31 |
+| 84 | mla_prep_layer | 10.62 | 10.41 | 10.93 | 31 |
+| 85 | mla_attend_layer | 12.23 | 11.78 | 12.80 | 31 |
+| 86 | mla_merge_uv_layer | 24.82 | 23.52 | 26.97 | 31 |
+| 87 | linear_with_residual_layer | 13.73 | 12.97 | 15.96 | 31 |
+| 88 | moe_router_layer | 26.64 | 25.58 | 28.24 | 31 |
+| 89 | gang_moe_w13_linear_layer | 45.48 | 41.44 | 49.56 | 31 |
+| 90 | gang_moe_w2_silu_linear_layer | 23.85 | 22.20 | 25.70 | 31 |
+| 91 | moe_mul_sum_add_layer | 5.86 | 4.80 | 7.35 | 31 |
+| 92 | linear_norm_layer | 18.99 | 18.19 | 19.76 | 31 |
+| 93 | mla_prep_layer | 10.86 | 10.59 | 11.10 | 31 |
+| 94 | mla_attend_layer | 12.14 | 11.78 | 12.68 | 31 |
+| 95 | mla_merge_uv_layer | 25.18 | 23.27 | 27.47 | 31 |
+| 96 | linear_with_residual_layer | 13.67 | 12.88 | 15.63 | 31 |
+| 97 | moe_router_layer | 27.56 | 25.86 | 28.70 | 31 |
+| 98 | gang_moe_w13_linear_layer | 41.83 | 39.19 | 44.66 | 31 |
+| 99 | gang_moe_w2_silu_linear_layer | 23.50 | 22.34 | 25.31 | 31 |
+| 100 | moe_mul_sum_add_layer | 5.43 | 4.76 | 6.48 | 31 |
+| 101 | linear_norm_layer | 19.18 | 18.49 | 20.32 | 31 |
+| 102 | mla_prep_layer | 11.16 | 10.80 | 11.52 | 31 |
+| 103 | mla_attend_layer | 12.08 | 11.52 | 12.83 | 31 |
+| 104 | mla_merge_uv_layer | 24.74 | 23.45 | 27.05 | 31 |
+| 105 | linear_with_residual_layer | 13.70 | 12.95 | 17.20 | 31 |
+| 106 | moe_router_layer | 27.29 | 26.07 | 30.09 | 31 |
+| 107 | gang_moe_w13_linear_layer | 44.78 | 41.29 | 48.33 | 31 |
+| 108 | gang_moe_w2_silu_linear_layer | 23.69 | 22.09 | 25.49 | 31 |
+| 109 | moe_mul_sum_add_layer | 5.78 | 4.77 | 8.18 | 31 |
+| 110 | linear_norm_layer | 19.13 | 18.27 | 19.82 | 31 |
+| 111 | mla_prep_layer | 11.02 | 10.75 | 11.86 | 31 |
+| 112 | mla_attend_layer | 12.38 | 11.57 | 12.90 | 31 |
+| 113 | mla_merge_uv_layer | 24.73 | 23.28 | 26.87 | 31 |
+| 114 | linear_with_residual_layer | 13.40 | 12.75 | 14.78 | 31 |
+| 115 | moe_router_layer | 27.71 | 26.44 | 33.46 | 31 |
+| 116 | gang_moe_w13_linear_layer | 42.39 | 39.16 | 45.49 | 31 |
+| 117 | gang_moe_w2_silu_linear_layer | 23.89 | 22.22 | 25.73 | 31 |
+| 118 | moe_mul_sum_add_layer | 5.92 | 4.71 | 7.50 | 31 |
+| 119 | linear_norm_layer | 19.11 | 18.45 | 19.90 | 31 |
+| 120 | mla_prep_layer | 10.76 | 10.46 | 11.09 | 31 |
+| 121 | mla_attend_layer | 12.15 | 11.61 | 16.00 | 31 |
+| 122 | mla_merge_uv_layer | 26.23 | 23.48 | 28.12 | 31 |
+| 123 | linear_with_residual_layer | 13.94 | 12.93 | 17.64 | 31 |
+| 124 | moe_router_layer | 27.38 | 26.05 | 28.84 | 31 |
+| 125 | gang_moe_w13_linear_layer | 42.15 | 39.74 | 44.41 | 31 |
+| 126 | gang_moe_w2_silu_linear_layer | 23.55 | 22.08 | 25.52 | 31 |
+| 127 | moe_mul_sum_add_layer | 5.49 | 4.71 | 7.71 | 31 |
+| 128 | linear_norm_layer | 19.29 | 18.54 | 19.99 | 31 |
+| 129 | mla_prep_layer | 10.68 | 10.33 | 11.22 | 31 |
+| 130 | mla_attend_layer | 12.21 | 11.83 | 15.44 | 31 |
+| 131 | mla_merge_uv_layer | 23.88 | 22.84 | 24.48 | 31 |
+| 132 | linear_with_residual_layer | 13.30 | 12.68 | 13.96 | 31 |
+| 133 | moe_router_layer | 28.32 | 27.10 | 32.63 | 31 |
+| 134 | gang_moe_w13_linear_layer | 42.42 | 39.43 | 44.19 | 31 |
+| 135 | gang_moe_w2_silu_linear_layer | 23.83 | 22.41 | 26.36 | 31 |
+| 136 | moe_mul_sum_add_layer | 5.42 | 4.69 | 6.58 | 31 |
+| 137 | linear_norm_layer | 19.20 | 18.25 | 19.98 | 31 |
+| 138 | mla_prep_layer | 10.75 | 10.45 | 11.08 | 31 |
+| 139 | mla_attend_layer | 12.36 | 11.84 | 13.01 | 31 |
+| 140 | mla_merge_uv_layer | 24.88 | 23.43 | 27.45 | 31 |
+| 141 | linear_with_residual_layer | 13.58 | 12.74 | 16.29 | 31 |
+| 142 | moe_router_layer | 28.19 | 27.24 | 32.61 | 31 |
+| 143 | gang_moe_w13_linear_layer | 42.49 | 39.86 | 44.55 | 31 |
+| 144 | gang_moe_w2_silu_linear_layer | 24.02 | 22.58 | 26.12 | 31 |
+| 145 | moe_mul_sum_add_layer | 5.50 | 4.60 | 6.59 | 31 |
+| 146 | linear_norm_layer | 19.38 | 18.78 | 20.31 | 31 |
+| 147 | mla_prep_layer | 10.60 | 10.25 | 10.93 | 31 |
+| 148 | mla_attend_layer | 12.40 | 12.02 | 13.14 | 31 |
+| 149 | mla_merge_uv_layer | 24.68 | 23.06 | 27.84 | 31 |
+| 150 | linear_with_residual_layer | 13.70 | 12.90 | 15.85 | 31 |
+| 151 | moe_router_layer | 27.13 | 25.61 | 28.25 | 31 |
+| 152 | gang_moe_w13_linear_layer | 42.04 | 38.99 | 44.03 | 31 |
+| 153 | gang_moe_w2_silu_linear_layer | 23.70 | 22.66 | 26.04 | 31 |
+| 154 | moe_mul_sum_add_layer | 5.58 | 5.00 | 6.44 | 31 |
+| 155 | linear_norm_layer | 18.76 | 18.00 | 19.93 | 31 |
+| 156 | mla_prep_layer | 10.68 | 10.38 | 10.93 | 31 |
+| 157 | mla_attend_layer | 12.39 | 11.86 | 13.62 | 31 |
+| 158 | mla_merge_uv_layer | 24.68 | 23.78 | 28.16 | 31 |
+| 159 | linear_with_residual_layer | 12.80 | 12.09 | 15.38 | 31 |
+| 160 | moe_router_layer | 27.19 | 26.36 | 28.49 | 31 |
+| 161 | gang_moe_w13_linear_layer | 43.01 | 40.21 | 48.21 | 31 |
+| 162 | gang_moe_w2_silu_linear_layer | 23.66 | 22.24 | 25.44 | 31 |
+| 163 | moe_mul_sum_add_layer | 5.40 | 4.68 | 5.94 | 31 |
+| 164 | linear_norm_layer | 19.02 | 18.41 | 19.76 | 31 |
+| 165 | mla_prep_layer | 10.83 | 10.54 | 11.10 | 31 |
+| 166 | mla_attend_layer | 12.40 | 12.06 | 13.69 | 31 |
+| 167 | mla_merge_uv_layer | 24.82 | 23.24 | 27.64 | 31 |
+| 168 | linear_with_residual_layer | 13.33 | 12.69 | 14.12 | 31 |
+| 169 | moe_router_layer | 27.53 | 26.26 | 29.06 | 31 |
+| 170 | gang_moe_w13_linear_layer | 42.74 | 38.94 | 46.42 | 31 |
+| 171 | gang_moe_w2_silu_linear_layer | 23.49 | 21.88 | 25.55 | 31 |
+| 172 | moe_mul_sum_add_layer | 5.61 | 4.79 | 7.32 | 31 |
+| 173 | linear_norm_layer | 18.73 | 17.99 | 19.32 | 31 |
+| 174 | mla_prep_layer | 10.86 | 10.60 | 11.12 | 31 |
+| 175 | mla_attend_layer | 12.02 | 11.60 | 13.19 | 31 |
+| 176 | mla_merge_uv_layer | 24.60 | 23.10 | 27.34 | 31 |
+| 177 | linear_with_residual_layer | 13.74 | 12.72 | 16.62 | 31 |
+| 178 | moe_router_layer | 27.39 | 25.32 | 28.32 | 31 |
+| 179 | gang_moe_w13_linear_layer | 41.73 | 38.97 | 45.10 | 31 |
+| 180 | gang_moe_w2_silu_linear_layer | 23.60 | 22.15 | 25.33 | 31 |
+| 181 | moe_mul_sum_add_layer | 5.65 | 4.69 | 8.91 | 31 |
+| 182 | linear_norm_layer | 19.21 | 18.37 | 19.72 | 31 |
+| 183 | mla_prep_layer | 10.47 | 10.18 | 10.90 | 31 |
+| 184 | mla_attend_layer | 12.21 | 11.79 | 13.35 | 31 |
+| 185 | mla_merge_uv_layer | 24.65 | 23.29 | 26.60 | 31 |
+| 186 | linear_with_residual_layer | 13.44 | 12.67 | 15.17 | 31 |
+| 187 | moe_router_layer | 27.11 | 26.13 | 28.36 | 31 |
+| 188 | gang_moe_w13_linear_layer | 42.25 | 39.36 | 44.95 | 31 |
+| 189 | gang_moe_w2_silu_linear_layer | 23.99 | 22.78 | 25.27 | 31 |
+| 190 | moe_mul_sum_add_layer | 5.84 | 4.83 | 7.42 | 31 |
+| 191 | linear_norm_layer | 18.86 | 18.39 | 19.46 | 31 |
+| 192 | mla_prep_layer | 10.99 | 10.75 | 11.27 | 31 |
+| 193 | mla_attend_layer | 12.65 | 12.14 | 13.04 | 31 |
+| 194 | mla_merge_uv_layer | 23.87 | 23.12 | 25.07 | 31 |
+| 195 | linear_with_residual_layer | 13.63 | 13.07 | 15.10 | 31 |
+| 196 | moe_router_layer | 28.65 | 26.83 | 29.48 | 31 |
+| 197 | gang_moe_w13_linear_layer | 40.95 | 38.61 | 44.07 | 31 |
+| 198 | gang_moe_w2_silu_linear_layer | 23.90 | 22.45 | 26.52 | 31 |
+| 199 | moe_mul_sum_add_layer | 5.46 | 4.82 | 6.40 | 31 |
+| 200 | linear_norm_layer | 19.13 | 18.50 | 19.79 | 31 |
+| 201 | mla_prep_layer | 10.64 | 10.29 | 11.04 | 31 |
+| 202 | mla_attend_layer | 12.13 | 11.75 | 12.83 | 31 |
+| 203 | mla_merge_uv_layer | 24.32 | 23.44 | 27.16 | 31 |
+| 204 | linear_with_residual_layer | 13.99 | 13.26 | 17.56 | 31 |
+| 205 | moe_router_layer | 28.54 | 26.69 | 30.61 | 31 |
+| 206 | gang_moe_w13_linear_layer | 44.38 | 41.06 | 49.94 | 31 |
+| 207 | gang_moe_w2_silu_linear_layer | 23.29 | 21.88 | 25.34 | 31 |
+| 208 | moe_mul_sum_add_layer | 5.66 | 4.78 | 8.21 | 31 |
+| 209 | linear_norm_layer | 19.06 | 18.49 | 20.00 | 31 |
+| 210 | mla_prep_layer | 10.77 | 10.28 | 11.08 | 31 |
+| 211 | mla_attend_layer | 12.18 | 11.83 | 12.55 | 31 |
+| 212 | mla_merge_uv_layer | 25.08 | 23.40 | 27.30 | 31 |
+| 213 | linear_with_residual_layer | 13.68 | 12.89 | 16.90 | 31 |
+| 214 | moe_router_layer | 28.49 | 26.92 | 29.74 | 31 |
+| 215 | gang_moe_w13_linear_layer | 41.87 | 39.10 | 44.56 | 31 |
+| 216 | gang_moe_w2_silu_linear_layer | 24.09 | 22.60 | 26.52 | 31 |
+| 217 | moe_mul_sum_add_layer | 5.50 | 4.83 | 7.46 | 31 |
+| 218 | linear_norm_layer | 19.05 | 18.28 | 19.78 | 31 |
+| 219 | mla_prep_layer | 10.66 | 10.38 | 11.11 | 31 |
+| 220 | mla_attend_layer | 12.51 | 12.02 | 15.88 | 31 |
+| 221 | mla_merge_uv_layer | 24.86 | 23.23 | 27.30 | 31 |
+| 222 | linear_with_residual_layer | 13.63 | 12.81 | 14.66 | 31 |
+| 223 | moe_router_layer | 28.23 | 26.38 | 29.84 | 31 |
+| 224 | gang_moe_w13_linear_layer | 41.62 | 39.14 | 44.32 | 31 |
+| 225 | gang_moe_w2_silu_linear_layer | 23.92 | 22.36 | 26.24 | 31 |
+| 226 | moe_mul_sum_add_layer | 5.73 | 4.86 | 7.05 | 31 |
+| 227 | linear_norm_layer | 19.36 | 18.53 | 19.82 | 31 |
+| 228 | mla_prep_layer | 10.53 | 10.29 | 10.89 | 31 |
+| 229 | mla_attend_layer | 12.48 | 11.94 | 15.68 | 31 |
+| 230 | mla_merge_uv_layer | 24.85 | 23.44 | 28.12 | 31 |
+| 231 | linear_with_residual_layer | 13.57 | 13.07 | 14.24 | 31 |
+| 232 | moe_router_layer | 27.68 | 25.74 | 28.67 | 31 |
+| 233 | gang_moe_w13_linear_layer | 41.53 | 38.90 | 44.76 | 31 |
+| 234 | gang_moe_w2_silu_linear_layer | 24.03 | 22.32 | 25.76 | 31 |
+| 235 | moe_mul_sum_add_layer | 5.50 | 4.88 | 6.28 | 31 |
+| 236 | linear_norm_layer | 18.55 | 17.99 | 19.35 | 31 |
+| 237 | mla_prep_layer | 10.95 | 10.64 | 11.38 | 31 |
+| 238 | mla_attend_layer | 12.17 | 11.85 | 12.64 | 31 |
+| 239 | mla_merge_uv_layer | 24.46 | 23.76 | 26.76 | 31 |
+| 240 | linear_with_residual_layer | 13.87 | 12.90 | 16.80 | 31 |
+| 241 | moe_router_layer | 27.75 | 26.00 | 28.46 | 31 |
+| 242 | gang_moe_w13_linear_layer | 41.41 | 39.10 | 43.79 | 31 |
+| 243 | gang_moe_w2_silu_linear_layer | 23.41 | 21.72 | 25.50 | 31 |
+| 244 | moe_mul_sum_add_layer | 6.33 | 4.86 | 7.51 | 31 |
+| 245 | linear_norm_layer | 0.20 | 0.00 | 0.88 | 31 |
+| 246 | argmax_partial_layer | 0.24 | 0.00 | 2.97 | 31 |
+| 247 | argmax_reduce_layer | 0.34 | 0.00 | 2.08 | 31 |
+| 248 | event_248 | 2.95 | 0.00 | 85.07 | 31 |
+| 249 | event_249 | 0.29 | 0.00 | 0.80 | 31 |
+| 250 | event_250 | 3.04 | 0.00 | 88.23 | 31 |
+| 251 | event_251 | 2.97 | 0.00 | 86.73 | 31 |
+| 252 | event_252 | 3.00 | 0.01 | 86.55 | 31 |
+| 253 | event_253 | 0.20 | 0.00 | 0.72 | 31 |
+| 254 | event_254 | 0.15 | 0.00 | 0.74 | 31 |
+| 255 | event_255 | 0.24 | 0.00 | 1.32 | 31 |
+| 256 | event_256 | 3.30 | 0.00 | 89.61 | 31 |
+| 257 | event_257 | 0.26 | 0.00 | 0.98 | 31 |
+| 258 | event_258 | 5.74 | 0.00 | 86.21 | 31 |
+| 259 | event_259 | 0.18 | 0.00 | 0.57 | 31 |
+| 260 | event_260 | 0.16 | 0.00 | 0.60 | 31 |
+| 261 | event_261 | 0.18 | 0.00 | 0.58 | 31 |
+| 262 | event_262 | 2.99 | 0.00 | 87.20 | 31 |
+| 263 | event_263 | 0.28 | 0.00 | 0.92 | 31 |
+| 264 | event_264 | 0.30 | 0.00 | 2.61 | 31 |
+| 265 | event_265 | 0.26 | 0.00 | 1.14 | 31 |
+| 266 | event_266 | 5.89 | 0.00 | 88.51 | 31 |
+| 267 | event_267 | 0.34 | 0.00 | 1.68 | 31 |
+| 268 | event_268 | 3.10 | 0.00 | 89.47 | 31 |
+| 269 | event_269 | 0.23 | 0.00 | 1.25 | 31 |
+| 270 | event_270 | 0.16 | 0.00 | 0.69 | 31 |
+| 271 | event_271 | 2.99 | 0.00 | 86.16 | 31 |
+| 272 | event_272 | 0.22 | 0.00 | 1.16 | 31 |
+| 273 | event_273 | 0.23 | 0.00 | 2.40 | 31 |
+| 274 | event_274 | 8.82 | 0.00 | 88.36 | 31 |
+| 275 | event_275 | 3.06 | 0.00 | 90.48 | 31 |
+| 276 | event_276 | 5.82 | 0.00 | 89.44 | 31 |
+| 277 | event_277 | 8.43 | 0.00 | 85.96 | 31 |
+| 278 | event_278 | 8.72 | 0.00 | 88.73 | 31 |
+| 279 | event_279 | 8.67 | 0.00 | 88.32 | 31 |
+| 280 | event_280 | 5.90 | 0.00 | 87.57 | 31 |
+| 281 | event_281 | 5.74 | 0.03 | 86.06 | 31 |
+| 282 | event_282 | 5.35 | 0.00 | 40.06 | 31 |
+| 283 | event_283 | 5.45 | 0.00 | 41.00 | 31 |
+| 284 | event_284 | 4.45 | 0.00 | 42.97 | 31 |
+| 285 | event_285 | 2.90 | 0.04 | 39.80 | 31 |
+| 286 | event_286 | 6.79 | 0.00 | 41.42 | 31 |
+| 287 | event_287 | 5.46 | 0.00 | 40.81 | 31 |
+| 288 | event_288 | 0.40 | 0.00 | 1.44 | 31 |
+| 289 | event_289 | 3.05 | 0.00 | 41.92 | 31 |
+| 290 | event_290 | 0.31 | 0.00 | 1.28 | 31 |
+| 291 | event_291 | 2.87 | 0.00 | 39.81 | 31 |
+| 292 | event_292 | 1.71 | 0.00 | 36.60 | 31 |
+| 293 | event_293 | 4.39 | 0.00 | 41.73 | 31 |
+| 294 | event_294 | 1.88 | 0.04 | 38.58 | 31 |
+| 295 | event_295 | 6.31 | 5.86 | 6.68 | 31 |
+| 296 | event_296 | 5.85 | 5.61 | 5.98 | 31 |

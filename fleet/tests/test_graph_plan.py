@@ -21,12 +21,12 @@ def graph_counts_output():
 def test_full_graph_matches_graph_counts():
     plan, calls = B.dry_run()
     s = G.summary(plan)
-    assert s["ops"] == 326 and s["tasks"] == 1880
+    assert s["ops"] == 326 and s["tasks"] == 1880 + 27 * 15
     assert s["by_status"] == {"reuse": 217, "variant": 2, "new": 107}
     assert s["n_splits"] == 33
     assert len(calls) == 326
     gc_out = graph_counts_output()        # the design's counting script agrees
-    assert "ops (events): 326" in gc_out and "tasks in graph: 1880" in gc_out
+    assert "ops (events): 326" in gc_out and "tasks in graph: 2285" in gc_out
 
 
 def test_per_layer_structure():
@@ -41,7 +41,7 @@ def test_per_layer_structure():
     assert layer1[:7] == layer0[:7]
     assert layer1[7:] == ["moe_router_mi300@new", "gang_moe_w13_linear_layer", "moe_silu_mul_layer",
                           "gang_moe_w2_linear_layer", "moe_mul_sum_add_layer"]
-    assert plan.n_ops == 22 and plan.n_tasks == 1 + 51 + 68
+    assert plan.n_ops == 22 and plan.n_tasks == 1 + 51 + 68 + 2 * 15
     # every op shares a tensor with its predecessor (the runtime's linking rule)
     prev = None
     for c in plan.calls:
@@ -216,7 +216,7 @@ def test_fuse_norm2_folds_the_post_attention_norm_into_the_router():
     plan, calls = B.dry_run(layers=27, head=True, fuse_norm2=True)
     labels = [c.label for c in plan.calls]
     assert "L0.norm2" in labels and not any(l.endswith(".norm2") for l in labels if l != "L0.norm2")
-    assert plan.n_ops == 300 and plan.n_tasks == 1854 and not plan.chain_violations()
+    assert plan.n_ops == 300 and plan.n_tasks == 1854 + 27 * 15 and not plan.chain_violations()
     by = {c.label: c for c in plan.calls}
     r = by["L5.router"]
     assert r.args["input"] == "x_res" and r.args["w_norm"] == "w_norm2_5" and r.args["h"] == "h"
@@ -233,7 +233,7 @@ def test_fuse_norm2_folds_the_post_attention_norm_into_the_router():
 
 def test_fuse_norm2_default_off_leaves_the_plan_unchanged():
     plan_off, calls_off = B.dry_run(layers=27, head=True)
-    assert plan_off.n_ops == 326 and plan_off.n_tasks == 1880
+    assert plan_off.n_ops == 326 and plan_off.n_tasks == 1880 + 27 * 15
     assert not any(c["method"] == "moe_router_norm_mi300@new" for c in calls_off)
     assert sum(c["method"] == "moe_router_mi300@new" for c in calls_off) == 26
     r = {c.label: c for c in plan_off.calls}["L5.router"]
@@ -247,7 +247,7 @@ def test_fuse_silu_folds_the_silu_into_the_expert_down_projection():
     plan, calls = B.dry_run(layers=27, head=True, fuse_norm2=True, fuse_silu=True)
     labels = [c.label for c in plan.calls]
     assert not any(l.endswith(".silu") for l in labels)
-    assert plan.n_ops == 274 and plan.n_tasks == 1854 - 26 * 8 and not plan.chain_violations()
+    assert plan.n_ops == 274 and plan.n_tasks == 1854 + 27 * 15 - 26 * 8 and not plan.chain_violations()
     by = {c.label: c for c in plan.calls}
     w2 = by["L5.w2"]
     assert w2.method == "gang_moe_w2_silu_linear_layer" and w2.tasks == XCDS
@@ -269,7 +269,7 @@ def test_fuse_silu_default_off_leaves_the_plan_unchanged():
     assert plan_off.n_ops == 326 and "act8" in plan_off.tensors and "w2_scratch" not in plan_off.tensors
     assert not any(c["method"] == "gang_moe_w2_silu_linear_mi300@new" for c in calls_off)
     plan_fs, _ = B.dry_run(layers=27, head=True, fuse_silu=True)
-    assert plan_fs.n_ops == 300 and plan_fs.n_tasks == 1880 - 26 * 8
+    assert plan_fs.n_ops == 300 and plan_fs.n_tasks == 1880 + 27 * 15 - 26 * 8
 
 
 def test_fuse_norm1_folds_the_input_norm_into_the_per_tile_linear():
@@ -280,7 +280,7 @@ def test_fuse_norm1_folds_the_input_norm_into_the_per_tile_linear():
     plan, calls = B.dry_run(layers=27, head=True, fuse_norm2=True, fuse_silu=True, fuse_norm1=True, tile_linears=True)
     labels = [c.label for c in plan.calls]
     assert not any(l.endswith(".norm1") for l in labels) and "head.norm" not in labels
-    assert plan.n_ops == 246 and plan.n_tasks == 5954 and not plan.chain_violations()
+    assert plan.n_ops == 246 and plan.n_tasks == 5954 + 27 * 15 and not plan.chain_violations()
     by = {c.label: c for c in plan.calls}
     q = by["L5.qkva"]
     assert q.method == "linear_norm_layer" and q.tasks == grid_for_linear(D.Q_OUT + D.KVA_OUT) == 96
@@ -299,7 +299,7 @@ def test_fuse_norm1_folds_the_input_norm_into_the_per_tile_linear():
     assert rec[-1]["inputs"] == ["x_res", "w_final_norm", "W_lm", "logits", "lm_scratch"]
     # the fused linear is per-tile whether or not --tile-linears is set
     plan_g, _ = B.dry_run(layers=27, head=True, fuse_norm2=True, fuse_silu=True, fuse_norm1=True)
-    assert plan_g.n_ops == 246 and plan_g.n_tasks == 1646 - 28 + 27 * (96 - 8) + (400 - 8)
+    assert plan_g.n_ops == 246 and plan_g.n_tasks == 1646 - 28 + 27 * (96 - 8) + (400 - 8) + 27 * 15
     assert {c.label: c.method for c in plan_g.calls}["L0.qkva"] == "linear_norm_layer"
 
 

@@ -1,0 +1,400 @@
+In file included from ./permanent_output_dir/test.cu:6:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/persistent_kernel.cuh:37:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/task_header.cuh:28:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/silu_mul_linear_mi300.cuh:19:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/linear_ck_mi300.cuh:18:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core.hpp:5:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/algorithm/cluster_descriptor.hpp:7:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/algorithm/coordinate_transform.hpp:7:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/container/multi_index.hpp:7:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/container/array.hpp:13:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/utility/functional.hpp:9:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/container/sequence.hpp:10:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/numeric/math.hpp:512:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/numeric/type_convert.hpp:74:
+/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/numeric/pk_fp4.hpp:13:34: warning: unknown warning group '-Wlifetime-safety-intra-tu-suggestions', ignored [-Wunknown-warning-option]
+   13 | #pragma clang diagnostic ignored "-Wlifetime-safety-intra-tu-suggestions"
+      |                                  ^
+In file included from ./permanent_output_dir/test.cu:6:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/persistent_kernel.cuh:37:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/task_header.cuh:28:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/silu_mul_linear_mi300.cuh:19:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/linear_ck_mi300.cuh:18:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core.hpp:5:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/algorithm/cluster_descriptor.hpp:7:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/algorithm/coordinate_transform.hpp:7:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/container/multi_index.hpp:7:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/container/array.hpp:13:
+/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/utility/functional.hpp:14:34: warning: unknown warning group '-Wlifetime-safety-intra-tu-suggestions', ignored [-Wunknown-warning-option]
+   14 | #pragma clang diagnostic ignored "-Wlifetime-safety-intra-tu-suggestions"
+      |                                  ^
+In file included from ./permanent_output_dir/test.cu:6:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/persistent_kernel.cuh:37:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/task_header.cuh:28:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/silu_mul_linear_mi300.cuh:19:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/linear_ck_mi300.cuh:18:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core.hpp:5:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/algorithm/cluster_descriptor.hpp:7:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/algorithm/coordinate_transform.hpp:7:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/container/multi_index.hpp:9:
+/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/container/tuple.hpp:17:34: warning: unknown warning group '-Wlifetime-safety-intra-tu-suggestions', ignored [-Wunknown-warning-option]
+   17 | #pragma clang diagnostic ignored "-Wlifetime-safety-intra-tu-suggestions"
+      |                                  ^
+In file included from ./permanent_output_dir/test.cu:6:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/persistent_kernel.cuh:37:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/task_header.cuh:28:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/silu_mul_linear_mi300.cuh:19:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/linear_ck_mi300.cuh:18:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core.hpp:5:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/algorithm/cluster_descriptor.hpp:7:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/algorithm/coordinate_transform.hpp:8:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/container/container_helper.hpp:8:
+/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/container/map.hpp:12:34: warning: unknown warning group '-Wlifetime-safety-intra-tu-suggestions', ignored [-Wunknown-warning-option]
+   12 | #pragma clang diagnostic ignored "-Wlifetime-safety-intra-tu-suggestions"
+      |                                  ^
+In file included from ./permanent_output_dir/test.cu:6:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/persistent_kernel.cuh:37:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/task_header.cuh:28:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/silu_mul_linear_mi300.cuh:19:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/linear_ck_mi300.cuh:18:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core.hpp:5:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/algorithm/cluster_descriptor.hpp:7:
+/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/algorithm/coordinate_transform.hpp:15:34: warning: unknown warning group '-Wlifetime-safety-intra-tu-suggestions', ignored [-Wunknown-warning-option]
+   15 | #pragma clang diagnostic ignored "-Wlifetime-safety-intra-tu-suggestions"
+      |                                  ^
+In file included from ./permanent_output_dir/test.cu:6:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/persistent_kernel.cuh:37:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/task_header.cuh:28:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/silu_mul_linear_mi300.cuh:19:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/linear_ck_mi300.cuh:18:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core.hpp:5:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/algorithm/cluster_descriptor.hpp:8:
+/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/tensor/tensor_adaptor.hpp:16:34: warning: unknown warning group '-Wlifetime-safety-intra-tu-suggestions', ignored [-Wunknown-warning-option]
+   16 | #pragma clang diagnostic ignored "-Wlifetime-safety-intra-tu-suggestions"
+      |                                  ^
+In file included from ./permanent_output_dir/test.cu:6:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/persistent_kernel.cuh:37:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/task_header.cuh:28:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/silu_mul_linear_mi300.cuh:19:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/linear_ck_mi300.cuh:18:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core.hpp:9:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/algorithm/static_encoding_pattern.hpp:73:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/arch/arch.hpp:13:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/arch/amd_buffer_addressing_builtins.hpp:12:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/numeric/vector_type.hpp:15:
+/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/numeric/e8m0.hpp:10:34: warning: unknown warning group '-Wlifetime-safety-intra-tu-suggestions', ignored [-Wunknown-warning-option]
+   10 | #pragma clang diagnostic ignored "-Wlifetime-safety-intra-tu-suggestions"
+      |                                  ^
+In file included from ./permanent_output_dir/test.cu:6:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/persistent_kernel.cuh:37:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/task_header.cuh:28:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/silu_mul_linear_mi300.cuh:19:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/linear_ck_mi300.cuh:18:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core.hpp:9:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/algorithm/static_encoding_pattern.hpp:78:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/tensor/tile_distribution.hpp:14:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/tensor/tile_distribution_encoding.hpp:11:
+/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/tensor/tensor_adaptor_coordinate.hpp:18:34: warning: unknown warning group '-Wlifetime-safety-intra-tu-suggestions', ignored [-Wunknown-warning-option]
+   18 | #pragma clang diagnostic ignored "-Wlifetime-safety-intra-tu-suggestions"
+      |                                  ^
+In file included from ./permanent_output_dir/test.cu:6:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/persistent_kernel.cuh:37:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/task_header.cuh:28:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/silu_mul_linear_mi300.cuh:19:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/linear_ck_mi300.cuh:18:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core.hpp:9:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/algorithm/static_encoding_pattern.hpp:78:
+/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/tensor/tile_distribution.hpp:19:34: warning: unknown warning group '-Wlifetime-safety-intra-tu-suggestions', ignored [-Wunknown-warning-option]
+   19 | #pragma clang diagnostic ignored "-Wlifetime-safety-intra-tu-suggestions"
+      |                                  ^
+In file included from ./permanent_output_dir/test.cu:6:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/persistent_kernel.cuh:37:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/task_header.cuh:28:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/silu_mul_linear_mi300.cuh:19:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/linear_ck_mi300.cuh:18:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core.hpp:16:
+/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/arch/mma/amdgcn_mma.hpp:13:34: warning: unknown warning group '-Wlifetime-safety-intra-tu-suggestions', ignored [-Wunknown-warning-option]
+   13 | #pragma clang diagnostic ignored "-Wlifetime-safety-intra-tu-suggestions"
+      |                                  ^
+In file included from ./permanent_output_dir/test.cu:6:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/persistent_kernel.cuh:37:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/task_header.cuh:28:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/silu_mul_linear_mi300.cuh:19:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/linear_ck_mi300.cuh:18:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core.hpp:16:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/arch/mma/amdgcn_mma.hpp:128:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/arch/mma/sparse/sparse.hpp:65:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/arch/mma/sparse/mfma/sparse_gfx9.hpp:9:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/ops/gemm/warp/warp_gemm_smfmac_impl.hpp:8:
+/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/tensor/static_distributed_tensor.hpp:18:34: warning: unknown warning group '-Wlifetime-safety-intra-tu-suggestions', ignored [-Wunknown-warning-option]
+   18 | #pragma clang diagnostic ignored "-Wlifetime-safety-intra-tu-suggestions"
+      |                                  ^
+In file included from ./permanent_output_dir/test.cu:6:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/persistent_kernel.cuh:37:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/task_header.cuh:28:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/silu_mul_linear_mi300.cuh:19:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/linear_ck_mi300.cuh:18:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core.hpp:64:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/tensor/load_tile.hpp:12:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/tensor/tile_window.hpp:15:
+/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/tensor/tensor_view.hpp:18:34: warning: unknown warning group '-Wlifetime-safety-intra-tu-suggestions', ignored [-Wunknown-warning-option]
+   18 | #pragma clang diagnostic ignored "-Wlifetime-safety-intra-tu-suggestions"
+      |                                  ^
+In file included from ./permanent_output_dir/test.cu:6:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/persistent_kernel.cuh:37:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/task_header.cuh:28:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/silu_mul_linear_mi300.cuh:19:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/linear_ck_mi300.cuh:18:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core.hpp:90:
+/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/utility/env.hpp:10:34: warning: unknown warning group '-Wlifetime-safety-intra-tu-suggestions', ignored [-Wunknown-warning-option]
+   10 | #pragma clang diagnostic ignored "-Wlifetime-safety-intra-tu-suggestions"
+      |                                  ^
+In file included from ./permanent_output_dir/test.cu:6:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/persistent_kernel.cuh:37:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/task_header.cuh:28:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/silu_mul_linear_mi300.cuh:19:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/linear_ck_mi300.cuh:19:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/ops/gemm.hpp:38:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/ops/gemm/kernel/grouped_gemm_kernel.hpp:13:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/host.hpp:5:
+/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/host/arg_parser.hpp:17:34: warning: unknown warning group '-Wlifetime-safety-intra-tu-suggestions', ignored [-Wunknown-warning-option]
+   17 | #pragma clang diagnostic ignored "-Wlifetime-safety-intra-tu-suggestions"
+      |                                  ^
+In file included from ./permanent_output_dir/test.cu:6:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/persistent_kernel.cuh:37:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/task_header.cuh:28:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/silu_mul_linear_mi300.cuh:19:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/linear_ck_mi300.cuh:19:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/ops/gemm.hpp:38:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/ops/gemm/kernel/grouped_gemm_kernel.hpp:13:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/host.hpp:8:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/host/convolution_host_tensor_descriptor_helper.hpp:8:
+/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/host/host_tensor.hpp:21:34: warning: unknown warning group '-Wlifetime-safety-intra-tu-suggestions', ignored [-Wunknown-warning-option]
+   21 | #pragma clang diagnostic ignored "-Wlifetime-safety-intra-tu-suggestions"
+      |                                  ^
+15 warnings generated when compiling for gfx942.
+In file included from ./permanent_output_dir/test.cu:6:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/persistent_kernel.cuh:37:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/task_header.cuh:28:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/silu_mul_linear_mi300.cuh:19:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/linear_ck_mi300.cuh:18:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core.hpp:5:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/algorithm/cluster_descriptor.hpp:7:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/algorithm/coordinate_transform.hpp:7:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/container/multi_index.hpp:7:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/container/array.hpp:13:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/utility/functional.hpp:9:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/container/sequence.hpp:10:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/numeric/math.hpp:512:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/numeric/type_convert.hpp:74:
+/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/numeric/pk_fp4.hpp:13:34: warning: unknown warning group '-Wlifetime-safety-intra-tu-suggestions', ignored [-Wunknown-warning-option]
+   13 | #pragma clang diagnostic ignored "-Wlifetime-safety-intra-tu-suggestions"
+      |                                  ^
+In file included from ./permanent_output_dir/test.cu:6:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/persistent_kernel.cuh:37:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/task_header.cuh:28:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/silu_mul_linear_mi300.cuh:19:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/linear_ck_mi300.cuh:18:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core.hpp:5:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/algorithm/cluster_descriptor.hpp:7:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/algorithm/coordinate_transform.hpp:7:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/container/multi_index.hpp:7:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/container/array.hpp:13:
+/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/utility/functional.hpp:14:34: warning: unknown warning group '-Wlifetime-safety-intra-tu-suggestions', ignored [-Wunknown-warning-option]
+   14 | #pragma clang diagnostic ignored "-Wlifetime-safety-intra-tu-suggestions"
+      |                                  ^
+In file included from ./permanent_output_dir/test.cu:6:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/persistent_kernel.cuh:37:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/task_header.cuh:28:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/silu_mul_linear_mi300.cuh:19:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/linear_ck_mi300.cuh:18:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core.hpp:5:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/algorithm/cluster_descriptor.hpp:7:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/algorithm/coordinate_transform.hpp:7:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/container/multi_index.hpp:9:
+/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/container/tuple.hpp:17:34: warning: unknown warning group '-Wlifetime-safety-intra-tu-suggestions', ignored [-Wunknown-warning-option]
+   17 | #pragma clang diagnostic ignored "-Wlifetime-safety-intra-tu-suggestions"
+      |                                  ^
+In file included from ./permanent_output_dir/test.cu:6:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/persistent_kernel.cuh:37:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/task_header.cuh:28:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/silu_mul_linear_mi300.cuh:19:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/linear_ck_mi300.cuh:18:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core.hpp:5:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/algorithm/cluster_descriptor.hpp:7:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/algorithm/coordinate_transform.hpp:8:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/container/container_helper.hpp:8:
+/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/container/map.hpp:12:34: warning: unknown warning group '-Wlifetime-safety-intra-tu-suggestions', ignored [-Wunknown-warning-option]
+   12 | #pragma clang diagnostic ignored "-Wlifetime-safety-intra-tu-suggestions"
+      |                                  ^
+In file included from ./permanent_output_dir/test.cu:6:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/persistent_kernel.cuh:37:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/task_header.cuh:28:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/silu_mul_linear_mi300.cuh:19:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/linear_ck_mi300.cuh:18:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core.hpp:5:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/algorithm/cluster_descriptor.hpp:7:
+/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/algorithm/coordinate_transform.hpp:15:34: warning: unknown warning group '-Wlifetime-safety-intra-tu-suggestions', ignored [-Wunknown-warning-option]
+   15 | #pragma clang diagnostic ignored "-Wlifetime-safety-intra-tu-suggestions"
+      |                                  ^
+In file included from ./permanent_output_dir/test.cu:6:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/persistent_kernel.cuh:37:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/task_header.cuh:28:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/silu_mul_linear_mi300.cuh:19:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/linear_ck_mi300.cuh:18:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core.hpp:5:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/algorithm/cluster_descriptor.hpp:8:
+/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/tensor/tensor_adaptor.hpp:16:34: warning: unknown warning group '-Wlifetime-safety-intra-tu-suggestions', ignored [-Wunknown-warning-option]
+   16 | #pragma clang diagnostic ignored "-Wlifetime-safety-intra-tu-suggestions"
+      |                                  ^
+In file included from ./permanent_output_dir/test.cu:6:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/persistent_kernel.cuh:37:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/task_header.cuh:28:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/silu_mul_linear_mi300.cuh:19:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/linear_ck_mi300.cuh:18:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core.hpp:9:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/algorithm/static_encoding_pattern.hpp:73:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/arch/arch.hpp:13:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/arch/amd_buffer_addressing_builtins.hpp:12:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/numeric/vector_type.hpp:15:
+/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/numeric/e8m0.hpp:10:34: warning: unknown warning group '-Wlifetime-safety-intra-tu-suggestions', ignored [-Wunknown-warning-option]
+   10 | #pragma clang diagnostic ignored "-Wlifetime-safety-intra-tu-suggestions"
+      |                                  ^
+In file included from ./permanent_output_dir/test.cu:6:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/persistent_kernel.cuh:37:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/task_header.cuh:28:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/silu_mul_linear_mi300.cuh:19:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/linear_ck_mi300.cuh:18:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core.hpp:9:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/algorithm/static_encoding_pattern.hpp:78:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/tensor/tile_distribution.hpp:14:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/tensor/tile_distribution_encoding.hpp:11:
+/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/tensor/tensor_adaptor_coordinate.hpp:18:34: warning: unknown warning group '-Wlifetime-safety-intra-tu-suggestions', ignored [-Wunknown-warning-option]
+   18 | #pragma clang diagnostic ignored "-Wlifetime-safety-intra-tu-suggestions"
+      |                                  ^
+In file included from ./permanent_output_dir/test.cu:6:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/persistent_kernel.cuh:37:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/task_header.cuh:28:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/silu_mul_linear_mi300.cuh:19:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/linear_ck_mi300.cuh:18:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core.hpp:9:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/algorithm/static_encoding_pattern.hpp:78:
+/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/tensor/tile_distribution.hpp:19:34: warning: unknown warning group '-Wlifetime-safety-intra-tu-suggestions', ignored [-Wunknown-warning-option]
+   19 | #pragma clang diagnostic ignored "-Wlifetime-safety-intra-tu-suggestions"
+      |                                  ^
+In file included from ./permanent_output_dir/test.cu:6:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/persistent_kernel.cuh:37:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/task_header.cuh:28:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/silu_mul_linear_mi300.cuh:19:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/linear_ck_mi300.cuh:18:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core.hpp:16:
+/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/arch/mma/amdgcn_mma.hpp:13:34: warning: unknown warning group '-Wlifetime-safety-intra-tu-suggestions', ignored [-Wunknown-warning-option]
+   13 | #pragma clang diagnostic ignored "-Wlifetime-safety-intra-tu-suggestions"
+      |                                  ^
+In file included from ./permanent_output_dir/test.cu:6:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/persistent_kernel.cuh:37:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/task_header.cuh:28:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/silu_mul_linear_mi300.cuh:19:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/linear_ck_mi300.cuh:18:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core.hpp:16:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/arch/mma/amdgcn_mma.hpp:128:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/arch/mma/sparse/sparse.hpp:65:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/arch/mma/sparse/mfma/sparse_gfx9.hpp:9:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/ops/gemm/warp/warp_gemm_smfmac_impl.hpp:8:
+/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/tensor/static_distributed_tensor.hpp:18:34: warning: unknown warning group '-Wlifetime-safety-intra-tu-suggestions', ignored [-Wunknown-warning-option]
+   18 | #pragma clang diagnostic ignored "-Wlifetime-safety-intra-tu-suggestions"
+      |                                  ^
+In file included from ./permanent_output_dir/test.cu:6:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/persistent_kernel.cuh:37:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/task_header.cuh:28:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/silu_mul_linear_mi300.cuh:19:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/linear_ck_mi300.cuh:18:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core.hpp:64:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/tensor/load_tile.hpp:12:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/tensor/tile_window.hpp:15:
+/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/tensor/tensor_view.hpp:18:34: warning: unknown warning group '-Wlifetime-safety-intra-tu-suggestions', ignored [-Wunknown-warning-option]
+   18 | #pragma clang diagnostic ignored "-Wlifetime-safety-intra-tu-suggestions"
+      |                                  ^
+In file included from ./permanent_output_dir/test.cu:6:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/persistent_kernel.cuh:37:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/task_header.cuh:28:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/silu_mul_linear_mi300.cuh:19:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/linear_ck_mi300.cuh:18:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core.hpp:90:
+/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/core/utility/env.hpp:10:34: warning: unknown warning group '-Wlifetime-safety-intra-tu-suggestions', ignored [-Wunknown-warning-option]
+   10 | #pragma clang diagnostic ignored "-Wlifetime-safety-intra-tu-suggestions"
+      |                                  ^
+In file included from ./permanent_output_dir/test.cu:6:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/persistent_kernel.cuh:37:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/task_header.cuh:28:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/silu_mul_linear_mi300.cuh:19:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/linear_ck_mi300.cuh:19:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/ops/gemm.hpp:38:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/ops/gemm/kernel/grouped_gemm_kernel.hpp:13:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/host.hpp:5:
+/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/host/arg_parser.hpp:17:34: warning: unknown warning group '-Wlifetime-safety-intra-tu-suggestions', ignored [-Wunknown-warning-option]
+   17 | #pragma clang diagnostic ignored "-Wlifetime-safety-intra-tu-suggestions"
+      |                                  ^
+In file included from ./permanent_output_dir/test.cu:6:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/persistent_kernel.cuh:37:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/task_header.cuh:28:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/silu_mul_linear_mi300.cuh:19:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel/tasks/mi300/linear_ck_mi300.cuh:19:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/ops/gemm.hpp:38:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/ops/gemm/kernel/grouped_gemm_kernel.hpp:13:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/host.hpp:8:
+In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/host/convolution_host_tensor_descriptor_helper.hpp:8:
+/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include/ck_tile/host/host_tensor.hpp:21:34: warning: unknown warning group '-Wlifetime-safety-intra-tu-suggestions', ignored [-Wunknown-warning-option]
+   21 | #pragma clang diagnostic ignored "-Wlifetime-safety-intra-tu-suggestions"
+      |                                  ^
+15 warnings generated when compiling for host.
+Compiling megakernel using the following command line:
+['/opt/rocm/bin/hipcc', '-x', 'hip', './permanent_output_dir/test.cu', '-O3', '-I/usr/include/python3.12', '-I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include', '-I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/hip_compat', '-I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel', '-I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/rocblas/include', '-I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/cutlass/include', '-I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/cutlass/tools/util/include', '-I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include', '-I/opt/rocm/include', '-I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include', '-DCK_TILE_FMHA_FWD_FAST_EXP2=1', '-DMAX_WORKER_PER_SCHEDULER=38', '-DMIRAGE_USE_CUTLASS_KERNEL=0', '--offload-arch=gfx942', '-L/opt/rocm/lib', '-L/opt/rocm/lib', '-lamdhip64', '-lrocblas', '-lhipblas', '-shared', '-std=c++17', '-fPIC', '-D__HIP_PLATFORM_AMD__=1', '-DMIRAGE_AMD_MI300', '-DMIRAGE_BACKEND_USE_ROCM', '-DMPK_TARGET_CC=94', '-DMPK_MAX_NUM_BATCHED_REQUESTS=1', '-DMPK_MAX_NUM_BATCHED_TOKENS=1', '-DMPK_MAX_NUM_PAGES=1', '-DMPK_PAGE_SIZE=1056', '-DMPK_MAX_SEQ_LENGTH=1056', '-o', './permanent_output_dir/test.cpython-38-x86_64-linux-gnu.so', '-DMODE_ONLINE', '-DMPK_PROFILING_NUM_ITERS=0', '-DMPK_ENABLE_TIMING', '-DMPK_ENABLE_EVENT_TIMING', '-DMPK_ENABLE_GANG_TASKS', '-DMPK_NT_WEIGHT_LOADS']
+Finished megakernel compilation...
+  25.68       0.95
+    5 UNKNOWN                  31     145.53     140.79     154.03       2.97
+    6 UNKNOWN                  31      48.00      47.45      48.52       0.22
+    7 UNKNOWN                  31      25.47      21.67      26.18       0.90
+    8 UNKNOWN                  31      13.73      13.20      14.16       0.25
+    9 UNKNOWN                  31       5.14       4.93       5.48       0.11
+   10 UNKNOWN                  31      31.47      30.48      32.60       0.53
+   11 UNKNOWN                  31      51.68      50.16      53.48       1.01
+   12 UNKNOWN                  31       4.35       3.91       4.64       0.15
+   13 UNKNOWN                  31      12.99      12.53      13.68       0.26
+   14 UNKNOWN                  31     142.50     137.83     148.67       3.00
+   15 UNKNOWN                  31      47.68      47.34      48.02       0.20
+   16 UNKNOWN                  31      21.32      21.15      21.72       0.11
+   17 UNKNOWN                  31      13.60      13.15      14.04       0.23
+   18 UNKNOWN                  31       3.82       3.63       4.04       0.09
+   19 UNKNOWN                  31      21.36      19.73      23.85       0.98
+   20 UNKNOWN                  31      42.33      40.49      44.76       1.16
+   21 UNKNOWN                  31       4.90       3.81       6.53       0.95
+   22 UNKNOWN                  31      21.39      19.68      22.36       0.96
+   23 UNKNOWN                  31       3.30       3.10       4.32       0.21
+
+================================================================================
+PER-TYPE SUMMARY (sum of avg durations across all events)
+================================================================================
+TaskType             Events    Total(us)  Total(ms)        %
+----------------------------------------------------------
+UNKNOWN                  23        853.1      0.853   100.0%
+TOTAL                              853.1      0.853
+
+Saved raw event timing to event_timing.json
+
+ids [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]; 21 boundary tensors; mpk() 3086.8 ms for 32 iterations -> /home/hotaisle/metalOps/harness/fleet_out/L2_it32_tile_nt_wt
+py=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=223 prep=0/0 attend=0/0 merge=0/0 router=73924/2 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=31 prep=0/0 attend=5965992/64 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=95 prep=0/0 attend=0/0 merge=0/0 router=80876/2 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=79 prep=0/0 attend=0/0 merge=0/0 router=37580/1 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=215 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=279 prep=0/0 attend=0/0 merge=0/0 router=37184/1 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=127 prep=0/0 attend=0/0 merge=0/0 router=36320/1 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=7 prep=0/0 attend=5948400/64 merge=2276644/64 router=37008/1 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=55 prep=0/0 attend=0/0 merge=0/0 router=37044/1 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=255 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=207 prep=0/0 attend=0/0 merge=0/0 router=74120/2 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=111 prep=0/0 attend=0/0 merge=0/0 router=71424/2 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=119 prep=0/0 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0
+[TASK_TIME2] worker=135 prep=0/0 attend=0/0 merge=0/0 router=74708/2 copy=0/0 w2silu=0/0 lnorm=0/0 prefetch=0/0

@@ -98,6 +98,10 @@ run_graph() {
   FAULT="$(grep -c -E 'AcceleratorError|illegal|Memory access fault|HSA_STATUS_ERROR' "$log" || true)"
   FWD="$(grep -c 'FWD_PASS' "$log" || true)"
   if [ "$RC" = "0" ] && [ "$FAULT" = "0" ] && [ "$MPK" -ge 1 ]; then RESULT=PASS; else RESULT=FAIL; fi
+  # a run name that ran before keeps its earlier record beside the new one (round 3, 2026-09-17:
+  # three identical final rows overwrote one directory, and a rerun's copy did not follow into the
+  # pulled record); the previous directory moves to <name>.prev-<utc of the move>
+  if [ -d "$RECORD/runs/$NAME" ]; then mv "$RECORD/runs/$NAME" "$RECORD/runs/$NAME.prev-$(date -u +%Y%m%dT%H%M%SZ)"; fi
   mkdir -p "$RECORD/runs/$NAME"
   [ -d "$FLEET_OUT/$NAME" ] && record_copy "$FLEET_OUT/$NAME" "$RECORD/runs/$NAME"
   cp "$log" "$RECORD/runs/$NAME/run.out" 2>/dev/null || true

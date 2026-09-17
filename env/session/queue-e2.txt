@@ -1,0 +1,11 @@
+# Round 3, after the per-head prep (5,207.8 us): the router's batched GEMV and the merge's deeper
+# load batches (the kernel suites verify both; the step-0 boundaries verify the graph), the model
+# with the ids, one model row without the norm-1 fusion (its per-tile prologue costs more than the
+# norm it removes), then the final three times (30, 31, 32 iterations: distinct run names).
+--layers 2 --iters 1 --tile-linears --nt-weights --event-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend compare continue
+--layers 2 --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend table continue
+--layers 27 --head --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend table compare continue
+--layers 27 --head --iters 32 --tile-linears --nt-weights --event-timing --fuse-norm2 --fuse-silu --mfma-attend table compare continue
+--layers 27 --head --iters 30 --tile-linears --nt-weights --event-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend table continue
+--layers 27 --head --iters 31 --tile-linears --nt-weights --event-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend table continue
+--layers 27 --head --iters 32 --tile-linears --nt-weights --event-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend table compare continue

@@ -20,6 +20,20 @@ are short (round 2's record: a 2-layer row took about 30 s of wall time, a
 hour of queue time and the session's length is the setup plus the queues
 plus the reruns the rules ask for.
 
+## As run (2026-09-17)
+
+Rows S0 to S10 ran as written (S5 exposed three defects of this plan, fixed
+on the spot: a 2-layer compare needs `--iters 1`; the event clock's
+iteration marker; three identical final rows share one run name). S11 ran
+its two fence knobs (both needed); S12 and S13 were not run (the corrected
+attribution made the probes moot, and no knob survived). From minute 58
+the session left the plan for the levers the measurements pointed at (the
+per-head prep task, the batched loads, the attention as regular tasks),
+with the same rows per lever (suites, `L2_it1` compare, `L2_it32` timing,
+the model, the finals). The minute marks held: the prepared levers' final
+at minute 47, the round's final at minute 100 and 132, the deletion at
+144. `07-session-log.md` is the log, `08-results.md` the numbers.
+
 ## Budget
 
 | | |

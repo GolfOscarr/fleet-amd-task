@@ -1,8 +1,12 @@
 # Session C, row G6 (docs/gpu-experiments/03-acceleration/05-session-plan.md): the probe (O5) in front of the
 # operators whose event gap round 2 could not attribute (the gap of an operator that follows a wide predecessor),
 # and the streaming loads of our kernels (O6), each on the 2-layer graph with the compare and on the model.
---layers 2 --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --probe-before L0.o_proj table compare continue        # G6.1: o_proj after the 8-XCD merge
---layers 2 --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --probe-before L1.qkva table compare continue          # G6.2: qkva after the 8-task combine
---layers 2 --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --probe-before L1.router table compare continue        # G6.3: the router after the per-tile o_proj
---layers 2 --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --nt-streams table compare continue                    # G6.4: O6 on 2 layers
+--layers 2 --iters 1 --tile-linears --nt-weights --event-timing --worker-timing --probe-before L0.o_proj compare continue    # G6.1: o_proj after the 8-XCD merge (the boundaries at decode step 0)
+--layers 2 --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --probe-before L0.o_proj table continue    # G6.1: o_proj after the 8-XCD merge
+--layers 2 --iters 1 --tile-linears --nt-weights --event-timing --worker-timing --probe-before L1.qkva compare continue    # G6.2: qkva after the 8-task combine (the boundaries at decode step 0)
+--layers 2 --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --probe-before L1.qkva table continue    # G6.2: qkva after the 8-task combine
+--layers 2 --iters 1 --tile-linears --nt-weights --event-timing --worker-timing --probe-before L1.router compare continue    # G6.3: the router after the per-tile o_proj (the boundaries at decode step 0)
+--layers 2 --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --probe-before L1.router table continue    # G6.3: the router after the per-tile o_proj
+--layers 2 --iters 1 --tile-linears --nt-weights --event-timing --worker-timing --nt-streams compare continue    # G6.4: O6 on 2 layers (the boundaries at decode step 0)
+--layers 2 --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --nt-streams table continue    # G6.4: O6 on 2 layers
 --layers 27 --head --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --nt-streams table compare continue            # G6.5: O6 on the model

@@ -180,19 +180,56 @@ __device__ __forceinline__ float block_sum(float x, float *red) {
 template <typename T, int N>
 __device__ __forceinline__ void rmsnorm_row(T const *x, T const *w, T *out, float eps,
                                             float *red, T *out_s = nullptr) {
-  float ss = 0.0f;
-  for (int i = threadIdx.x; i < N; i += NUM_THREADS) {
-    float v = ld(x + i);
-    ss += v * v;
-  }
-  float var = block_sum(ss, red) / (float)N;
-  float rinv = 1.0f / sqrtf(var + eps);
-  for (int i = threadIdx.x; i < N; i += NUM_THREADS) {
-    float xn = bf16r(ld(x + i) * rinv);
-    float y = bf16r(ld(w + i) * xn);
-    st(out + i, y);
-    if (out_s != nullptr) {
-      st(out_s + i, y);
+  if constexpr (N % (8 * NUM_THREADS) == 0) {
+    // the row and the weight read once, eight consecutive elements per thread with 16-byte
+    // loads, kept in registers across the two passes (round 3: the scalar two-pass form was
+    // three memory round trips in every fused-linear tile, the router and the prep task);
+    // the FP32 sum of squares groups a thread's eight elements before the block reduction
+    constexpr int VEC = N / (8 * NUM_THREADS);
+    float xv[VEC][8], wv[VEC][8];
+#pragma unroll
+    for (int i = 0; i < VEC; i++) {
+      load8(x + ((size_t)i * NUM_THREADS + threadIdx.x) * 8, xv[i]);
+      load8(w + ((size_t)i * NUM_THREADS + threadIdx.x) * 8, wv[i]);
+    }
+    float ss = 0.0f;
+#pragma unroll
+    for (int i = 0; i < VEC; i++) {
+#pragma unroll
+      for (int k = 0; k < 8; k++) {
+        ss += xv[i][k] * xv[i][k];
+      }
+    }
+    float var = block_sum(ss, red) / (float)N;
+    float rinv = 1.0f / sqrtf(var + eps);
+#pragma unroll
+    for (int i = 0; i < VEC; i++) {
+#pragma unroll
+      for (int k = 0; k < 8; k++) {
+        int e = (i * NUM_THREADS + threadIdx.x) * 8 + k;
+        float xn = bf16r(xv[i][k] * rinv);
+        float y = bf16r(wv[i][k] * xn);
+        st(out + e, y);
+        if (out_s != nullptr) {
+          st(out_s + e, y);
+        }
+      }
+    }
+  } else {
+    float ss = 0.0f;
+    for (int i = threadIdx.x; i < N; i += NUM_THREADS) {
+      float v = ld(x + i);
+      ss += v * v;
+    }
+    float var = block_sum(ss, red) / (float)N;
+    float rinv = 1.0f / sqrtf(var + eps);
+    for (int i = threadIdx.x; i < N; i += NUM_THREADS) {
+      float xn = bf16r(ld(x + i) * rinv);
+      float y = bf16r(ld(w + i) * xn);
+      st(out + i, y);
+      if (out_s != nullptr) {
+        st(out_s + i, y);
+      }
     }
   }
 }

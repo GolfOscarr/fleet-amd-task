@@ -489,7 +489,7 @@ index 97c4923..7665420 100755
      printf("Unsupported task name: %s\n", name.c_str());
      assert(false && "Unsupported task type");
 diff --git a/src/kernel/runtime.cc b/src/kernel/runtime.cc
-index 9dde169..3c0bb97 100755
+index 9dde169..547db20 100755
 --- a/src/kernel/runtime.cc
 +++ b/src/kernel/runtime.cc
 @@ -184,6 +184,11 @@ void register_mugraph(
@@ -504,18 +504,19 @@ index 9dde169..3c0bb97 100755
    for (auto const &op : graph.operators) {
      if (op->op_type == type::KNOperatorType::KN_INPUT_OP) {
        continue;
-@@ -397,7 +402,9 @@ void register_mugraph(
+@@ -397,7 +402,10 @@ void register_mugraph(
                task_type == TASK_MOE_W2_LINEAR_SM90 ||
                task_type == TASK_MOE_W13_LINEAR_MI300 ||
                task_type == TASK_MOE_W2_LINEAR_MI300 ||
 -              task_type == TASK_LINEAR_SILU_MI300) {
 +              task_type == TASK_LINEAR_SILU_MI300 ||
 +              task_type == TASK_MLA_ATTEND_TILE_MI300 ||   // the split index of the regular attention task
-+              task_type == TASK_PREFETCH_MOE_MI300) {      // the (slot, part) index of the expert prefetch (O8)
++              task_type == TASK_PREFETCH_MOE_MI300 ||      // the (slot, part) index of the expert prefetch (O8)
++              task_type == TASK_MLA_PREP_MI300) {          // the head of the per-head prep task (round 3)
              task.task_metadata.expert_offset =
                  (int)((bid.y << 16) | (bid.x & 0xFFFF));
            }
-@@ -415,8 +422,11 @@ void register_mugraph(
+@@ -415,8 +423,11 @@ void register_mugraph(
                task_type == TASK_GANG_ATTN_MERGE_MI300 ||
                task_type == TASK_GANG_MOE_W13_LINEAR_MI300 ||
                task_type == TASK_GANG_MOE_W2_LINEAR_MI300 ||
@@ -528,7 +529,7 @@ index 9dde169..3c0bb97 100755
              auto it = graph.gang_task_tiles_per_xcd.find(op);
              assert(it != graph.gang_task_tiles_per_xcd.end() &&
                     "Gang task missing n_tiles_per_xcd");
-@@ -432,7 +442,9 @@ void register_mugraph(
+@@ -432,7 +443,9 @@ void register_mugraph(
              // Gang attention: each XCD processes a different tile range
              // bid.x = XCD index (0..7)
              else if (task_type == TASK_GANG_ATTN_SPLIT_KV_MI300 ||
@@ -539,7 +540,7 @@ index 9dde169..3c0bb97 100755
                task.task_metadata.n_tile_start = (uint16_t)(bid.x * tiles_per_xcd);
              } else if (task_type == TASK_GANG_KSPLIT_GEMM_MI300) {
                // K-split index = XCD index (bid.x)
-@@ -496,6 +508,36 @@ void register_mugraph(
+@@ -496,6 +509,36 @@ void register_mugraph(
          }
        }
      }
@@ -576,7 +577,7 @@ index 9dde169..3c0bb97 100755
      // Step 2: create events between operators
      if (pre_op == nullptr) {
        dim3 bid;
-@@ -587,8 +629,14 @@ void register_mugraph(
+@@ -587,8 +630,14 @@ void register_mugraph(
            get_event_id(my_gpu_id, all_events.size(), false /*nvshmem_event*/);
      }
    }
@@ -592,7 +593,7 @@ index 9dde169..3c0bb97 100755
  
    // Prelaunch all tasks at the begining of an iteration
    all_events[1].first_task_id = 2;
-@@ -1536,6 +1584,16 @@ TaskGraphResult print_task_graph(
+@@ -1536,6 +1585,16 @@ TaskGraphResult print_task_graph(
        "TASK_GANG_LINEAR_MSPLIT_MI300";
    task_type_to_name[TASK_GANG_LINEAR_RES_MSPLIT_MI300] =
        "TASK_GANG_LINEAR_RES_MSPLIT_MI300";
@@ -609,7 +610,7 @@ index 9dde169..3c0bb97 100755
    task_type_to_name[TASK_GANG_LINEAR_SILU_MI300] =
        "TASK_GANG_LINEAR_SILU_MI300";
    task_type_to_name[TASK_GANG_RMS_NORM_MI300] =
-@@ -1578,8 +1636,11 @@ TaskGraphResult print_task_graph(
+@@ -1578,8 +1637,11 @@ TaskGraphResult print_task_graph(
          task.first == TASK_GANG_ATTN_MERGE_MI300 ||
          task.first == TASK_GANG_MOE_W13_LINEAR_MI300 ||
          task.first == TASK_GANG_MOE_W2_LINEAR_MI300 ||
@@ -622,7 +623,7 @@ index 9dde169..3c0bb97 100755
        continue;
      for (size_t variant_id = 0; variant_id < task.second.size(); variant_id++) {
        std::string cond = first_task ? "if" : "else if";
-@@ -1617,8 +1678,11 @@ TaskGraphResult print_task_graph(
+@@ -1617,8 +1679,11 @@ TaskGraphResult print_task_graph(
            task.first != TASK_GANG_ATTN_MERGE_MI300 &&
            task.first != TASK_GANG_MOE_W13_LINEAR_MI300 &&
            task.first != TASK_GANG_MOE_W2_LINEAR_MI300 &&
@@ -636,7 +637,7 @@ index 9dde169..3c0bb97 100755
        for (size_t variant_id = 0; variant_id < task.second.size();
             variant_id++) {
 diff --git a/src/kernel/task_register.cc b/src/kernel/task_register.cc
-index a4e2602..a97489d 100755
+index a4e2602..c133545 100755
 --- a/src/kernel/task_register.cc
 +++ b/src/kernel/task_register.cc
 @@ -15,6 +15,8 @@
@@ -676,7 +677,7 @@ index a4e2602..a97489d 100755
    return register_task_variant(TASK_ARGMAX_REDUCE, code.to_string());
  }
  
-@@ -4583,5 +4593,427 @@ int TaskRegister::register_paged_attention_split_kv_hopper_task(
+@@ -4583,5 +4593,428 @@ int TaskRegister::register_paged_attention_split_kv_hopper_task(
                                 code.to_string());
  }
  
@@ -748,7 +749,8 @@ index a4e2602..a97489d 100755
 +  code.e("    task_desc->output_ptrs[2],");  // ql_nope
 +  code.e("    task_desc->output_ptrs[3],");  // q_pe
 +  code.e("    runtime_config.step[0],");
-+  code.e("    1e-6f);");                     // kv_a_layernorm eps (01-execution-flow.md)
++  code.e("    1e-6f,");                      // kv_a_layernorm eps (01-execution-flow.md)
++  code.e("    (int)(task_desc->task_metadata.expert_offset & 0xFFFF));");   // the head (grid nh, round 3)
 +  return register_task_variant(TASK_MLA_PREP_MI300, code.to_string());
 +}
 +

@@ -1,0 +1,6 @@
+stream_read occupancy=grid grid=608 block=256 lds_bytes=32768 blocks_per_cu_query=2 size_mib=1024 unroll=1 ms=0.283527 gbps=3787.089 tbps=3.7871 checksum=14000000 vgprs=20 passes=1
+stream_read occupancy=grid grid=608 block=256 lds_bytes=32768 blocks_per_cu_query=2 size_mib=1024 unroll=2 ms=0.296437 gbps=3622.159 tbps=3.6222 checksum=14000000 vgprs=24 passes=1
+stream_read occupancy=grid grid=608 block=256 lds_bytes=32768 blocks_per_cu_query=2 size_mib=1024 unroll=4 ms=0.297079 gbps=3614.331 tbps=3.6143 checksum=14000000 vgprs=36 passes=1
+stream_read occupancy=grid grid=608 block=256 lds_bytes=32768 blocks_per_cu_query=2 size_mib=1024 unroll=8 ms=0.302852 gbps=3545.434 tbps=3.5454 checksum=14000000 vgprs=60 passes=1
+stream_read occupancy=grid grid=608 block=256 lds_bytes=32768 blocks_per_cu_query=2 size_mib=1024 unroll=16 ms=0.313796 gbps=3421.783 tbps=3.4218 checksum=14000000 vgprs=60 passes=1
+stream_read occupancy=grid grid=608 block=256 lds_bytes=32768 blocks_per_cu_query=2 size_mib=1024 unroll=32 ms=0.313395 gbps=3426.161 tbps=3.4262 checksum=14000000 vgprs=82 passes=1

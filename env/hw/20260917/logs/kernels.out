@@ -1,0 +1,53 @@
+  PASS c_kv[step]                                                 bf16  max_abs 0.00e+00 rel 0.00e+00 thr 2.00e-03
+  PASS c_kv[other rows]                                           exact max_abs 0.00e+00 rel 0.00e+00 thr 0.00e+00
+  PASS k_pe                                                       exact max_abs 0.00e+00 rel 0.00e+00 thr 0.00e+00
+  PASS ql_nope                                                    bf16  max_abs 7.81e-03 rel 8.93e-05 thr 2.00e-03
+  PASS q_pe                                                       exact max_abs 0.00e+00 rel 0.00e+00 thr 0.00e+00
+PASS mla_prep (100 trials, 0 failed)
+  PASS partials.o                                                 rel   max_abs 4.41e-03 rel 4.08e-04 thr 5.00e-04
+  PASS partials.lse[empty splits]                                 exact max_abs 0.00e+00 rel 0.00e+00 thr 0.00e+00
+  PASS partials.lse                                               abs   max_abs 2.86e-06 rel 6.11e-08 thr 1.00e-04
+PASS mla_attend (100 trials, 0 failed)
+  PASS attn                                                       bf16  max_abs 7.81e-03 rel 5.16e-04 thr 2.00e-03
+PASS mla_merge_uv (100 trials, 0 failed)
+  PASS h                                                          rel   max_abs 0.00e+00 rel 0.00e+00 thr 2.00e-03
+  PASS logits                                                     rel   max_abs 9.54e-07 rel 2.17e-07 thr 1.00e-04
+  PASS topk_w                                                     rel   max_abs 2.98e-08 rel 2.57e-08 thr 1.00e-04
+  PASS routing                                                    exact max_abs 0.00e+00 rel 0.00e+00 thr 0.00e+00
+  PASS mask                                                       exact max_abs 0.00e+00 rel 0.00e+00 thr 0.00e+00
+  PASS route_log                                                  exact max_abs 0.00e+00 rel 0.00e+00 thr 0.00e+00
+  PASS topk ids vs reference logits                               exact max_abs 0.00e+00 rel 0.00e+00 thr 0.00e+00
+PASS moe_router (100 trials, 0 failed)
+  PASS y                                                          exact max_abs 0.00e+00 rel 0.00e+00 thr 0.00e+00
+PASS copy (100 trials, 0 failed)
+  PASS dummy                                                      exact max_abs 0.00e+00 rel 0.00e+00 thr 0.00e+00
+       trial 0: the XOR of every word of the stripe, per wave
+       trial 1: the XOR of every word of the stripe, per wave
+       trial 2: the XOR of every word of the stripe, per wave
+       trial 3: the XOR of every word of the stripe, per wave
+       trial 4: the XOR of every word of the stripe, per wave
+PASS prefetch (100 trials, 0 failed)
+  PASS dummy                                                      exact max_abs 0.00e+00 rel 0.00e+00 thr 0.00e+00
+       trial 0: per (slot, part): the active expert's rows; sentinel past the count
+       trial 1: per (slot, part): the active expert's rows; sentinel past the count
+       trial 2: per (slot, part): the active expert's rows; sentinel past the count
+       trial 3: per (slot, part): the active expert's rows; sentinel past the count
+       trial 4: per (slot, part): the active expert's rows; sentinel past the count
+PASS prefetch_moe (100 trials, 0 failed)
+  PASS partials.o                                                 rel   max_abs 4.79e-03 rel 4.01e-04 thr 5.00e-04
+  PASS partials.lse[empty splits]                                 exact max_abs 0.00e+00 rel 0.00e+00 thr 0.00e+00
+  PASS partials.lse                                               abs   max_abs 2.86e-06 rel 6.24e-08 thr 1.00e-04
+  PASS scores[:, :step+1]                                         rel   max_abs 2.86e-06 rel 1.05e-07 thr 1.00e-04
+  PASS scores[:, step+1:]                                         exact max_abs 0.00e+00 rel 0.00e+00 thr 0.00e+00
+PASS mla_attend_scores (100 trials, 0 failed)
+  PASS o: 33 splits merged vs 1 split                             rel   max_abs 2.24e-03 rel 9.05e-04 thr 1.00e-02
+  PASS lse: 33 splits merged vs 1 split                           abs   max_abs 9.54e-07 rel 5.56e-08 thr 1.00e-04
+  PASS 1 split vs numpy_ref.o                                     rel   max_abs 2.51e-03 rel 9.57e-04 thr 1.00e-02
+  PASS 1 split vs numpy_ref.lse[empty splits]                     exact max_abs 0.00e+00 rel 0.00e+00 thr 0.00e+00
+  PASS 1 split vs numpy_ref.lse                                   abs   max_abs 1.91e-06 rel 6.72e-08 thr 1.00e-04
+  PASS attn(33 splits) vs numpy_ref merge of the kernel's partials bf16  max_abs 3.91e-03 rel 4.73e-04 thr 2.00e-03
+  PASS attn(1 split) vs numpy_ref merge of the kernel's partials  bf16  max_abs 9.77e-04 rel 7.85e-05 thr 2.00e-03
+  PASS attn: 33 splits vs 1 split                                 rel   max_abs 1.56e-02 rel 2.91e-03 thr 1.00e-02
+PASS mla_attend_splits (100 trials, 0 failed)
+overall: PASS -> fleet/tasks/results_mfma/kernel_tests.json
+2026-09-17T09:48:55Z PASS kernels 24s

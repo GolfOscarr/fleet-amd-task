@@ -16,7 +16,7 @@
  *   partials_xcd_offset_rows: rows already added for this XCD (0 if unpartitioned)
  *   w_uv_local: 1 if the W_uv pointer is this XCD's [heads_per_xcd, D_V, D_C] slice
  *   out_local : 1 if the attn pointer is this XCD's heads_per_xcd * D_V columns
- * LDS    : split weights [64] + total, o [D_C] FP32: about 2.3 KiB.
+ * LDS    : split weights [64], o [D_C], total [4], the split groups' partial sums [4][D_C] FP32: about 10.5 KiB.
  */
 #pragma once
 #include "tasks/common/common_header.cuh"
@@ -42,8 +42,9 @@ __device__ __forceinline__ void
   static_assert(D_C % 16 == 0, "two lanes share a row of W_uv, 8 columns per load");
   constexpr int P_ROW = ((D_C + 1 + 3) / 4) * 4;   // padded partials row (P2); o in [0,D_C), lse at D_C
   static_assert(2 * D_V <= NUM_THREADS, "two threads per output element");
-  constexpr int PF = 4;   // loads in flight per thread (docs/gpu-experiments/02-validation P6; the E2 knee)
-  static_assert((D_C / 2) % (8 * PF) == 0, "the W_uv half-row loop batches PF loads of 8");
+  // W_uv rows of 8 in flight per thread (raw BF16 words, 4 registers each): the whole half row
+  constexpr int PF_W = 16;                       // two batches per half row (32 measured 1% slower on the model: registers)
+  static_assert((D_C / 2) % (8 * PF_W) == 0, "the W_uv half-row loop batches PF_W loads of 8");
 
   int xcd = tile_idx / tiles_per_xcd;
   int t = tile_idx % tiles_per_xcd;
@@ -65,7 +66,8 @@ __device__ __forceinline__ void
   extern __shared__ char smem[];
   float *w_s = reinterpret_cast<float *>(smem);      // [64]
   float *o_s = w_s + WAVE;                           // [D_C]
-  float *tot_s = o_s + D_C;                          // [1]
+  float *tot_s = o_s + D_C;                          // [4] (one used; keeps red_s 16-byte aligned)
+  float *red_s = tot_s + 4;                          // [GROUPS][D_C]: the split groups' partial sums
   int tid = threadIdx.x;
   int lane = tid % WAVE;
 
@@ -86,45 +88,84 @@ __device__ __forceinline__ void
   }
   __syncthreads();
 
-  // o[c] = sum_j w_j o_j[c] / sum_j w_j, rounded to BF16
+  // o[c] = sum_j w_j o_j[c] / sum_j w_j, rounded to BF16. Thread t owns eight consecutive
+  // columns (chunk q = t % CHUNKS, two 16-byte loads per split row) and the split rows
+  // j = s, s + GROUPS, ... (s = t / CHUNKS): every row of a batch is loaded before the first
+  // multiply, the FMAs run in ascending j, and the GROUPS partial sums are added in order
+  // through LDS (round 3: the per-column scalar form was six HBM round trips per thread)
+  constexpr int CHUNK = 8;
+  constexpr int CHUNKS = D_C / CHUNK;
+  constexpr int GROUPS = NUM_THREADS / CHUNKS;
+  constexpr int ROWS_IN_FLIGHT = 12;                  // 24 16-byte loads (96 registers); 33 live splits over 4 groups fit one batch
+  static_assert(D_C % CHUNK == 0 && NUM_THREADS % CHUNKS == 0, "the thread map covers the row");
+  static_assert((P_ROW * 4) % 16 == 0, "the partials rows are 16-byte aligned");
   float inv_tot = 1.0f / tot_s[0];
-  for (int c = tid; c < D_C; c += NUM_THREADS) {
-    float o = 0.0f;
-    int j = 0;
-    for (; j + PF <= live; j += PF) {         // PF split rows in flight, then the FMAs in order
-      float v[PF];
+  {
+    int q = tid % CHUNKS, s = tid / CHUNKS;
+    float acc[CHUNK];
 #pragma unroll
-      for (int u = 0; u < PF; u++) {
-        v[u] = ldf_from(partials_stream, ((size_t)(j + u) * NH + h) * P_ROW + c);
+    for (int k = 0; k < CHUNK; k++) {
+      acc[k] = 0.0f;
+    }
+    for (int j0 = s; j0 < live; j0 += GROUPS * ROWS_IN_FLIGHT) {
+      uint4 v[ROWS_IN_FLIGHT][2];                   // FP32 words, converted bit-exactly on use
+#pragma unroll
+      for (int u = 0; u < ROWS_IN_FLIGHT; u++) {
+        int j = j0 + u * GROUPS;
+        if (j < live) {
+          float const *row = partials + ((size_t)j * NH + h) * P_ROW + q * CHUNK;
+          v[u][0] = *reinterpret_cast<uint4 const *>(row);
+          v[u][1] = *reinterpret_cast<uint4 const *>(row + 4);
+        }
       }
 #pragma unroll
-      for (int u = 0; u < PF; u++) {
-        o += w_s[j + u] * v[u];
+      for (int u = 0; u < ROWS_IN_FLIGHT; u++) {
+        int j = j0 + u * GROUPS;
+        if (j < live) {
+          float wj = w_s[j];
+          acc[0] += wj * __uint_as_float(v[u][0].x); acc[1] += wj * __uint_as_float(v[u][0].y);
+          acc[2] += wj * __uint_as_float(v[u][0].z); acc[3] += wj * __uint_as_float(v[u][0].w);
+          acc[4] += wj * __uint_as_float(v[u][1].x); acc[5] += wj * __uint_as_float(v[u][1].y);
+          acc[6] += wj * __uint_as_float(v[u][1].z); acc[7] += wj * __uint_as_float(v[u][1].w);
+        }
       }
     }
-    for (; j < live; j++) {
-      o += w_s[j] * ldf_from(partials_stream, ((size_t)j * NH + h) * P_ROW + c);
+#pragma unroll
+    for (int k = 0; k < CHUNK; k++) {
+      red_s[s * D_C + q * CHUNK + k] = acc[k];
+    }
+  }
+  __syncthreads();
+  for (int c = tid; c < D_C; c += NUM_THREADS) {
+    float o = 0.0f;
+#pragma unroll
+    for (int g = 0; g < GROUPS; g++) {
+      o += red_s[g * D_C + c];
     }
     o_s[c] = bf16r(o * inv_tot);
   }
   __syncthreads();
 
-  // attn[v] = o . W_uv[h, v, :], two lanes per v (each half of D_C)
+  // attn[v] = o . W_uv[h, v, :], two lanes per v (each half of D_C); PF_W rows of 8 kept as
+  // raw BF16 words (4 registers each) so sixteen loads are in flight: two round trips
+  static_assert(sizeof(T) == 2, "the raw-word conversion below is BF16's");
   int half = tid & 1;
   for (int v = tid >> 1; v < D_V; v += NUM_THREADS / 2) {
     T const *row = w_uv + (size_t)v * D_C;
     float acc = 0.0f;
-    for (int c = half * (D_C / 2); c < (half + 1) * (D_C / 2); c += 8 * PF) {
-      float w[PF][8];
+    for (int c = half * (D_C / 2); c < (half + 1) * (D_C / 2); c += 8 * PF_W) {
+      uint4 raw[PF_W];
 #pragma unroll
-      for (int u = 0; u < PF; u++) {
-        load8(row + c + 8 * u, w[u]);
+      for (int u = 0; u < PF_W; u++) {
+        raw[u] = *reinterpret_cast<uint4 const *>(row + c + 8 * u);
       }
 #pragma unroll
-      for (int u = 0; u < PF; u++) {
+      for (int u = 0; u < PF_W; u++) {
+        unsigned const *words = reinterpret_cast<unsigned const *>(&raw[u]);
 #pragma unroll
         for (int k = 0; k < 8; k++) {
-          acc += o_s[c + 8 * u + k] * w[u][k];
+          unsigned bits = (k & 1) ? (words[k / 2] & 0xffff0000u) : (words[k / 2] << 16);
+          acc += o_s[c + 8 * u + k] * __uint_as_float(bits);
         }
       }
     }

@@ -1,0 +1,4 @@
+fence kernel=k_release wbl2_sc1=1 inv_sc1=0 wbl2_sc0_sc1=0 inv_sc0_sc1=0 load_sc1=0 load_sc0_sc1=1
+fence kernel=k_acquire wbl2_sc1=0 inv_sc1=1 wbl2_sc0_sc1=0 inv_sc0_sc1=0 load_sc1=0 load_sc0_sc1=1
+fence kernel=k_threadfence wbl2_sc1=1 inv_sc1=1 wbl2_sc0_sc1=0 inv_sc0_sc1=0 load_sc1=0 load_sc0_sc1=1
+fence kernel=k_atomic_load wbl2_sc1=0 inv_sc1=1 wbl2_sc0_sc1=0 inv_sc0_sc1=0 load_sc1=1 load_sc0_sc1=0

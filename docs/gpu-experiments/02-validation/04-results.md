@@ -65,6 +65,18 @@ spread over 32 iterations, which is also what the B0 ladder of A8.4 measured as
 
 ## Per-operator time (event gaps, mean over iterations; the 2-layer graph, 32 iterations)
 
+**Corrected 2026-09-17 (round 3, `../03-acceleration/07-session-log.md`,
+finding 1):** the rows of this table are shifted by one operator. The
+runtime fires event i when the (i - 1)-th operator completes, and
+`measure.py` named event i after operator i; so the "mla_attend" row is
+`mla_prep`'s time (one task, 143 us), the "mla_merge_uv" row is the
+attention's, the "o_proj" row is the merge's, the "norm2" row is
+`o_proj`'s, and so on down the table. The per-iteration numbers above, the
+standalone timings and the conclusions about the kernels' standalone speed
+are unaffected; the attribution "what the megakernel does around a task"
+was wrong. The true table is in `../03-acceleration/01-ideas.md` ("Read
+after the session") and `../03-acceleration/08-results.md`.
+
 Read with the A8.5 decision: the P6 prefetch changed nothing in `mla_attend`
 (211 to 215 us) and `mla_merge_uv` moved with the neighbouring linear, not
 with its own code (61 us gang, 46 us when `o_proj` is per-tile); the residual

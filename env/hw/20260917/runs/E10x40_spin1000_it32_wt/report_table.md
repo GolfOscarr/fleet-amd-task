@@ -1,0 +1,44 @@
+# Measurement report
+
+| Quantity | Predicted | Measured |
+|---|---|---|
+| bytes per iteration (read, MiB) | 4709.9 weights + cache; about 4772.0 with activations | - |
+| time per iteration, median (us) | 1148.5-1349.4 + 326 t_b + T_serial | 25314.5 |
+| time per iteration, P95 (us) |  | 121317.9 |
+| time per iteration from event timing, median (us) |  | 12688.9 |
+| time per iteration from host wall clock (us) |  | 101037.4 |
+| time per iteration from the kernel trace (us) |  | - |
+| achieved read bandwidth (TB/s) | 3.66-4.3 over T_bw | - |
+| launches per generation | 3 | - |
+| L2 hit rate | 16-17% (Fleet's batch-1 figure) | - |
+| tokens per second |  | 39.5 |
+| workers with tasks (of those reporting) |  | 296 of 296 |
+| tasks per XCD (placement) |  | 0:1606 1:1601 2:1605 3:1600 4:1601 5:1619 6:1600 7:1600 |
+| shader clock from the spin (MHz) |  | 2068.0 |
+| exec cycles per task, busy workers |  | 2379084.3 |
+| exec us per task (at the spin's SCLK) |  | 1150.43 |
+| dep-wait us per iteration per busy worker |  | 11534.09 |
+| GFX clock from amd-smi during the run, median / max (MHz) | 2100 max (D2 of round 1) | 2103 / 2104 over 28 samples |
+| memory clock from amd-smi, median (MHz) |  | 900 |
+
+## Exec time per task by class (worker timing, I1)
+
+| Class | tasks | cycles per task | us per task |
+|---|---|---|---|
+| copy | 11633 | 2364635 | 1143.44 |
+
+## Per-operator time (event gaps, mean over iterations after the first)
+
+| Event | Operator | mean us | min us | max us | n |
+|---|---|---|---|---|---|
+| 1 | iteration_start | 88.53 | 8.40 | 109.84 | 30 |
+| 2 | copy_layer | 13053.24 | 12133.76 | 15132.32 | 31 |
+| 3 | copy_layer | 3.71 | 3.31 | 4.36 | 31 |
+| 4 | copy_layer | 4.07 | 3.52 | 4.48 | 31 |
+| 5 | copy_layer | 3.90 | 3.44 | 4.25 | 31 |
+| 6 | copy_layer | 3.88 | 3.56 | 4.23 | 31 |
+| 7 | copy_layer | 3.86 | 3.29 | 4.20 | 31 |
+| 8 | copy_layer | 3.87 | 3.40 | 4.39 | 31 |
+| 9 | copy_layer | 3.85 | 3.43 | 4.24 | 31 |
+| 10 | copy_layer | 3.82 | 3.30 | 4.18 | 31 |
+| 11 | copy_layer | 2.86 | 2.68 | 3.04 | 31 |

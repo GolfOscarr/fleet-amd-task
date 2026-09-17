@@ -1,0 +1,62 @@
+# Measurement report
+
+| Quantity | Predicted | Measured |
+|---|---|---|
+| bytes per iteration (read, MiB) | 4709.9 weights + cache; about 4772.0 with activations | - |
+| time per iteration, median (us) | 1148.5-1349.4 + 326 t_b + T_serial | 991.0 |
+| time per iteration, P95 (us) |  | 3376.8 |
+| time per iteration from event timing, median (us) |  | 488.4 |
+| time per iteration from host wall clock (us) |  | 61548.2 |
+| time per iteration from the kernel trace (us) |  | - |
+| achieved read bandwidth (TB/s) | 3.66-4.3 over T_bw | - |
+| launches per generation | 3 | - |
+| L2 hit rate | 16-17% (Fleet's batch-1 figure) | - |
+| tokens per second |  | 1009.1 |
+| workers with tasks (of those reporting) |  | 296 of 296 |
+| tasks per XCD (placement) |  | 0:5219 1:5225 2:5217 3:5217 4:5224 5:5257 6:5248 7:5249 |
+| shader clock from the spin (MHz) |  | - |
+| exec cycles per task, busy workers |  | 38317.9 |
+| exec us per task (at the spin's SCLK) |  | - |
+| dep-wait us per iteration per busy worker |  | - |
+| GFX clock from amd-smi during the run, median / max (MHz) | 2100 max (D2 of round 1) | 2103 / 2104 over 40 samples |
+| memory clock from amd-smi, median (MHz) |  | 900 |
+
+## Exec time per task by class (worker timing, I1)
+
+| Class | tasks | cycles per task | us per task |
+|---|---|---|---|
+| attend | 2560 | 16146 | - |
+| linear | 5632 | 62607 | - |
+| linear_res | 6144 | 46714 | - |
+| lnorm | 6083 | 23298 | - |
+| merge | 1024 | 26471 | - |
+| prep | 1014 | 12586 | - |
+| rms | 32 | 3309 | - |
+| router | 32 | 32483 | - |
+| w2silu | 9376 | 30777 | - |
+
+## Per-operator time (event gaps, mean over iterations after the first)
+
+| Event | Operator | mean us | min us | max us | n |
+|---|---|---|---|---|---|
+| 1 | iteration_start | 125.85 | 8.56 | 163.52 | 30 |
+| 2 | embed_layer | 12.41 | 11.76 | 12.95 | 31 |
+| 3 | linear_norm_layer | 28.74 | 26.99 | 30.17 | 31 |
+| 4 | mla_prep_layer | 10.66 | 10.24 | 11.30 | 31 |
+| 5 | mla_attend_layer | 12.47 | 11.94 | 14.44 | 31 |
+| 6 | mla_merge_uv_layer | 17.95 | 16.32 | 19.16 | 31 |
+| 7 | linear_with_residual_layer | 13.43 | 12.82 | 14.02 | 31 |
+| 8 | rmsnorm_layer | 4.26 | 3.74 | 5.30 | 31 |
+| 9 | gang_linear_silu_layer | 35.79 | 34.53 | 36.76 | 31 |
+| 10 | linear_with_residual_layer | 52.01 | 50.06 | 53.35 | 31 |
+| 11 | linear_norm_layer | 14.41 | 13.73 | 15.19 | 31 |
+| 12 | mla_prep_layer | 10.92 | 10.49 | 11.74 | 31 |
+| 13 | mla_attend_layer | 12.56 | 12.19 | 13.92 | 31 |
+| 14 | mla_merge_uv_layer | 16.42 | 15.71 | 17.35 | 31 |
+| 15 | linear_with_residual_layer | 13.19 | 12.25 | 15.13 | 31 |
+| 16 | moe_router_layer | 17.72 | 17.23 | 18.15 | 31 |
+| 17 | gang_moe_w13_linear_layer | 42.24 | 40.33 | 45.23 | 31 |
+| 18 | gang_moe_w2_silu_linear_layer | 23.13 | 21.36 | 24.45 | 31 |
+| 19 | moe_mul_sum_add_layer | 3.99 | 3.82 | 4.33 | 31 |
+
+-> /home/hotaisle/metalOps/harness/fleet_out/L2_it32_tile_fn1_fn2_fs_nt_mfma_wt/metrics.json, /home/hotaisle/metalOps/harness/fleet_out/L2_it32_tile_fn1_fn2_fs_nt_mfma_wt/report_table.md

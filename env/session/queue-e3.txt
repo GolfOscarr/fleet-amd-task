@@ -1,0 +1,5 @@
+# Round 3: the attention as regular per-split tasks (--attend-tasks, the same MFMA kernel; 33 tasks
+# instead of a gang broadcast to 296 workers) on the 2-layer graph and the model, then the final
+# three times at 30, 31 and 32 iterations with every lever that stayed on (edit after the row above).
+--layers 2 --iters 1 --tile-linears --nt-weights --event-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend --attend-tasks compare continue
+--layers 27 --head --iters 32 --tile-linears --nt-weights --event-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend --attend-tasks table compare continue

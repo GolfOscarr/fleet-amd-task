@@ -1,0 +1,27 @@
+"Correlation_Id","Dispatch_Id","Agent_Id","Queue_Id","Process_Id","Thread_Id","Grid_Size","Kernel_Id","Kernel_Name","Workgroup_Size","LDS_Block_Size","Scratch_Size","VGPR_Count","Accum_VGPR_Count","SGPR_Count","Counter_Name","Counter_Value","Start_Timestamp","End_Timestamp"
+1,1,"Agent 1",1,4320,4320,262144,3,"fill_kernel(HIP_vector_type<unsigned int, 4u>*, unsigned long)",256,0,0,12,4,32,"TCC_EA0_RDREQ_32B_sum",0.00000000e+00,1002283763120,1002284157620
+1,1,"Agent 1",1,4320,4320,262144,3,"fill_kernel(HIP_vector_type<unsigned int, 4u>*, unsigned long)",256,0,0,12,4,32,"TCC_EA0_RDREQ_sum",868.000000,1002283763120,1002284157620
+2,2,"Agent 1",1,4320,4320,77824,13,"__amd_rocclr_fillBufferAligned",256,0,0,12,4,48,"TCC_EA0_RDREQ_32B_sum",0.00000000e+00,1002285365532,1002285675318
+2,2,"Agent 1",1,4320,4320,77824,13,"__amd_rocclr_fillBufferAligned",256,0,0,12,4,48,"TCC_EA0_RDREQ_sum",766.000000,1002285365532,1002285675318
+3,3,"Agent 1",1,4320,4320,65536,13,"__amd_rocclr_fillBufferAligned",256,0,0,12,4,48,"TCC_EA0_RDREQ_32B_sum",0.00000000e+00,1002285793667,1002285796313
+3,3,"Agent 1",1,4320,4320,65536,13,"__amd_rocclr_fillBufferAligned",256,0,0,12,4,48,"TCC_EA0_RDREQ_sum",232.000000,1002285793667,1002285796313
+4,4,"Agent 1",1,4320,4320,65536,2,"warmup_kernel(HIP_vector_type<unsigned int, 4u> const*, HIP_vector_type<unsigned int, 4u>*, unsigned long)",256,0,0,8,0,16,"TCC_EA0_RDREQ_32B_sum",0.00000000e+00,1002285942246,1002285945333
+4,4,"Agent 1",1,4320,4320,65536,2,"warmup_kernel(HIP_vector_type<unsigned int, 4u> const*, HIP_vector_type<unsigned int, 4u>*, unsigned long)",256,0,0,8,0,16,"TCC_EA0_RDREQ_sum",8344.000000,1002285942246,1002285945333
+5,5,"Agent 1",1,4320,4320,67108864,1,"copy_kernel(HIP_vector_type<unsigned int, 4u> const*, HIP_vector_type<unsigned int, 4u>*, unsigned long)",256,0,0,8,0,16,"TCC_EA0_RDREQ_32B_sum",0.00000000e+00,1002286099845,1002286862223
+5,5,"Agent 1",1,4320,4320,67108864,1,"copy_kernel(HIP_vector_type<unsigned int, 4u> const*, HIP_vector_type<unsigned int, 4u>*, unsigned long)",256,0,0,8,0,16,"TCC_EA0_RDREQ_sum",8388760.000000,1002286099845,1002286862223
+6,6,"Agent 1",1,4320,4320,512,9,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_EA0_RDREQ_32B_sum",0.00000000e+00,1002287005750,1002287009037
+6,6,"Agent 1",1,4320,4320,512,9,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_EA0_RDREQ_sum",87.000000,1002287005750,1002287009037
+7,7,"Agent 1",1,4320,4320,512,9,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_EA0_RDREQ_32B_sum",0.00000000e+00,1002287108504,1002287111471
+7,7,"Agent 1",1,4320,4320,512,9,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_EA0_RDREQ_sum",87.000000,1002287108504,1002287111471
+8,8,"Agent 1",1,4320,4320,512,9,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_EA0_RDREQ_32B_sum",0.00000000e+00,1002287316097,1002287318663
+8,8,"Agent 1",1,4320,4320,512,9,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_EA0_RDREQ_sum",87.000000,1002287316097,1002287318663
+9,9,"Agent 1",1,4320,4320,512,9,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_EA0_RDREQ_32B_sum",0.00000000e+00,1002287418290,1002287420896
+9,9,"Agent 1",1,4320,4320,512,9,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_EA0_RDREQ_sum",87.000000,1002287418290,1002287420896
+10,10,"Agent 1",1,4320,4320,512,9,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_EA0_RDREQ_32B_sum",0.00000000e+00,1002287517717,1002287520443
+10,10,"Agent 1",1,4320,4320,512,9,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_EA0_RDREQ_sum",87.000000,1002287517717,1002287520443
+11,11,"Agent 1",1,4320,4320,512,9,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_EA0_RDREQ_32B_sum",0.00000000e+00,1002287619228,1002287622034
+11,11,"Agent 1",1,4320,4320,512,9,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_EA0_RDREQ_sum",87.000000,1002287619228,1002287622034
+12,12,"Agent 1",1,4320,4320,512,9,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_EA0_RDREQ_32B_sum",0.00000000e+00,1002287719897,1002287722704
+12,12,"Agent 1",1,4320,4320,512,9,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_EA0_RDREQ_sum",87.000000,1002287719897,1002287722704
+13,13,"Agent 1",1,4320,4320,512,9,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_EA0_RDREQ_32B_sum",0.00000000e+00,1002287819925,1002287822531
+13,13,"Agent 1",1,4320,4320,512,9,"__amd_rocclr_copyBuffer",512,0,0,16,0,32,"TCC_EA0_RDREQ_sum",87.000000,1002287819925,1002287822531
