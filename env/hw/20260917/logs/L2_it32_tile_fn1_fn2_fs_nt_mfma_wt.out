@@ -352,37 +352,37 @@ Compiling megakernel using the following command line:
 ['/opt/rocm/bin/hipcc', '-x', 'hip', './permanent_output_dir/test.cu', '-O3', '-I/usr/include/python3.12', '-I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include', '-I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/hip_compat', '-I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel', '-I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/rocblas/include', '-I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/cutlass/include', '-I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/cutlass/tools/util/include', '-I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include', '-I/opt/rocm/include', '-I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include', '-DCK_TILE_FMHA_FWD_FAST_EXP2=1', '-DMAX_WORKER_PER_SCHEDULER=38', '-DMIRAGE_USE_CUTLASS_KERNEL=0', '--offload-arch=gfx942', '-L/opt/rocm/lib', '-L/opt/rocm/lib', '-lamdhip64', '-lrocblas', '-lhipblas', '-shared', '-std=c++17', '-fPIC', '-D__HIP_PLATFORM_AMD__=1', '-DMIRAGE_AMD_MI300', '-DMIRAGE_BACKEND_USE_ROCM', '-DMPK_TARGET_CC=94', '-DMPK_MAX_NUM_BATCHED_REQUESTS=1', '-DMPK_MAX_NUM_BATCHED_TOKENS=1', '-DMPK_MAX_NUM_PAGES=1', '-DMPK_PAGE_SIZE=1056', '-DMPK_MAX_SEQ_LENGTH=1056', '-o', './permanent_output_dir/test.cpython-38-x86_64-linux-gnu.so', '-DMLA_ATTEND_MFMA', '-DMODE_ONLINE', '-DMPK_PROFILING_NUM_ITERS=0', '-DMPK_ENABLE_TIMING', '-DMPK_ENABLE_EVENT_TIMING', '-DMPK_ENABLE_GANG_TASKS', '-DMPK_NT_WEIGHT_LOADS']
 Finished megakernel compilation...
 ------------------
-    1 UNKNOWN                  30     124.81       8.00     151.16      45.81
-    2 UNKNOWN                  31      12.83      11.96      14.40       0.47
-    3 UNKNOWN                  31      30.72      28.52      33.31       1.30
-    4 UNKNOWN                  31      10.75      10.25      11.83       0.29
-    5 UNKNOWN                  31      12.58      12.09      14.28       0.54
-    6 UNKNOWN                  31      24.70      22.51      25.88       0.86
-    7 UNKNOWN                  31      13.44      12.91      13.88       0.29
-    8 UNKNOWN                  31       4.26       3.61       5.25       0.34
-    9 UNKNOWN                  31      32.60      31.27      33.99       0.70
-   10 UNKNOWN                  31      51.51      50.40      53.40       0.71
-   11 UNKNOWN                  31      18.67      17.25      21.19       0.83
-   12 UNKNOWN                  31      10.84      10.45      11.44       0.22
-   13 UNKNOWN                  31      12.62      12.26      12.90       0.15
-   14 UNKNOWN                  31      22.01      21.24      23.64       0.58
-   15 UNKNOWN                  31      12.56      12.02      13.68       0.49
-   16 UNKNOWN                  31      25.20      24.38      26.90       0.68
-   17 UNKNOWN                  31      42.59      38.45      44.80       1.61
-   18 UNKNOWN                  31      23.28      21.44      24.56       0.85
-   19 UNKNOWN                  31       3.63       3.38       4.64       0.21
+    1 UNKNOWN                  30     125.85       8.56     163.52      52.56
+    2 UNKNOWN                  31      12.41      11.76      12.95       0.31
+    3 UNKNOWN                  31      28.74      26.99      30.17       0.77
+    4 UNKNOWN                  31      10.66      10.24      11.30       0.24
+    5 UNKNOWN                  31      12.47      11.94      14.44       0.62
+    6 UNKNOWN                  31      17.95      16.32      19.16       0.68
+    7 UNKNOWN                  31      13.43      12.82      14.02       0.31
+    8 UNKNOWN                  31       4.26       3.74       5.30       0.49
+    9 UNKNOWN                  31      35.79      34.53      36.76       0.61
+   10 UNKNOWN                  31      52.01      50.06      53.35       0.83
+   11 UNKNOWN                  31      14.41      13.73      15.19       0.40
+   12 UNKNOWN                  31      10.92      10.49      11.74       0.29
+   13 UNKNOWN                  31      12.56      12.19      13.92       0.31
+   14 UNKNOWN                  31      16.42      15.71      17.35       0.47
+   15 UNKNOWN                  31      13.19      12.25      15.13       0.84
+   16 UNKNOWN                  31      17.72      17.23      18.15       0.22
+   17 UNKNOWN                  31      42.24      40.33      45.23       1.21
+   18 UNKNOWN                  31      23.13      21.36      24.45       0.99
+   19 UNKNOWN                  31       3.99       3.82       4.33       0.11
 
 ================================================================================
 PER-TYPE SUMMARY (sum of avg durations across all events)
 ================================================================================
 TaskType             Events    Total(us)  Total(ms)        %
 ----------------------------------------------------------
-UNKNOWN                  19        489.6      0.490   100.0%
-TOTAL                              489.6      0.490
+UNKNOWN                  19        468.2      0.468   100.0%
+TOTAL                              468.2      0.468
 
 Saved raw event timing to event_timing.json
 
-ids [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]; 21 boundary tensors; mpk() 2790.8 ms for 32 iterations -> /home/hotaisle/metalOps/harness/fleet_out/L2_it32_tile_fn1_fn2_fs_nt_mfma_wt
-ASK_TIME2] worker=157 prep=48832/4 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=1077668/32 lnorm=623328/21 prefetch=0/0
-[TASK_TIME2] worker=173 prep=49556/4 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=1084032/32 lnorm=594972/20 prefetch=0/0
-[TASK_TIME2] worker=205 prep=49360/4 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=1096860/32 lnorm=594828/20 prefetch=0/0
+ids [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]; 21 boundary tensors; mpk() 1969.5 ms for 32 iterations -> /home/hotaisle/metalOps/harness/fleet_out/L2_it32_tile_fn1_fn2_fs_nt_mfma_wt
+u=1093356/32 lnorm=491704/21 prefetch=0/0
+[TASK_TIME2] worker=71 prep=62152/5 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=1108240/32 lnorm=443656/19 prefetch=0/0
+[TASK_TIME2] worker=247 prep=61560/5 attend=0/0 merge=0/0 router=0/0 copy=0/0 w2silu=1088352/32 lnorm=491192/21 prefetch=0/0

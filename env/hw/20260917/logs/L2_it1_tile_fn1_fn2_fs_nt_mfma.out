@@ -368,27 +368,27 @@ TOTAL                                0.0      0.000
 
 Saved raw event timing to event_timing.json
 
-ids [0]; 21 boundary tensors; mpk() 17.4 ms for 1 iterations -> /home/hotaisle/metalOps/harness/fleet_out/L2_it1_tile_fn1_fn2_fs_nt_mfma
+ids [0]; 21 boundary tensors; mpk() 19.2 ms for 1 iterations -> /home/hotaisle/metalOps/harness/fleet_out/L2_it1_tile_fn1_fn2_fs_nt_mfma
 First tasks: 1
 Number of all events: 20
 Number of all tasks: 485
 Number of triggered events: 18
 Number of executed tasks: 483
 [EVENT_TIMING] Allocated buffer for 2000 entries (20 events x 100 iters)
-[WORKER_XCD] worker_id=3 block=3 xcd=0
 [WORKER_XCD] worker_id=7 block=7 xcd=4
-[WORKER_XCD] worker_id=4 block=4 xcd=1
-[WORKER_XCD] worker_id=0 block=0 xcd=5
-[WORKER_XCD] worker_id=2 block=2 xcd=7
-[WORKER_XCD] worker_id=6 block=6 xcd=3
-[WORKER_XCD] worker_id=5 block=5 xcd=2
+[WORKER_XCD] worker_id=3 block=3 xcd=0
 [WORKER_XCD] worker_id=1 block=1 xcd=6
-[SCHED_XCD] sched_id=5 xcd=5 workers_on_xcd=37 block=7
+[WORKER_XCD] worker_id=2 block=2 xcd=7
+[WORKER_XCD] worker_id=5 block=5 xcd=2
+[WORKER_XCD] worker_id=4 block=4 xcd=1
+[WORKER_XCD] worker_id=6 block=6 xcd=3
+[WORKER_XCD] worker_id=0 block=0 xcd=5
 [SCHED_XCD] sched_id=0 xcd=0 workers_on_xcd=37 block=2
-[SCHED_XCD] sched_id=2 xcd=2 workers_on_xcd=37 block=4
 [SCHED_XCD] sched_id=1 xcd=1 workers_on_xcd=37 block=3
-[SCHED_XCD] sched_id=7 xcd=7 workers_on_xcd=37 block=1
-[SCHED_XCD] sched_id=6 xcd=6 workers_on_xcd=37 block=0
-[SCHED_XCD] sched_id=3 xcd=3 workers_on_xcd=37 block=5
 [SCHED_XCD] sched_id=4 xcd=4 workers_on_xcd=37 block=6
-[FWD_PASS] iter=1 time_ms=0.609 num_active_tokens=1
+[SCHED_XCD] sched_id=2 xcd=2 workers_on_xcd=37 block=4
+[SCHED_XCD] sched_id=3 xcd=3 workers_on_xcd=37 block=5
+[SCHED_XCD] sched_id=7 xcd=7 workers_on_xcd=37 block=1
+[SCHED_XCD] sched_id=5 xcd=5 workers_on_xcd=37 block=7
+[SCHED_XCD] sched_id=6 xcd=6 workers_on_xcd=37 block=0
+[FWD_PASS] iter=1 time_ms=0.725 num_active_tokens=1

@@ -359,9 +359,9 @@
         "attn(33 splits) vs numpy_ref merge of the kernel's partials": {
           "kind": "bf16",
           "threshold": 0.002,
-          "max_abs_err": 0.00390625,
-          "rel_err": 0.0005152903733421077,
-          "cos_sim": 0.999999867338937,
+          "max_abs_err": 0.0078125,
+          "rel_err": 0.0004714007298695262,
+          "cos_sim": 0.9999998904323465,
           "fails": 0,
           "notes": []
         },

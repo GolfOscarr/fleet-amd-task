@@ -351,88 +351,88 @@ In file included from /home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/pyt
 Compiling megakernel using the following command line:
 ['/opt/rocm/bin/hipcc', '-x', 'hip', './permanent_output_dir/test.cu', '-O3', '-I/usr/include/python3.12', '-I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include', '-I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/hip_compat', '-I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../include/mirage/persistent_kernel', '-I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/rocblas/include', '-I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/cutlass/include', '-I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/cutlass/tools/util/include', '-I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/python/mirage/../../deps/composable_kernel/include', '-I/opt/rocm/include', '-I/home/hotaisle/metalOps/repos/fleet-chiplet-megakernel/deps/json/include', '-DCK_TILE_FMHA_FWD_FAST_EXP2=1', '-DMAX_WORKER_PER_SCHEDULER=38', '-DMIRAGE_USE_CUTLASS_KERNEL=0', '--offload-arch=gfx942', '-L/opt/rocm/lib', '-L/opt/rocm/lib', '-lamdhip64', '-lrocblas', '-lhipblas', '-shared', '-std=c++17', '-fPIC', '-D__HIP_PLATFORM_AMD__=1', '-DMIRAGE_AMD_MI300', '-DMIRAGE_BACKEND_USE_ROCM', '-DMPK_TARGET_CC=94', '-DMPK_MAX_NUM_BATCHED_REQUESTS=1', '-DMPK_MAX_NUM_BATCHED_TOKENS=1', '-DMPK_MAX_NUM_PAGES=1', '-DMPK_PAGE_SIZE=1056', '-DMPK_MAX_SEQ_LENGTH=1056', '-o', './permanent_output_dir/test.cpython-38-x86_64-linux-gnu.so', '-DMLA_ATTEND_MFMA', '-DMODE_ONLINE', '-DMPK_PROFILING_NUM_ITERS=0', '-DMPK_ENABLE_EVENT_TIMING', '-DMPK_ENABLE_GANG_TASKS', '-DMPK_NT_WEIGHT_LOADS']
 Finished megakernel compilation...
-   0.83       0.23
-  278 UNKNOWN                  30       3.11       0.02      88.42      15.84
-  279 UNKNOWN                  27       0.28       0.01       2.95       0.55
-  280 UNKNOWN                  26       0.25       0.02       1.13       0.24
-  281 UNKNOWN                  28       0.31       0.01       4.02       0.76
-  282 UNKNOWN                  30       8.08       0.03      41.19      15.61
-  283 UNKNOWN                  29       0.41       0.03       1.36       0.34
-  284 UNKNOWN                  28      10.30       0.01      41.60      17.01
-  285 UNKNOWN                  30       0.28       0.02       0.96       0.27
-  286 UNKNOWN                  30       7.99       0.01      40.44      15.42
-  287 UNKNOWN                  31       4.18       0.01      40.08      11.43
-  288 UNKNOWN                  30       0.42       0.03       1.08       0.34
-  289 UNKNOWN                  29       1.77       0.01      39.88       7.22
-  290 UNKNOWN                  30       4.58       0.05      40.73      11.96
-  291 UNKNOWN                  29       1.71       0.01      39.46       7.14
-  292 UNKNOWN                  27       1.90       0.01      41.83       7.85
-  293 UNKNOWN                  29       1.79       0.02      40.01       7.23
-  294 UNKNOWN                  31       2.91       0.04      40.42       9.71
-  295 UNKNOWN                  31       5.96       5.47       6.47       0.26
-  296 UNKNOWN                  31       5.25       5.00       5.45       0.11
+  82.70      21.12
+  278 UNKNOWN                  30       8.81       0.03      86.72      25.38
+  279 UNKNOWN                  31       8.73       0.01      86.92      24.96
+  280 UNKNOWN                  31       5.97       0.01      85.81      20.78
+  281 UNKNOWN                  28       6.46       0.01      84.49      21.64
+  282 UNKNOWN                  31       3.80       0.01      36.40      10.55
+  283 UNKNOWN                  31       4.01       0.01      37.41      10.64
+  284 UNKNOWN                  30       4.17       0.02      38.99      10.57
+  285 UNKNOWN                  31       1.59       0.01      36.42       6.38
+  286 UNKNOWN                  30       5.11       0.02      37.64      12.03
+  287 UNKNOWN                  30       7.50       0.01      38.81      14.19
+  288 UNKNOWN                  29       1.77       0.06      38.66       6.98
+  289 UNKNOWN                  30       1.52       0.01      35.42       6.30
+  290 UNKNOWN                  30       1.61       0.01      34.98       6.21
+  291 UNKNOWN                  29       1.69       0.04      38.08       6.89
+  292 UNKNOWN                  30       6.31       0.01      36.17      13.16
+  293 UNKNOWN                  29       0.66       0.03       1.56       0.42
+  294 UNKNOWN                  31       2.59       0.01      35.80       8.23
+  295 UNKNOWN                  31       5.79       5.38       6.25       0.19
+  296 UNKNOWN                  31       5.21       4.87       5.51       0.18
 
 ================================================================================
 PER-TYPE SUMMARY (sum of avg durations across all events)
 ================================================================================
 TaskType             Events    Total(us)  Total(ms)        %
 ----------------------------------------------------------
-UNKNOWN                 296       5005.9      5.006   100.0%
-TOTAL                             5005.9      5.006
+UNKNOWN                 296       4630.1      4.630   100.0%
+TOTAL                             4630.1      4.630
 
 Saved raw event timing to event_timing.json
 
-ids [25, 16228, 276, 254, 2782, 5266, 62, 8171, 13, 6931, 1761, 185, 391, 2827, 62, 3274, 25, 16228, 276, 254, 2827, 5266, 62, 8171, 13, 6931, 1761, 334, 4889, 25, 2782, 62]; 73 boundary tensors; mpk() 211.6 ms for 32 iterations -> /home/hotaisle/metalOps/harness/fleet_out/L27_head_it32_tile_fn1_fn2_fs_nt_mfma
+ids [25, 16228, 276, 254, 2782, 5266, 62, 8171, 13, 6931, 1761, 185, 391, 2827, 62, 3274, 25, 16228, 276, 254, 2827, 5266, 62, 8171, 13, 6931, 1761, 334, 4889, 25, 2782, 62]; 73 boundary tensors; mpk() 199.2 ms for 32 iterations -> /home/hotaisle/metalOps/harness/fleet_out/L27_head_it32_tile_fn1_fn2_fs_nt_mfma
 First tasks: 1
 Number of all events: 297
 Number of all tasks: 6361
 Number of triggered events: 295
 Number of executed tasks: 6359
 [EVENT_TIMING] Allocated buffer for 29700 entries (297 events x 100 iters)
-[WORKER_XCD] worker_id=7 block=7 xcd=4
-[WORKER_XCD] worker_id=4 block=4 xcd=1
-[WORKER_XCD] worker_id=6 block=6 xcd=3
-[WORKER_XCD] worker_id=1 block=1 xcd=6
-[WORKER_XCD] worker_id=3 block=3 xcd=0
 [WORKER_XCD] worker_id=0 block=0 xcd=5
-[WORKER_XCD] worker_id=2 block=2 xcd=7
 [WORKER_XCD] worker_id=5 block=5 xcd=2
-[SCHED_XCD] sched_id=1 xcd=1 workers_on_xcd=37 block=3
+[WORKER_XCD] worker_id=7 block=7 xcd=4
+[WORKER_XCD] worker_id=6 block=6 xcd=3
+[WORKER_XCD] worker_id=3 block=3 xcd=0
+[WORKER_XCD] worker_id=4 block=4 xcd=1
+[WORKER_XCD] worker_id=2 block=2 xcd=7
+[WORKER_XCD] worker_id=1 block=1 xcd=6
 [SCHED_XCD] sched_id=3 xcd=3 workers_on_xcd=37 block=5
-[SCHED_XCD] sched_id=2 xcd=2 workers_on_xcd=37 block=4
 [SCHED_XCD] sched_id=0 xcd=0 workers_on_xcd=37 block=2
-[SCHED_XCD] sched_id=4 xcd=4 workers_on_xcd=37 block=6
-[SCHED_XCD] sched_id=5 xcd=5 workers_on_xcd=37 block=7
 [SCHED_XCD] sched_id=6 xcd=6 workers_on_xcd=37 block=0
 [SCHED_XCD] sched_id=7 xcd=7 workers_on_xcd=37 block=1
-[FWD_PASS] iter=1 time_ms=4.899 num_active_tokens=1
-[FWD_PASS] iter=2 time_ms=5.153 num_active_tokens=1
-[FWD_PASS] iter=3 time_ms=5.077 num_active_tokens=1
-[FWD_PASS] iter=4 time_ms=5.082 num_active_tokens=1
-[FWD_PASS] iter=5 time_ms=4.978 num_active_tokens=1
-[FWD_PASS] iter=6 time_ms=4.998 num_active_tokens=1
-[FWD_PASS] iter=7 time_ms=4.995 num_active_tokens=1
-[FWD_PASS] iter=8 time_ms=4.982 num_active_tokens=1
-[FWD_PASS] iter=9 time_ms=4.995 num_active_tokens=1
-[FWD_PASS] iter=10 time_ms=4.981 num_active_tokens=1
-[FWD_PASS] iter=11 time_ms=5.002 num_active_tokens=1
-[FWD_PASS] iter=12 time_ms=4.963 num_active_tokens=1
-[FWD_PASS] iter=13 time_ms=4.985 num_active_tokens=1
-[FWD_PASS] iter=14 time_ms=4.984 num_active_tokens=1
-[FWD_PASS] iter=15 time_ms=5.026 num_active_tokens=1
-[FWD_PASS] iter=16 time_ms=4.974 num_active_tokens=1
-[FWD_PASS] iter=17 time_ms=4.992 num_active_tokens=1
-[FWD_PASS] iter=18 time_ms=4.999 num_active_tokens=1
-[FWD_PASS] iter=19 time_ms=4.975 num_active_tokens=1
-[FWD_PASS] iter=20 time_ms=4.984 num_active_tokens=1
-[FWD_PASS] iter=21 time_ms=4.982 num_active_tokens=1
-[FWD_PASS] iter=22 time_ms=4.971 num_active_tokens=1
-[FWD_PASS] iter=23 time_ms=5.012 num_active_tokens=1
-[FWD_PASS] iter=24 time_ms=4.977 num_active_tokens=1
-[FWD_PASS] iter=25 time_ms=4.978 num_active_tokens=1
-[FWD_PASS] iter=26 time_ms=5.017 num_active_tokens=1
-[FWD_PASS] iter=27 time_ms=4.979 num_active_tokens=1
-[FWD_PASS] iter=28 time_ms=4.987 num_active_tokens=1
-[FWD_PASS] iter=29 time_ms=4.967 num_active_tokens=1
-[FWD_PASS] iter=30 time_ms=5.043 num_active_tokens=1
-[FWD_PASS] iter=31 time_ms=4.975 num_active_tokens=1
+[SCHED_XCD] sched_id=4 xcd=4 workers_on_xcd=37 block=6
+[SCHED_XCD] sched_id=1 xcd=1 workers_on_xcd=37 block=3
+[SCHED_XCD] sched_id=2 xcd=2 workers_on_xcd=37 block=4
+[SCHED_XCD] sched_id=5 xcd=5 workers_on_xcd=37 block=7
+[FWD_PASS] iter=1 time_ms=4.425 num_active_tokens=1
+[FWD_PASS] iter=2 time_ms=4.697 num_active_tokens=1
+[FWD_PASS] iter=3 time_ms=4.709 num_active_tokens=1
+[FWD_PASS] iter=4 time_ms=4.636 num_active_tokens=1
+[FWD_PASS] iter=5 time_ms=4.504 num_active_tokens=1
+[FWD_PASS] iter=6 time_ms=4.612 num_active_tokens=1
+[FWD_PASS] iter=7 time_ms=4.630 num_active_tokens=1
+[FWD_PASS] iter=8 time_ms=4.627 num_active_tokens=1
+[FWD_PASS] iter=9 time_ms=4.678 num_active_tokens=1
+[FWD_PASS] iter=10 time_ms=4.670 num_active_tokens=1
+[FWD_PASS] iter=11 time_ms=4.552 num_active_tokens=1
+[FWD_PASS] iter=12 time_ms=4.605 num_active_tokens=1
+[FWD_PASS] iter=13 time_ms=4.509 num_active_tokens=1
+[FWD_PASS] iter=14 time_ms=4.614 num_active_tokens=1
+[FWD_PASS] iter=15 time_ms=4.614 num_active_tokens=1
+[FWD_PASS] iter=16 time_ms=4.660 num_active_tokens=1
+[FWD_PASS] iter=17 time_ms=4.629 num_active_tokens=1
+[FWD_PASS] iter=18 time_ms=4.608 num_active_tokens=1
+[FWD_PASS] iter=19 time_ms=4.617 num_active_tokens=1
+[FWD_PASS] iter=20 time_ms=4.612 num_active_tokens=1
+[FWD_PASS] iter=21 time_ms=4.582 num_active_tokens=1
+[FWD_PASS] iter=22 time_ms=4.605 num_active_tokens=1
+[FWD_PASS] iter=23 time_ms=4.616 num_active_tokens=1
+[FWD_PASS] iter=24 time_ms=4.639 num_active_tokens=1
+[FWD_PASS] iter=25 time_ms=4.690 num_active_tokens=1
+[FWD_PASS] iter=26 time_ms=4.621 num_active_tokens=1
+[FWD_PASS] iter=27 time_ms=4.682 num_active_tokens=1
+[FWD_PASS] iter=28 time_ms=4.616 num_active_tokens=1
+[FWD_PASS] iter=29 time_ms=4.599 num_active_tokens=1
+[FWD_PASS] iter=30 time_ms=4.628 num_active_tokens=1
+[FWD_PASS] iter=31 time_ms=4.669 num_active_tokens=1

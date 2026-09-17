@@ -58,16 +58,16 @@ MISSING_REF  L26.B6.attn
 MISSING_REF  L26.B8.router_logits         
 MISSING_REF  L26.B9.topk_idx              
 MISSING_REF  L26.B10.topk_w               
-MISSING_REF  L26.B11.expert_10            
 MISSING_REF  L26.B11.expert_14            
 MISSING_REF  L26.B11.expert_19            
+MISSING_REF  L26.B11.expert_2             
 MISSING_REF  L26.B11.expert_29            
 MISSING_REF  L26.B11.expert_58            
 MISSING_REF  L26.B11.expert_62            
 MISSING_REF  L26.B12.shared               
 MISSING_REF  L26.B13.layer_out            
-FAIL         head.B14.norm                rel_err 1.022 thr 0.181
-FAIL         head.B15.logits              rel_err 0.828 thr 0.164
+FAIL         head.B14.norm                rel_err 1.032 thr 0.181
+FAIL         head.B15.logits              rel_err 0.837 thr 0.164
 PASS         head.B16.token               fleet 25 ref 25
 PASS         output_ids
 FAIL         route_log

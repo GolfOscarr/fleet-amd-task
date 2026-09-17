@@ -66,7 +66,7 @@ MISSING_REF  L26.B11.expert_58
 MISSING_REF  L26.B11.expert_62            
 MISSING_REF  L26.B12.shared               
 MISSING_REF  L26.B13.layer_out            
-FAIL         head.B15.logits              rel_err 0.829 thr 0.164
+FAIL         head.B15.logits              rel_err 0.836 thr 0.164
 PASS         head.B16.token               fleet 25 ref 25
 PASS         output_ids
 FAIL         route_log
