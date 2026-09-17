@@ -256,7 +256,9 @@ def test_measure_end_to_end(tmp_path):
         for e in range(n_events):
             t += 100
             entries.append([e, t])
-    (run / "event_timing.json").write_text(json.dumps({"entries": entries, "num_events": n_events}))
+    # num_events is the runtime's buffer capacity (498 for every graph on the VM, 2026-09-17), not the
+    # graph's count: the iteration marker must be the highest index that fires
+    (run / "event_timing.json").write_text(json.dumps({"entries": entries, "num_events": 498}))
     m = measure.measure(run)
     assert m["fwd_pass"]["iterations_logged"] == 32
     assert abs(m["wall"]["per_iteration_us_from_wall"] - 0.045 / 32 * 1e6) < 1e-6

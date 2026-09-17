@@ -1,7 +1,9 @@
 # Session D, row G7 (docs/gpu-experiments/03-acceleration/05-session-plan.md): the MFMA attention (O7), after its
 # suites passed (vm.sh kernels mfma) and its standalone time was read (vm.sh ktime mfma): the 2-layer graph with the
 # compare, then the model with the ids, with the fusions session C kept (edit the flags to what G5 decided).
---layers 2 --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --mfma-attend table compare continue
+--layers 2 --iters 1 --tile-linears --nt-weights --event-timing --worker-timing --mfma-attend compare continue    # the boundaries at decode step 0 (a 32-iteration run holds iteration 31's values)
+--layers 2 --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --mfma-attend table continue
 --layers 27 --head --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --mfma-attend table compare continue
---layers 2 --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend table compare continue
+--layers 2 --iters 1 --tile-linears --nt-weights --event-timing --worker-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend compare continue    # the boundaries at decode step 0 (a 32-iteration run holds iteration 31's values)
+--layers 2 --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend table continue
 --layers 27 --head --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend table compare continue

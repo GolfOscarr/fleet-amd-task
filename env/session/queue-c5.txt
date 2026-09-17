@@ -3,11 +3,15 @@
 # norm into the per-tile linear), then the three together. A lever stays on if its compare passes and the event
 # clock is lower than G2's; the rows are independent, so a lever that fails does not touch the others; the agent
 # removes a failed lever from the stacked rows here and in queue-d7/d8/d9 with queue_flag.py --remove.
---layers 2 --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --fuse-norm2 table compare continue
+--layers 2 --iters 1 --tile-linears --nt-weights --event-timing --worker-timing --fuse-norm2 compare continue    # the boundaries at decode step 0 (a 32-iteration run holds iteration 31's values)
+--layers 2 --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --fuse-norm2 table continue
 --layers 27 --head --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --fuse-norm2 table compare continue
---layers 2 --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --fuse-silu table compare continue
+--layers 2 --iters 1 --tile-linears --nt-weights --event-timing --worker-timing --fuse-silu compare continue    # the boundaries at decode step 0 (a 32-iteration run holds iteration 31's values)
+--layers 2 --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --fuse-silu table continue
 --layers 27 --head --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --fuse-silu table compare continue
---layers 2 --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --fuse-norm1 table compare continue
+--layers 2 --iters 1 --tile-linears --nt-weights --event-timing --worker-timing --fuse-norm1 compare continue    # the boundaries at decode step 0 (a 32-iteration run holds iteration 31's values)
+--layers 2 --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --fuse-norm1 table continue
 --layers 27 --head --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --fuse-norm1 table compare continue
---layers 2 --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --fuse-norm2 --fuse-silu --fuse-norm1 table compare continue
+--layers 2 --iters 1 --tile-linears --nt-weights --event-timing --worker-timing --fuse-norm2 --fuse-silu --fuse-norm1 compare continue    # the boundaries at decode step 0 (a 32-iteration run holds iteration 31's values)
+--layers 2 --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --fuse-norm2 --fuse-silu --fuse-norm1 table continue
 --layers 27 --head --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --fuse-norm2 --fuse-silu --fuse-norm1 table compare continue
