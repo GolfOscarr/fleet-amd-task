@@ -1,0 +1,20 @@
+# Round 3: acceleration
+
+The third GPU round. Rounds 1 and 2 (`../01-bringup/`, `../02-validation/`)
+reached the required milestone and the end-to-end decode; this round is
+about speed. The target is the production vLLM baseline quoted for this
+model on this machine, 4.5 ms per token, against our 9.58 ms
+(`../02-validation/04-results.md`, the event clock).
+
+| File | What |
+|---|---|
+| [`01-ideas.md`](01-ideas.md) | every acceleration idea with the round-2 evidence behind it, its worth in ms per token, its cost and its dependencies, in seven groups: the per-task overhead (the critical path), fewer boundaries, the kernels, the idle machine, runtime knobs, bytes, measurement; the arithmetic of the target and the stack; corrected on 2026-09-17 where the double-check found the source said otherwise |
+| [`02-local-gpu-split.md`](02-local-gpu-split.md) | what the double-check changed; the laptop items L1 to L14 with deliverable, check, time box and the VM row each feeds; the two VM sessions as rows with PASS text and decisions; the budget; the dependency graph |
+| [`03-local-preparation.md`](03-local-preparation.md) | the laptop work in detail: eight optimizations (O1 to O8) with direction, core approach at the level of layout and kernel structure, files, laptop checks, time box and the VM row; the instruments in brief (I1 to I7); what the work requires; the double-check against the source and the assumptions that remain |
+| [`04-checklist.md`](04-checklist.md) | the progress record of the local preparation: one box per deliverable, ticked only when its laptop check has run, with the VM rows that follow |
+
+## Status
+
+| Date | State |
+|---|---|
+| 2026-09-17 | ideas written and double-checked against the runtime's source (four corrections); the laptop and VM split written; the local preparation detailed (the optimizations first, the instruments in brief); the checklist written; a defect found on the way (two task types share the enum value 188, O0); the instruments' details and the session plan (05) are next; no VM |
