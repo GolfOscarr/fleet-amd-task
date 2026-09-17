@@ -1,4 +1,4 @@
-# Offline gfx942 compile, 2026-09-17T21:24:38Z, HIP version: 7.0.51831-a3e329ad8 AMD clang version 20.0.0git (https://github.com/RadeonOpenCompute/llvm-project roc-7.0.0 25314 f4087f6b428f0e6f575ebac8a8a724dab123d06e) 7.0.0 
+# Offline gfx942 compile, 2026-09-17T21:42:00Z, HIP version: 7.0.51831-a3e329ad8 AMD clang version 20.0.0git (https://github.com/RadeonOpenCompute/llvm-project roc-7.0.0 25314 f4087f6b428f0e6f575ebac8a8a724dab123d06e) 7.0.0 
 # fleet 51dce4f + gfx942.patch + new_tasks.patch + sched_xcd.patch; composable_kernel d8ee107a47d8485dbcffc79eb08e4f7c39ea6335; json 8c391e04fe4195d8be862c97f38cfe10e2a3472e
 
 ## mk_ours (hipcc exit 0)
@@ -53,8 +53,8 @@ _Z16scheduler_kernelN6mirage7runtime13RuntimeConfigE       VGPRs: 59    AGPRs: 0
 ## mk_gemv (hipcc exit 0)
 _Z11init_kernelN6mirage7runtime13RuntimeConfigE            VGPRs: 51    AGPRs: 0   ScratchSize [bytes/lane]: 64 Occupancy [waves/SIMD]: 8 SGPRs Spill: 0    VGPRs Spill: 0    LDS Size [bytes/block]: 0
 _Z14prepare_kernelN6mirage7runtime13RuntimeConfigEi        VGPRs: 51    AGPRs: 0   ScratchSize [bytes/lane]: 64 Occupancy [waves/SIMD]: 8 SGPRs Spill: 0    VGPRs Spill: 0    LDS Size [bytes/block]: 0
-_Z17persistent_kernelN6mirage7runtime13RuntimeConfigE      VGPRs: 256   AGPRs: 123 ScratchSize [bytes/lane]: 844 Occupancy [waves/SIMD]: 1 SGPRs Spill: 193  VGPRs Spill: 8    LDS Size [bytes/block]: 2520
-_Z13worker_kernelN6mirage7runtime13RuntimeConfigE          VGPRs: 256   AGPRs: 125 ScratchSize [bytes/lane]: 332 Occupancy [waves/SIMD]: 1 SGPRs Spill: 111  VGPRs Spill: 8    LDS Size [bytes/block]: 2512
+_Z17persistent_kernelN6mirage7runtime13RuntimeConfigE      VGPRs: 256   AGPRs: 125 ScratchSize [bytes/lane]: 844 Occupancy [waves/SIMD]: 1 SGPRs Spill: 203  VGPRs Spill: 8    LDS Size [bytes/block]: 2520
+_Z13worker_kernelN6mirage7runtime13RuntimeConfigE          VGPRs: 256   AGPRs: 126 ScratchSize [bytes/lane]: 332 Occupancy [waves/SIMD]: 1 SGPRs Spill: 121  VGPRs Spill: 8    LDS Size [bytes/block]: 2512
 _Z16scheduler_kernelN6mirage7runtime13RuntimeConfigE       VGPRs: 59    AGPRs: 0   ScratchSize [bytes/lane]: 608 Occupancy [waves/SIMD]: 7 SGPRs Spill: 33   VGPRs Spill: 0    LDS Size [bytes/block]: 0
 
 ## mk_w2ck (hipcc exit 0)
@@ -111,6 +111,7 @@ _ZN12_GLOBAL__N_110k_mla_prepEPKvS1_S1_S1_S1_PvS2_S2_S2_NS_4MetaE VGPRs: 137   A
 _ZN12_GLOBAL__N_112k_mla_attendEPKvS1_S1_S1_PvNS_4MetaEfiiiiS2_ VGPRs: 122   AGPRs: 0   ScratchSize [bytes/lane]: 0 Occupancy [waves/SIMD]: 4 SGPRs Spill: 0    VGPRs Spill: 0    LDS Size [bytes/block]: 0
 _ZN12_GLOBAL__N_114k_mla_merge_uvEPKvS1_PvNS_4MetaEii      VGPRs: 122   AGPRs: 0   ScratchSize [bytes/lane]: 0 Occupancy [waves/SIMD]: 4 SGPRs Spill: 0    VGPRs Spill: 0    LDS Size [bytes/block]: 0
 _ZN12_GLOBAL__N_119k_mla_merge_uv_tileEPKvS1_PvNS_4MetaEiii VGPRs: 126   AGPRs: 0   ScratchSize [bytes/lane]: 0 Occupancy [waves/SIMD]: 4 SGPRs Spill: 0    VGPRs Spill: 0    LDS Size [bytes/block]: 0
+_ZN12_GLOBAL__N_117k_mla_merge_oprojEPKvS1_S1_PvS2_S2_S2_NS_4MetaEii VGPRs: 248   AGPRs: 32  ScratchSize [bytes/lane]: 112 Occupancy [waves/SIMD]: 1 SGPRs Spill: 0    VGPRs Spill: 0    LDS Size [bytes/block]: 0
 _ZN12_GLOBAL__N_112k_moe_routerEPKvS1_S1_PvS2_S2_S2_S2_S2_NS_4MetaEiff VGPRs: 170   AGPRs: 0   ScratchSize [bytes/lane]: 0 Occupancy [waves/SIMD]: 2 SGPRs Spill: 0    VGPRs Spill: 0    LDS Size [bytes/block]: 0
 _ZN12_GLOBAL__N_113k_moe_router4EPKvS1_S1_PvS2_S2_S2_S2_S2_S2_NS_4MetaEiff VGPRs: 92    AGPRs: 0   ScratchSize [bytes/lane]: 0 Occupancy [waves/SIMD]: 5 SGPRs Spill: 0    VGPRs Spill: 0    LDS Size [bytes/block]: 0
 _ZN12_GLOBAL__N_110k_prefetchEPKvPv                        VGPRs: 42    AGPRs: 0   ScratchSize [bytes/lane]: 0 Occupancy [waves/SIMD]: 8 SGPRs Spill: 0    VGPRs Spill: 0    LDS Size [bytes/block]: 0
@@ -128,6 +129,7 @@ _ZN12_GLOBAL__N_110k_mla_prepEPKvS1_S1_S1_S1_PvS2_S2_S2_NS_4MetaE VGPRs: 137   A
 _ZN12_GLOBAL__N_112k_mla_attendEPKvS1_S1_S1_PvNS_4MetaEfiiiiS2_ VGPRs: 124   AGPRs: 0   ScratchSize [bytes/lane]: 0 Occupancy [waves/SIMD]: 4 SGPRs Spill: 0    VGPRs Spill: 0    LDS Size [bytes/block]: 0
 _ZN12_GLOBAL__N_114k_mla_merge_uvEPKvS1_PvNS_4MetaEii      VGPRs: 122   AGPRs: 0   ScratchSize [bytes/lane]: 0 Occupancy [waves/SIMD]: 4 SGPRs Spill: 0    VGPRs Spill: 0    LDS Size [bytes/block]: 0
 _ZN12_GLOBAL__N_119k_mla_merge_uv_tileEPKvS1_PvNS_4MetaEiii VGPRs: 126   AGPRs: 0   ScratchSize [bytes/lane]: 0 Occupancy [waves/SIMD]: 4 SGPRs Spill: 0    VGPRs Spill: 0    LDS Size [bytes/block]: 0
+_ZN12_GLOBAL__N_117k_mla_merge_oprojEPKvS1_S1_PvS2_S2_S2_NS_4MetaEii VGPRs: 248   AGPRs: 32  ScratchSize [bytes/lane]: 112 Occupancy [waves/SIMD]: 1 SGPRs Spill: 0    VGPRs Spill: 0    LDS Size [bytes/block]: 0
 _ZN12_GLOBAL__N_112k_moe_routerEPKvS1_S1_PvS2_S2_S2_S2_S2_NS_4MetaEiff VGPRs: 170   AGPRs: 0   ScratchSize [bytes/lane]: 0 Occupancy [waves/SIMD]: 2 SGPRs Spill: 0    VGPRs Spill: 0    LDS Size [bytes/block]: 0
 _ZN12_GLOBAL__N_113k_moe_router4EPKvS1_S1_PvS2_S2_S2_S2_S2_S2_NS_4MetaEiff VGPRs: 92    AGPRs: 0   ScratchSize [bytes/lane]: 0 Occupancy [waves/SIMD]: 5 SGPRs Spill: 0    VGPRs Spill: 0    LDS Size [bytes/block]: 0
 _ZN12_GLOBAL__N_110k_prefetchEPKvPv                        VGPRs: 42    AGPRs: 0   ScratchSize [bytes/lane]: 0 Occupancy [waves/SIMD]: 8 SGPRs Spill: 0    VGPRs Spill: 0    LDS Size [bytes/block]: 0
@@ -145,6 +147,7 @@ _ZN12_GLOBAL__N_110k_mla_prepEPKvS1_S1_S1_S1_PvS2_S2_S2_NS_4MetaE VGPRs: 137   A
 _ZN12_GLOBAL__N_112k_mla_attendEPKvS1_S1_S1_PvNS_4MetaEfiiiiS2_ VGPRs: 124   AGPRs: 0   ScratchSize [bytes/lane]: 0 Occupancy [waves/SIMD]: 4 SGPRs Spill: 0    VGPRs Spill: 0    LDS Size [bytes/block]: 0
 _ZN12_GLOBAL__N_114k_mla_merge_uvEPKvS1_PvNS_4MetaEii      VGPRs: 134   AGPRs: 0   ScratchSize [bytes/lane]: 0 Occupancy [waves/SIMD]: 3 SGPRs Spill: 0    VGPRs Spill: 0    LDS Size [bytes/block]: 0
 _ZN12_GLOBAL__N_119k_mla_merge_uv_tileEPKvS1_PvNS_4MetaEiii VGPRs: 138   AGPRs: 0   ScratchSize [bytes/lane]: 0 Occupancy [waves/SIMD]: 3 SGPRs Spill: 0    VGPRs Spill: 0    LDS Size [bytes/block]: 0
+_ZN12_GLOBAL__N_117k_mla_merge_oprojEPKvS1_S1_PvS2_S2_S2_NS_4MetaEii VGPRs: 248   AGPRs: 32  ScratchSize [bytes/lane]: 112 Occupancy [waves/SIMD]: 1 SGPRs Spill: 0    VGPRs Spill: 0    LDS Size [bytes/block]: 0
 _ZN12_GLOBAL__N_112k_moe_routerEPKvS1_S1_PvS2_S2_S2_S2_S2_NS_4MetaEiff VGPRs: 190   AGPRs: 0   ScratchSize [bytes/lane]: 0 Occupancy [waves/SIMD]: 2 SGPRs Spill: 0    VGPRs Spill: 0    LDS Size [bytes/block]: 0
 _ZN12_GLOBAL__N_113k_moe_router4EPKvS1_S1_PvS2_S2_S2_S2_S2_S2_NS_4MetaEiff VGPRs: 77    AGPRs: 0   ScratchSize [bytes/lane]: 0 Occupancy [waves/SIMD]: 6 SGPRs Spill: 0    VGPRs Spill: 0    LDS Size [bytes/block]: 0
 _ZN12_GLOBAL__N_110k_prefetchEPKvPv                        VGPRs: 42    AGPRs: 0   ScratchSize [bytes/lane]: 0 Occupancy [waves/SIMD]: 8 SGPRs Spill: 0    VGPRs Spill: 0    LDS Size [bytes/block]: 0
@@ -162,6 +165,7 @@ _ZN12_GLOBAL__N_110k_mla_prepEPKvS1_S1_S1_S1_PvS2_S2_S2_NS_4MetaE VGPRs: 137   A
 _ZN12_GLOBAL__N_112k_mla_attendEPKvS1_S1_S1_PvNS_4MetaEfiiiiS2_ VGPRs: 160   AGPRs: 32  ScratchSize [bytes/lane]: 0 Occupancy [waves/SIMD]: 2 SGPRs Spill: 0    VGPRs Spill: 0    LDS Size [bytes/block]: 0
 _ZN12_GLOBAL__N_114k_mla_merge_uvEPKvS1_PvNS_4MetaEii      VGPRs: 122   AGPRs: 0   ScratchSize [bytes/lane]: 0 Occupancy [waves/SIMD]: 4 SGPRs Spill: 0    VGPRs Spill: 0    LDS Size [bytes/block]: 0
 _ZN12_GLOBAL__N_119k_mla_merge_uv_tileEPKvS1_PvNS_4MetaEiii VGPRs: 126   AGPRs: 0   ScratchSize [bytes/lane]: 0 Occupancy [waves/SIMD]: 4 SGPRs Spill: 0    VGPRs Spill: 0    LDS Size [bytes/block]: 0
+_ZN12_GLOBAL__N_117k_mla_merge_oprojEPKvS1_S1_PvS2_S2_S2_NS_4MetaEii VGPRs: 248   AGPRs: 32  ScratchSize [bytes/lane]: 112 Occupancy [waves/SIMD]: 1 SGPRs Spill: 0    VGPRs Spill: 0    LDS Size [bytes/block]: 0
 _ZN12_GLOBAL__N_112k_moe_routerEPKvS1_S1_PvS2_S2_S2_S2_S2_NS_4MetaEiff VGPRs: 170   AGPRs: 0   ScratchSize [bytes/lane]: 0 Occupancy [waves/SIMD]: 2 SGPRs Spill: 0    VGPRs Spill: 0    LDS Size [bytes/block]: 0
 _ZN12_GLOBAL__N_113k_moe_router4EPKvS1_S1_PvS2_S2_S2_S2_S2_S2_NS_4MetaEiff VGPRs: 92    AGPRs: 0   ScratchSize [bytes/lane]: 0 Occupancy [waves/SIMD]: 5 SGPRs Spill: 0    VGPRs Spill: 0    LDS Size [bytes/block]: 0
 _ZN12_GLOBAL__N_110k_prefetchEPKvPv                        VGPRs: 42    AGPRs: 0   ScratchSize [bytes/lane]: 0 Occupancy [waves/SIMD]: 8 SGPRs Spill: 0    VGPRs Spill: 0    LDS Size [bytes/block]: 0

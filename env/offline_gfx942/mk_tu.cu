@@ -30,11 +30,12 @@
 // N2: the fused router in four tasks (TASK_MOE_ROUTER4_MI300 = 204); its kernel header is the
 // one-task router's, already included by task_header.cuh
 #define MK_TASK_MOE_ROUTER4_MI300 TASK_MOE_ROUTER4_MI300
-// N5: the merge with o_proj folded in, keyed on the type its hunk adds (207; 200 to 203 are the
-// fork's scheduler task types, found at the first integration); its header is not in
-// task_header.cuh until then, so it is included here
+// N5: the merge with o_proj folded in (TASK_MLA_MERGE_OPROJ_MI300 = 207; 200 to 203 are the
+// fork's scheduler task types, found at the first integration). With new_tasks.patch applied the
+// enum carries the type and task_header.cuh includes the kernel, so this aliases the real enum
+// value; the include stays (the header is #pragma once) as the standalone check on an unpatched tree.
 #include "tasks/mi300/mla_merge_oproj_mi300.cuh"
-#define MK_TASK_MLA_MERGE_OPROJ_MI300 ((TaskType)207)
+#define MK_TASK_MLA_MERGE_OPROJ_MI300 TASK_MLA_MERGE_OPROJ_MI300
 #endif
 
 using namespace mirage::runtime;

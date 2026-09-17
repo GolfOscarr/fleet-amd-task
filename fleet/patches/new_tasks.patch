@@ -23,10 +23,10 @@ index 7b261dc..00007d8 100644
    using OpType = KNOperator;
    using TensorType = DTensor;
 diff --git a/include/mirage/kernel/task_register.h b/include/mirage/kernel/task_register.h
-index 2aab442..61349c4 100755
+index 2aab442..a9ff9ea 100755
 --- a/include/mirage/kernel/task_register.h
 +++ b/include/mirage/kernel/task_register.h
-@@ -172,6 +172,40 @@ public:
+@@ -172,6 +172,42 @@ public:
                                       bool w13_linear);
    int register_moe_mul_sum_add_mi300_task(threadblock::Graph const &bgraph,
                                            std::vector<int> const &params);
@@ -41,6 +41,8 @@ index 2aab442..61349c4 100755
 +                                       std::vector<int> const &params);
 +  int register_mla_merge_uv_tile_mi300_task(threadblock::Graph const &bgraph,
 +                                            std::vector<int> const &params);   // N4: one task per (head, half)
++  int register_mla_merge_oproj_mi300_task(threadblock::Graph const &bgraph,
++                                          std::vector<int> const &params);   // N5: the merge with o_proj folded in
 +  int register_moe_router_mi300_task(threadblock::Graph const &bgraph,
 +                                     std::vector<int> const &params,
 +                                     bool norm = false);   // norm: moe_router_norm_mi300 (O1)
@@ -273,7 +275,7 @@ index 9241ae6..01005c7 100755
            }
  #ifdef MPK_ENABLE_PROFILING
 diff --git a/include/mirage/persistent_kernel/runtime_header.h b/include/mirage/persistent_kernel/runtime_header.h
-index f2dfe4e..f3a50db 100755
+index f2dfe4e..df6fd77 100755
 --- a/include/mirage/persistent_kernel/runtime_header.h
 +++ b/include/mirage/persistent_kernel/runtime_header.h
 @@ -83,7 +83,7 @@ unsigned long long int const EVENT_INVALID_ID = 0x7ffffffffffffffe;
@@ -285,7 +287,7 @@ index f2dfe4e..f3a50db 100755
  // Increased to 304 to support full CU utilization on AMD MI300X (304 CUs)
  // and NVIDIA Blackwell (160+ SMs which uses 144 workers)
  int const MAX_NUM_WORKERS = 304;
-@@ -144,6 +144,23 @@ enum TaskType {
+@@ -144,6 +144,24 @@ enum TaskType {
    TASK_MOE_MUL_SUM_ADD_MI300 = 173,
    TASK_GANG_MOE_W13_LINEAR_MI300 = 174,
    TASK_GANG_MOE_W2_LINEAR_MI300 = 175,
@@ -306,6 +308,7 @@ index f2dfe4e..f3a50db 100755
 +  TASK_MOE_ROUTER4_MI300 = 204,      // regular: the fused router's GEMV over four tasks, the last one routes (N2)
 +  TASK_MLA_MERGE_UV_TILE_MI300 = 205,  // regular: one merge task per (head, half), the index from expert_offset (N4)
 +  TASK_STREAM_GANG_MI300 = 206,      // gang: the stream probe, 8 slots x tiles_per_xcd tiles (L6)
++  TASK_MLA_MERGE_OPROJ_MI300 = 207,    // regular: the merge with o_proj folded in, the last task summing the partials (N5)
    // Hopper Tasks
    TASK_HOPPER_TASK_BEGIN = 150, // Hopper start placeholder, not a real task
    TASK_LINEAR_WITH_RESIDUAL_HOPPER = 151,
@@ -362,10 +365,10 @@ index 6963110..e144d30 100644
      }
    }
 diff --git a/include/mirage/persistent_kernel/tasks/mi300/task_header.cuh b/include/mirage/persistent_kernel/tasks/mi300/task_header.cuh
-index 9906f75..39e6213 100755
+index 9906f75..bfb239c 100755
 --- a/include/mirage/persistent_kernel/tasks/mi300/task_header.cuh
 +++ b/include/mirage/persistent_kernel/tasks/mi300/task_header.cuh
-@@ -49,3 +49,16 @@
+@@ -49,3 +49,17 @@
  #include "tasks/ampere/merge_splitkv.cuh"
  // Gang merge wrapper for split-KV CK FMHA (depends on merge_splitkv.cuh)
  #include "tasks/mi300/gang_attention_merge_mi300.cuh"
@@ -374,6 +377,7 @@ index 9906f75..39e6213 100755
 +#include "tasks/mi300/mla_prep_mi300.cuh"
 +#include "tasks/mi300/mla_attend_mi300.cuh"
 +#include "tasks/mi300/mla_merge_uv_mi300.cuh"
++#include "tasks/mi300/mla_merge_oproj_mi300.cuh"
 +#include "tasks/mi300/moe_router_mi300.cuh"
 +#include "tasks/mi300/copy_mi300.cuh"
 +#include "tasks/mi300/gang_moe_w2_silu_mi300.cuh"
@@ -420,10 +424,10 @@ index 6830b64..86bdc9c 100644
      def sampling_sm100_layer(
          self,
 diff --git a/python/mirage/mpk/profiler_persistent.py b/python/mirage/mpk/profiler_persistent.py
-index f3f98ad..3469009 100755
+index f3f98ad..ed78757 100755
 --- a/python/mirage/mpk/profiler_persistent.py
 +++ b/python/mirage/mpk/profiler_persistent.py
-@@ -58,6 +58,22 @@ event_name_list = {
+@@ -58,6 +58,23 @@ event_name_list = {
      174: "TASK_GANG_MOE_W13_LINEAR_MI300",
      175: "TASK_GANG_MOE_W2_LINEAR_MI300",
      176: "TASK_DEVICE_LINEAR_MI300",
@@ -443,14 +447,15 @@ index f3f98ad..3469009 100755
 +    204: "TASK_MOE_ROUTER4_MI300",
 +    205: "TASK_MLA_MERGE_UV_TILE_MI300",
 +    206: "TASK_STREAM_GANG_MI300",
++    207: "TASK_MLA_MERGE_OPROJ_MI300",
      177: "TASK_DEVICE_LINEAR_RES_MI300",
      150: "TASK_HOPPER_TASK_BEGIN",
      151: "TASK_LINEAR_WITH_RESIDUAL_HOPPER",
 diff --git a/src/kernel/graph.cc b/src/kernel/graph.cc
-index 97c4923..54f2947 100755
+index 97c4923..40f3e28 100755
 --- a/src/kernel/graph.cc
 +++ b/src/kernel/graph.cc
-@@ -841,6 +841,110 @@ void Graph::register_task(char const *task_type, std::vector<int> params) {
+@@ -841,6 +841,117 @@ void Graph::register_task(char const *task_type, std::vector<int> params) {
          customized->bgraph, params);
      task_config[op] =
          std::make_tuple(3, 1, TASK_MOE_MUL_SUM_ADD_MI300, variant_id);
@@ -482,6 +487,13 @@ index 97c4923..54f2947 100755
 +    assert(params.size() == 3);
 +    int variant_id = task_register->register_mla_merge_uv_tile_mi300_task(customized->bgraph, params);
 +    task_config[op] = std::make_tuple(2, 1, TASK_MLA_MERGE_UV_TILE_MI300, variant_id);
++  } else if (name == "mla_merge_oproj_mi300") {
++    // N5 (docs/gpu-experiments/04-kernels): the merge with o_proj folded in, nh * halves regular
++    // tasks, every tensor whole; inputs partials, W_uv, W_o, x_res, counter; outputs x_res (in
++    // place), attn, workspace; params [split, n_splits, halves]
++    assert(params.size() == 3);
++    int variant_id = task_register->register_mla_merge_oproj_mi300_task(customized->bgraph, params);
++    task_config[op] = std::make_tuple(5, 3, TASK_MLA_MERGE_OPROJ_MI300, variant_id);
 +  } else if (name == "moe_router_mi300") {
 +    assert(params.size() == 6);
 +    int variant_id = task_register->register_moe_router_mi300_task(customized->bgraph, params);
@@ -562,7 +574,7 @@ index 97c4923..54f2947 100755
      printf("Unsupported task name: %s\n", name.c_str());
      assert(false && "Unsupported task type");
 diff --git a/src/kernel/runtime.cc b/src/kernel/runtime.cc
-index 9dde169..afdaeda 100755
+index 9dde169..58d605f 100755
 --- a/src/kernel/runtime.cc
 +++ b/src/kernel/runtime.cc
 @@ -184,6 +184,11 @@ void register_mugraph(
@@ -577,7 +589,7 @@ index 9dde169..afdaeda 100755
    for (auto const &op : graph.operators) {
      if (op->op_type == type::KNOperatorType::KN_INPUT_OP) {
        continue;
-@@ -397,7 +402,12 @@ void register_mugraph(
+@@ -397,7 +402,13 @@ void register_mugraph(
                task_type == TASK_MOE_W2_LINEAR_SM90 ||
                task_type == TASK_MOE_W13_LINEAR_MI300 ||
                task_type == TASK_MOE_W2_LINEAR_MI300 ||
@@ -586,12 +598,13 @@ index 9dde169..afdaeda 100755
 +              task_type == TASK_MLA_ATTEND_TILE_MI300 ||   // the split index of the regular attention task
 +              task_type == TASK_PREFETCH_MOE_MI300 ||      // the (slot, part) index of the expert prefetch (O8)
 +              task_type == TASK_MLA_MERGE_UV_TILE_MI300 || // (head, half) of the regular merge task (N4)
++              task_type == TASK_MLA_MERGE_OPROJ_MI300 ||   // (head, half) of the merge with o_proj folded in (N5)
 +              task_type == TASK_MOE_ROUTER4_MI300 ||       // the part of the four-task router (N2)
 +              task_type == TASK_MLA_PREP_MI300) {          // the head of the per-head prep task (round 3)
              task.task_metadata.expert_offset =
                  (int)((bid.y << 16) | (bid.x & 0xFFFF));
            }
-@@ -415,8 +425,13 @@ void register_mugraph(
+@@ -415,8 +426,13 @@ void register_mugraph(
                task_type == TASK_GANG_ATTN_MERGE_MI300 ||
                task_type == TASK_GANG_MOE_W13_LINEAR_MI300 ||
                task_type == TASK_GANG_MOE_W2_LINEAR_MI300 ||
@@ -606,7 +619,7 @@ index 9dde169..afdaeda 100755
              auto it = graph.gang_task_tiles_per_xcd.find(op);
              assert(it != graph.gang_task_tiles_per_xcd.end() &&
                     "Gang task missing n_tiles_per_xcd");
-@@ -432,7 +447,10 @@ void register_mugraph(
+@@ -432,7 +448,10 @@ void register_mugraph(
              // Gang attention: each XCD processes a different tile range
              // bid.x = XCD index (0..7)
              else if (task_type == TASK_GANG_ATTN_SPLIT_KV_MI300 ||
@@ -618,7 +631,7 @@ index 9dde169..afdaeda 100755
                task.task_metadata.n_tile_start = (uint16_t)(bid.x * tiles_per_xcd);
              } else if (task_type == TASK_GANG_KSPLIT_GEMM_MI300) {
                // K-split index = XCD index (bid.x)
-@@ -496,6 +514,36 @@ void register_mugraph(
+@@ -496,6 +515,36 @@ void register_mugraph(
          }
        }
      }
@@ -655,7 +668,7 @@ index 9dde169..afdaeda 100755
      // Step 2: create events between operators
      if (pre_op == nullptr) {
        dim3 bid;
-@@ -587,8 +635,14 @@ void register_mugraph(
+@@ -587,8 +636,14 @@ void register_mugraph(
            get_event_id(my_gpu_id, all_events.size(), false /*nvshmem_event*/);
      }
    }
@@ -671,7 +684,7 @@ index 9dde169..afdaeda 100755
  
    // Prelaunch all tasks at the begining of an iteration
    all_events[1].first_task_id = 2;
-@@ -1536,6 +1590,22 @@ TaskGraphResult print_task_graph(
+@@ -1536,6 +1591,23 @@ TaskGraphResult print_task_graph(
        "TASK_GANG_LINEAR_MSPLIT_MI300";
    task_type_to_name[TASK_GANG_LINEAR_RES_MSPLIT_MI300] =
        "TASK_GANG_LINEAR_RES_MSPLIT_MI300";
@@ -690,11 +703,12 @@ index 9dde169..afdaeda 100755
 +  task_type_to_name[TASK_STREAM_MI300] = "TASK_STREAM_MI300";
 +  task_type_to_name[TASK_MOE_ROUTER4_MI300] = "TASK_MOE_ROUTER4_MI300";
 +  task_type_to_name[TASK_MLA_MERGE_UV_TILE_MI300] = "TASK_MLA_MERGE_UV_TILE_MI300";
++  task_type_to_name[TASK_MLA_MERGE_OPROJ_MI300] = "TASK_MLA_MERGE_OPROJ_MI300";
 +  task_type_to_name[TASK_STREAM_GANG_MI300] = "TASK_STREAM_GANG_MI300";
    task_type_to_name[TASK_GANG_LINEAR_SILU_MI300] =
        "TASK_GANG_LINEAR_SILU_MI300";
    task_type_to_name[TASK_GANG_RMS_NORM_MI300] =
-@@ -1578,8 +1648,13 @@ TaskGraphResult print_task_graph(
+@@ -1578,8 +1650,13 @@ TaskGraphResult print_task_graph(
          task.first == TASK_GANG_ATTN_MERGE_MI300 ||
          task.first == TASK_GANG_MOE_W13_LINEAR_MI300 ||
          task.first == TASK_GANG_MOE_W2_LINEAR_MI300 ||
@@ -709,7 +723,7 @@ index 9dde169..afdaeda 100755
        continue;
      for (size_t variant_id = 0; variant_id < task.second.size(); variant_id++) {
        std::string cond = first_task ? "if" : "else if";
-@@ -1617,8 +1692,13 @@ TaskGraphResult print_task_graph(
+@@ -1617,8 +1694,13 @@ TaskGraphResult print_task_graph(
            task.first != TASK_GANG_ATTN_MERGE_MI300 &&
            task.first != TASK_GANG_MOE_W13_LINEAR_MI300 &&
            task.first != TASK_GANG_MOE_W2_LINEAR_MI300 &&
@@ -725,7 +739,7 @@ index 9dde169..afdaeda 100755
        for (size_t variant_id = 0; variant_id < task.second.size();
             variant_id++) {
 diff --git a/src/kernel/task_register.cc b/src/kernel/task_register.cc
-index a4e2602..6ad4cad 100755
+index a4e2602..91044d0 100755
 --- a/src/kernel/task_register.cc
 +++ b/src/kernel/task_register.cc
 @@ -15,6 +15,8 @@
@@ -765,7 +779,7 @@ index a4e2602..6ad4cad 100755
    return register_task_variant(TASK_ARGMAX_REDUCE, code.to_string());
  }
  
-@@ -4583,5 +4593,693 @@ int TaskRegister::register_paged_attention_split_kv_hopper_task(
+@@ -4583,5 +4593,751 @@ int TaskRegister::register_paged_attention_split_kv_hopper_task(
                                 code.to_string());
  }
  
@@ -1010,6 +1024,64 @@ index a4e2602..6ad4cad 100755
 +  code.e("    $,", n_splits);
 +  code.e("    (int)(task_desc->task_metadata.expert_offset & 0xFFFF));");   // bid.x: the (head, half) index
 +  return register_task_variant(TASK_MLA_MERGE_UV_TILE_MI300, code.to_string());
++}
++
++// N5 of docs/gpu-experiments/04-kernels (M5 of 03-router-merge-ideas.md): the merge with o_proj
++// folded in, nh * halves regular tasks. params: [split, n_splits, halves]; inputs partials
++// [n_splits, nh, partials_row], W_uv [nh, d_v, d_c], W_o [hidden, hidden], x_res [1, hidden] and
++// the counter [1] int32, all whole; outputs x_res (in place: the same tensor as input 3, as the
++// stock residual linear takes its residual and its output), attn [1, nh * d_v] and the workspace
++// [nh * halves, hidden] FP32, all whole. The task index reaches the kernel through expert_offset
++// (bid.x), as it does for mla_merge_uv_tile and mla_prep, and the kernel takes h = idx / halves
++// and half = idx % halves from it, so no imap is partitioned and there are no local flags.
++int TaskRegister::register_mla_merge_oproj_mi300_task(
++    threadblock::Graph const &bgraph, std::vector<int> const &params) {
++  assert(params.size() == 3);
++  int split = params[0], n_splits = params[1], halves = params[2];
++  assert(n_splits <= 64 && "mla_merge_uv merges one split per lane of one wavefront");
++  assert(halves == 1 || halves == 2);
++  std::vector<tb::TBInputOp *> input_ops, output_ops;
++  int num_inputs = 5, num_outputs = 3;
++  assert(bgraph.operators.size() == (size_t)num_inputs + num_outputs);
++  split_io(bgraph, num_inputs, input_ops, output_ops);
++  assert(input_ops[1]->dtensor.num_dims == 3);
++  int nh = input_ops[1]->dtensor.dim[0];
++  int d_v = input_ops[1]->dtensor.dim[1];
++  int d_c = input_ops[1]->dtensor.dim[2];
++  int hidden = nh * d_v;
++  assert(input_ops[0]->dtensor.dim[0] == n_splits && input_ops[0]->dtensor.dim[1] == nh &&
++         input_ops[0]->dtensor.dim[2] == ((d_c + 1 + 3) / 4) * 4);
++  assert(input_ops[2]->dtensor.num_dims == 2 && input_ops[2]->dtensor.dim[0] == hidden &&
++         input_ops[2]->dtensor.dim[1] == hidden);          // W_o [N, K], N = K = nh * d_v
++  assert(input_ops[3]->dtensor.dim[1] == hidden);          // x_res [1, hidden]
++  assert(input_ops[4]->dtensor.num_dims == 1 && input_ops[4]->dtensor.dim[0] == 1);   // counter [1]
++  assert(output_ops[0]->dtensor.dim[1] == hidden);         // x_res again, written in place
++  assert(output_ops[1]->dtensor.dim[1] == hidden);         // attn [1, nh * d_v]
++  assert(output_ops[2]->dtensor.num_dims == 2 && output_ops[2]->dtensor.dim[0] == nh * halves &&
++         output_ops[2]->dtensor.dim[1] == hidden);         // workspace [nh * halves, hidden] FP32
++  for (int i = 0; i < num_inputs; i++) {
++    assert(input_ops[i]->input_map.x == -1);               // every tensor whole
++  }
++  for (int i = 0; i < num_outputs; i++) {
++    assert(output_ops[i]->input_map.x == -1);
++  }
++  assert((int)bgraph.grid_dim.x == nh * halves);           // one task per (head, half)
++  mirage::transpiler::CodeKeeper code;
++  code.inc_indent();
++  code.e("kernel::mla_merge_oproj_mi300_task_impl<bfloat16, $, $, $, $, $>(",
++         nh, d_v, d_c, hidden, halves);
++  code.e("    task_desc->input_ptrs[0],");   // partials (whole)
++  code.e("    task_desc->input_ptrs[1],");   // W_uv (whole)
++  code.e("    task_desc->input_ptrs[2],");   // W_o (whole)
++  code.e("    task_desc->output_ptrs[0],");  // x_res, in place (input 3 is the same buffer)
++  code.e("    task_desc->input_ptrs[4],");   // the arrival counter
++  code.e("    task_desc->output_ptrs[1],");  // attn (boundary B6)
++  code.e("    task_desc->output_ptrs[2],");  // the partial workspace
++  code.e("    runtime_config.step[0],");
++  code.e("    $,", split);
++  code.e("    $,", n_splits);
++  code.e("    (int)(task_desc->task_metadata.expert_offset & 0xFFFF));");   // bid.x: the (head, half) index
++  return register_task_variant(TASK_MLA_MERGE_OPROJ_MI300, code.to_string());
 +}
 +
 +// params: [topk, n_experts, n_forced, scaling_bits, layer_index, hidden];
