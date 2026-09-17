@@ -544,6 +544,53 @@ def test_gemv_w13_keeps_the_chain_rule(head, layers):
     # one layer is the dense MLP alone: the flag then changes nothing
     assert sum(c["method"] == "gang_moe_w13_gemv_mi300@new" for c in calls) == max(layers - 1, 0)
 
+def test_router_tasks_issues_the_router_as_four_tasks():
+    """N2: --router-tasks makes each MoE layer's router four regular tasks of the fused kernel,
+    with the arrival counter as a fourth input; the norm2 operator goes, as under --fuse-norm2."""
+    plan, calls = B.dry_run(layers=27, head=True, router_tasks=True)
+    fused, _ = B.dry_run(layers=27, head=True, fuse_norm2=True)
+    labels = [c.label for c in plan.calls]
+    assert "L0.norm2" in labels and not any(l.endswith(".norm2") for l in labels if l != "L0.norm2")
+    assert plan.n_ops == fused.n_ops == 300
+    assert plan.n_tasks == fused.n_tasks + 26 * 3 == 2337        # three more tasks per MoE layer
+    assert not plan.chain_violations()
+    assert plan.tensors["router_counter"].shape == (1,) and plan.tensors["router_counter"].dtype == "i32"
+    assert plan.tensors["router_counter"].kind == "new"          # a zeroed buffer at allocation
+    r = {c.label: c for c in plan.calls}["L5.router"]
+    assert r.method == "moe_router_norm4_layer" and r.tasks == 4 and r.status == "new"
+    assert r.args["input"] == "x_res" and r.args["w_norm"] == "w_norm2_5" and r.args["h"] == "h"
+    assert r.args["counter"] == "router_counter" and r.args["eps"] == G.RMS_EPS
+    # the recorded call: four inputs (the counter last), six outputs, the fused router's params
+    rec = [c for c in calls if c["method"] == "moe_router_norm4_mi300@new"]
+    assert len(rec) == 26 and not any(c["method"].startswith("moe_router_mi300") for c in calls)
+    assert rec[0]["inputs"] == ["x_res", "w_norm2_1", "W_gate_1", "router_counter", "h", "topk_w",
+                                "routing", "mask", "logits_router", "route_log"]
+    assert rec[0]["imaps"] == [[-1, -1, -1]] * 10                # every tensor whole
+    assert rec[0]["grid_dim"] == (4, 1, 1)
+    assert len(rec[0]["params"]) == 7 and rec[0]["params"][6] == G.float_bits(G.RMS_EPS)
+    # the gate-up still reads h, which part 0 of the router writes
+    assert {c.label: c for c in plan.calls}["L5.w13"].args["input"] == "h"
+
+
+def test_router_tasks_default_off_and_debug_keeps_the_one_task_form():
+    plan_off, calls_off = B.dry_run(layers=27, head=True)
+    assert "router_counter" not in plan_off.tensors
+    assert not any(c["method"] == "moe_router_norm4_mi300@new" for c in calls_off)
+    assert sum(c["method"] == "moe_router_mi300@new" for c in calls_off) == 26
+    plan_dbg, calls_dbg = B.dry_run(layers=27, head=True, debug=True, router_tasks=True)
+    plan_dbg0, _ = B.dry_run(layers=27, head=True, debug=True)
+    assert plan_dbg.n_ops == plan_dbg0.n_ops and plan_dbg.n_tasks == plan_dbg0.n_tasks
+    assert not any(c["method"] == "moe_router_norm4_mi300@new" for c in calls_dbg)
+    assert "router_counter" not in plan_dbg.tensors and not plan_dbg.chain_violations()
+
+
+@pytest.mark.parametrize("head,layers", [(True, 27), (False, 2), (True, 1)])
+def test_router_tasks_keeps_the_chain_rule(head, layers):
+    plan, _ = B.dry_run(layers=layers, head=head, router_tasks=True, merge_tasks=True,
+                        gemv_linears=True, fuse_silu=True)
+    assert plan.chain_violations() == []
+
+
 def test_merge_tasks_issues_the_merge_as_regular_tasks():
     """N4: --merge-tasks turns the 8-task merge gang into 16 regular tasks (32 with
     --merge-halves 2) with whole-tensor imaps, the operator keeping its label and its tensors."""

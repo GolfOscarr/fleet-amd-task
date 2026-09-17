@@ -48,6 +48,14 @@ inline float __uint_as_float(unsigned u) {
 }
 inline unsigned long long clock64() { return 0; }
 
+// The cross-task synchronisation of the last-task pattern (N2 of
+// docs/gpu-experiments/04-kernels): clang's amdgcn fence and HIP atomic builtins,
+// which exist only for the device target. Macros here, so that the kernel bodies
+// parse on the host and the real builtins are used in the fork's build.
+#define __HIP_MEMORY_SCOPE_AGENT 3
+#define __builtin_amdgcn_fence(order, scope) ((void)0)
+#define __hip_atomic_fetch_add(ptr, val, order, scope) (*(ptr) += (val))
+
 constexpr int NUM_THREADS = 256;
 constexpr int NUM_THREADS_PER_WARP = 64;
 

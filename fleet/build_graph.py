@@ -150,6 +150,32 @@ def moe_router_layer(mpk, input, w_gate, topk_w, routing, mask, logits, route_lo
               "moe_router_norm_mi300" if fused else "moe_router_mi300", params)
 
 
+def moe_router_norm4_layer(mpk, input, w_norm, w_gate, counter, h, topk_w, routing, mask, logits,
+                           route_log, layer_index, topk, n_experts, n_forced, scaling, eps,
+                           block_dim=(256, 1, 1)):
+    """N2 (R5 of docs/gpu-experiments/04-kernels/03-router-merge-ideas.md): the fused router of O1
+    as four regular tasks of n_experts / 4 experts each, every tensor whole and the part from the
+    task index. Every task runs the norm (part 0 writes h) and writes its logits; the last to
+    arrive reads the 64 back, routes and resets the counter, a [1] int32 tensor of the plan that a
+    new allocation has already zeroed. Registration moe_router_norm4_mi300: inputs x_res, w_norm,
+    W_gate, counter; outputs h, topk_w, routing, mask, logits, route_log; the fused router's seven
+    params."""
+    assert w_gate.dim(0) == n_experts and routing.dim(0) == n_experts + n_forced
+    assert mask.dim(0) == n_experts + n_forced + 1 and topk_w.dim(1) == topk + n_forced
+    assert logits.dim(1) == n_experts
+    assert w_norm.dim(0) == input.dim(1) and h.dim(1) == input.dim(1)
+    assert counter.num_dims == 1 and counter.dim(0) == 1, counter.shape
+    assert n_experts % 16 == 0, "four tasks of four waves"
+    _new_task(mpk, (4, 1, 1), block_dim,
+              [(input, (-1, -1, -1), -1), (w_norm, (-1, -1, -1), -1), (w_gate, (-1, -1, -1), -1),
+               (counter, (-1, -1, -1), -1),
+               (h, (-1, -1, -1), -1), (topk_w, (-1, -1, -1), -1), (routing, (-1, -1, -1), -1),
+               (mask, (-1, -1, -1), -1), (logits, (-1, -1, -1), -1), (route_log, (-1, -1, -1), -1)],
+              "moe_router_norm4_mi300",
+              [topk, n_experts, n_forced, G.float_bits(scaling), layer_index, input.dim(1),
+               G.float_bits(eps)])
+
+
 def gang_moe_w2_silu_linear_layer(mpk, input, weight, moe_routing_indices, moe_mask, output, scratch,
                                   block_dim=(256, 1, 1)):
     """O2 (docs/gpu-experiments/03-acceleration): the stock gang w2 with the silu-mul in its
@@ -356,6 +382,7 @@ NEW_LAYERS = {
     "stream_layer": stream_layer,
     "stream_gang_layer": stream_gang_layer,
     "moe_router_layer": moe_router_layer,
+    "moe_router_norm4_layer": moe_router_norm4_layer,
     "copy_layer": copy_layer,
 }
 
@@ -494,7 +521,7 @@ def build(packed, capture, meta, dims=REAL_DIMS, s_max=1056, layers=27, head=Tru
           stop_after=None, debug_scores=False, tile_linears=False, attend_tasks=False, num_workers=296, num_schedulers=8,
           profiler_tensor=None, align=0, workspaces=None, fuse_norm2=False, fuse_silu=False,
           probe_before=None, fuse_norm1=False, prefetch=False, gemv_linears=False, linear_grid=None,
-          head_grid=None, gemv_w13=False, merge_tasks=False, merge_halves=1, plan=None):
+          head_grid=None, gemv_w13=False, merge_tasks=False, merge_halves=1, router_tasks=False, plan=None):
     """On the machine: construct the PersistentKernel, attach, issue, return (mpk, host tensors, plan).
     plan: a ready plan (the empty ladder of I3) instead of the model's."""
     import torch
@@ -503,7 +530,7 @@ def build(packed, capture, meta, dims=REAL_DIMS, s_max=1056, layers=27, head=Tru
     if plan is None:
         plan = G.build_plan(dims, s_max, layers, head, debug, debug_scores, tile_linears, attend_tasks, fuse_norm2,
                             fuse_silu, fuse_norm1, prefetch, gemv_linears, linear_grid, head_grid, gemv_w13,
-                            merge_tasks, merge_halves)
+                            merge_tasks, merge_halves, router_tasks)
     assert not gemv_w13 or num_workers // G.XCDS == G.W13_GEMV_TILES, \
         f"--gemv-w13 wants {G.W13_GEMV_TILES} workers per XCD, not {num_workers // G.XCDS}"   # L4
     if probe_before:
@@ -690,11 +717,11 @@ class FakeMPK:
 def dry_run(dims=REAL_DIMS, s_max=1056, layers=27, head=True, debug=False, stop_after=None,
             debug_scores=False, tile_linears=False, attend_tasks=False, fuse_norm2=False, fuse_silu=False,
             probe_before=None, fuse_norm1=False, prefetch=False, gemv_linears=False, linear_grid=None,
-            head_grid=None, gemv_w13=False, merge_tasks=False, merge_halves=1, plan=None):
+            head_grid=None, gemv_w13=False, merge_tasks=False, merge_halves=1, router_tasks=False, plan=None):
     if plan is None:
         plan = G.build_plan(dims, s_max, layers, head, debug, debug_scores, tile_linears, attend_tasks, fuse_norm2,
                             fuse_silu, fuse_norm1, prefetch, gemv_linears, linear_grid, head_grid, gemv_w13,
-                            merge_tasks, merge_halves)
+                            merge_tasks, merge_halves, router_tasks)
     if probe_before:
         plan.insert_probe(probe_before)
     if stop_after:
@@ -731,6 +758,9 @@ def main():
                          "(N4, docs/gpu-experiments/04-kernels)")
     ap.add_argument("--merge-halves", type=int, default=1, metavar="N",
                     help="--merge-tasks: 1 (a whole head per task) or 2 (a half of its W_uv rows)")
+    ap.add_argument("--router-tasks", action="store_true",
+                    help="the MoE router as four regular tasks, the last one routing "
+                         "(N2, docs/gpu-experiments/04-kernels)")
     ap.add_argument("--out", default=None)
     # L6: the stream probe's plan, on the empty ladder's machinery (--graph empty is not built here:
     # its plan has no model arithmetic to check, and run_fleet.py builds it on the machine)
@@ -753,7 +783,8 @@ def main():
         plan, calls = dry_run(REAL_DIMS, args.s_max, args.layers, not args.no_head, args.debug, args.stop_after,
                               args.debug_scores, args.tile_linears, gemv_linears=args.gemv_linears,
                               linear_grid=args.linear_grid, head_grid=args.head_grid, gemv_w13=args.gemv_w13,
-                              merge_tasks=args.merge_tasks, merge_halves=args.merge_halves)
+                              merge_tasks=args.merge_tasks, merge_halves=args.merge_halves,
+                              router_tasks=args.router_tasks)
     s = G.summary(plan)
     print(json.dumps({k: v for k, v in s.items()}, indent=None))
     print(f"{len(calls)} calls recorded; task types: {sorted(set(c['task_type'] for c in calls))}")

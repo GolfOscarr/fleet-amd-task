@@ -45,6 +45,7 @@ choice of imap in `build_graph.py`.
 | same file, `mla_merge_uv_tile_mi300_task_impl` | `TASK_MLA_MERGE_UV_TILE_MI300` (201), regular (registration `mla_merge_uv_tile_mi300`; `--merge-tasks [--merge-halves 2]`, N4 of `docs/gpu-experiments/04-kernels`; the enum, the name maps, the `expert_offset` list, the registration and the dispatcher branch are the blocks of `fleet/patches/hunks/N4-merge-tile.md`, to be added to `new_tasks.patch` on the fork) | `nh x halves` tasks (16 or 32) | `partials`, `W_uv` (both whole) | `attn [1,2048]` (whole) | `[split, n_splits, halves]`; the task's (head, half) is its `bid.x` through the `expert_offset` metadata (`h = idx / halves`, `half = idx % halves`) |
 | `moe_router_mi300.cuh` | `TASK_MOE_ROUTER_MI300` (188), CU-task | 1 | `h [1,2048]`, `W_gate [64,2048]` | `topk_w [1,8]` FP32, `routing [66,1]` int32, `mask [67]` int32, `logits [1,64]` FP32, `route_log [32,26,8]` int32 | `[topk, n_experts, n_forced, scaling_bits, layer_index, hidden]` |
 | same file, `NORM = true` (registration `moe_router_norm_mi300`; `--fuse-norm2`, O1 of `docs/gpu-experiments/03-acceleration`) | `TASK_MOE_ROUTER_MI300` (188), CU-task | 1 | `x_res [1,2048]`, `w_norm [2048]`, `W_gate [64,2048]` | `h [1,2048]` (the normalised row, for the expert gate-up), then the five above | the six above and `eps_bits` |
+| same file, `SPLIT = 4` (registration `moe_router_norm4_mi300`; `--router-tasks`, N2 of `docs/gpu-experiments/04-kernels`; the enum, the name maps, the `expert_offset` list, the registration and the dispatcher branch are the blocks of `fleet/patches/hunks/N2-router4.md`, to be added to `new_tasks.patch` on the fork) | `TASK_MOE_ROUTER4_MI300` (200), regular | 4 | `x_res [1,2048]`, `w_norm [2048]`, `W_gate [64,2048]`, `counter [1]` int32 (all whole) | the fused form's six (all whole) | the fused form's seven; the task's part is its `bid.x` through the `expert_offset` metadata |
 | `gang_moe_w2_silu_mi300.cuh` | `TASK_GANG_MOE_W2_SILU_MI300` (191), gang (registration `gang_moe_w2_silu_linear_mi300`; `--fuse-silu`, O2 of `docs/gpu-experiments/03-acceleration`) | 8 x 32 tiles | `mid [1,8,2816]` (gate then up per slot), `W2 [66,2048,1408]`, `routing`, `mask` | `out8 [1,8,2048]`, `w2_scratch [256,1408]` (one activation row per (XCD, tile)) | the stock w2's `[tiles_per_expert, max_experts_per_xcd, total_tiles_per_xcd]`; K from the weight |
 | `copy_mi300.cuh` | `TASK_COPY_MI300` (189), CU-task | 1 | `x [1,N]` | `y [1,N]` | `[N]` |
 | `prefetch_mi300.cuh` | `TASK_PREFETCH_MI300` (193), regular, a side operator (registration `prefetch_mi300`; `--prefetch`, O8 of `docs/gpu-experiments/03-acceleration`) | `grid_for_linear(N)` stripes | `W [N,K]` (the task's `N / grid` rows) | `dummy [grid,4]` int32 (the task's row: one XOR word per wave, so the loads are not elided) | none |
@@ -114,6 +115,19 @@ take the last slots at weight 1.0; `routing[e] = slot + 1`, `mask[slot] =
 id`, `mask[66] = 8`, unused mask entries `-1` (as the stock kernel; the
 consumers read only `mask[count]` and `mask[0..count)`); `route_log[step -
 (prompt_len - 1)][layer_index][slot] = id`. LDS 256 B.
+
+`SPLIT = 4` (N2) is the same kernel over four tasks of 16 experts. Every
+task normalises (only part 0 stores `h`), multiplies its four experts per
+wave and writes its 16 logits to `logit_s` and to the `logits` tensor;
+then an agent-scope release fence by every thread, thread 0's acq-rel add
+on the counter and the broadcast of "last" through LDS. The task that saw
+the fourth increment runs an acquire fence in every thread, reads the 64
+logits back and runs the softmax, the top-k and the slot writes exactly as
+the one-task form does, then thread 0 resets the counter. The cross-lane
+reduction is `butterfly_sum<ROUTER_BATCH>` in both forms (the wave's four
+experts are one batch whose unused rows hold zero, and the butterfly never
+mixes rows), so every output is bit-identical; the suite's `moe_router4`
+row checks that against the one-task row.
 
 ### Side operators (in `new_tasks.patch`, O8)
 

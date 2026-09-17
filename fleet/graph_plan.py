@@ -92,6 +92,7 @@ OUTPUT_ARGS = {
     "prefetch_layer": ["dummy"], "prefetch_moe_layer": ["dummy"],
     "mla_prep_layer": ["c_kv", "k_pe", "ql_nope", "q_pe"], "mla_attend_layer": ["partials", "scores"],
     "mla_merge_uv_layer": ["output"], "mla_merge_uv_tile_layer": ["output"], "moe_router_layer": ["h", "topk_w", "routing", "mask", "logits", "route_log"],
+    "moe_router_norm4_layer": ["h", "topk_w", "routing", "mask", "logits", "route_log"],
     "gang_moe_w13_linear_layer": ["output"], "gang_moe_w13_gemv_layer": ["output"],
     "moe_silu_mul_layer": ["output"],
     "gang_moe_w2_linear_layer": ["output"], "gang_moe_w2_silu_linear_layer": ["output", "scratch"],
@@ -258,7 +259,7 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
                attend_tasks: bool = False, fuse_norm2: bool = False, fuse_silu: bool = False,
                fuse_norm1: bool = False, prefetch: bool = False, gemv_linears: bool = False,
                linear_grid: int = None, head_grid: int = None, gemv_w13: bool = False, merge_tasks: bool = False,
-               merge_halves: int = 1) -> Plan:
+               merge_halves: int = 1, router_tasks: bool = False) -> Plan:
     """debug_scores: the mla_attend kernel also writes the scaled pre-softmax scores
     [NH, s_max] FP32 (boundary B5); needs the MLA_ATTEND_DEBUG_SCORES build (MPK_DEBUG_SCORES=1).
     tile_linears: issue the four dense linears (qkva, o_proj, down, lm_head) as per-tile
@@ -286,6 +287,12 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
     site whose K is not H: 11,264, so a row is 22 sixteen-byte loads per lane instead of 4 and a
     batch of 8 rows is 704 VGPRs of raw words; -DGEMV_BATCH=2 is the knob if the VM's A/B finds
     it spilling (the kernel's body is a call, so the worker union does not carry those registers).
+    router_tasks: the MoE layers' router as four regular tasks of 16 experts each, the last to
+    arrive reading the 64 logits back and routing (N2 of docs/gpu-experiments/04-kernels, R5). It
+    is the fused router's split form, so for those layers it carries fuse_norm2's wiring (no
+    L{l}.norm2 operator; the router reads x_res and the norm weight and writes h) and it adds one
+    tensor, router_counter [1] int32, shared by every layer and zeroed at allocation. Three more
+    tasks per MoE layer; off under debug, as fuse_norm1 and gemv_linears are.
     merge_tasks, merge_halves: the merge as NH * merge_halves regular tasks with whole-tensor
     imaps instead of the 8-task gang (N4 of docs/gpu-experiments/04-kernels, M6 and M4): the
     head and the half come from the task index, and with merge_halves 2 each task multiplies
@@ -323,6 +330,7 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
         # of build_graph.build and never reaches the plan, so the constant is what is checked.
         assert NUM_WORKERS // XCDS == W13_GEMV_TILES == 37, (NUM_WORKERS, W13_GEMV_TILES)
         assert sum(w13_tile_rows(t, 2 * d.I_MOE)[1] for t in range(W13_GEMV_TILES)) == 2 * d.I_MOE
+    router4 = router_tasks and not debug
     assert merge_halves in (1, 2), merge_halves
     assert merge_halves == 1 or merge_tasks, "--merge-halves applies to --merge-tasks"
     assert linear_grid is None or gemv_linears, "--linear-grid applies to --gemv-linears"
@@ -360,6 +368,10 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
         p.t("routing", (d.E_TOTAL, 1), "i32")
         p.t("mask", (d.E_TOTAL + 1,), "i32")
         p.t("logits_router", (1, d.E), "f32")
+        if router4:
+            # N2: the arrival counter of the four-task router, one for all the MoE layers (the
+            # chain serialises them, and the last task of each resets it to zero)
+            p.t("router_counter", (1,), "i32")
         p.t("mid", (1, TOPK_TOTAL_SLOTS, 2 * d.I_MOE))
         if fuse_silu:
             # one row per (XCD, tile) of the w2 gang: max_experts_per_xcd x n_tiles tiles per XCD
@@ -454,7 +466,7 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
             p.t(f"W_qkva_{l + 1}", (d.Q_OUT + d.KVA_OUT, d.H), kind="input", source=f"W_qkva_{l + 1}")
             p.op("prefetch_layer", g, status="new", side=True, label=f"L{l}.prefetch_W_qkva_next",
                  weight=f"W_qkva_{l + 1}", dummy="pf_dummy_qkva", grid_dim=(g, 1, 1), block_dim=(256, 1, 1))
-        if not (fuse_norm2 and l > 0):
+        if not ((fuse_norm2 or router4) and l > 0):
             p.op("rmsnorm_layer", 1, label=f"L{l}.norm2", input="x_res", weight=f"w_norm2_{l}", output="h",
                  grid_dim=(1, 1, 1), block_dim=(256, 1, 1))
         if l == 0:
@@ -481,9 +493,12 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
             p.t(f"W_gate_{l}", (d.E, d.H), kind="input", source=f"W_gate_{l}")
             p.t(f"W13_{l}", (d.E_TOTAL, 2 * d.I_MOE, d.H), kind="input", source=f"W13_{l}")
             p.t(f"W2_{l}", (d.E_TOTAL, d.H, d.I_MOE), kind="input", source=f"W2_{l}")
-            router_io = (dict(input="x_res", w_norm=f"w_norm2_{l}", h="h", eps=RMS_EPS) if fuse_norm2
-                         else dict(input="h"))
-            p.op("moe_router_layer", 1, status="new", label=f"L{l}.router",
+            router_io = (dict(input="x_res", w_norm=f"w_norm2_{l}", h="h", eps=RMS_EPS)
+                         if (fuse_norm2 or router4) else dict(input="h"))
+            if router4:
+                router_io["counter"] = "router_counter"
+            p.op("moe_router_norm4_layer" if router4 else "moe_router_layer",
+                 4 if router4 else 1, status="new", label=f"L{l}.router",
                  w_gate=f"W_gate_{l}", topk_w="topk_w", routing="routing", mask="mask",
                  logits="logits_router", route_log="route_log", layer_index=l - 1,
                  topk=d.TOPK, n_experts=d.E, n_forced=N_FORCED, scaling=ROUTED_SCALING,

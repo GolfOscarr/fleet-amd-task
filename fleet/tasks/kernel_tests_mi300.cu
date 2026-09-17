@@ -32,8 +32,8 @@
  * (XCD, tile) pair. The defines are the ones persistent_kernel.py passes on its ROCm path.
  *
  * Usage: kernel_tests <test> <dir> [<dir> ...]
- *   test  mla_prep | mla_attend | mla_merge_uv | mla_merge_uv_tile | moe_router | copy
- *         | prefetch | prefetch_moe | stream
+ *   test  mla_prep | mla_attend | mla_merge_uv | mla_merge_uv_tile | moe_router | moe_router4
+ *         | copy | prefetch | prefetch_moe | stream
  *         | linear_gemv | linear_gemv_norm | linear_gemv_res
  *         | gang_w13_gemv | gang_w2_gemv (the -DKT_FAKE_XCD build only)
  *   dir   params.txt ("name value" per line, integers; floats as IEEE-754
@@ -216,6 +216,28 @@ __global__ __launch_bounds__(256, 1) void k_moe_router(void const *x_res,
       meta.prompt_length[0], layer_index, scaling, eps);
 }
 
+// N2: the four-task form, grid (4): the part is blockIdx.x (the runtime passes it through
+// expert_offset) and the counter a [1] int32 tensor the driver pre-fills with zero.
+__global__ __launch_bounds__(256, 1) void k_moe_router4(void const *x_res,
+                                                        void const *w_norm,
+                                                        void const *w_gate,
+                                                        void *counter,
+                                                        void *h,
+                                                        void *topk_w,
+                                                        void *routing,
+                                                        void *mask,
+                                                        void *logits,
+                                                        void *route_log,
+                                                        Meta meta,
+                                                        int layer_index,
+                                                        float scaling,
+                                                        float eps) {
+  kernel::moe_router_mi300_task_impl<bf16, HIDDEN, N_EXPERTS, N_FORCED, TOPK, ROUTE_STEPS,
+                                     ROUTE_LAYERS, true, 4>(
+      x_res, w_norm, w_gate, h, topk_w, routing, mask, logits, route_log, meta.step[0],
+      meta.prompt_length[0], layer_index, scaling, eps, (int)blockIdx.x, counter);
+}
+
 // grid (PF_GRID): block b streams stripe b of w into row b of dummy [PF_GRID, 4] (one word per wave),
 // the pointers offset the way the runtime offsets them for a weight partitioned on dim 0
 __global__ __launch_bounds__(256, 1) void k_prefetch(void const *w, void *dummy) {
@@ -356,6 +378,21 @@ static const Spec SPEC_MOE_ROUTER[] = {   // the fused form, NORM = true (O1)
     {"x_res", (size_t)HIDDEN * 2, false},
     {"w_norm", (size_t)HIDDEN * 2, false},
     {"w_gate", (size_t)N_EXPERTS * HIDDEN * 2, false},
+    {"h", (size_t)HIDDEN * 2, true},
+    {"topk_w", (size_t)N_SLOTS * 4, true},
+    {"routing", (size_t)N_TOTAL * 4, true},
+    {"mask", (size_t)(N_TOTAL + 1) * 4, true},
+    {"logits", (size_t)N_EXPERTS * 4, true},
+    {"route_log", (size_t)ROUTE_STEPS * ROUTE_LAYERS * N_SLOTS * 4, true},
+};
+
+// N2: the same tensors plus the arrival counter, which the driver writes as zero and reads
+// back (the last task resets it), so its round trip is checked too
+static const Spec SPEC_MOE_ROUTER4[] = {
+    {"x_res", (size_t)HIDDEN * 2, false},
+    {"w_norm", (size_t)HIDDEN * 2, false},
+    {"w_gate", (size_t)N_EXPERTS * HIDDEN * 2, false},
+    {"counter", 4, true},
     {"h", (size_t)HIDDEN * 2, true},
     {"topk_w", (size_t)N_SLOTS * 4, true},
     {"routing", (size_t)N_TOTAL * 4, true},
@@ -704,6 +741,22 @@ void run_moe_router(std::string const &dir) {
   b.store_outputs();
 }
 
+void run_moe_router4(std::string const &dir) {
+  Params p = read_params(dir);
+  Buffers b{dir, specs_of(SPEC_MOE_ROUTER4), {}};
+  b.load();
+  DeviceMeta m((int)param(p, "step"), (int)param(p, "prompt_length"));
+  allow_full_lds(k_moe_router4);
+  hipLaunchKernelGGL(k_moe_router4, dim3(4), dim3(256), SMEM_BYTES, 0,
+                     b.get("x_res"), b.get("w_norm"), b.get("w_gate"), b.get("counter"), b.get("h"),
+                     b.get("topk_w"), b.get("routing"), b.get("mask"), b.get("logits"),
+                     b.get("route_log"), m.meta,
+                     (int)param(p, "layer_index"), float_from_bits(param(p, "scaling_bits")),
+                     float_from_bits(param(p, "eps_bits")));
+  finish_launch();
+  b.store_outputs();
+}
+
 void run_prefetch(std::string const &dir) {
   (void)read_params(dir);
   Buffers b{dir, specs_of(SPEC_PREFETCH), {}};
@@ -884,8 +937,8 @@ void run_copy(std::string const &dir) {
 int main(int argc, char **argv) {
   if (argc < 3) {
     std::fprintf(stderr,
-                 "usage: %s <mla_prep|mla_attend|mla_merge_uv|mla_merge_uv_tile|moe_router|copy|prefetch|prefetch_moe"
-                 "|stream|linear_gemv|linear_gemv_norm|linear_gemv_res|gang_w13_gemv|gang_w2_gemv> <dir>...\n",
+                 "usage: %s <mla_prep|mla_attend|mla_merge_uv|mla_merge_uv_tile|moe_router|moe_router4|copy|prefetch"
+                 "|prefetch_moe|stream|linear_gemv|linear_gemv_norm|linear_gemv_res|gang_w13_gemv|gang_w2_gemv> <dir>...\n",
                  argv[0]);
     return 1;
   }
@@ -901,6 +954,8 @@ int main(int argc, char **argv) {
     run = run_mla_merge_uv_tile;
   } else if (test == "moe_router") {
     run = run_moe_router;
+  } else if (test == "moe_router4") {
+    run = run_moe_router4;
   } else if (test == "copy") {
     run = run_copy;
   } else if (test == "prefetch") {

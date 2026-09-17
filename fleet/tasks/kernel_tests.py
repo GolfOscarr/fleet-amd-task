@@ -33,6 +33,9 @@ Tests (--kernel selects; default all):
   mla_merge_uv_tile, mla_merge_uv_tile2
       the merge as 16 or 32 regular tasks (N4, docs/gpu-experiments/04-kernels), each trial run
       through both launches: the reference check of the gang row, plus attn bit for bit against it
+  moe_router4
+      the router as four tasks with a zeroed counter (N2), each trial run through both launches:
+      the reference check of the one-task row, plus every output bit for bit against it
   mla_attend_scores   the -DMLA_ATTEND_DEBUG_SCORES build's second output (boundary B5)
   mla_attend_splits   one split of 1056 rows versus 33 splits of 32 rows through
                       both the attend and the merge kernel (isolates the merge)
@@ -548,6 +551,28 @@ def check_moe_router(t, p, exp, got):
     return rows
 
 
+def tensors_moe_router4(params):
+    # N2: the fused form's tensors plus the arrival counter, which the last task resets to zero
+    t = tensors_moe_router(params)
+    return t[:3] + [T("counter", "i32", (1,), True)] + t[3:]
+
+
+def make_moe_router4(rng):
+    t, p = make_moe_router(rng)
+    t["counter"] = np.zeros(1, np.int32)            # the plan's new tensors are zeroed buffers
+    return t, p
+
+
+def ref_moe_router4(t, p):
+    return dict(ref_moe_router(t, p), counter=np.zeros(1, np.int32))
+
+
+def check_moe_router4(t, p, exp, got):
+    rows = check_moe_router(t, p, exp, got)
+    rows.append(row_exact("counter", got["counter"], exp["counter"], note="reset by the last task"))
+    return rows
+
+
 # --- prefetch (O8) ----------------------------------------------------------
 
 PF_GRID, PF_ROWS = 4, 32          # the launcher's constants: a W_o-like [128, 2048] in 4 stripes
@@ -803,6 +828,8 @@ KERNELS = {
     "mla_merge_uv_tile": Kernel("mla_merge_uv_tile", tensors_mla_merge_uv, make_mla_merge_uv,
                                 ref_mla_merge_uv, check_mla_merge_uv),
     "moe_router": Kernel("moe_router", tensors_moe_router, make_moe_router, ref_moe_router, check_moe_router),
+    "moe_router4": Kernel("moe_router4", tensors_moe_router4, make_moe_router4, ref_moe_router4,
+                          check_moe_router4),
     "copy": Kernel("copy", tensors_copy, make_copy, ref_copy, check_copy),
     "prefetch": Kernel("prefetch", tensors_prefetch, make_prefetch, ref_prefetch, check_prefetch),
     "prefetch_moe": Kernel("prefetch_moe", tensors_prefetch_moe, make_prefetch_moe, ref_prefetch_moe, check_prefetch_moe),
@@ -1009,6 +1036,32 @@ def run_merge_tile(ctx, name, halves):
     return summarize(name, rows)
 
 
+def run_router4(ctx, name):
+    """N2: the router over four tasks against the one-task kernel on the same inputs. A logit's
+    lane chain and its butterfly are the batch constant's in both forms, so every output matches
+    bit for bit; the reference check of the one-task row applies to the four-task row unchanged."""
+    rng = trial_rng(ctx, name)
+    one, four = KERNELS["moe_router"], KERNELS["moe_router4"]
+    trials = []
+    for i in range(ctx.n):
+        base = ctx.work / name / f"{i:03d}"
+        tensors, p = make_moe_router(rng)
+        write_trial(base / "one", one, tensors, p)
+        write_trial(base / "four", four, dict(tensors, counter=np.zeros(1, np.int32)), p)
+        trials.append(base)
+    run_binary(ctx.binary, one, [b / "one" for b in trials])
+    run_binary(ctx.binary, four, [b / "four" for b in trials])
+    rows = []
+    for base in trials:
+        _, _, g = read_trial(base / "one", one)
+        t, p, k = read_trial(base / "four", four)
+        r = four.check(t, p, four.reference(t, p), k)
+        for out in ("h", "topk_w", "routing", "mask", "logits", "route_log"):
+            r.append(row_exact(f"{out}: four tasks vs one", k[out], g[out]))
+        rows.append(r)
+    return summarize(name, rows)
+
+
 TESTS = {
     "mla_prep": lambda ctx: run_single(ctx, "mla_prep", KERNELS["mla_prep"]),
     "mla_attend": lambda ctx: run_single(ctx, "mla_attend", KERNELS["mla_attend"]),
@@ -1016,6 +1069,7 @@ TESTS = {
     "mla_merge_uv_tile": lambda ctx: run_merge_tile(ctx, "mla_merge_uv_tile", 1),
     "mla_merge_uv_tile2": lambda ctx: run_merge_tile(ctx, "mla_merge_uv_tile2", 2),
     "moe_router": lambda ctx: run_single(ctx, "moe_router", KERNELS["moe_router"]),
+    "moe_router4": lambda ctx: run_router4(ctx, "moe_router4"),
     "copy": lambda ctx: run_single(ctx, "copy", KERNELS["copy"]),
     "prefetch": lambda ctx: run_single(ctx, "prefetch", KERNELS["prefetch"]),
     "prefetch_moe": lambda ctx: run_single(ctx, "prefetch_moe", KERNELS["prefetch_moe"]),

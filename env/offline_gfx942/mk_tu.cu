@@ -26,6 +26,9 @@
 // N4: the merge as regular tasks, keyed on the type its hunk will add (201). The kernel's
 // header is the gang form's, which task_header.cuh already includes.
 #define MK_TASK_MLA_MERGE_UV_TILE_MI300 ((TaskType)201)
+// N2: the fused router in four tasks, keyed on the type its hunk will add (200); its kernel
+// header is the one-task router's, already included by task_header.cuh
+#define MK_TASK_MOE_ROUTER4_MI300 ((TaskType)200)
 #endif
 
 using namespace mirage::runtime;
@@ -105,6 +108,15 @@ void _execute_task(TaskDesc const *task_desc, RuntimeConfig const &runtime_confi
         task_desc->input_ptrs[0], task_desc->input_ptrs[1], task_desc->output_ptrs[0],
         runtime_config.step[0], 32, 33,
         (int)(task_desc->task_metadata.expert_offset & 0xFFFF));
+  } else if (task_desc->task_type == MK_TASK_MOE_ROUTER4_MI300 && task_desc->variant_id == 0) {
+    // N2, --router-tasks: the fused router's GEMV over four tasks, the part from expert_offset
+    // and the counter as input 3 (the emitted call of fleet/patches/hunks/N2-router4.md)
+    kernel::moe_router_mi300_task_impl<bfloat16, 2048, 64, 2, 6, 32, 26, true, 4>(
+        task_desc->input_ptrs[0], task_desc->input_ptrs[1], task_desc->input_ptrs[2],
+        task_desc->output_ptrs[0], task_desc->output_ptrs[1], task_desc->output_ptrs[2],
+        task_desc->output_ptrs[3], task_desc->output_ptrs[4], task_desc->output_ptrs[5],
+        runtime_config.step[0], runtime_config.prompt_length[0], 1, 1.0f, 1e-6f,
+        (int)(task_desc->task_metadata.expert_offset & 0xFFFF), task_desc->input_ptrs[3]);
 #endif
   }
   // L6: the stream probe's regular form, the two rows of G5 (152 KB over 96 tasks, qkva's shape,
