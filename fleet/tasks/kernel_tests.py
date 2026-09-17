@@ -3,6 +3,7 @@
 
     python fleet/tasks/kernel_tests.py [--n 100] [--seed 0] [--kernel NAME ...]
         [--bin fleet/tasks/build/kernel_tests] [--bin-debug fleet/tasks/build/kernel_tests_debug]
+        [--bin-xcd fleet/tasks/build/kernel_tests_xcd]
         [--dry-run] [--work-dir DIR] [--keep] [--out fleet/tasks/results/kernel_tests.json]
     (--dry-run writes fleet/tasks/results/kernel_tests_dryrun.json, which is gitignored)
 
@@ -21,6 +22,14 @@ Tests (--kernel selects; default all):
       the three forms of the GEMV linear (L1, docs/gpu-experiments/04-kernels): a whole grid of
       tasks per launch (96 tasks of 38 rows of qkva; 64 of 32 rows with the residual), against
       bf16(W @ x), numpy_ref.linear_norm and bf16(W @ x + res)
+  gang_w13_gemv, gang_w2_gemv
+      the two MoE gang kernels (L3 and L4, docs/gpu-experiments/04-kernels), from the
+      -DKT_FAKE_XCD build: one launch of (tiles, 8) blocks covers every (XCD, tile) pair, the
+      tile index is blockIdx.x and the XCD blockIdx.y, so all eight slots of the token are
+      computed and compared with numpy_ref.moe_w13 and numpy_ref.moe_w2. A trial holds only the
+      eight active experts' weight slabs (the model's 66 would be 761 MB of W13), so the mask
+      names the ids 0 to 7 rather than the router's own eight; the kernels read the ids from
+      the mask, so nothing else changes.
   mla_attend_scores   the -DMLA_ATTEND_DEBUG_SCORES build's second output (boundary B5)
   mla_attend_splits   one split of 1056 rows versus 33 splits of 32 rows through
                       both the attend and the merge kernel (isolates the merge)
@@ -74,11 +83,16 @@ TILES_PER_XCD = -(-N_SPLITS // XCDS)                     # 5
 QKVA = D.Q_OUT + D.KVA_OUT                               # 3648
 N_SLOTS = D.TOPK + G.N_FORCED                            # 8
 N_TOTAL = D.E + G.N_FORCED                               # 66
+W13_N = 2 * D.I_MOE                                      # 2816: the expert's gate and up rows
+W13_TILES = G.W13_GEMV_TILES                             # 37 (L4: one tile per worker of an XCD)
+W2_TILES = D.H // 64                                     # 32 tiles per expert of the fused w2
+GANG_EXPERTS = 8                                         # the expert slabs a gang trial file holds
 ROUTE_SHAPE = (common.N_STEPS, D.L - 1, G.TOPK_TOTAL_SLOTS)   # [32, 26, 8] (graph_plan.py)
 FORCED = tuple(range(D.E, D.E + G.N_FORCED))
 
 DEFAULT_BIN = ROOT / "fleet/tasks/build/kernel_tests"
 DEFAULT_BIN_DEBUG = ROOT / "fleet/tasks/build/kernel_tests_debug"
+DEFAULT_BIN_XCD = ROOT / "fleet/tasks/build/kernel_tests_xcd"
 DEFAULT_OUT = ROOT / "fleet/tasks/results/kernel_tests.json"
 DEFAULT_OUT_DRY = ROOT / "fleet/tasks/results/kernel_tests_dryrun.json"     # gitignored
 BUILD_HINT = ("build it from the repository root with the line in its header, starting with "
@@ -693,6 +707,72 @@ def ref_linear_gemv_res(t, p):
     return {"out": R.linear_residual(t["x"], t["w"], t["residual"])}
 
 
+# --- the MoE gang kernels (L3 and L4) ---------------------------------------
+
+# One launch is the whole operator of one layer: (tiles, 8) blocks, the tile index blockIdx.x and
+# the XCD blockIdx.y (the -DKT_FAKE_XCD build). Eight experts are active, one per XCD, so every
+# slot of the token is written and the reference is the whole [8, N] output. The trial's weight
+# holds those eight experts' slabs alone and the mask names the ids 0 to 7: the model's 66 slabs
+# would be 761 MB of W13 per trial, and the decode never sees an id the mask does not give it.
+
+
+def gang_mask_and_routing(rng):
+    """routing [E + 2, 1] and mask [E + 3] as the router writes them for eight active experts,
+    in a random slot order: mask[s] is slot s's expert id and routing[e] is that slot plus one."""
+    ids = rng.permutation(GANG_EXPERTS).astype(np.int32)
+    mask = np.full(N_TOTAL + 1, -1, np.int32)
+    mask[:N_SLOTS] = ids
+    mask[N_TOTAL] = N_SLOTS
+    routing = np.zeros((N_TOTAL, 1), np.int32)
+    for s, e in enumerate(ids):
+        routing[int(e), 0] = s + 1
+    return routing, mask
+
+
+def tensors_gang_w13_gemv(params):
+    return [T("h", "bf16", (D.H,)), T("w13", "bf16", (GANG_EXPERTS, W13_N, D.H)),
+            T("routing", "i32", (N_TOTAL, 1)), T("mask", "i32", (N_TOTAL + 1,)),
+            T("mid", "bf16", (N_SLOTS, W13_N), True)]
+
+
+def make_gang_w13_gemv(rng):
+    routing, mask = gang_mask_and_routing(rng)
+    return {"h": bf16_normal(rng, (D.H,)),
+            "w13": bf16_normal(rng, (GANG_EXPERTS, W13_N, D.H), D.H ** -0.5),
+            "routing": routing, "mask": mask,
+            "mid": sentinel("bf16", (N_SLOTS, W13_N))}, {}
+
+
+def ref_gang_w13_gemv(t, p):
+    return {"mid": R.moe_w13(t["h"], t["w13"], t["mask"], N_SLOTS)}
+
+
+def check_gang_w13_gemv(t, p, exp, got):
+    return [row_bf16("mid", got["mid"], exp["mid"])]
+
+
+def tensors_gang_w2_gemv(params):
+    return [T("mid", "bf16", (N_SLOTS, W13_N)), T("w2", "bf16", (GANG_EXPERTS, D.H, D.I_MOE)),
+            T("routing", "i32", (N_TOTAL, 1)), T("mask", "i32", (N_TOTAL + 1,)),
+            T("out8", "bf16", (N_SLOTS, D.H), True)]
+
+
+def make_gang_w2_gemv(rng):
+    routing, mask = gang_mask_and_routing(rng)
+    return {"mid": bf16_normal(rng, (N_SLOTS, W13_N)),
+            "w2": bf16_normal(rng, (GANG_EXPERTS, D.H, D.I_MOE), D.I_MOE ** -0.5),
+            "routing": routing, "mask": mask,
+            "out8": sentinel("bf16", (N_SLOTS, D.H))}, {}
+
+
+def ref_gang_w2_gemv(t, p):
+    return {"out8": R.moe_w2(t["mid"], t["w2"], t["mask"], N_SLOTS)}
+
+
+def check_gang_w2_gemv(t, p, exp, got):
+    return [row_bf16("out8", got["out8"], exp["out8"])]
+
+
 # --- copy -------------------------------------------------------------------
 
 def tensors_copy(params):
@@ -727,6 +807,10 @@ KERNELS = {
                                ref_linear_gemv_norm, check_linear_gemv),
     "linear_gemv_res": Kernel("linear_gemv_res", tensors_linear_gemv_res, make_linear_gemv_res,
                               ref_linear_gemv_res, check_linear_gemv),
+    "gang_w13_gemv": Kernel("gang_w13_gemv", tensors_gang_w13_gemv, make_gang_w13_gemv,
+                            ref_gang_w13_gemv, check_gang_w13_gemv),
+    "gang_w2_gemv": Kernel("gang_w2_gemv", tensors_gang_w2_gemv, make_gang_w2_gemv,
+                           ref_gang_w2_gemv, check_gang_w2_gemv),
 }
 
 
@@ -786,7 +870,8 @@ def run_binary(binary, kernel, dirs):
 @dataclass
 class Ctx:
     binary: object                # Path, or None for --dry-run
-    binary_debug: object
+    binary_debug: object          # the -DMLA_ATTEND_DEBUG_SCORES build
+    binary_xcd: object            # the -DKT_FAKE_XCD build (the two MoE gang rows)
     work: Path
     n: int
     seed: int
@@ -833,7 +918,7 @@ def run_single(ctx, name, kernel, make=None, binary="bin"):
         tensors, params = make(rng)
         write_trial(d, kernel, tensors, params)
         dirs.append(d)
-    run_binary(getattr(ctx, "binary" if binary == "bin" else "binary_debug"), kernel, dirs)
+    run_binary(getattr(ctx, "binary" if binary == "bin" else f"binary_{binary}"), kernel, dirs)
     rows = []
     for d in dirs:
         tensors, params, got = read_trial(d, kernel)
@@ -904,11 +989,14 @@ TESTS = {
     "linear_gemv": lambda ctx: run_single(ctx, "linear_gemv", KERNELS["linear_gemv"]),
     "linear_gemv_norm": lambda ctx: run_single(ctx, "linear_gemv_norm", KERNELS["linear_gemv_norm"]),
     "linear_gemv_res": lambda ctx: run_single(ctx, "linear_gemv_res", KERNELS["linear_gemv_res"]),
+    "gang_w13_gemv": lambda ctx: run_single(ctx, "gang_w13_gemv", KERNELS["gang_w13_gemv"], binary="xcd"),
+    "gang_w2_gemv": lambda ctx: run_single(ctx, "gang_w2_gemv", KERNELS["gang_w2_gemv"], binary="xcd"),
     "mla_attend_scores": lambda ctx: run_single(ctx, "mla_attend_scores", KERNELS["mla_attend"],
                                                 make=make_mla_attend_scores, binary="debug"),
     "mla_attend_splits": lambda ctx: run_splits(ctx, "mla_attend_splits"),
 }
-NEEDS_DEBUG_BINARY = {"mla_attend_scores"}
+# test -> the build variant it needs, by the suffix of the Ctx field and of the --bin-* option
+NEEDS_BINARY = {"mla_attend_scores": "debug", "gang_w13_gemv": "xcd", "gang_w2_gemv": "xcd"}
 
 
 # ----------------------------------------------------------------------------
@@ -935,6 +1023,8 @@ def main(argv=None):
     ap.add_argument("--kernel", action="append", choices=sorted(TESTS), help="test to run (default: all)")
     ap.add_argument("--bin", default=str(DEFAULT_BIN), help="the compiled kernel_tests_mi300.cu")
     ap.add_argument("--bin-debug", default=str(DEFAULT_BIN_DEBUG), help="the -DMLA_ATTEND_DEBUG_SCORES build")
+    ap.add_argument("--bin-xcd", default=str(DEFAULT_BIN_XCD),
+                    help="the -DKT_FAKE_XCD build (the gang_w13_gemv and gang_w2_gemv rows)")
     ap.add_argument("--dry-run", action="store_true", help="no binary: the references stand in for the kernels")
     ap.add_argument("--work-dir", default=None, help="trial directories (default: a temporary directory)")
     ap.add_argument("--keep", action="store_true", help="keep the trial directories")
@@ -944,28 +1034,33 @@ def main(argv=None):
     args = ap.parse_args(argv)
 
     names = args.kernel or list(TESTS)
-    binary = binary_debug = None
+    binary = binary_debug = binary_xcd = None
     if not args.dry_run:
-        binary, binary_debug = Path(args.bin), Path(args.bin_debug)
+        binary, binary_debug, binary_xcd = Path(args.bin), Path(args.bin_debug), Path(args.bin_xcd)
         if not binary.exists():
             sys.exit(f"no binary at {binary} (the compiled fleet/tasks/kernel_tests_mi300.cu): {BUILD_HINT}")
         if not binary_debug.exists():
             binary_debug = None
+        if not binary_xcd.exists():
+            binary_xcd = None
     work = Path(args.work_dir) if args.work_dir else Path(tempfile.mkdtemp(prefix="kernel_tests."))
     work.mkdir(parents=True, exist_ok=True)
-    ctx = Ctx(binary, binary_debug, work, args.n, args.seed)
+    ctx = Ctx(binary, binary_debug, binary_xcd, work, args.n, args.seed)
 
     result = {"n": args.n, "seed": args.seed, "dry_run": args.dry_run,
               "binary": None if args.dry_run else str(binary),
               "binary_debug": None if args.dry_run or binary_debug is None else str(binary_debug),
+              "binary_xcd": None if args.dry_run or binary_xcd is None else str(binary_xcd),
               "tolerances": {"f32_rel": F32_REL, "bf16_rel": BF16_REL, "bf16_ulp": BF16_ULP,
                              "bf16_abs_floor": BF16_ABS_FLOOR, "partials_o_rel": PARTIALS_O_REL, "lse_abs": LSE_ABS, "splits_rel": SPLITS_REL},
               "tests": {}}
     try:
         for name in names:
-            if name in NEEDS_DEBUG_BINARY and not args.dry_run and binary_debug is None:
-                result["tests"][name] = {"result": "SKIP", "note": f"no debug binary at {args.bin_debug}"}
-                print(f"SKIP {name} (no debug binary at {args.bin_debug})")
+            variant = NEEDS_BINARY.get(name)
+            if variant and not args.dry_run and getattr(ctx, f"binary_{variant}") is None:
+                path = getattr(args, f"bin_{variant}")
+                result["tests"][name] = {"result": "SKIP", "note": f"no {variant} binary at {path}"}
+                print(f"SKIP {name} (no {variant} binary at {path})")
                 continue
             s = TESTS[name](ctx)
             result["tests"][name] = s

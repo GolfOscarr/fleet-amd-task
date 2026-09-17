@@ -48,6 +48,7 @@ choice of imap in `build_graph.py`.
 | `copy_mi300.cuh` | `TASK_COPY_MI300` (189), CU-task | 1 | `x [1,N]` | `y [1,N]` | `[N]` |
 | `prefetch_mi300.cuh` | `TASK_PREFETCH_MI300` (193), regular, a side operator (registration `prefetch_mi300`; `--prefetch`, O8 of `docs/gpu-experiments/03-acceleration`) | `grid_for_linear(N)` stripes | `W [N,K]` (the task's `N / grid` rows) | `dummy [grid,4]` int32 (the task's row: one XOR word per wave, so the loads are not elided) | none |
 | same file, `prefetch_moe_mi300_task_impl` | `TASK_PREFETCH_MOE_MI300` (194), regular, a side operator (registration `prefetch_moe_mi300`) | `8 x parts` | `W [E,N,K]` (whole), `mask [E+1]` | `dummy [8 x parts,4]` int32 | `[parts]`; the task's (slot, part) is its `bid.x` through the `expert_offset` metadata |
+| `gang_moe_w13_gemv_mi300.cuh` | `TASK_GANG_MOE_W13_GEMV_MI300` (196), gang (registration `gang_moe_w13_gemv_mi300`; `--gemv-w13`, L4 of `docs/gpu-experiments/04-kernels`; the enum, the name maps, the include, the gang lists, the registration and the name branch are the blocks of `fleet/patches/hunks/L4-w13-gemv.md`, to be added to `new_tasks.patch` on the fork) | 8 x 37 tiles (one per worker of an XCD, S1, against the stock 8 x 44) | `h [1,2048]`, `W13 [66,2816,2048]`, `routing`, `mask` | `mid [1,8,2816]` (the slot's gate then up row) | the stock w13's `[tiles_per_expert, max_experts_per_xcd, total_tiles_per_xcd]` with `tiles_per_expert` 37; K from the weight |
 | `linear_gemv_mi300.cuh` | `TASK_LINEAR_GEMV_MI300` (195), regular (registration `linear_gemv_mi300`; `--gemv-linears`, L1 and L2 of `docs/gpu-experiments/04-kernels`; the enum, the name maps, the include, the registration and the dispatcher branch are the blocks of `fleet/patches/hunks/L2-linear-gemv.md`, to be added to `new_tasks.patch` on the fork) | `grid_for_linear(N)` tasks (96 for `qkva`, 64 for `o_proj` and layer 0's `down`, 400 for `lm_head`; `--linear-grid N` and `--head-grid N` override the first two and the last) | `x [1,2048]` (whole), `w_norm [2048]` (NORM), `W [N,2048]` (the task's `N / grid` rows), `residual [1,N]` (RESIDUAL, the task's columns) | `out [1,N]` (the task's columns) | `[norm, residual, eps_bits]`; the output size and stride as the stock per-tile `linear` |
 | `stream_mi300.cuh` | `TASK_STREAM_MI300` (197), regular (registration `stream_mi300`; `--graph stream`, L6 of `docs/gpu-experiments/04-kernels`; the enum, the name maps, the include, the gang lists, the registrations and the dispatcher branches are the blocks of `fleet/patches/hunks/L6-stream.md`, to be added to `new_tasks.patch` on the fork) | `--tasks N` tasks (96 at 152 KB, 296 at 256 KB: the two regular rows of G5) | `W [rows,2048]` (the task's `rows / N` rows), the previous operator's `dummy [*,4]` int32 (whole, never read: the tensor that makes this operator a consumer of the one before it) | `dummy [N,4]` int32 (the task's row: one XOR word per wave, so the loads are not elided) | none; the per-task row count from the partitioned input's dim 0 |
 | same file, `stream_gang_mi300_task_impl` | `TASK_STREAM_GANG_MI300` (203), gang (registration `stream_gang_mi300`; `--graph stream --gang`) | 8 x `tiles_per_xcd` (37 tiles of 304 KB: w13's shape, the gang row of G5) | `W [8 x tiles_per_xcd x rows_per_tile,2048]` (whole), the previous operator's `dummy` (whole) | `dummy [8 x tiles_per_xcd,4]` int32 (whole; the tile's row) | `[rows_per_tile, tiles_per_xcd]`; the tile decode of `mla_merge_uv` |
@@ -187,7 +188,19 @@ last batch both appear in the expected XOR words), `mla_attend_scores` (the
 through both the attend and the merge kernel), and the three forms of the
 GEMV linear (L1: `linear_gemv`, `linear_gemv_norm` and `linear_gemv_res`,
 one launch per grid of tasks, so the split of the weight's rows and the
-output's columns over the tasks is checked with the arithmetic). Tolerances, argued in the
+output's columns over the tasks is checked with the arithmetic), and the two
+MoE gang kernels (L3 and L4: `gang_w13_gemv` and `gang_w2_gemv`, one launch
+of `(tiles, 8)` blocks per trial with the tile index `blockIdx.x` and the XCD
+`blockIdx.y`, so every (XCD, tile) pair runs once and all eight slots are
+compared against `numpy_ref.moe_w13` and `numpy_ref.moe_w2`). Those two rows
+need the `-DKT_FAKE_XCD` binary (`fleet/tasks/build/kernel_tests_xcd`, the
+build line in the launcher's header; `--bin-xcd` names another path) and are
+reported as SKIP without it, as `mla_attend_scores` is without the debug
+binary. Their trial files hold the eight active experts' weight slabs alone
+(92 MB of `W13` and 46 MB of `W2` per trial; the model's 66 experts would be
+761 MB), so their mask names the ids 0 to 7 rather than the router's own
+eight, which include the forced 64 and 65; the kernels take the ids from the
+mask, so nothing else about the decode changes. Tolerances, argued in the
 driver's header comment: bit-exact for the RoPE outputs, the router's
 selection (derived from the kernel's own FP32 logits, so a near tie cannot
 fail it), the copy and the untouched entries; `rel_err <= 1e-4` for FP32

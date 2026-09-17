@@ -419,6 +419,132 @@ def test_gemv_linears_keeps_the_chain_rule(head, layers):
     assert plan.chain_violations() == []
 
 
+# ---- the w13 GEMV gang task (docs/gpu-experiments/04-kernels, L4) --------------------------
+
+def w13_ranges(n=2816, tiles=37):
+    """The tile ranges the kernel computes by arithmetic, re-derived here from the page's own
+    words (4 tiles of 77 rows from 77 t, then 76 from 308 + 76 (t - 4)) rather than from
+    graph_plan.w13_tile_rows, so the two formulas are compared and not just repeated."""
+    out = []
+    for t in range(tiles):
+        out.append((77 * t, 77) if t < 4 else (308 + 76 * (t - 4), 76))
+    return out
+
+
+def test_w13_tile_ranges_partition_the_expert_rows():
+    """S1: the 37 tiles cover 2,816 = 4 x 77 + 33 x 76 exactly once, and graph_plan's formula
+    (which the suite's reference reuses) is the same one."""
+    from fleet.graph_plan import REAL_DIMS as D, W13_GEMV_TILES, w13_tile_rows
+    n = 2 * D.I_MOE
+    assert (n, W13_GEMV_TILES) == (2816, 37) and G.NUM_WORKERS // 8 == 37
+    ranges = [w13_tile_rows(t) for t in range(W13_GEMV_TILES)]
+    assert ranges == w13_ranges(n, W13_GEMV_TILES)
+    assert [r for _, r in ranges] == [77] * 4 + [76] * 33
+    assert sum(r for _, r in ranges) == n == 4 * 77 + 33 * 76
+    covered = [0] * n
+    for r0, rows in ranges:
+        assert 0 <= r0 and r0 + rows <= n
+        for i in range(r0, r0 + rows):
+            covered[i] += 1
+    assert covered == [1] * n                      # a partition: every row in exactly one tile
+    assert ranges[0][0] == 0 and ranges[4][0] == 308 and ranges[-1] == (2740, 76)
+    with pytest.raises(AssertionError):
+        w13_tile_rows(W13_GEMV_TILES)
+    # a wave of the tile takes ceil(rows / 4) with the last one short, the GEMV's own map
+    assert [-(-r // 4) for _, r in ranges] == [20] * 4 + [19] * 33
+
+
+def test_w13_store_map_covers_every_row_once():
+    """The kernel's epilogue: wave w of a tile owns rows [w * RPW, min((w + 1) * RPW, rows)) with
+    RPW = ceil(rows / 4), walks them in batches of eight, and lane l < 8 of the batch stores row
+    r0 + l when r0 + l is inside the wave's range. Emulated here over the whole grid: every one of
+    the 2,816 rows of the expert is stored exactly once, by one (tile, wave, batch, lane)."""
+    from fleet.graph_plan import REAL_DIMS as D, W13_GEMV_TILES, w13_tile_rows
+    n, batch, waves = 2 * D.I_MOE, 8, 4
+    stored = {}
+    for tile in range(W13_GEMV_TILES):
+        row0, rows = w13_tile_rows(tile, n)
+        for wave in range(waves):
+            rpw = -(-rows // waves)
+            r_begin, r_end = wave * rpw, min((wave + 1) * rpw, rows)
+            r_end = max(r_end, r_begin)
+            for r0 in range(r_begin, r_end, batch):
+                for lane in range(batch):
+                    r = r0 + lane
+                    if r < r_end:
+                        key = row0 + r
+                        assert key not in stored, (key, stored.get(key), (tile, wave, r0, lane))
+                        stored[key] = (tile, wave, r0, lane)
+    assert sorted(stored) == list(range(n))
+    # the clamped rows a short batch loads are inside the wave's range, so no load leaves the tile
+    for tile in range(W13_GEMV_TILES):
+        row0, rows = w13_tile_rows(tile, n)
+        rpw = -(-rows // waves)
+        for wave in range(waves):
+            r_begin, r_end = wave * rpw, min((wave + 1) * rpw, rows)
+            for r0 in range(r_begin, max(r_end, r_begin), batch):
+                for u in range(batch):
+                    r = r0 + u if r0 + u < r_end else r_end - 1
+                    assert 0 <= row0 + r < n
+
+
+def test_gemv_w13_flips_every_moe_layer_and_records_37_tiles():
+    """L4: the flag swaps the method of the 26 w13 operators, keeping the label, the tensors and
+    the 8 tasks; the tiles recorded are 37 per expert and 9 x 37 per XCD (the registration's
+    third param), against the stock 44 and 9 x 44."""
+    from fleet.graph_plan import W13_GEMV_TILES
+    plan, calls = B.dry_run(layers=27, head=True, gemv_w13=True)
+    base, base_calls = B.dry_run(layers=27, head=True)
+    assert (plan.n_ops, plan.n_tasks) == (base.n_ops, base.n_tasks) == (326, 2285)
+    assert not plan.chain_violations()
+    by, by_base = {c.label: c for c in plan.calls}, {c.label: c for c in base.calls}
+    w13 = [c for c in plan.calls if c.label.endswith(".w13")]
+    assert len(w13) == 26                          # layer 0 is dense: no expert gate-up
+    for c in w13:
+        assert c.method == "gang_moe_w13_gemv_layer" and c.status == "new"
+        assert c.tasks == 8 and c.tiles == W13_GEMV_TILES == 37
+        assert c.args["input"] == "h" and c.args["output"] == "mid"
+        assert c.args["moe_routing_indices"] == "routing" and c.args["moe_mask"] == "mask"
+        assert c.args["tiles_per_expert"] == 37
+    assert by_base["L5.w13"].method == "gang_moe_w13_linear_layer" and by_base["L5.w13"].tiles == 44
+    assert by["L5.w2"].method == by_base["L5.w2"].method          # the down projection is untouched
+    assert by["L5.router"].method == by_base["L5.router"].method
+    assert plan.tensors.keys() == base.tensors.keys()             # no tensor added or dropped
+    rec = [c for c in calls if c["method"] == "gang_moe_w13_gemv_mi300@new"]
+    assert len(rec) == 26
+    assert rec[0]["inputs"] == ["h", "W13_1", "routing", "mask", "mid"]
+    assert rec[0]["imaps"] == [[-1, -1, -1], [-1, 1, -1], [-1, -1, -1], [-1, -1, -1], [-1, 2, -1]]
+    assert rec[0]["params"] == [37, 9, 9 * 37] == [37, 9, 333]    # tiles, max experts per XCD, total
+    assert rec[0]["grid_dim"] == (8, 1, 1)
+    # the stock form's params for comparison: 44 tiles, 9 x 44 per XCD
+    stock = [c for c in base_calls if c["task_type"] == "gang_moe_w13_linear_mi300"]
+    assert len(stock) == 26 and stock[0]["params"] == [44, 9, 9 * 44]
+
+
+def test_gemv_w13_default_off_and_independent_of_the_other_flags():
+    plan_off, calls_off = B.dry_run(layers=27, head=True)
+    assert not any(c["method"] == "gang_moe_w13_gemv_mi300@new" for c in calls_off)
+    assert {c.label: c.method for c in plan_off.calls}["L5.w13"] == "gang_moe_w13_linear_layer"
+    # it is not disabled by --debug (it changes no norm) and composes with the other flags
+    plan_dbg, calls_dbg = B.dry_run(layers=27, head=True, debug=True, gemv_w13=True)
+    assert sum(c["method"] == "gang_moe_w13_gemv_mi300@new" for c in calls_dbg) == 26
+    assert not plan_dbg.chain_violations()
+    both, calls_both = B.dry_run(layers=27, head=True, gemv_linears=True, fuse_norm2=True,
+                                 fuse_silu=True, gemv_w13=True)
+    ref, _ = B.dry_run(layers=27, head=True, gemv_linears=True, fuse_norm2=True, fuse_silu=True)
+    assert (both.n_ops, both.n_tasks) == (ref.n_ops, ref.n_tasks) == (246, 6359)
+    assert sum(c["method"] == "gang_moe_w13_gemv_mi300@new" for c in calls_both) == 26
+    assert not both.chain_violations()
+
+
+@pytest.mark.parametrize("head,layers", [(True, 27), (False, 2), (True, 1)])
+def test_gemv_w13_keeps_the_chain_rule(head, layers):
+    plan, calls = B.dry_run(layers=layers, head=head, gemv_w13=True)
+    assert plan.chain_violations() == []
+    # one layer is the dense MLP alone: the flag then changes nothing
+    assert sum(c["method"] == "gang_moe_w13_gemv_mi300@new" for c in calls) == max(layers - 1, 0)
+
+
 def test_prefetch_adds_side_operators_that_the_chain_rule_skips():
     """O8 (docs/gpu-experiments/03-acceleration): --prefetch adds three side operators per layer
     (the layer's W_o after qkva, the next layer's W_qkva after o_proj, the active experts' W2 after

@@ -9,7 +9,7 @@ docs/fleet/04-repo-map.md), and compiles. Runs on the machine; locally,
 the reused wrappers' assertions, and writes the call list as JSON.
 
     python fleet/build_graph.py --dry-run [--layers N] [--no-head] [--debug] [--out calls.json]
-                               [--gemv-linears [--linear-grid N] [--head-grid N]]
+                               [--gemv-linears [--linear-grid N] [--head-grid N]] [--gemv-w13]
     python fleet/build_graph.py --dry-run --graph stream --ops M --tasks N --kb K [--gang]
 
 On the machine (from run_fleet.py):
@@ -150,6 +150,40 @@ def gang_moe_w2_silu_linear_layer(mpk, input, weight, moe_routing_indices, moe_m
                (moe_routing_indices, (-1, -1, -1), -1), (moe_mask, (-1, -1, -1), -1),
                (output, (-1, 2, -1), -1), (scratch, (-1, -1, -1), -1)],
               "gang_moe_w2_silu_linear_mi300", [n_tiles, max_e, total])
+
+
+def _gang_moe_params(weight, tiles=None):
+    """The three params of every MoE gang registration, [tiles_per_expert, max_experts_per_xcd,
+    total_tiles_per_xcd]. tiles: the tile count per expert; None is the stock rule, one tile per
+    64 output rows (L4 of docs/gpu-experiments/04-kernels gives the w13 GEMV 37 instead, one per
+    worker of an XCD)."""
+    n_tiles = weight.dim(1) // 64 if tiles is None else tiles
+    max_e = (weight.dim(0) + 7) // 8
+    return [n_tiles, max_e, max_e * n_tiles]
+
+
+def gang_moe_w13_gemv_layer(mpk, input, weight, moe_routing_indices, moe_mask, output,
+                            tiles_per_expert, block_dim=(256, 1, 1)):
+    """L4 (docs/gpu-experiments/04-kernels): the expert gate-up as the GEMV loop in one round per
+    XCD. input is h [1, K], weight W13 [E, N, K], output mid [1, topk, N]; the tile's N rows come
+    from tile_idx by arithmetic (4 tiles of 77 rows then 33 of 76 at N = 2,816), so
+    tiles_per_expert is the XCD's worker count and not N / 64 (the argument carries the
+    registration's name for it, `tiles` being the Plan.op field that records the same number).
+    The imaps and the shape of the three params are the stock gang_moe_w13_linear_layer's, which
+    gang_moe_w2_silu_linear_layer follows too; no scratch tensor (the kernel has no prologue)."""
+    assert input.num_dims == 2 and weight.num_dims == 3 and output.num_dims == 3
+    assert input.dim(0) == 1 and output.dim(0) == 1, (input.shape, output.shape)   # batch 1
+    k = weight.dim(2)
+    assert input.dim(1) == k, (input.shape, k)
+    assert output.dim(2) == weight.dim(1), (output.shape, weight.shape)
+    assert k % 512 == 0, k                        # the kernel's static_assert: K % (8 x wave)
+    assert moe_routing_indices.dim(0) == weight.dim(0) and moe_mask.dim(0) == weight.dim(0) + 1
+    p = _gang_moe_params(weight, tiles_per_expert)
+    _new_task(mpk, (XCDS, 1, 1), block_dim,
+              [(input, (-1, -1, -1), 1), (weight, (-1, 1, -1), 2),
+               (moe_routing_indices, (-1, -1, -1), -1), (moe_mask, (-1, -1, -1), -1),
+               (output, (-1, 2, -1), -1)],
+              "gang_moe_w13_gemv_mi300", p)
 
 
 def linear_norm_layer(mpk, input, w_norm, weight, output, scratch, grid_dim, eps, block_dim=(256, 1, 1)):
@@ -293,6 +327,7 @@ NEW_LAYERS = {
     "mla_attend_layer": mla_attend_layer,
     "mla_merge_uv_layer": mla_merge_uv_layer,
     "gang_moe_w2_silu_linear_layer": gang_moe_w2_silu_linear_layer,
+    "gang_moe_w13_gemv_layer": gang_moe_w13_gemv_layer,
     "linear_norm_layer": linear_norm_layer,
     "linear_gemv_layer": linear_gemv_layer,
     "prefetch_layer": prefetch_layer,
@@ -438,7 +473,7 @@ def build(packed, capture, meta, dims=REAL_DIMS, s_max=1056, layers=27, head=Tru
           stop_after=None, debug_scores=False, tile_linears=False, attend_tasks=False, num_workers=296, num_schedulers=8,
           profiler_tensor=None, align=0, workspaces=None, fuse_norm2=False, fuse_silu=False,
           probe_before=None, fuse_norm1=False, prefetch=False, gemv_linears=False, linear_grid=None,
-          head_grid=None, plan=None):
+          head_grid=None, gemv_w13=False, plan=None):
     """On the machine: construct the PersistentKernel, attach, issue, return (mpk, host tensors, plan).
     plan: a ready plan (the empty ladder of I3) instead of the model's."""
     import torch
@@ -446,7 +481,9 @@ def build(packed, capture, meta, dims=REAL_DIMS, s_max=1056, layers=27, head=Tru
 
     if plan is None:
         plan = G.build_plan(dims, s_max, layers, head, debug, debug_scores, tile_linears, attend_tasks, fuse_norm2,
-                            fuse_silu, fuse_norm1, prefetch, gemv_linears, linear_grid, head_grid)
+                            fuse_silu, fuse_norm1, prefetch, gemv_linears, linear_grid, head_grid, gemv_w13)
+    assert not gemv_w13 or num_workers // G.XCDS == G.W13_GEMV_TILES, \
+        f"--gemv-w13 wants {G.W13_GEMV_TILES} workers per XCD, not {num_workers // G.XCDS}"   # L4
     if probe_before:
         plan.insert_probe(probe_before)
     if stop_after:
@@ -582,16 +619,15 @@ class FakeMPK:
                   output=output, grid_dim=list(grid_dim))
         self.register_task(None, "linear_with_residual", [])
 
-    def _gang_moe(self, method, input, weight, moe_routing_indices, moe_mask, output, k_mult):
+    def _gang_moe(self, method, input, weight, moe_routing_indices, moe_mask, output, k_mult,
+                  tiles=None):
         assert weight.num_dims == 3 and moe_routing_indices.num_dims == 2 and moe_mask.num_dims == 1
         assert output.num_dims == 3
         assert weight.dim(1) % 64 == 0 and weight.dim(2) % k_mult == 0, weight.shape
         assert moe_routing_indices.dim(0) == weight.dim(0) and moe_mask.dim(0) == weight.dim(0) + 1
         self._rec(method, input=input, weight=weight, moe_routing_indices=moe_routing_indices,
                   moe_mask=moe_mask, output=output)
-        n_tiles = weight.dim(1) // 64
-        max_e = (weight.dim(0) + 7) // 8
-        return [n_tiles, max_e, max_e * n_tiles]
+        return _gang_moe_params(weight, tiles)   # tiles: the stock rule (None) or the GEMV form's 37 (L4)
 
     def gang_moe_w13_linear_layer(self, input, weight, moe_routing_indices, moe_mask, output):
         assert input.num_dims == 2 and output.dim(2) == weight.dim(1) and input.dim(1) == weight.dim(2)
@@ -632,10 +668,10 @@ class FakeMPK:
 def dry_run(dims=REAL_DIMS, s_max=1056, layers=27, head=True, debug=False, stop_after=None,
             debug_scores=False, tile_linears=False, attend_tasks=False, fuse_norm2=False, fuse_silu=False,
             probe_before=None, fuse_norm1=False, prefetch=False, gemv_linears=False, linear_grid=None,
-            head_grid=None, plan=None):
+            head_grid=None, gemv_w13=False, plan=None):
     if plan is None:
         plan = G.build_plan(dims, s_max, layers, head, debug, debug_scores, tile_linears, attend_tasks, fuse_norm2,
-                            fuse_silu, fuse_norm1, prefetch, gemv_linears, linear_grid, head_grid)
+                            fuse_silu, fuse_norm1, prefetch, gemv_linears, linear_grid, head_grid, gemv_w13)
     if probe_before:
         plan.insert_probe(probe_before)
     if stop_after:
@@ -664,6 +700,9 @@ def main():
                          "an operator N does not divide keeps the heuristic)")
     ap.add_argument("--head-grid", type=int, default=None, metavar="N",
                     help="--gemv-linears: tasks for lm_head (N must divide the vocabulary; L5)")
+    ap.add_argument("--gemv-w13", action="store_true",
+                    help="the expert gate-up as the GEMV gang task, 37 tiles per XCD "
+                         "(L4, docs/gpu-experiments/04-kernels)")
     ap.add_argument("--out", default=None)
     # L6: the stream probe's plan, on the empty ladder's machinery (--graph empty is not built here:
     # its plan has no model arithmetic to check, and run_fleet.py builds it on the machine)
@@ -685,7 +724,7 @@ def main():
     else:
         plan, calls = dry_run(REAL_DIMS, args.s_max, args.layers, not args.no_head, args.debug, args.stop_after,
                               args.debug_scores, args.tile_linears, gemv_linears=args.gemv_linears,
-                              linear_grid=args.linear_grid, head_grid=args.head_grid)
+                              linear_grid=args.linear_grid, head_grid=args.head_grid, gemv_w13=args.gemv_w13)
     s = G.summary(plan)
     print(json.dumps({k: v for k, v in s.items()}, indent=None))
     print(f"{len(calls)} calls recorded; task types: {sorted(set(c['task_type'] for c in calls))}")

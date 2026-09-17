@@ -11,7 +11,7 @@ KDIR="$ROOT/fleet/tasks/mi300"
 CXX="${CXX:-clang++}"
 # "tasks/mi300/<name>.cuh" resolves under fleet/ (fleet/tasks/mi300), "tasks/common/..." under the stub
 fail=0
-for f in mla_prep_mi300 mla_attend_mi300 mla_attend_mfma_mi300 mla_merge_uv_mi300 moe_router_mi300 copy_mi300 prefetch_mi300 linear_gemv_mi300 stream_mi300 gang_moe_w2_silu_mi300; do
+for f in mla_prep_mi300 mla_attend_mi300 mla_attend_mfma_mi300 mla_merge_uv_mi300 moe_router_mi300 copy_mi300 prefetch_mi300 linear_gemv_mi300 stream_mi300 gang_moe_w2_silu_mi300 gang_moe_w13_gemv_mi300; do
   src="$KDIR/$f.cuh"
   # instantiate each template at the real dims so the bodies are parsed and type-checked
   case "$f" in
@@ -27,6 +27,7 @@ for f in mla_prep_mi300 mla_attend_mi300 mla_attend_mfma_mi300 mla_merge_uv_mi30
     # L6: the stream probe, the regular and the gang entry points
     stream_mi300) inst='kernel::stream_mi300_task_impl<bfloat16,2048>(0,0,38); kernel::stream_gang_mi300_task_impl<bfloat16,2048>(0,0,76,37,0);' ;;
     gang_moe_w2_silu_mi300) inst='kernel::gang_moe_w2_silu_linear_kernel<bfloat16,1,2048,2048,1408,2816,66,8,32,32,32>(0,0,0,0,0,0,0);' ;;   # L3: the GEMV form, the default path (the MPK_W2_CK_TILE one needs CK)
+    gang_moe_w13_gemv_mi300) inst='kernel::gang_moe_w13_gemv_kernel<bfloat16,2816,2048,66,8,37>(0,0,0,0,0,0);' ;;   # L4: the expert gate-up in 37 tiles per XCD
   esac
   tu="$(mktemp -t "$f.XXXXXX").cpp"
   printf '#define MLA_ATTEND_DEBUG_SCORES 1\n#include "tasks/mi300/%s.cuh"\nvoid instantiate() { %s }\n' "$f" "$inst" > "$tu"
@@ -37,8 +38,9 @@ for f in mla_prep_mi300 mla_attend_mi300 mla_attend_mfma_mi300 mla_merge_uv_mi30
   fi
   rm -f "$tu"
 done
-# the launcher, in both build variants (the debug one adds the scores output)
-for variant in "" "-DMLA_ATTEND_DEBUG_SCORES"; do
+# the launcher, in its three build variants (the debug one adds the scores output, the fake-XCD
+# one turns on the two MoE gang rows of L3 and L4)
+for variant in "" "-DMLA_ATTEND_DEBUG_SCORES" "-DKT_FAKE_XCD"; do
   label="kernel_tests_mi300${variant:+ $variant}"
   if out=$("$CXX" -std=c++17 -fsyntax-only -Wall -Wno-unused-parameter -Wno-unused-variable $variant -I "$STUB" -I "$ROOT/fleet" -x c++ "$ROOT/fleet/tasks/kernel_tests_mi300.cu" 2>&1); then
     echo "PASS $label"

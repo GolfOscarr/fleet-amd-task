@@ -5,7 +5,7 @@
                                 [--model-dir <snapshot>] [--ref harness/ref] [--out harness/fleet_out/<name>]
                                 [--event-timing] [--nt-weights] [--pad-alloc GB] [--align-alloc BYTES]
                                 [--workspaces-first] [--tile-linears] [--attend-tasks] [--split N]
-                                [--gemv-linears [--linear-grid N] [--head-grid N]]
+                                [--gemv-linears [--linear-grid N] [--head-grid N]] [--gemv-w13]
     python harness/run_fleet.py --graph stream --ops M --tasks N --kb K [--gang] [--iters K] [--event-timing]
 
 --align-alloc BYTES re-bases every weight, capture and workspace on an aligned address and
@@ -236,6 +236,10 @@ def build_parser():
                          "(3,648 by 96, 48, 32; 2,048 by 64, 32; an operator N does not divide keeps the heuristic)")
     ap.add_argument("--head-grid", type=int, default=None, metavar="N",
                     help="--gemv-linears: the task count of lm_head, N dividing the vocabulary (400 or 320; L5)")
+    ap.add_argument("--gemv-w13", action="store_true",
+                    help="issue every MoE layer's expert gate-up as our GEMV gang task, 37 tiles per expert "
+                         "per XCD instead of 44, so the operator ends in one round per XCD "
+                         "(L4, docs/gpu-experiments/04-kernels)")
     ap.add_argument("--align-alloc", type=int, default=0, metavar="BYTES",
                     help="re-base every weight, capture and workspace on a BYTES-aligned address (power of two; "
                          "the M4 fault candidates, docs/gpu-experiments/02-validation)")
@@ -277,6 +281,7 @@ def run_name(args):
     gv = "_gv" if args.gemv_linears else ""                         # L2 of docs/gpu-experiments/04-kernels
     lg = f"_lg{args.linear_grid}" if args.linear_grid else ""
     hg = f"_hg{args.head_grid}" if args.head_grid else ""
+    w13 = "_w13" if args.gemv_w13 else ""                           # L4 of docs/gpu-experiments/04-kernels
     if args.graph == "empty":      # I3: no layers, no head
         return (f"E{args.ops}x{args.tasks}" + (f"_spin{args.spin}" if args.spin else "") + f"_it{args.iters}"
                 + wt + rf + al + ws + pad)
@@ -286,7 +291,7 @@ def run_name(args):
     return (f"L{args.layers}{'_head' if args.head else ''}_it{args.iters}"
             + (f"_{args.stop_after}" if args.stop_after else "") + ("_scores" if args.debug_scores else "")
             + tile + at + fn1 + fn2 + fs + pf + probe + nt + nts + mf + wt + rf + sp + al + ws + pad
-            + gv + lg + hg)
+            + gv + lg + hg + w13)
 
 
 def run_empty(args, out, prompt, n_prompt, s_max, t0, torch, B):
@@ -405,7 +410,7 @@ def main():
         from fleet import graph_plan as G
         pre_plan = G.build_plan(dims, s_max, args.layers, args.head, args.debug, args.debug_scores, args.tile_linears,
                                 args.attend_tasks, args.fuse_norm2, args.fuse_silu, args.fuse_norm1, args.prefetch,
-                                args.gemv_linears, args.linear_grid, args.head_grid)
+                                args.gemv_linears, args.linear_grid, args.head_grid, args.gemv_w13)
         workspaces = B.allocate_workspaces(torch, pre_plan, args.align_alloc)
         print(f"workspaces-first: {len(workspaces)} buffers allocated before the weights")
     packed = pack_all(args.model_dir, "cuda", dims, layers=args.layers, head=args.head or None)
@@ -430,7 +435,7 @@ def main():
                               attend_tasks=args.attend_tasks, fuse_norm2=args.fuse_norm2, fuse_silu=args.fuse_silu,
                               probe_before=args.probe_before, fuse_norm1=args.fuse_norm1, prefetch=args.prefetch,
                               gemv_linears=args.gemv_linears, linear_grid=args.linear_grid, head_grid=args.head_grid,
-                              align=args.align_alloc, workspaces=workspaces)
+                              gemv_w13=args.gemv_w13, align=args.align_alloc, workspaces=workspaces)
     pj = B.plan_json(plan)
     (out / "plan.json").write_text(json.dumps(pj) + "\n")
     mpk.compile(output_dir=str(out / "build"))
@@ -452,6 +457,7 @@ def main():
         "probe_before": args.probe_before, "fuse_norm1": args.fuse_norm1, "mfma_attend": args.mfma_attend,
         "prefetch": args.prefetch, "worker_timing": args.worker_timing, "runtime_flags": args.runtime_flags,
         "gemv_linears": args.gemv_linears, "linear_grid": args.linear_grid, "head_grid": args.head_grid,
+        "gemv_w13": args.gemv_w13,
         "ops": len(pj["calls"]), "tasks": sum(c["tasks"] for c in pj["calls"]),
         "env": {k: os.environ.get(k) for k in ("MPK_EVENT_TIMING", "MPK_TIMING", "USE_NT_WEIGHTS", "USE_GANG",
                                                 "AMDGPU_TARGETS", "MPK_DEBUG_SCORES", "MPK_EXTRA_HIPCC_FLAGS")},

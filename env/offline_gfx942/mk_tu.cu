@@ -19,6 +19,10 @@
 #include "tasks/mi300/stream_mi300.cuh"
 #define MK_TASK_STREAM_MI300 ((TaskType)197)
 #define MK_TASK_STREAM_GANG_MI300 ((TaskType)203)
+// L4: the expert gate-up as the GEMV gang kernel, keyed on the task type its hunk file adds
+// (196); that header is not in task_header.cuh until then either
+#include "tasks/mi300/gang_moe_w13_gemv_mi300.cuh"
+#define MK_TASK_GANG_MOE_W13_GEMV_MI300 ((TaskType)196)
 #endif
 
 using namespace mirage::runtime;
@@ -127,6 +131,15 @@ void _execute_gang_task(TaskDesc const *task_desc, RuntimeConfig const &runtime_
     kernel::gang_moe_w2_silu_linear_kernel<bfloat16, 1, 2048, 2048, 1408, 2816, 66, 8, 32, 32, 32>(
         task_desc->input_ptrs[0], task_desc->input_ptrs[1], task_desc->input_ptrs[2], task_desc->input_ptrs[3],
         task_desc->output_ptrs[0], task_desc->output_ptrs[1], tile_idx);
+  } else
+#endif
+#ifdef MK_GEMV
+  // L4: the expert gate-up at the model's dims (N 2,816, K 2,048, 66 experts, 8 slots, 37 tiles
+  // per expert), the call the registration of fleet/patches/hunks/L4-w13-gemv.md emits
+  if (task_desc->task_type == MK_TASK_GANG_MOE_W13_GEMV_MI300 && task_desc->variant_id == 0) {
+    kernel::gang_moe_w13_gemv_kernel<bfloat16, 2816, 2048, 66, 8, 37>(
+        task_desc->input_ptrs[0], task_desc->input_ptrs[1], task_desc->input_ptrs[2],
+        task_desc->input_ptrs[3], task_desc->output_ptrs[0], tile_idx);
   } else
 #endif
   if (task_desc->task_type == TASK_MLA_ATTEND_MI300 && task_desc->variant_id == 0) {

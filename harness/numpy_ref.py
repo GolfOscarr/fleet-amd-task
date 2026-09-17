@@ -8,6 +8,8 @@ BF16 rounding at the points where the design stores BF16 or feeds an MFMA:
   mla_attend    split-KV online softmax over the latent cache -> partials
   mla_merge_uv  merge the partials, then attn[h] = o[h] @ W_uv[h]^T
   moe_router    FP32 GEMV, softmax, top-k, forced experts -> topk_w, routing, mask
+  moe_w13       the expert gate-up of every routed slot -> mid (L4)
+  moe_w2        silu(gate) * up, then the expert down projection -> out8 (O2, L3)
 
 Rounding follows the reference model where the design says "match the
 reference" (docs/design-doc/01-execution-flow.md, constants table):
@@ -231,6 +233,52 @@ def moe_router_norm(x_res, w_norm, W_gate, *, eps=1e-6, topk=6, n_experts=64, fo
     logits, topk_w, routing, mask = moe_router(h, W_gate, topk=topk, n_experts=n_experts, forced=forced,
                                                scaling=scaling)
     return h, logits, topk_w, routing, mask
+
+
+def silu(x):
+    """SiLU in FP32, the arithmetic of the kernels' fast_silu (silu_mul_mi300.cuh):
+    x / (1 + exp(-x)), no BF16 rounding of its own."""
+    x = np.asarray(x, F32)
+    return (x / (F32(1.0) + np.exp(-x, dtype=F32))).astype(F32)
+
+
+def moe_w13(h, W13, mask, n_slots=8):
+    """The expert gate-up at batch 1 (the gang_moe_w13 task, L4 of
+    docs/gpu-experiments/04-kernels): slot s takes expert mask[s] and computes
+    mid[s] = bf16(W13[e] @ h), the gate rows then the up rows of the expert as the packing
+    lays them out (pack_weights.pack_moe: rows [0, I) gate, [I, 2I) up).
+
+    h [K] BF16, W13 [E, N, K] BF16, mask [E + 1] int32 (the active expert ids in slot order,
+    then the count, as the router writes them). Returns mid [n_slots, N] float32 of BF16
+    values; a slot past the active count is NaN, the sentinel an untouched row keeps.
+    """
+    h = np.asarray(h, F32)
+    W13 = np.asarray(W13, F32)
+    n_active = int(mask[-1])
+    mid = np.full((n_slots, W13.shape[1]), np.nan, F32)
+    for s in range(n_active):
+        mid[s] = bf16(W13[int(mask[s])] @ h)
+    return mid
+
+
+def moe_w2(mid, W2, mask, n_slots=8):
+    """The expert down projection with the silu-mul in its prologue (the
+    gang_moe_w2_silu task, O2 and L3): per slot, act = bf16(silu(gate) * up) element by
+    element as silu_mul_task_impl rounds it, then out[s] = bf16(W2[e] @ act).
+
+    mid [n_slots, 2K] BF16 (gate in columns [0, K), up in [K, 2K)), W2 [E, N, K] BF16,
+    mask as in moe_w13. Returns out8 [n_slots, N] float32 of BF16 values, NaN past the
+    active count.
+    """
+    mid = np.asarray(mid, F32)
+    W2 = np.asarray(W2, F32)
+    k = W2.shape[2]
+    n_active = int(mask[-1])
+    out = np.full((n_slots, W2.shape[1]), np.nan, F32)
+    for s in range(n_active):
+        act = bf16(silu(mid[s, :k]) * mid[s, k:2 * k])
+        out[s] = bf16(W2[int(mask[s])] @ act)
+    return out
 
 
 def linear_norm(x, w_norm, W, eps=1e-6):

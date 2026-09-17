@@ -244,6 +244,69 @@ def test_linear_and_residual_match_modules(step):
         assert np.array_equal(R.linear_residual(attn, W_o, np.zeros_like(res)), R.linear(attn, W_o))
 
 
+def expert_w13_w2(layer, ids):
+    """The packing of pack_weights.pack_moe for the experts `ids` of a MoE layer: W13[e] is the
+    expert's gate rows then its up rows, W2[e] its down projection."""
+    experts = layer.mlp.experts
+    w13 = np.stack([np.concatenate([R.from_torch_bf16(experts[e].gate_proj.weight),
+                                    R.from_torch_bf16(experts[e].up_proj.weight)]) for e in ids])
+    w2 = np.stack([R.from_torch_bf16(experts[e].down_proj.weight) for e in ids])
+    return w13, w2
+
+
+def test_moe_w13_and_w2_match_the_expert_modules(step):
+    """L3 and L4: the two MoE gang kernels' references against the tiny model's own expert
+    modules. moe_w13 is the gate-up projection of the slot's expert (one BF16 rounding after the
+    FP32 accumulation, as the kernel stores it) and moe_w2 the silu-mul of that row followed by
+    the down projection, which together are the expert's forward on the routed row."""
+    model, cap, cfg = step["model"], step["cap"], step["cfg"]
+    l = 1
+    layer = model.model.layers[l]
+    h = R.from_torch_bf16(cap.store[f"L{l}.gate_in"]).reshape(-1)
+    n_slots = cfg.n_routed_experts                       # every expert of the tiny model gets a slot
+    ids = list(range(n_slots))
+    w13, w2 = expert_w13_w2(layer, ids)
+    mask = np.full(n_slots + 1, -1, np.int32)
+    mask[:n_slots] = ids
+    mask[n_slots] = n_slots                              # the count sits in the last entry
+    mid = R.moe_w13(h, w13, mask, n_slots)
+    assert mid.shape == (n_slots, 2 * cfg.moe_intermediate_size) and np.isfinite(mid).all()
+    out8 = R.moe_w2(mid, w2, mask, n_slots)
+    assert out8.shape == (n_slots, cfg.hidden_size)
+    i = cfg.moe_intermediate_size
+    for s, e in enumerate(ids):
+        expert = layer.mlp.experts[e]
+        x = torch.tensor(h, dtype=torch.bfloat16).reshape(1, -1)
+        with torch.inference_mode():
+            ref_gate = R.from_torch_bf16(expert.gate_proj(x)).reshape(-1)
+            ref_up = R.from_torch_bf16(expert.up_proj(x)).reshape(-1)
+            ref_out = R.from_torch_bf16(expert(x)).reshape(-1)
+        # the projection: the module rounds to BF16 once, as the kernel does
+        assert rel(mid[s, :i], ref_gate) < 4e-3 and rel(mid[s, i:], ref_up) < 4e-3
+        # the whole expert: silu(gate) * up, then down
+        assert rel(out8[s], ref_out) < 8e-3, (s, rel(out8[s], ref_out))
+    # a slot past the active count is the untouched sentinel, as the kernels leave it
+    short = mask.copy()
+    short[n_slots] = 2
+    part = R.moe_w13(h, w13, short, n_slots)
+    assert np.array_equal(part[:2], mid[:2]) and np.isnan(part[2:]).all()
+    # the mask names the slot's expert: a permuted mask permutes the rows and nothing else
+    perm = [3, 1, 0, 2] + ids[4:]
+    pmask = mask.copy()
+    pmask[:n_slots] = perm
+    assert np.array_equal(R.moe_w13(h, w13, pmask, n_slots), mid[perm])
+
+
+def test_silu_matches_torch():
+    x = np.linspace(-8, 8, 257, dtype=np.float32)
+    got = R.silu(x)
+    exp = torch.nn.functional.silu(torch.tensor(x)).numpy()
+    assert np.allclose(got, exp, rtol=1e-6, atol=1e-7)
+    # the fused w2's rounding: silu in FP32, the product rounded to BF16 once
+    up = np.linspace(1.0, 2.0, 257, dtype=np.float32)
+    assert np.array_equal(R.bf16(got * up), R.bf16(R.silu(x) * up))
+
+
 def test_router_tie_break_and_combine():
     h = np.ones(8, np.float32)
     W = np.zeros((4, 8), np.float32)

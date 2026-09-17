@@ -367,6 +367,14 @@ def test_pad_alloc_argument_and_run_name():
     assert run_fleet.run_name(a) == "L27_head_it32_nts_gv_lg48_hg320"
     a = p.parse_args(["--layers", "2", "--iters", "32", "--model-dir", "x"])
     assert not a.gemv_linears and run_fleet.run_name(a) == "L2_it32"        # unchanged without the flag
+    # the w13 GEMV gang task, after the three GEMV suffixes (L4)
+    a = p.parse_args(["--layers", "27", "--head", "--iters", "32", "--gemv-w13", "--model-dir", "x"])
+    assert a.gemv_w13 and run_fleet.run_name(a) == "L27_head_it32_w13"
+    a = p.parse_args(["--layers", "27", "--head", "--iters", "32", "--gemv-linears", "--head-grid", "320",
+                      "--gemv-w13", "--model-dir", "x"])
+    assert run_fleet.run_name(a) == "L27_head_it32_gv_hg320_w13"
+    a = p.parse_args(["--layers", "2", "--iters", "32", "--model-dir", "x"])
+    assert not a.gemv_w13 and run_fleet.run_name(a) == "L2_it32"
 
 
 def test_tensor_addresses_records_every_host_tensor():

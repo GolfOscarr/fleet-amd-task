@@ -25,6 +25,23 @@ SOFTMAX_SCALE = 0.1147213867929261
 ROUTED_SCALING = 1.0
 RMS_EPS = 1e-6                 # rms_norm_eps of config.json; the fused router's norm (O1)
 PREFETCH_PARTS = 32            # O8: tasks per active expert of the W2 prefetch (2048 rows / 32 = 64 rows, 180 KB each)
+NUM_WORKERS = 296              # build_graph.build's default; it is not passed to build_plan, so the
+                               # tile count of L4 is checked against the constant here
+W13_GEMV_TILES = NUM_WORKERS // XCDS   # 37: one w13 tile per worker of an XCD (S1 of 01-gemv-ideas.md)
+
+
+def w13_tile_rows(tile: int, n: int = 2 * REAL_DIMS.I_MOE, tiles: int = W13_GEMV_TILES):
+    """(first row, row count) of one tile of the w13 GEMV gang kernel (L4, S1): the 37 tiles
+    partition the expert's n rows as 4 of ceil(n / tiles) then the rest of floor(n / tiles),
+    which at n = 2,816 is 4 x 77 + 33 x 76. The kernel computes the same two numbers from
+    tile_idx by arithmetic (gang_moe_w13_gemv_mi300.cuh), and the suite's reference reuses
+    this function so both sides read one formula."""
+    assert 0 <= tile < tiles, (tile, tiles)
+    small, big_tiles = n // tiles, n % tiles
+    big = small + 1
+    if tile < big_tiles:
+        return big * tile, big
+    return big_tiles * big + small * (tile - big_tiles), small
 
 
 def float_bits(x: float) -> int:
@@ -75,7 +92,8 @@ OUTPUT_ARGS = {
     "prefetch_layer": ["dummy"], "prefetch_moe_layer": ["dummy"],
     "mla_prep_layer": ["c_kv", "k_pe", "ql_nope", "q_pe"], "mla_attend_layer": ["partials", "scores"],
     "mla_merge_uv_layer": ["output"], "moe_router_layer": ["h", "topk_w", "routing", "mask", "logits", "route_log"],
-    "gang_moe_w13_linear_layer": ["output"], "moe_silu_mul_layer": ["output"],
+    "gang_moe_w13_linear_layer": ["output"], "gang_moe_w13_gemv_layer": ["output"],
+    "moe_silu_mul_layer": ["output"],
     "gang_moe_w2_linear_layer": ["output"], "gang_moe_w2_silu_linear_layer": ["output", "scratch"],
     "moe_mul_sum_add_layer": ["output"],
     "argmax_partial_layer": ["output"], "argmax_reduce_layer": ["output"], "copy_layer": ["output"],
@@ -239,7 +257,7 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
                debug: bool = False, debug_scores: bool = False, tile_linears: bool = False,
                attend_tasks: bool = False, fuse_norm2: bool = False, fuse_silu: bool = False,
                fuse_norm1: bool = False, prefetch: bool = False, gemv_linears: bool = False,
-               linear_grid: int = None, head_grid: int = None) -> Plan:
+               linear_grid: int = None, head_grid: int = None, gemv_w13: bool = False) -> Plan:
     """debug_scores: the mla_attend kernel also writes the scaled pre-softmax scores
     [NH, s_max] FP32 (boundary B5); needs the MLA_ATTEND_DEBUG_SCORES build (MPK_DEBUG_SCORES=1).
     tile_linears: issue the four dense linears (qkva, o_proj, down, lm_head) as per-tile
@@ -271,6 +289,11 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
     (--linear-grid, --head-grid; L2 and L5): grid_for_linear's heuristic otherwise, and also where
     linear_grid does not divide the operator's row count (linear_grid_for). Layer 0's down keeps
     the heuristic (it is one operator, and the page's override names qkva and o_proj).
+    gemv_w13: every MoE layer's expert gate-up as our GEMV gang task instead of the stock CK
+    one (L4 of docs/gpu-experiments/04-kernels): the same operator with the same label, the same
+    tensors and the same 8 tasks, but 37 tiles per expert (one per worker of an XCD, S1) instead
+    of 2,816 / 64 = 44, so the operator ends in one round per XCD. Independent of gemv_linears
+    and of --debug: it changes no norm and allocates no tensor.
     prefetch: the side operators of O8 (idea D1): each registered right after the operator it
     accompanies and given, by the runtime patch, that operator's dependent event, so its tasks
     run on the workers that hold none of that operator's tasks. Three per layer: after qkva
@@ -288,6 +311,12 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
     n_splits = p.n_splits
     gemv = gemv_linears and not debug
     fuse1 = fuse_norm1 and not debug               # the GEMV form folds the norm in too, below
+    if gemv_w13:
+        # the gang loop hands tile t to the worker of rank t mod (workers per XCD), so one round
+        # per XCD needs exactly as many tiles as that XCD has workers. num_workers is an argument
+        # of build_graph.build and never reaches the plan, so the constant is what is checked.
+        assert NUM_WORKERS // XCDS == W13_GEMV_TILES == 37, (NUM_WORKERS, W13_GEMV_TILES)
+        assert sum(w13_tile_rows(t, 2 * d.I_MOE)[1] for t in range(W13_GEMV_TILES)) == 2 * d.I_MOE
     assert linear_grid is None or gemv_linears, "--linear-grid applies to --gemv-linears"
     assert head_grid is None or gemv_linears, "--head-grid applies to --gemv-linears"
     assert linear_grid is None or (d.Q_OUT + d.KVA_OUT) % linear_grid == 0 or d.H % linear_grid == 0, \
@@ -446,9 +475,14 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
                  logits="logits_router", route_log="route_log", layer_index=l - 1,
                  topk=d.TOPK, n_experts=d.E, n_forced=N_FORCED, scaling=ROUTED_SCALING,
                  block_dim=(256, 1, 1), **router_io)
-            p.op("gang_moe_w13_linear_layer", XCDS, (2 * d.I_MOE) // 64, label=f"L{l}.w13",
-                 input="h", weight=f"W13_{l}", moe_routing_indices="routing", moe_mask="mask",
-                 output="mid")
+            if gemv_w13:
+                p.op("gang_moe_w13_gemv_layer", XCDS, W13_GEMV_TILES, status="new", label=f"L{l}.w13",
+                     input="h", weight=f"W13_{l}", moe_routing_indices="routing", moe_mask="mask",
+                     output="mid", tiles_per_expert=W13_GEMV_TILES)
+            else:
+                p.op("gang_moe_w13_linear_layer", XCDS, (2 * d.I_MOE) // 64, label=f"L{l}.w13",
+                     input="h", weight=f"W13_{l}", moe_routing_indices="routing", moe_mask="mask",
+                     output="mid")
             if prefetch:
                 p.op("prefetch_moe_layer", TOPK_TOTAL_SLOTS * PREFETCH_PARTS, status="new", side=True,
                      label=f"L{l}.prefetch_W2", weight=f"W2_{l}", moe_mask="mask", dummy="pf_dummy_w2",

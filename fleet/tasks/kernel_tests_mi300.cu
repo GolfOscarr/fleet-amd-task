@@ -26,11 +26,15 @@
  *
  * The debug-scores variant (mla_attend also writes the scaled scores, B5):
  * the same line with -DMLA_ATTEND_DEBUG_SCORES -o fleet/tasks/build/kernel_tests_debug.
- * The defines are the ones persistent_kernel.py passes on its ROCm path.
+ * The gang variant (the two MoE gang rows): the same line with -DKT_FAKE_XCD -o
+ * fleet/tasks/build/kernel_tests_xcd, in which the gang kernels take their XCD from
+ * blockIdx.y instead of the hardware register, so one (tiles, 8) launch covers every
+ * (XCD, tile) pair. The defines are the ones persistent_kernel.py passes on its ROCm path.
  *
  * Usage: kernel_tests <test> <dir> [<dir> ...]
  *   test  mla_prep | mla_attend | mla_merge_uv | moe_router | copy | prefetch | prefetch_moe | stream
  *         | linear_gemv | linear_gemv_norm | linear_gemv_res
+ *         | gang_w13_gemv | gang_w2_gemv (the -DKT_FAKE_XCD build only)
  *   dir   params.txt ("name value" per line, integers; floats as IEEE-754
  *         bit patterns) and one raw little-endian file <name>.bin per tensor
  *         of the test (BF16 as uint16, FP32, int32) in the order of the
@@ -50,6 +54,8 @@
 #include "tasks/mi300/prefetch_mi300.cuh"
 #include "tasks/mi300/stream_mi300.cuh"
 #include "tasks/mi300/linear_gemv_mi300.cuh"
+#include "tasks/mi300/gang_moe_w2_silu_mi300.cuh"
+#include "tasks/mi300/gang_moe_w13_gemv_mi300.cuh"
 
 #include <cstdint>
 #include <cstdio>
@@ -86,6 +92,17 @@ constexpr int STREAM_GRID = 4, STREAM_ROWS = 38;
 // and the norm form) and the o_proj grid (2,048 rows in tasks of 32, the residual form)
 constexpr int GEMV_ROWS = 38, GEMV_GRID = QKVA / GEMV_ROWS;              // 96 tasks
 constexpr int GEMV_RES_ROWS = 32, GEMV_RES_GRID = HIDDEN / GEMV_RES_ROWS; // 64 tasks
+// the two MoE gang GEMV rows (L3 and L4): the expert gate-up W13 [E, 2 I_MOE, H] in 37 tiles per
+// expert (one per worker of an XCD, S1) and the fused down projection W2 [E, H, I_MOE] in 32.
+// A trial file holds only the eight active experts' slabs (GANG_EXPERTS): the model's 66 would be
+// 761 MB of W13 per trial, so the mask names the ids 0 to 7 instead of the router's own eight
+// (which include the forced 64 and 65); the decode reads the mask, so the ids are all it sees.
+constexpr int I_MOE = 1408;
+constexpr int GANG_EXPERTS = 8;
+constexpr int W13_N = 2 * I_MOE, W13_K = HIDDEN, W13_TILES = 37;
+constexpr int W2_N = HIDDEN, W2_K = I_MOE, W2_TILES = W2_N / 64;         // 32 tiles per expert
+constexpr int MAX_E_PER_XCD = (N_TOTAL + 7) / 8;                         // 9, the registration's
+constexpr int W2_TOTAL_TILES = MAX_E_PER_XCD * W2_TILES;                 // 288
 // What the worker kernel is launched with (persistent_kernel.cuh); a task
 // may use up to this much dynamic LDS.
 constexpr int SMEM_BYTES = mirage::runtime::MAX_DYNAMIC_SHARED_MEMORY_SIZE;
@@ -236,6 +253,25 @@ __global__ __launch_bounds__(256, 1) void k_linear_gemv_res(void const *x, void 
       static_cast<bf16 *>(out) + (size_t)b * rows, rows, o_stride, 0.0f);
 }
 
+// The two MoE gang kernels, grid (tiles, 8): tile_idx is blockIdx.x and the XCD blockIdx.y, which
+// -DKT_FAKE_XCD substitutes for the hardware register, so one launch covers every (XCD, tile) pair
+// deterministically. Every tensor is whole: a gang task reads the mask and the routing itself.
+__global__ __launch_bounds__(256, 1) void k_gang_w13_gemv(void const *h, void const *w13,
+                                                          void const *routing, void const *mask,
+                                                          void *mid) {
+  kernel::gang_moe_w13_gemv_kernel<bf16, W13_N, W13_K, N_TOTAL, N_SLOTS, W13_TILES>(
+      h, w13, routing, mask, mid, (int)blockIdx.x);
+}
+
+// the scratch output is the MPK_W2_CK_TILE path's alone; the default path never writes it
+__global__ __launch_bounds__(256, 1) void k_gang_w2_gemv(void const *mid, void const *w2,
+                                                         void const *routing, void const *mask,
+                                                         void *out8) {
+  kernel::gang_moe_w2_silu_linear_kernel<bf16, 1, W2_N, W2_N, W2_K, W13_N, N_TOTAL, N_SLOTS,
+                                         W2_TILES, W2_TILES, W2_TOTAL_TILES>(
+      mid, w2, routing, mask, out8, nullptr, (int)blockIdx.x);
+}
+
 __global__ __launch_bounds__(256, 1) void k_copy(void const *x, void *y, int spin) {
   // spin > 0 (KT_SPIN, I2): the shader-clock spin after the copy, printed as a [SPIN] line
   kernel::copy_mi300_task_impl<bf16, HIDDEN>(x, y, spin, spin > 0 ? 1 : 0);
@@ -331,6 +367,22 @@ static const Spec SPEC_LINEAR_GEMV_RES[] = {
     {"w", (size_t)HIDDEN * HIDDEN * 2, false},
     {"residual", (size_t)HIDDEN * 2, false},
     {"out", (size_t)HIDDEN * 2, true},
+};
+
+// the two MoE gang rows (L3, L4): the eight active experts' slabs, the router's routing and mask
+static const Spec SPEC_GANG_W13_GEMV[] = {
+    {"h", (size_t)W13_K * 2, false},
+    {"w13", (size_t)GANG_EXPERTS * W13_N * W13_K * 2, false},
+    {"routing", (size_t)N_TOTAL * 4, false},
+    {"mask", (size_t)(N_TOTAL + 1) * 4, false},
+    {"mid", (size_t)N_SLOTS * W13_N * 2, true},
+};
+static const Spec SPEC_GANG_W2_GEMV[] = {
+    {"mid", (size_t)N_SLOTS * W13_N * 2, false},
+    {"w2", (size_t)GANG_EXPERTS * W2_N * W2_K * 2, false},
+    {"routing", (size_t)N_TOTAL * 4, false},
+    {"mask", (size_t)(N_TOTAL + 1) * 4, false},
+    {"out8", (size_t)N_SLOTS * W2_N * 2, true},
 };
 
 static const Spec SPEC_COPY[] = {
@@ -688,6 +740,72 @@ void run_linear_gemv_res(std::string const &dir) {
   b.store_outputs();
 }
 
+// Both gang rows need the -DKT_FAKE_XCD build: without it the kernel takes its XCD from the
+// hardware register and the (tile, XCD) pairs a launch covers are whatever the scheduler chose.
+void run_gang_w13_gemv(std::string const &dir) {
+#ifndef KT_FAKE_XCD
+  (void)dir;
+  std::fprintf(stderr, "gang_w13_gemv needs the -DKT_FAKE_XCD build\n");
+  std::exit(2);
+#else
+  (void)read_params(dir);
+  Buffers b{dir, specs_of(SPEC_GANG_W13_GEMV), {}};
+  b.load();
+  allow_full_lds(k_gang_w13_gemv);
+  hipLaunchKernelGGL(k_gang_w13_gemv, dim3(W13_TILES, XCDS), dim3(256), SMEM_BYTES, 0,
+                     b.get("h"), b.get("w13"), b.get("routing"), b.get("mask"), b.get("mid"));
+  finish_launch();
+  // KT_TIME=N: N more launches of the whole (37, 8) grid under hipEvents, the standalone time
+  // of one layer's expert gate-up the ktime stage compares with its per-operator cost
+  if (char const *kt = std::getenv("KT_TIME")) {
+    int n = std::atoi(kt);
+    hipEvent_t t0, t1;
+    hipEventCreate(&t0); hipEventCreate(&t1);
+    hipEventRecord(t0, 0);
+    for (int i = 0; i < n; i++) {
+      hipLaunchKernelGGL(k_gang_w13_gemv, dim3(W13_TILES, XCDS), dim3(256), SMEM_BYTES, 0,
+                         b.get("h"), b.get("w13"), b.get("routing"), b.get("mask"), b.get("mid"));
+    }
+    hipEventRecord(t1, 0); hipEventSynchronize(t1);
+    float ms = 0; hipEventElapsedTime(&ms, t0, t1);
+    std::fprintf(stderr, "TIME gang_w13_gemv launches=%d grid=%dx%d mean_us=%.2f\n",
+                 n, W13_TILES, XCDS, ms * 1000.0f / n);
+  }
+  b.store_outputs();
+#endif
+}
+
+void run_gang_w2_gemv(std::string const &dir) {
+#ifndef KT_FAKE_XCD
+  (void)dir;
+  std::fprintf(stderr, "gang_w2_gemv needs the -DKT_FAKE_XCD build\n");
+  std::exit(2);
+#else
+  (void)read_params(dir);
+  Buffers b{dir, specs_of(SPEC_GANG_W2_GEMV), {}};
+  b.load();
+  allow_full_lds(k_gang_w2_gemv);
+  hipLaunchKernelGGL(k_gang_w2_gemv, dim3(W2_TILES, XCDS), dim3(256), SMEM_BYTES, 0,
+                     b.get("mid"), b.get("w2"), b.get("routing"), b.get("mask"), b.get("out8"));
+  finish_launch();
+  if (char const *kt = std::getenv("KT_TIME")) {
+    int n = std::atoi(kt);
+    hipEvent_t t0, t1;
+    hipEventCreate(&t0); hipEventCreate(&t1);
+    hipEventRecord(t0, 0);
+    for (int i = 0; i < n; i++) {
+      hipLaunchKernelGGL(k_gang_w2_gemv, dim3(W2_TILES, XCDS), dim3(256), SMEM_BYTES, 0,
+                         b.get("mid"), b.get("w2"), b.get("routing"), b.get("mask"), b.get("out8"));
+    }
+    hipEventRecord(t1, 0); hipEventSynchronize(t1);
+    float ms = 0; hipEventElapsedTime(&ms, t0, t1);
+    std::fprintf(stderr, "TIME gang_w2_gemv launches=%d grid=%dx%d mean_us=%.2f\n",
+                 n, W2_TILES, XCDS, ms * 1000.0f / n);
+  }
+  b.store_outputs();
+#endif
+}
+
 void run_copy(std::string const &dir) {
   (void)read_params(dir);
   Buffers b{dir, specs_of(SPEC_COPY), {}};
@@ -709,7 +827,7 @@ int main(int argc, char **argv) {
   if (argc < 3) {
     std::fprintf(stderr,
                  "usage: %s <mla_prep|mla_attend|mla_merge_uv|moe_router|copy|prefetch|prefetch_moe"
-                 "|stream|linear_gemv|linear_gemv_norm|linear_gemv_res> <dir>...\n",
+                 "|stream|linear_gemv|linear_gemv_norm|linear_gemv_res|gang_w13_gemv|gang_w2_gemv> <dir>...\n",
                  argv[0]);
     return 1;
   }
@@ -737,6 +855,10 @@ int main(int argc, char **argv) {
     run = run_linear_gemv_norm;
   } else if (test == "linear_gemv_res") {
     run = run_linear_gemv_res;
+  } else if (test == "gang_w13_gemv") {
+    run = run_gang_w13_gemv;
+  } else if (test == "gang_w2_gemv") {
+    run = run_gang_w2_gemv;
   } else {
     std::fprintf(stderr, "unknown test %s\n", test.c_str());
     return 1;
