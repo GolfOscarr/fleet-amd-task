@@ -17,6 +17,10 @@ Tests (--kernel selects; default all):
   mla_prep, mla_attend, mla_merge_uv, moe_router, copy, prefetch, prefetch_moe
       n random trials each, one launch per trial (the two prefetch suites, O8: the XOR of the
       streamed slice per wave, so the stripe and the expert (slot, part) indexing are exact)
+  linear_gemv, linear_gemv_norm, linear_gemv_res
+      the three forms of the GEMV linear (L1, docs/gpu-experiments/04-kernels): a whole grid of
+      tasks per launch (96 tasks of 38 rows of qkva; 64 of 32 rows with the residual), against
+      bf16(W @ x), numpy_ref.linear_norm and bf16(W @ x + res)
   mla_attend_scores   the -DMLA_ATTEND_DEBUG_SCORES build's second output (boundary B5)
   mla_attend_splits   one split of 1056 rows versus 33 splits of 32 rows through
                       both the attend and the merge kernel (isolates the merge)
@@ -594,6 +598,63 @@ def check_prefetch_moe(t, p, exp, got):
     return [row_exact("dummy", got["dummy"], exp["dummy"], "per (slot, part): the active expert's rows; sentinel past the count")]
 
 
+# --- linear_gemv (L1) -------------------------------------------------------
+
+# The whole output of a grid of tasks, as the graph runs it: the launcher splits the 3,648 rows
+# of qkva into 96 tasks of 38 (the plain and the norm form) and the 2,048 rows of o_proj into 64
+# tasks of 32 (the residual form), and hands each task its rows of the weight and its columns of
+# the output. The reference is the whole product, so the row partition is checked too.
+
+
+def tensors_linear_gemv(params):
+    return [T("x", "bf16", (D.H,)), T("w", "bf16", (QKVA, D.H)), T("out", "bf16", (QKVA,), True)]
+
+
+def make_linear_gemv(rng):
+    return {"x": bf16_normal(rng, (D.H,)), "w": bf16_normal(rng, (QKVA, D.H), D.H ** -0.5),
+            "out": sentinel("bf16", (QKVA,))}, {}
+
+
+def ref_linear_gemv(t, p):
+    return {"out": R.linear(t["x"], t["w"])}
+
+
+def check_linear_gemv(t, p, exp, got):
+    return [row_bf16("out", got["out"], exp["out"])]
+
+
+def tensors_linear_gemv_norm(params):
+    return [T("x", "bf16", (D.H,)), T("w_norm", "bf16", (D.H,)), T("w", "bf16", (QKVA, D.H)),
+            T("out", "bf16", (QKVA,), True)]
+
+
+def make_linear_gemv_norm(rng):
+    t = {"x": bf16_normal(rng, (D.H,), 4.0), "w_norm": bf16_normal(rng, (D.H,)),
+         "w": bf16_normal(rng, (QKVA, D.H), D.H ** -0.5), "out": sentinel("bf16", (QKVA,))}
+    return t, {"eps_bits": G.float_bits(G.RMS_EPS)}
+
+
+def ref_linear_gemv_norm(t, p):
+    # the fused prologue (the task's NORM): numpy_ref.linear_norm, whose h the GEMV keeps in
+    # LDS instead of writing it to the scratch row the CK path needs
+    _, out = R.linear_norm(t["x"], t["w_norm"], t["w"], bits_to_float(p["eps_bits"]))
+    return {"out": out}
+
+
+def tensors_linear_gemv_res(params):
+    return [T("x", "bf16", (D.H,)), T("w", "bf16", (D.H, D.H)), T("residual", "bf16", (D.H,)),
+            T("out", "bf16", (D.H,), True)]
+
+
+def make_linear_gemv_res(rng):
+    return {"x": bf16_normal(rng, (D.H,)), "w": bf16_normal(rng, (D.H, D.H), D.H ** -0.5),
+            "residual": bf16_normal(rng, (D.H,)), "out": sentinel("bf16", (D.H,))}, {}
+
+
+def ref_linear_gemv_res(t, p):
+    return {"out": R.linear_residual(t["x"], t["w"], t["residual"])}
+
+
 # --- copy -------------------------------------------------------------------
 
 def tensors_copy(params):
@@ -621,6 +682,12 @@ KERNELS = {
     "copy": Kernel("copy", tensors_copy, make_copy, ref_copy, check_copy),
     "prefetch": Kernel("prefetch", tensors_prefetch, make_prefetch, ref_prefetch, check_prefetch),
     "prefetch_moe": Kernel("prefetch_moe", tensors_prefetch_moe, make_prefetch_moe, ref_prefetch_moe, check_prefetch_moe),
+    "linear_gemv": Kernel("linear_gemv", tensors_linear_gemv, make_linear_gemv, ref_linear_gemv,
+                          check_linear_gemv),
+    "linear_gemv_norm": Kernel("linear_gemv_norm", tensors_linear_gemv_norm, make_linear_gemv_norm,
+                               ref_linear_gemv_norm, check_linear_gemv),
+    "linear_gemv_res": Kernel("linear_gemv_res", tensors_linear_gemv_res, make_linear_gemv_res,
+                              ref_linear_gemv_res, check_linear_gemv),
 }
 
 
@@ -794,6 +861,9 @@ TESTS = {
     "copy": lambda ctx: run_single(ctx, "copy", KERNELS["copy"]),
     "prefetch": lambda ctx: run_single(ctx, "prefetch", KERNELS["prefetch"]),
     "prefetch_moe": lambda ctx: run_single(ctx, "prefetch_moe", KERNELS["prefetch_moe"]),
+    "linear_gemv": lambda ctx: run_single(ctx, "linear_gemv", KERNELS["linear_gemv"]),
+    "linear_gemv_norm": lambda ctx: run_single(ctx, "linear_gemv_norm", KERNELS["linear_gemv_norm"]),
+    "linear_gemv_res": lambda ctx: run_single(ctx, "linear_gemv_res", KERNELS["linear_gemv_res"]),
     "mla_attend_scores": lambda ctx: run_single(ctx, "mla_attend_scores", KERNELS["mla_attend"],
                                                 make=make_mla_attend_scores, binary="debug"),
     "mla_attend_splits": lambda ctx: run_splits(ctx, "mla_attend_splits"),

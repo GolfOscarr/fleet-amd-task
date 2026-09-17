@@ -219,8 +219,29 @@ def test_linear_norm_matches_modules(step):
         assert rel(h, exp_h) < 2e-3, rel(h, exp_h)
         assert q.shape == exp_q.shape and rel(q, exp_q) < 4e-3, rel(q, exp_q)
         # the same product on the module's own normalised row: the linear half alone
-        q2 = R.bf16(W @ exp_h)
+        q2 = R.linear(exp_h, W)
         assert rel(q2, exp_q) < 4e-3, rel(q2, exp_q)
+        assert np.array_equal(q2, R.bf16(W @ exp_h))
+
+
+def test_linear_and_residual_match_modules(step):
+    """L1: the two references of the GEMV linear without a prologue. linear is the plain
+    product (the norm's own row against the module's projection, the check above at one
+    remove) and linear_residual is the output projection followed by the residual add,
+    whose sum the reference model makes in BF16 and this one in FP32 before the single
+    rounding: the o_proj input and the layer's residual against the row the
+    post-attention norm receives."""
+    model, cap = step["model"], step["cap"]
+    for l in (0, 1):
+        layer = model.model.layers[l]
+        attn = R.from_torch_bf16(cap.store[f"L{l}.B6.attn"]).reshape(-1)
+        res = R.from_torch_bf16(cap.store[f"L{l}.layer_in"]).reshape(-1)
+        W_o = R.from_torch_bf16(layer.self_attn.o_proj.weight)
+        got = R.linear_residual(attn, W_o, res)
+        exp = R.from_torch_bf16(cap.store[f"L{l}.B7.x_res_attn"]).reshape(-1)
+        assert got.shape == exp.shape and rel(got, exp) < 4e-3, rel(got, exp)
+        # the residual is the only difference between the two references
+        assert np.array_equal(R.linear_residual(attn, W_o, np.zeros_like(res)), R.linear(attn, W_o))
 
 
 def test_router_tie_break_and_combine():

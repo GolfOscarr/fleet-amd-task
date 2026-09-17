@@ -30,6 +30,7 @@
  *
  * Usage: kernel_tests <test> <dir> [<dir> ...]
  *   test  mla_prep | mla_attend | mla_merge_uv | moe_router | copy | prefetch | prefetch_moe
+ *         | linear_gemv | linear_gemv_norm | linear_gemv_res
  *   dir   params.txt ("name value" per line, integers; floats as IEEE-754
  *         bit patterns) and one raw little-endian file <name>.bin per tensor
  *         of the test (BF16 as uint16, FP32, int32) in the order of the
@@ -47,6 +48,7 @@
 #include "tasks/mi300/moe_router_mi300.cuh"
 #include "tasks/mi300/copy_mi300.cuh"
 #include "tasks/mi300/prefetch_mi300.cuh"
+#include "tasks/mi300/linear_gemv_mi300.cuh"
 
 #include <cstdint>
 #include <cstdio>
@@ -75,6 +77,10 @@ constexpr int P_ROW = ((D_C + 1 + 3) / 4) * 4;   // padded partials row (P2), ma
 // and an expert weight [N_TOTAL, PF_N, PF_K] whose active experts (mask) are streamed in PF_PARTS parts
 constexpr int PF_GRID = 4, PF_ROWS = 32;
 constexpr int PF_N = 32, PF_K = 256, PF_PARTS = 2;
+// the GEMV linear (L1): the qkva grid of the model (3,648 rows of 2,048 in tasks of 38, the plain
+// and the norm form) and the o_proj grid (2,048 rows in tasks of 32, the residual form)
+constexpr int GEMV_ROWS = 38, GEMV_GRID = QKVA / GEMV_ROWS;              // 96 tasks
+constexpr int GEMV_RES_ROWS = 32, GEMV_RES_GRID = HIDDEN / GEMV_RES_ROWS; // 64 tasks
 // What the worker kernel is launched with (persistent_kernel.cuh); a task
 // may use up to this much dynamic LDS.
 constexpr int SMEM_BYTES = mirage::runtime::MAX_DYNAMIC_SHARED_MEMORY_SIZE;
@@ -183,6 +189,38 @@ __global__ __launch_bounds__(256, 1) void k_prefetch_moe(void const *w, void con
   kernel::prefetch_moe_mi300_task_impl<bf16, N_TOTAL, PF_N, PF_K, PF_PARTS>(w, mask, static_cast<int *>(dummy) + b * 4, b);
 }
 
+// The GEMV linear (L1), one block per task of the grid: the weight is partitioned on dim 0 and the
+// output on dim 1, so block b gets the weight pointer b * rows rows in and the output pointer b *
+// rows columns in, as the runtime's per-task pointer computation hands them to a task. `rows` and
+// `o_stride` reach the kernel as kernel arguments (the launcher's Meta is not extended).
+__global__ __launch_bounds__(256, 1) void k_linear_gemv(void const *x, void const *w, void *out,
+                                                        int rows, int o_stride) {
+  int b = blockIdx.x;
+  kernel::linear_gemv_mi300_task_impl<bf16, HIDDEN, false, false>(
+      x, nullptr, static_cast<bf16 const *>(w) + (size_t)b * rows * HIDDEN, nullptr,
+      static_cast<bf16 *>(out) + (size_t)b * rows, rows, o_stride, 0.0f);
+}
+
+__global__ __launch_bounds__(256, 1) void k_linear_gemv_norm(void const *x, void const *w_norm,
+                                                             void const *w, void *out,
+                                                             int rows, int o_stride, float eps) {
+  int b = blockIdx.x;
+  kernel::linear_gemv_mi300_task_impl<bf16, HIDDEN, true, false>(
+      x, w_norm, static_cast<bf16 const *>(w) + (size_t)b * rows * HIDDEN, nullptr,
+      static_cast<bf16 *>(out) + (size_t)b * rows, rows, o_stride, eps);
+}
+
+// the residual is [1, N] and partitioned like the output, so it is offset by the task's columns too
+__global__ __launch_bounds__(256, 1) void k_linear_gemv_res(void const *x, void const *w,
+                                                            void const *residual, void *out,
+                                                            int rows, int o_stride) {
+  int b = blockIdx.x;
+  kernel::linear_gemv_mi300_task_impl<bf16, HIDDEN, false, true>(
+      x, nullptr, static_cast<bf16 const *>(w) + (size_t)b * rows * HIDDEN,
+      static_cast<bf16 const *>(residual) + (size_t)b * rows,
+      static_cast<bf16 *>(out) + (size_t)b * rows, rows, o_stride, 0.0f);
+}
+
 __global__ __launch_bounds__(256, 1) void k_copy(void const *x, void *y, int spin) {
   // spin > 0 (KT_SPIN, I2): the shader-clock spin after the copy, printed as a [SPIN] line
   kernel::copy_mi300_task_impl<bf16, HIDDEN>(x, y, spin, spin > 0 ? 1 : 0);
@@ -257,6 +295,25 @@ static const Spec SPEC_PREFETCH_MOE[] = {
     {"mask", (size_t)(N_TOTAL + 1) * 4, false},
     {"dummy", (size_t)N_SLOTS * PF_PARTS * 4 * 4, true},
 };
+// the GEMV linear (L1): the three forms, at the model's dims
+static const Spec SPEC_LINEAR_GEMV[] = {
+    {"x", (size_t)HIDDEN * 2, false},
+    {"w", (size_t)QKVA * HIDDEN * 2, false},
+    {"out", (size_t)QKVA * 2, true},
+};
+static const Spec SPEC_LINEAR_GEMV_NORM[] = {
+    {"x", (size_t)HIDDEN * 2, false},
+    {"w_norm", (size_t)HIDDEN * 2, false},
+    {"w", (size_t)QKVA * HIDDEN * 2, false},
+    {"out", (size_t)QKVA * 2, true},
+};
+static const Spec SPEC_LINEAR_GEMV_RES[] = {
+    {"x", (size_t)HIDDEN * 2, false},
+    {"w", (size_t)HIDDEN * HIDDEN * 2, false},
+    {"residual", (size_t)HIDDEN * 2, false},
+    {"out", (size_t)HIDDEN * 2, true},
+};
+
 static const Spec SPEC_COPY[] = {
     {"x", (size_t)HIDDEN * 2, false},
     {"y", (size_t)HIDDEN * 2, true},
@@ -539,6 +596,69 @@ void run_prefetch_moe(std::string const &dir) {
   b.store_outputs();
 }
 
+void run_linear_gemv(std::string const &dir) {
+  (void)read_params(dir);
+  Buffers b{dir, specs_of(SPEC_LINEAR_GEMV), {}};
+  b.load();
+  allow_full_lds(k_linear_gemv);
+  hipLaunchKernelGGL(k_linear_gemv, dim3(GEMV_GRID), dim3(256), SMEM_BYTES, 0,
+                     b.get("x"), b.get("w"), b.get("out"), GEMV_ROWS, QKVA);
+  finish_launch();
+  // KT_TIME=N: N more launches of the whole grid under hipEvents (the 96 tasks of qkva, which
+  // the graph runs as one operator), the standalone time the ktime stage compares with the
+  // per-operator cost inside the megakernel
+  if (char const *kt = std::getenv("KT_TIME")) {
+    int n = std::atoi(kt);
+    // KT_COLD=K: rotate over K copies of the 15 MB weight, as the attention's rotation does over
+    // copies of its 1.2 MB cache; one copy already exceeds an XCD's 4 MB L2, and K >= 18 the
+    // 256 MB memory-side cache, so the number is L2-cold (the 2x rule of 09-lessons.md, lesson 6)
+    int cold = std::getenv("KT_COLD") ? std::atoi(std::getenv("KT_COLD")) : 1;
+    size_t w_bytes = (size_t)QKVA * HIDDEN * 2;
+    std::vector<void *> w(cold);
+    for (int k = 0; k < cold; k++) {
+      HIP_CHECK(hipMalloc(&w[k], w_bytes));
+      HIP_CHECK(hipMemcpy(w[k], b.get("w"), w_bytes, hipMemcpyDeviceToDevice));
+    }
+    HIP_CHECK(hipDeviceSynchronize());
+    hipEvent_t t0, t1;
+    hipEventCreate(&t0); hipEventCreate(&t1);
+    hipEventRecord(t0, 0);
+    for (int i = 0; i < n; i++) {
+      hipLaunchKernelGGL(k_linear_gemv, dim3(GEMV_GRID), dim3(256), SMEM_BYTES, 0,
+                         b.get("x"), w[i % cold], b.get("out"), GEMV_ROWS, QKVA);
+    }
+    hipEventRecord(t1, 0); hipEventSynchronize(t1);
+    float ms = 0; hipEventElapsedTime(&ms, t0, t1);
+    std::fprintf(stderr, "TIME linear_gemv launches=%d grid=%d rows=%d weight_copies=%d mean_us=%.2f\n",
+                 n, GEMV_GRID, GEMV_ROWS, cold, ms * 1000.0f / n);
+    for (int k = 0; k < cold; k++) { hipFree(w[k]); }
+  }
+  b.store_outputs();
+}
+
+void run_linear_gemv_norm(std::string const &dir) {
+  Params p = read_params(dir);
+  Buffers b{dir, specs_of(SPEC_LINEAR_GEMV_NORM), {}};
+  b.load();
+  allow_full_lds(k_linear_gemv_norm);
+  hipLaunchKernelGGL(k_linear_gemv_norm, dim3(GEMV_GRID), dim3(256), SMEM_BYTES, 0,
+                     b.get("x"), b.get("w_norm"), b.get("w"), b.get("out"), GEMV_ROWS, QKVA,
+                     float_from_bits(param(p, "eps_bits")));
+  finish_launch();
+  b.store_outputs();
+}
+
+void run_linear_gemv_res(std::string const &dir) {
+  (void)read_params(dir);
+  Buffers b{dir, specs_of(SPEC_LINEAR_GEMV_RES), {}};
+  b.load();
+  allow_full_lds(k_linear_gemv_res);
+  hipLaunchKernelGGL(k_linear_gemv_res, dim3(GEMV_RES_GRID), dim3(256), SMEM_BYTES, 0,
+                     b.get("x"), b.get("w"), b.get("residual"), b.get("out"), GEMV_RES_ROWS, HIDDEN);
+  finish_launch();
+  b.store_outputs();
+}
+
 void run_copy(std::string const &dir) {
   (void)read_params(dir);
   Buffers b{dir, specs_of(SPEC_COPY), {}};
@@ -558,7 +678,9 @@ void run_copy(std::string const &dir) {
 
 int main(int argc, char **argv) {
   if (argc < 3) {
-    std::fprintf(stderr, "usage: %s <mla_prep|mla_attend|mla_merge_uv|moe_router|copy|prefetch|prefetch_moe> <dir>...\n",
+    std::fprintf(stderr,
+                 "usage: %s <mla_prep|mla_attend|mla_merge_uv|moe_router|copy|prefetch|prefetch_moe"
+                 "|linear_gemv|linear_gemv_norm|linear_gemv_res> <dir>...\n",
                  argv[0]);
     return 1;
   }
@@ -578,6 +700,12 @@ int main(int argc, char **argv) {
     run = run_prefetch;
   } else if (test == "prefetch_moe") {
     run = run_prefetch_moe;
+  } else if (test == "linear_gemv") {
+    run = run_linear_gemv;
+  } else if (test == "linear_gemv_norm") {
+    run = run_linear_gemv_norm;
+  } else if (test == "linear_gemv_res") {
+    run = run_linear_gemv_res;
   } else {
     std::fprintf(stderr, "unknown test %s\n", test.c_str());
     return 1;

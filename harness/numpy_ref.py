@@ -242,6 +242,18 @@ def linear_norm(x, w_norm, W, eps=1e-6):
     return h, out
 
 
+def linear(x, W):
+    """The plain per-tile linear at batch 1 (the linear_gemv_mi300 task without a prologue):
+    FP32 accumulation of exact BF16 products, one BF16 rounding of the result."""
+    return bf16(np.asarray(W, F32) @ np.asarray(x, F32))
+
+
+def linear_residual(x, W, res):
+    """The same linear with the residual added in FP32 before the rounding (the task's
+    RESIDUAL flag; o_proj and layer 0's down projection)."""
+    return bf16(np.asarray(W, F32) @ np.asarray(x, F32) + np.asarray(res, F32))
+
+
 def moe_combine(out8, topk_w, x_res):
     """moe_mul_sum_add: x + sum_k w_k * out_k, FP32 accumulate, BF16 result."""
     acc = np.asarray(x_res, F32).copy()

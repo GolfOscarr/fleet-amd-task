@@ -48,6 +48,7 @@ choice of imap in `build_graph.py`.
 | `copy_mi300.cuh` | `TASK_COPY_MI300` (189), CU-task | 1 | `x [1,N]` | `y [1,N]` | `[N]` |
 | `prefetch_mi300.cuh` | `TASK_PREFETCH_MI300` (193), regular, a side operator (registration `prefetch_mi300`; `--prefetch`, O8 of `docs/gpu-experiments/03-acceleration`) | `grid_for_linear(N)` stripes | `W [N,K]` (the task's `N / grid` rows) | `dummy [grid,4]` int32 (the task's row: one XOR word per wave, so the loads are not elided) | none |
 | same file, `prefetch_moe_mi300_task_impl` | `TASK_PREFETCH_MOE_MI300` (194), regular, a side operator (registration `prefetch_moe_mi300`) | `8 x parts` | `W [E,N,K]` (whole), `mask [E+1]` | `dummy [8 x parts,4]` int32 | `[parts]`; the task's (slot, part) is its `bid.x` through the `expert_offset` metadata |
+| `linear_gemv_mi300.cuh` | `TASK_LINEAR_GEMV_MI300` (195), regular (registration `linear_gemv_mi300`; L1 of `docs/gpu-experiments/04-kernels`, whose L2 adds the type and the registration to `new_tasks.patch`) | `grid_for_linear(N)` tasks (96 for `qkva`, 64 for `o_proj`, 400 for `lm_head`) | `x [1,2048]` (whole), `w_norm [2048]` (NORM), `W [N,2048]` (the task's `N / grid` rows), `residual [1,N]` (RESIDUAL, the task's columns) | `out [1,N]` (the task's columns) | `[norm, residual, eps_bits]`; the output size and stride as the stock per-tile `linear` |
 | `linear_norm_mi300.cuh` | `TASK_LINEAR_NORM_MI300` (192), regular (registration `linear_norm_mi300`; `--fuse-norm1`, O3 of `docs/gpu-experiments/03-acceleration`) | `grid_for_linear(N)` tasks (96 for `qkva`, 400 for `lm_head`) | `x [1,2048]` (whole), `w_norm [2048]`, `W [N,2048]` (the task's `N / grid` rows) | `out [1,N]` (the task's columns), `scratch [grid,2048]` (the task's normalised row) | `[eps_bits]`; the output size and stride as the stock per-tile `linear` |
 
 Float parameters travel as IEEE-754 bit patterns (`register_task` takes
@@ -179,7 +180,10 @@ indexing against `mask` are checked exactly, and a slot past the active
 count must leave its row untouched), `mla_attend_scores` (the
 `-DMLA_ATTEND_DEBUG_SCORES` build's second output, B5), and
 `mla_attend_splits` (one split of 1056 rows versus 33 splits of 32,
-through both the attend and the merge kernel). Tolerances, argued in the
+through both the attend and the merge kernel), and the three forms of the
+GEMV linear (L1: `linear_gemv`, `linear_gemv_norm` and `linear_gemv_res`,
+one launch per grid of tasks, so the split of the weight's rows and the
+output's columns over the tasks is checked with the arithmetic). Tolerances, argued in the
 driver's header comment: bit-exact for the RoPE outputs, the router's
 selection (derived from the kernel's own FP32 logits, so a near tie cannot
 fail it), the copy and the untouched entries; `rel_err <= 1e-4` for FP32
@@ -222,6 +226,8 @@ The suite binary times a kernel's grid on request (round 2, 2026-09-16):
 
     KT_TIME=50 fleet/tasks/build/kernel_tests mla_attend <trial dir>      # 50 launches under hipEvents, mean us to stderr
     KT_TIME=50 KT_COLD=27 fleet/tasks/build/kernel_tests mla_attend <dir>  # the launches rotate over 27 copies of the cache (cold L2)
+
+    KT_TIME=50 KT_COLD=4 fleet/tasks/build/kernel_tests linear_gemv <dir>   # the 96-task qkva grid over 4 copies of the 15 MB weight
 
 A trial directory comes from `python fleet/tasks/kernel_tests.py --n 1 --kernel mla_attend --work-dir <dir> --keep`.
 `KT_SPIN=1000 fleet/tasks/build/kernel_tests copy <dir>` adds a launch whose thread 0 spins 1,000 iterations and prints the
