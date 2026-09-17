@@ -1,0 +1,9 @@
+W20260917 09:37:30.447879 130911934661376 simple_timer.cpp:55] [rocprofv3] tool initialization ::     0.161458 sec
+W20260917 09:37:30.448413 130911934661376 simple_timer.cpp:55] [rocprofv3] '/home/hotaisle/metalOps/env/hw/build/copy_bytes' ::     0.000000 sec
+W20260917 09:37:30.572980 130911934661376 tool.cpp:2422] HSA version 8.20.4 initialized (instance=0)
+W20260917 09:37:30.928814 130911934661376 simple_timer.cpp:55] [rocprofv3] '/home/hotaisle/metalOps/env/hw/build/copy_bytes' ::     0.480401 sec
+E20260917 09:37:30.951586 130911934661376 output_stream.cpp:111] Opened result file: /home/hotaisle/metalOps/env/hw/20260917/raw/pmc1/enc1-gpuvm002/4320_counter_collection.csv
+E20260917 09:37:30.964022 130911934661376 output_stream.cpp:111] Opened result file: /home/hotaisle/metalOps/env/hw/20260917/raw/pmc1/enc1-gpuvm002/4320_agent_info.csv
+W20260917 09:37:30.967095 130911934661376 simple_timer.cpp:55] [rocprofv3] output generation ::     0.036288 sec
+W20260917 09:37:30.967135 130911934661376 simple_timer.cpp:55] [rocprofv3] tool finalization ::     0.036344 sec
+copy_bytes bytes=1073741824 ms=0.848614 gbps=2530.578

@@ -1,0 +1,14 @@
+"Kind","Agent_Id","Queue_Id","Stream_Id","Thread_Id","Dispatch_Id","Kernel_Id","Kernel_Name","Correlation_Id","Start_Timestamp","End_Timestamp","LDS_Block_Size","Scratch_Size","VGPR_Count","Accum_VGPR_Count","SGPR_Count","Workgroup_Size_X","Workgroup_Size_Y","Workgroup_Size_Z","Grid_Size_X","Grid_Size_Y","Grid_Size_Z"
+"KERNEL_DISPATCH","Agent 1",1,0,4356,1,3,"fill_kernel(HIP_vector_type<unsigned int, 4u>*, unsigned long)",1,1004904929258,1004905327006,0,0,12,4,32,256,1,1,262144,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,4356,2,13,"__amd_rocclr_fillBufferAligned",2,1004905316045,1004905623746,0,0,12,4,48,256,1,1,77824,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,4356,3,13,"__amd_rocclr_fillBufferAligned",3,1004905623620,1004905628592,0,0,12,4,48,256,1,1,65536,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,4356,4,2,"warmup_kernel(HIP_vector_type<unsigned int, 4u> const*, HIP_vector_type<unsigned int, 4u>*, unsigned long)",4,1004905705543,1004905707988,0,0,8,0,16,256,1,1,65536,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,4356,5,1,"copy_kernel(HIP_vector_type<unsigned int, 4u> const*, HIP_vector_type<unsigned int, 4u>*, unsigned long)",5,1004905773825,1004906531756,0,0,8,0,16,256,1,1,67108864,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,4356,6,11,"__amd_rocclr_copyBuffer",6,1004906616284,1004906619812,0,0,16,0,32,512,1,1,512,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,4356,7,11,"__amd_rocclr_copyBuffer",7,1004906649086,1004906652133,0,0,16,0,32,512,1,1,512,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,4356,8,11,"__amd_rocclr_copyBuffer",8,1004906679493,1004906682700,0,0,16,0,32,512,1,1,512,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,4356,9,11,"__amd_rocclr_copyBuffer",9,1004906709133,1004906712260,0,0,16,0,32,512,1,1,512,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,4356,10,11,"__amd_rocclr_copyBuffer",10,1004906738658,1004906741504,0,0,16,0,32,512,1,1,512,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,4356,11,11,"__amd_rocclr_copyBuffer",11,1004906767885,1004906770932,0,0,16,0,32,512,1,1,512,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,4356,12,11,"__amd_rocclr_copyBuffer",12,1004906797303,1004906800510,0,0,16,0,32,512,1,1,512,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,4356,13,11,"__amd_rocclr_copyBuffer",13,1004906826918,1004906835458,0,0,16,0,32,512,1,1,512,1,1

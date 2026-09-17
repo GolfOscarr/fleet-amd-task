@@ -1,0 +1,241 @@
+{
+  "threshold_source": "4 x calibrated floor",
+  "thresholds": {
+    "norm": 0.1811951991236733,
+    "rope": 0.021174033604749967,
+    "gemv": 0.012940280246906176,
+    "scores": 0.01042574426733761,
+    "attention": 0.04004078653205929,
+    "router": 0.014370772811406368,
+    "expert": 0.04396453772147746,
+    "layer": 0.017334900438894192,
+    "logits": 0.16405109773780513,
+    "exact": 0.0
+  },
+  "boundaries": [
+    {
+      "key": "L0.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "max_abs_err": 0.0,
+      "rel_err": 0.0,
+      "cos_sim": 1.0,
+      "n": 512,
+      "threshold": 0.1811951991236733,
+      "floor": 0.045298799780918324,
+      "result": "PASS"
+    },
+    {
+      "key": "L0.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "max_abs_err": 0.0,
+      "rel_err": 0.0,
+      "cos_sim": 1.0000000000000002,
+      "n": 64,
+      "threshold": 0.021174033604749967,
+      "floor": 0.005293508401187492,
+      "result": "PASS"
+    },
+    {
+      "key": "L1.B2.q",
+      "boundary": "B2",
+      "class": "gemv",
+      "max_abs_err": 0.03515625,
+      "rel_err": 0.004697672869853929,
+      "cos_sim": 0.9999889660720948,
+      "n": 3072,
+      "threshold": 0.012940280246906176,
+      "floor": 0.003235070061726544,
+      "result": "PASS"
+    },
+    {
+      "key": "L1.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "max_abs_err": 0.00390625,
+      "rel_err": 0.006236864784280069,
+      "cos_sim": 0.9999805873650771,
+      "n": 512,
+      "threshold": 0.1811951991236733,
+      "floor": 0.045298799780918324,
+      "result": "PASS"
+    },
+    {
+      "key": "L1.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "max_abs_err": 0.015625,
+      "rel_err": 0.0015637395503204426,
+      "cos_sim": 0.9999987856153097,
+      "n": 64,
+      "threshold": 0.021174033604749967,
+      "floor": 0.005293508401187492,
+      "result": "PASS"
+    },
+    {
+      "key": "L1.B4.q_pe",
+      "boundary": "B4",
+      "class": "rope",
+      "max_abs_err": 0.03125,
+      "rel_err": 0.004165909477857073,
+      "cos_sim": 0.9999914292514339,
+      "n": 1024,
+      "threshold": 0.021174033604749967,
+      "floor": 0.005293508401187492,
+      "result": "PASS"
+    },
+    {
+      "key": "L1.B6.attn",
+      "boundary": "B6",
+      "class": "attention",
+      "max_abs_err": 0.00244140625,
+      "rel_err": 0.007015519165714675,
+      "cos_sim": 0.9999753962112921,
+      "n": 2048,
+      "threshold": 0.04004078653205929,
+      "floor": 0.010010196633014822,
+      "result": "PASS"
+    },
+    {
+      "key": "L1.B8.router_logits",
+      "boundary": "B8",
+      "class": "router",
+      "max_abs_err": 0.009271368384361267,
+      "rel_err": 0.00392040192855437,
+      "cos_sim": 0.999992648897739,
+      "n": 64,
+      "threshold": 0.014370772811406368,
+      "floor": 0.003592693202851592,
+      "result": "PASS"
+    },
+    {
+      "key": "L1.B9.topk_idx",
+      "boundary": "B9",
+      "class": "exact",
+      "result": "PASS",
+      "detail": "fleet [2, 19, 39, 40, 47, 49] ref [2, 19, 39, 40, 47, 49]"
+    },
+    {
+      "key": "L1.B10.topk_w",
+      "boundary": "B10",
+      "class": "router",
+      "max_abs_err": 0.00020544230937957764,
+      "rel_err": 0.0018396032929593172,
+      "cos_sim": 0.9999983346703353,
+      "n": 6,
+      "threshold": 0.014370772811406368,
+      "floor": 0.003592693202851592,
+      "result": "PASS"
+    },
+    {
+      "key": "L1.B11.expert_19",
+      "boundary": "B11",
+      "class": "expert",
+      "max_abs_err": 0.00390625,
+      "rel_err": 0.009335820885007153,
+      "cos_sim": 0.9999568530923845,
+      "n": 2048,
+      "threshold": 0.04396453772147746,
+      "floor": 0.010991134430369365,
+      "result": "PASS"
+    },
+    {
+      "key": "L1.B11.expert_2",
+      "boundary": "B11",
+      "class": "expert",
+      "max_abs_err": 0.00390625,
+      "rel_err": 0.008317488527814108,
+      "cos_sim": 0.9999654190324145,
+      "n": 2048,
+      "threshold": 0.04396453772147746,
+      "floor": 0.010991134430369365,
+      "result": "PASS"
+    },
+    {
+      "key": "L1.B11.expert_39",
+      "boundary": "B11",
+      "class": "expert",
+      "max_abs_err": 0.005859375,
+      "rel_err": 0.006189918756998112,
+      "cos_sim": 0.99998103007855,
+      "n": 2048,
+      "threshold": 0.04396453772147746,
+      "floor": 0.010991134430369365,
+      "result": "PASS"
+    },
+    {
+      "key": "L1.B11.expert_40",
+      "boundary": "B11",
+      "class": "expert",
+      "max_abs_err": 0.00390625,
+      "rel_err": 0.008727865653427818,
+      "cos_sim": 0.9999619155347388,
+      "n": 2048,
+      "threshold": 0.04396453772147746,
+      "floor": 0.010991134430369365,
+      "result": "PASS"
+    },
+    {
+      "key": "L1.B11.expert_47",
+      "boundary": "B11",
+      "class": "expert",
+      "max_abs_err": 0.0029296875,
+      "rel_err": 0.009621302854651164,
+      "cos_sim": 0.9999537751939963,
+      "n": 2048,
+      "threshold": 0.04396453772147746,
+      "floor": 0.010991134430369365,
+      "result": "PASS"
+    },
+    {
+      "key": "L1.B11.expert_49",
+      "boundary": "B11",
+      "class": "expert",
+      "max_abs_err": 0.00390625,
+      "rel_err": 0.008528370049384811,
+      "cos_sim": 0.9999641607005907,
+      "n": 2048,
+      "threshold": 0.04396453772147746,
+      "floor": 0.010991134430369365,
+      "result": "PASS"
+    },
+    {
+      "key": "L1.B12.shared",
+      "boundary": "B12",
+      "class": "expert",
+      "max_abs_err": 0.00146484375,
+      "rel_err": 0.010527231777718972,
+      "cos_sim": 0.9999453526762306,
+      "n": 2048,
+      "threshold": 0.04396453772147746,
+      "floor": 0.010991134430369365,
+      "result": "PASS"
+    },
+    {
+      "key": "L1.B13.layer_out",
+      "boundary": "B13",
+      "class": "layer",
+      "max_abs_err": 0.00390625,
+      "rel_err": 0.004677328412225853,
+      "cos_sim": 0.9999890852830997,
+      "n": 2048,
+      "threshold": 0.017334900438894192,
+      "floor": 0.004333725109723548,
+      "result": "PASS"
+    }
+  ],
+  "output_ids": {
+    "result": "SKIP",
+    "note": "truncated graph: no head, ids are placeholders"
+  },
+  "route_log": {
+    "steps_compared": 1,
+    "mismatches": [],
+    "result": "PASS"
+  },
+  "n_pass": 19,
+  "n_fail": 0,
+  "n_missing": 0,
+  "overall": "PASS"
+}

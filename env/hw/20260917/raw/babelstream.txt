@@ -1,0 +1,307 @@
+cmake is not on PATH; installing one into /tmp/hwcmake
+Collecting pip
+  Using cached pip-26.2.1-py3-none-any.whl.metadata (4.6 kB)
+Using cached pip-26.2.1-py3-none-any.whl (1.8 MB)
+Installing collected packages: pip
+Successfully installed pip-26.2.1
+cmake: /tmp/hwcmake/bin/cmake
+Cloning into '/home/hotaisle/metalOps/env/hw/build/babelstream-src'...
+-- The CXX compiler identification is Clang 22.0.0
+-- The C compiler identification is GNU 13.3.0
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /opt/rocm/bin/hipcc - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+No CMAKE_BUILD_TYPE specified, defaulting to 'Release'
+-- CXX_EXTRA_LINK_FLAGS: 
+        Appends to link flags which appear *before* the objects.
+        Do not use this for linking libraries, as the link line is order-dependent
+-- CXX_EXTRA_LIBRARIES: 
+        Append to link flags which appear *after* the objects.
+        Use this for linking extra libraries (e.g `-lmylib`, or simply `mylib`)
+-- CXX_EXTRA_LINKER_FLAGS: 
+        Append to linker flags (i.e GCC's `-Wl` or equivalent)
+-- Available models:  serial;omp;ocl;std;hip;cuda;kokkos;sycl;sycl2020;acc;raja;tbb;thrust;futhark
+-- Selected model  :  hip
+-- Supported flags:
+
+   CMAKE_CXX_COMPILER (required): Absolute path to the AMD HIP C++ compiler
+   MEM (optional, default=DEFAULT): Device memory mode:
+        DEFAULT   - allocate host and device memory pointers.
+        MANAGED   - use HIP Managed Memory.
+        PAGEFAULT - shared memory, only host pointers allocated.
+
+-- Model-specific flags for this build:
+
+   CMAKE_CXX_COMPILER = `/opt/rocm/bin/hipcc`
+   MEM = `DEFAULT`
+
+-- Default Release flags are `-O3;-march=native`, set RELEASE_FLAGS to override (CXX_EXTRA_* flags are not affected)
+-- CXX vendor  : Clang (/opt/rocm/bin/hipcc)
+-- Platform    : x86_64
+-- Sources     : src/hip/HIPStream.cpp
+-- Libraries   : 
+-- CXX Flags   :  -DNDEBUG -O3;-march=native --offload-arch=gfx942
+    CXX flags derived from (CMake + (Override ? Override : Default) + Extras), where:
+        CMake                    = ` -DNDEBUG`
+        Default                  = `-O3;-march=native`
+        Override (RELEASE_FLAGS) = ``
+        Extras (CXX_EXTRA_FLAGS) = `--offload-arch=gfx942`
+-- Link Flags  :  --offload-arch=gfx942
+-- Linker Flags:   
+-- Defs        : HIP;DEFAULT
+-- Executable  : hip-stream
+-- Configuring done (4.9s)
+-- Generating done (0.0s)
+-- Build files have been written to: /home/hotaisle/metalOps/env/hw/build/babelstream-src/build
+[ 33%] Building CXX object CMakeFiles/hip-stream.dir/src/hip/HIPStream.cpp.o
+[ 66%] Building CXX object CMakeFiles/hip-stream.dir/src/main.cpp.o
+In file included from /home/hotaisle/metalOps/env/hw/build/babelstream-src/src/hip/HIPStream.cpp:8:
+/home/hotaisle/metalOps/env/hw/build/babelstream-src/src/hip/HIPStream.h:67:10: warning: 'init_arrays' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+   67 |     void init_arrays(T initA, T initB, T initC);
+      |          ^
+/home/hotaisle/metalOps/env/hw/build/babelstream-src/src/hip/HIPStream.cpp:336:16: note: in instantiation of template class 'HIPStream<float>' requested here
+  336 | template class HIPStream<float>;
+      |                ^
+/home/hotaisle/metalOps/env/hw/build/babelstream-src/src/Stream.h:45:18: note: overridden virtual function is here
+   45 |     virtual void init_arrays(T initA, T initB, T initC) = 0;
+      |                  ^
+In file included from /home/hotaisle/metalOps/env/hw/build/babelstream-src/src/hip/HIPStream.cpp:8:
+/home/hotaisle/metalOps/env/hw/build/babelstream-src/src/hip/HIPStream.h:67:10: warning: 'init_arrays' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+   67 |     void init_arrays(T initA, T initB, T initC);
+      |          ^
+/home/hotaisle/metalOps/env/hw/build/babelstream-src/src/hip/HIPStream.cpp:337:16: note: in instantiation of template class 'HIPStream<double>' requested here
+  337 | template class HIPStream<double>;
+      |                ^
+/home/hotaisle/metalOps/env/hw/build/babelstream-src/src/Stream.h:45:18: note: overridden virtual function is here
+   45 |     virtual void init_arrays(T initA, T initB, T initC) = 0;
+      |                  ^
+2 warnings generated when compiling for gfx942.
+In file included from /home/hotaisle/metalOps/env/hw/build/babelstream-src/src/main.cpp:23:
+In file included from /home/hotaisle/metalOps/env/hw/build/babelstream-src/src/StreamModels.h:13:
+/home/hotaisle/metalOps/env/hw/build/babelstream-src/src/hip/HIPStream.h:67:10: warning: 'init_arrays' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+   67 |     void init_arrays(T initA, T initB, T initC);
+      |          ^
+/usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/type_traits:1417:57: note: in instantiation of template class 'HIPStream<float>' requested here
+ 1417 |     : public __bool_constant<__is_convertible(_From, _To)>
+      |                                                         ^
+/usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/type_traits:161:30: note: in instantiation of template class 'std::is_convertible<HIPStream<float> *, Stream<float> *>' requested here
+  161 |                                       __enable_if_t<bool(_Bn::value)>...>;
+      |                                                          ^
+/usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/type_traits:177:16: note: while substituting explicitly-specified template arguments into function template '__and_fn' 
+  177 |     : decltype(__detail::__and_fn<_Bn...>(0))
+      |                ^
+/usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/type_traits:161:30: note: in instantiation of template class 'std::__and_<std::is_convertible<HIPStream<float> *, Stream<float> *>, std::__not_<std::is_array<HIPStream<float>>>>' requested here
+  161 |                                       __enable_if_t<bool(_Bn::value)>...>;
+      |                                                          ^
+/usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/type_traits:177:16: note: while substituting explicitly-specified template arguments into function template '__and_fn' 
+  177 |     : decltype(__detail::__and_fn<_Bn...>(0))
+      |                ^
+/usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/type_traits:2224:36: note: (skipping 1 context in backtrace; use -ftemplate-backtrace-limit=0 to see all)
+ 2224 |     using _Require = __enable_if_t<__and_<_Cond...>::value>;
+      |                                    ^
+/usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/bits/unique_ptr.h:374:55: note: in instantiation of template type alias '_Require' requested here
+  374 |       template<typename _Up, typename _Ep, typename = _Require<
+      |                                                       ^
+/usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/bits/unique_ptr.h:380:2: note: in instantiation of default argument for 'unique_ptr<HIPStream<float>, std::default_delete<HIPStream<float>>>' required here
+  380 |         unique_ptr(unique_ptr<_Up, _Ep>&& __u) noexcept
+      |         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  381 |         : _M_t(__u.release(), std::forward<_Ep>(__u.get_deleter()))
+      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  382 |         { }
+      |         ~~~
+/home/hotaisle/metalOps/env/hw/build/babelstream-src/src/StreamModels.h:44:10: note: while substituting deduced template arguments into function template 'unique_ptr' [with _Up = HIPStream<float>, _Ep = std::default_delete<HIPStream<float>>, $2 = (no value)]
+   44 |   return std::make_unique<HIPStream<T>>(args...);
+      |          ^
+/home/hotaisle/metalOps/env/hw/build/babelstream-src/src/main.cpp:274:7: note: in instantiation of function template specialization 'make_stream<float, BenchId, long, unsigned long, double, double, double>' requested here
+  274 |     = make_stream<T>(selection, array_size, deviceIndex, startA, startB, startC);
+      |       ^
+/home/hotaisle/metalOps/env/hw/build/babelstream-src/src/main.cpp:97:5: note: in instantiation of function template specialization 'run<float>' requested here
+   97 |     run<float>();
+      |     ^
+/home/hotaisle/metalOps/env/hw/build/babelstream-src/src/Stream.h:45:18: note: overridden virtual function is here
+   45 |     virtual void init_arrays(T initA, T initB, T initC) = 0;
+      |                  ^
+In file included from /home/hotaisle/metalOps/env/hw/build/babelstream-src/src/main.cpp:23:
+In file included from /home/hotaisle/metalOps/env/hw/build/babelstream-src/src/StreamModels.h:13:
+/home/hotaisle/metalOps/env/hw/build/babelstream-src/src/hip/HIPStream.h:67:10: warning: 'init_arrays' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+   67 |     void init_arrays(T initA, T initB, T initC);
+      |          ^
+/usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/type_traits:1417:57: note: in instantiation of template class 'HIPStream<double>' requested here
+ 1417 |     : public __bool_constant<__is_convertible(_From, _To)>
+      |                                                         ^
+/usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/type_traits:161:30: note: in instantiation of template class 'std::is_convertible<HIPStream<double> *, Stream<double> *>' requested here
+  161 |                                       __enable_if_t<bool(_Bn::value)>...>;
+      |                                                          ^
+/usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/type_traits:177:16: note: while substituting explicitly-specified template arguments into function template '__and_fn' 
+  177 |     : decltype(__detail::__and_fn<_Bn...>(0))
+      |                ^
+/usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/type_traits:161:30: note: in instantiation of template class 'std::__and_<std::is_convertible<HIPStream<double> *, Stream<double> *>, std::__not_<std::is_array<HIPStream<double>>>>' requested here
+  161 |                                       __enable_if_t<bool(_Bn::value)>...>;
+      |                                                          ^
+/usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/type_traits:177:16: note: while substituting explicitly-specified template arguments into function template '__and_fn' 
+  177 |     : decltype(__detail::__and_fn<_Bn...>(0))
+      |                ^
+/usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/type_traits:2224:36: note: (skipping 1 context in backtrace; use -ftemplate-backtrace-limit=0 to see all)
+ 2224 |     using _Require = __enable_if_t<__and_<_Cond...>::value>;
+      |                                    ^
+/usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/bits/unique_ptr.h:374:55: note: in instantiation of template type alias '_Require' requested here
+  374 |       template<typename _Up, typename _Ep, typename = _Require<
+      |                                                       ^
+/usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/bits/unique_ptr.h:380:2: note: in instantiation of default argument for 'unique_ptr<HIPStream<double>, std::default_delete<HIPStream<double>>>' required here
+  380 |         unique_ptr(unique_ptr<_Up, _Ep>&& __u) noexcept
+      |         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  381 |         : _M_t(__u.release(), std::forward<_Ep>(__u.get_deleter()))
+      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  382 |         { }
+      |         ~~~
+/home/hotaisle/metalOps/env/hw/build/babelstream-src/src/StreamModels.h:44:10: note: while substituting deduced template arguments into function template 'unique_ptr' [with _Up = HIPStream<double>, _Ep = std::default_delete<HIPStream<double>>, $2 = (no value)]
+   44 |   return std::make_unique<HIPStream<T>>(args...);
+      |          ^
+/home/hotaisle/metalOps/env/hw/build/babelstream-src/src/main.cpp:274:7: note: in instantiation of function template specialization 'make_stream<double, BenchId, long, unsigned long, double, double, double>' requested here
+  274 |     = make_stream<T>(selection, array_size, deviceIndex, startA, startB, startC);
+      |       ^
+/home/hotaisle/metalOps/env/hw/build/babelstream-src/src/main.cpp:99:5: note: in instantiation of function template specialization 'run<double>' requested here
+   99 |     run<double>();
+      |     ^
+/home/hotaisle/metalOps/env/hw/build/babelstream-src/src/Stream.h:45:18: note: overridden virtual function is here
+   45 |     virtual void init_arrays(T initA, T initB, T initC) = 0;
+      |                  ^
+2 warnings generated when compiling for gfx942.
+In file included from /home/hotaisle/metalOps/env/hw/build/babelstream-src/src/hip/HIPStream.cpp:8:
+/home/hotaisle/metalOps/env/hw/build/babelstream-src/src/hip/HIPStream.h:67:10: warning: 'init_arrays' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+   67 |     void init_arrays(T initA, T initB, T initC);
+      |          ^
+/home/hotaisle/metalOps/env/hw/build/babelstream-src/src/hip/HIPStream.cpp:336:16: note: in instantiation of template class 'HIPStream<float>' requested here
+  336 | template class HIPStream<float>;
+      |                ^
+/home/hotaisle/metalOps/env/hw/build/babelstream-src/src/Stream.h:45:18: note: overridden virtual function is here
+   45 |     virtual void init_arrays(T initA, T initB, T initC) = 0;
+      |                  ^
+In file included from /home/hotaisle/metalOps/env/hw/build/babelstream-src/src/hip/HIPStream.cpp:8:
+/home/hotaisle/metalOps/env/hw/build/babelstream-src/src/hip/HIPStream.h:67:10: warning: 'init_arrays' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+   67 |     void init_arrays(T initA, T initB, T initC);
+      |          ^
+/home/hotaisle/metalOps/env/hw/build/babelstream-src/src/hip/HIPStream.cpp:337:16: note: in instantiation of template class 'HIPStream<double>' requested here
+  337 | template class HIPStream<double>;
+      |                ^
+/home/hotaisle/metalOps/env/hw/build/babelstream-src/src/Stream.h:45:18: note: overridden virtual function is here
+   45 |     virtual void init_arrays(T initA, T initB, T initC) = 0;
+      |                  ^
+2 warnings generated when compiling for host.
+In file included from /home/hotaisle/metalOps/env/hw/build/babelstream-src/src/main.cpp:23:
+In file included from /home/hotaisle/metalOps/env/hw/build/babelstream-src/src/StreamModels.h:13:
+/home/hotaisle/metalOps/env/hw/build/babelstream-src/src/hip/HIPStream.h:67:10: warning: 'init_arrays' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+   67 |     void init_arrays(T initA, T initB, T initC);
+      |          ^
+/usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/type_traits:1417:57: note: in instantiation of template class 'HIPStream<float>' requested here
+ 1417 |     : public __bool_constant<__is_convertible(_From, _To)>
+      |                                                         ^
+/usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/type_traits:161:30: note: in instantiation of template class 'std::is_convertible<HIPStream<float> *, Stream<float> *>' requested here
+  161 |                                       __enable_if_t<bool(_Bn::value)>...>;
+      |                                                          ^
+/usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/type_traits:177:16: note: while substituting explicitly-specified template arguments into function template '__and_fn' 
+  177 |     : decltype(__detail::__and_fn<_Bn...>(0))
+      |                ^
+/usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/type_traits:161:30: note: in instantiation of template class 'std::__and_<std::is_convertible<HIPStream<float> *, Stream<float> *>, std::__not_<std::is_array<HIPStream<float>>>>' requested here
+  161 |                                       __enable_if_t<bool(_Bn::value)>...>;
+      |                                                          ^
+/usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/type_traits:177:16: note: while substituting explicitly-specified template arguments into function template '__and_fn' 
+  177 |     : decltype(__detail::__and_fn<_Bn...>(0))
+      |                ^
+/usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/type_traits:2224:36: note: (skipping 1 context in backtrace; use -ftemplate-backtrace-limit=0 to see all)
+ 2224 |     using _Require = __enable_if_t<__and_<_Cond...>::value>;
+      |                                    ^
+/usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/bits/unique_ptr.h:374:55: note: in instantiation of template type alias '_Require' requested here
+  374 |       template<typename _Up, typename _Ep, typename = _Require<
+      |                                                       ^
+/usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/bits/unique_ptr.h:380:2: note: in instantiation of default argument for 'unique_ptr<HIPStream<float>, std::default_delete<HIPStream<float>>>' required here
+  380 |         unique_ptr(unique_ptr<_Up, _Ep>&& __u) noexcept
+      |         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  381 |         : _M_t(__u.release(), std::forward<_Ep>(__u.get_deleter()))
+      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  382 |         { }
+      |         ~~~
+/home/hotaisle/metalOps/env/hw/build/babelstream-src/src/StreamModels.h:44:10: note: while substituting deduced template arguments into function template 'unique_ptr' [with _Up = HIPStream<float>, _Ep = std::default_delete<HIPStream<float>>, $2 = (no value)]
+   44 |   return std::make_unique<HIPStream<T>>(args...);
+      |          ^
+/home/hotaisle/metalOps/env/hw/build/babelstream-src/src/main.cpp:274:7: note: in instantiation of function template specialization 'make_stream<float, BenchId, long, unsigned long, double, double, double>' requested here
+  274 |     = make_stream<T>(selection, array_size, deviceIndex, startA, startB, startC);
+      |       ^
+/home/hotaisle/metalOps/env/hw/build/babelstream-src/src/main.cpp:97:5: note: in instantiation of function template specialization 'run<float>' requested here
+   97 |     run<float>();
+      |     ^
+/home/hotaisle/metalOps/env/hw/build/babelstream-src/src/Stream.h:45:18: note: overridden virtual function is here
+   45 |     virtual void init_arrays(T initA, T initB, T initC) = 0;
+      |                  ^
+In file included from /home/hotaisle/metalOps/env/hw/build/babelstream-src/src/main.cpp:23:
+In file included from /home/hotaisle/metalOps/env/hw/build/babelstream-src/src/StreamModels.h:13:
+/home/hotaisle/metalOps/env/hw/build/babelstream-src/src/hip/HIPStream.h:67:10: warning: 'init_arrays' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+   67 |     void init_arrays(T initA, T initB, T initC);
+      |          ^
+/usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/type_traits:1417:57: note: in instantiation of template class 'HIPStream<double>' requested here
+ 1417 |     : public __bool_constant<__is_convertible(_From, _To)>
+      |                                                         ^
+/usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/type_traits:161:30: note: in instantiation of template class 'std::is_convertible<HIPStream<double> *, Stream<double> *>' requested here
+  161 |                                       __enable_if_t<bool(_Bn::value)>...>;
+      |                                                          ^
+/usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/type_traits:177:16: note: while substituting explicitly-specified template arguments into function template '__and_fn' 
+  177 |     : decltype(__detail::__and_fn<_Bn...>(0))
+      |                ^
+/usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/type_traits:161:30: note: in instantiation of template class 'std::__and_<std::is_convertible<HIPStream<double> *, Stream<double> *>, std::__not_<std::is_array<HIPStream<double>>>>' requested here
+  161 |                                       __enable_if_t<bool(_Bn::value)>...>;
+      |                                                          ^
+/usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/type_traits:177:16: note: while substituting explicitly-specified template arguments into function template '__and_fn' 
+  177 |     : decltype(__detail::__and_fn<_Bn...>(0))
+      |                ^
+/usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/type_traits:2224:36: note: (skipping 1 context in backtrace; use -ftemplate-backtrace-limit=0 to see all)
+ 2224 |     using _Require = __enable_if_t<__and_<_Cond...>::value>;
+      |                                    ^
+/usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/bits/unique_ptr.h:374:55: note: in instantiation of template type alias '_Require' requested here
+  374 |       template<typename _Up, typename _Ep, typename = _Require<
+      |                                                       ^
+/usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/bits/unique_ptr.h:380:2: note: in instantiation of default argument for 'unique_ptr<HIPStream<double>, std::default_delete<HIPStream<double>>>' required here
+  380 |         unique_ptr(unique_ptr<_Up, _Ep>&& __u) noexcept
+      |         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  381 |         : _M_t(__u.release(), std::forward<_Ep>(__u.get_deleter()))
+      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  382 |         { }
+      |         ~~~
+/home/hotaisle/metalOps/env/hw/build/babelstream-src/src/StreamModels.h:44:10: note: while substituting deduced template arguments into function template 'unique_ptr' [with _Up = HIPStream<double>, _Ep = std::default_delete<HIPStream<double>>, $2 = (no value)]
+   44 |   return std::make_unique<HIPStream<T>>(args...);
+      |          ^
+/home/hotaisle/metalOps/env/hw/build/babelstream-src/src/main.cpp:274:7: note: in instantiation of function template specialization 'make_stream<double, BenchId, long, unsigned long, double, double, double>' requested here
+  274 |     = make_stream<T>(selection, array_size, deviceIndex, startA, startB, startC);
+      |       ^
+/home/hotaisle/metalOps/env/hw/build/babelstream-src/src/main.cpp:99:5: note: in instantiation of function template specialization 'run<double>' requested here
+   99 |     run<double>();
+      |     ^
+/home/hotaisle/metalOps/env/hw/build/babelstream-src/src/Stream.h:45:18: note: overridden virtual function is here
+   45 |     virtual void init_arrays(T initA, T initB, T initC) = 0;
+      |                  ^
+2 warnings generated when compiling for host.
+[100%] Linking CXX executable hip-stream
+[100%] Built target hip-stream
+BabelStream
+Version: 5.0
+Implementation: HIP
+Running  Classic kernels 50 times in  Classic order 
+Number of elements: 268435456
+Precision: double
+Array size: 2147.5 MB
+Total size: 6442.5 MB
+Using HIP device AMD Instinct MI300X VF
+Driver: 70253211
+Memory: DEFAULT
+Function    MB/s        Min (sec)   Max         Average     
+Copy        4347326.496 0.00099     0.00141     0.00111     
+Mul         4095804.697 0.00105     0.00134     0.00114     
+Add         4089152.093 0.00158     0.00193     0.00167     
+Triad       3950237.932 0.00163     0.00202     0.00175     
+Dot         3978482.955 0.00108     0.00137     0.00120     

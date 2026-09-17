@@ -1,0 +1,31 @@
+usage: amd-smi set [-h] [-o PWR_TYPE WATTS | -L CLK_TYPE LIM_TYPE VALUE | -R STATUS]
+                   [-g GPU [GPU ...]] [--json | --csv] [--file FILE] [--loglevel LEVEL]
+
+AMD System Management Interface | Version: 26.2.2+97f5574fe2 | ROCm version: 7.2.4 | Platform: Linux Guest
+
+If no GPU is specified, will select all GPUs on the system.                                    
+A set argument must be provided; Multiple set arguments are accepted.                                    
+Requires 'sudo' privileges.
+
+Set Arguments:
+  -h, --help                               show this help message and exit
+  -o, --power-cap PWR_TYPE WATTS           Set either PPT0 or PPT1 power capacity limit:
+                                           	Ex: `amd-smi set -o ppt0 1300`
+                                           	PPT0 min cap: 0 W, PPT0 max cap: 750 W
+                                           	PPT1 min cap: N/A, PPT1 max cap: N/A
+  -L, --clk-limit CLK_TYPE LIM_TYPE VALUE  Sets the sclk (aka gfxclk) or mclk minimum and maximum frequencies. 
+                                           	ex: amd-smi set -L (sclk | mclk) (min | max) value
+  -R, --process-isolation STATUS           Enable or disable the GPU process isolation on a per partition basis:
+                                               0 for disable and 1 for enable.
+
+Device Arguments:
+  -g, --gpu GPU [GPU ...]                  Select a GPU ID, BDF, or UUID from the possible choices:
+                                           ID: 0 | BDF: 0000:ff:00.0 | UUID: 61ff74b5-0000-1000-8004-e2a75685060a
+                                             all | Selects all devices
+
+Command Modifiers:
+  --json                                   Displays output in JSON format
+  --csv                                    Displays output in CSV format
+  --file FILE                              Saves output into a file on the provided path
+  --loglevel LEVEL                         Set the logging level from the possible choices:
+                                               DEBUG, INFO, WARNING, ERROR, CRITICAL

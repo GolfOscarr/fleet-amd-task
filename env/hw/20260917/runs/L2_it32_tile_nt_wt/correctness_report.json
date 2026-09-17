@@ -1,0 +1,821 @@
+{
+  "threshold_source": "4 x calibrated floor",
+  "thresholds": {
+    "norm": 0.1811951991236733,
+    "rope": 0.021174033604749967,
+    "gemv": 0.012940280246906176,
+    "scores": 0.01042574426733761,
+    "attention": 0.04004078653205929,
+    "router": 0.014370772811406368,
+    "expert": 0.04396453772147746,
+    "layer": 0.017334900438894192,
+    "logits": 0.16405109773780513,
+    "exact": 0.0
+  },
+  "boundaries": [
+    {
+      "key": "L0.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "max_abs_err": 0.001953125,
+      "rel_err": 0.0026120173628092673,
+      "cos_sim": 0.999996632660527,
+      "n": 512,
+      "threshold": 0.1811951991236733,
+      "floor": 0.045298799780918324,
+      "result": "PASS"
+    },
+    {
+      "key": "L0.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "max_abs_err": 0.03125,
+      "rel_err": 0.001385134158151605,
+      "cos_sim": 0.9999990785142518,
+      "n": 64,
+      "threshold": 0.021174033604749967,
+      "floor": 0.005293508401187492,
+      "result": "PASS"
+    },
+    {
+      "key": "L1.B2.q",
+      "boundary": "B2",
+      "class": "gemv",
+      "max_abs_err": 9.6875,
+      "rel_err": 1.1158499718153518,
+      "cos_sim": 0.40409113326771867,
+      "n": 3072,
+      "threshold": 0.012940280246906176,
+      "floor": 0.003235070061726544,
+      "result": "FAIL"
+    },
+    {
+      "key": "L1.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "max_abs_err": 0.00640869140625,
+      "rel_err": 0.007161075706184219,
+      "cos_sim": 0.9999743957319527,
+      "n": 512,
+      "threshold": 0.1811951991236733,
+      "floor": 0.045298799780918324,
+      "result": "PASS"
+    },
+    {
+      "key": "L1.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "max_abs_err": 0.125,
+      "rel_err": 0.005867725148768542,
+      "cos_sim": 0.9999944655579893,
+      "n": 64,
+      "threshold": 0.021174033604749967,
+      "floor": 0.005293508401187492,
+      "result": "PASS"
+    },
+    {
+      "key": "L1.B4.q_pe",
+      "boundary": "B4",
+      "class": "rope",
+      "max_abs_err": 9.515625,
+      "rel_err": 1.0031676750517797,
+      "cos_sim": 0.5589444884044015,
+      "n": 1024,
+      "threshold": 0.021174033604749967,
+      "floor": 0.005293508401187492,
+      "result": "FAIL"
+    },
+    {
+      "key": "L1.B6.attn",
+      "boundary": "B6",
+      "class": "attention",
+      "max_abs_err": 0.5263671875,
+      "rel_err": 1.448681911717352,
+      "cos_sim": 0.05248188349963161,
+      "n": 2048,
+      "threshold": 0.04004078653205929,
+      "floor": 0.010010196633014822,
+      "result": "FAIL"
+    },
+    {
+      "key": "L1.B8.router_logits",
+      "boundary": "B8",
+      "class": "router",
+      "max_abs_err": 3.7829675674438477,
+      "rel_err": 1.2305032664404423,
+      "cos_sim": -0.08254457712284283,
+      "n": 64,
+      "threshold": 0.014370772811406368,
+      "floor": 0.003592693202851592,
+      "result": "FAIL"
+    },
+    {
+      "key": "L1.B9.topk_idx",
+      "boundary": "B9",
+      "class": "exact",
+      "result": "FAIL",
+      "detail": "fleet [4, 24, 25, 35, 55, 56] ref [2, 19, 39, 40, 47, 49]"
+    },
+    {
+      "key": "L1.B10.topk_w",
+      "boundary": "B10",
+      "class": "router",
+      "result": "FAIL",
+      "detail": "expert sets differ: fleet [4, 24, 25, 35, 55, 56] ref [2, 19, 39, 40, 47, 49]"
+    },
+    {
+      "key": "L1.B11.expert_24",
+      "boundary": "B11",
+      "class": "expert",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L1.B11.expert_25",
+      "boundary": "B11",
+      "class": "expert",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L1.B11.expert_35",
+      "boundary": "B11",
+      "class": "expert",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L1.B11.expert_4",
+      "boundary": "B11",
+      "class": "expert",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L1.B11.expert_55",
+      "boundary": "B11",
+      "class": "expert",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L1.B11.expert_56",
+      "boundary": "B11",
+      "class": "expert",
+      "result": "MISSING_REF"
+    },
+    {
+      "key": "L1.B12.shared",
+      "boundary": "B12",
+      "class": "expert",
+      "max_abs_err": 0.12939453125,
+      "rel_err": 1.1710011553626452,
+      "cos_sim": 0.6408286082269203,
+      "n": 2048,
+      "threshold": 0.04396453772147746,
+      "floor": 0.010991134430369365,
+      "result": "FAIL"
+    },
+    {
+      "key": "L1.B13.layer_out",
+      "boundary": "B13",
+      "class": "layer",
+      "max_abs_err": 1.70703125,
+      "rel_err": 1.0919778586866267,
+      "cos_sim": 0.2611025410541435,
+      "n": 2048,
+      "threshold": 0.017334900438894192,
+      "floor": 0.004333725109723548,
+      "result": "FAIL"
+    }
+  ],
+  "output_ids": {
+    "result": "SKIP",
+    "note": "truncated graph: no head, ids are placeholders"
+  },
+  "route_log": {
+    "steps_compared": 32,
+    "mismatches": [
+      {
+        "step": 1,
+        "moe_layer_index": 0,
+        "ref": [
+          25,
+          38,
+          42,
+          43,
+          52,
+          55
+        ],
+        "fleet": [
+          4,
+          22,
+          24,
+          25,
+          55,
+          62
+        ]
+      },
+      {
+        "step": 2,
+        "moe_layer_index": 0,
+        "ref": [
+          2,
+          19,
+          20,
+          39,
+          40,
+          46
+        ],
+        "fleet": [
+          4,
+          24,
+          25,
+          35,
+          55,
+          62
+        ]
+      },
+      {
+        "step": 3,
+        "moe_layer_index": 0,
+        "ref": [
+          8,
+          15,
+          24,
+          35,
+          50,
+          53
+        ],
+        "fleet": [
+          4,
+          24,
+          25,
+          55,
+          56,
+          62
+        ]
+      },
+      {
+        "step": 4,
+        "moe_layer_index": 0,
+        "ref": [
+          8,
+          12,
+          20,
+          21,
+          30,
+          53
+        ],
+        "fleet": [
+          4,
+          24,
+          25,
+          55,
+          56,
+          62
+        ]
+      },
+      {
+        "step": 5,
+        "moe_layer_index": 0,
+        "ref": [
+          2,
+          3,
+          21,
+          32,
+          39,
+          47
+        ],
+        "fleet": [
+          4,
+          24,
+          25,
+          55,
+          56,
+          62
+        ]
+      },
+      {
+        "step": 6,
+        "moe_layer_index": 0,
+        "ref": [
+          2,
+          7,
+          32,
+          33,
+          50,
+          59
+        ],
+        "fleet": [
+          4,
+          24,
+          25,
+          55,
+          56,
+          62
+        ]
+      },
+      {
+        "step": 7,
+        "moe_layer_index": 0,
+        "ref": [
+          13,
+          22,
+          35,
+          38,
+          46,
+          60
+        ],
+        "fleet": [
+          4,
+          24,
+          25,
+          55,
+          56,
+          62
+        ]
+      },
+      {
+        "step": 8,
+        "moe_layer_index": 0,
+        "ref": [
+          1,
+          2,
+          33,
+          35,
+          40,
+          50
+        ],
+        "fleet": [
+          4,
+          24,
+          25,
+          55,
+          56,
+          62
+        ]
+      },
+      {
+        "step": 9,
+        "moe_layer_index": 0,
+        "ref": [
+          4,
+          28,
+          36,
+          44,
+          47,
+          51
+        ],
+        "fleet": [
+          4,
+          24,
+          25,
+          55,
+          56,
+          62
+        ]
+      },
+      {
+        "step": 10,
+        "moe_layer_index": 0,
+        "ref": [
+          2,
+          7,
+          11,
+          40,
+          41,
+          48
+        ],
+        "fleet": [
+          4,
+          24,
+          25,
+          55,
+          56,
+          62
+        ]
+      },
+      {
+        "step": 11,
+        "moe_layer_index": 0,
+        "ref": [
+          2,
+          7,
+          8,
+          11,
+          39,
+          59
+        ],
+        "fleet": [
+          4,
+          24,
+          25,
+          55,
+          56,
+          62
+        ]
+      },
+      {
+        "step": 12,
+        "moe_layer_index": 0,
+        "ref": [
+          19,
+          31,
+          49,
+          50,
+          54,
+          57
+        ],
+        "fleet": [
+          4,
+          24,
+          25,
+          55,
+          56,
+          62
+        ]
+      },
+      {
+        "step": 13,
+        "moe_layer_index": 0,
+        "ref": [
+          8,
+          13,
+          26,
+          29,
+          38,
+          42
+        ],
+        "fleet": [
+          4,
+          24,
+          25,
+          55,
+          56,
+          62
+        ]
+      },
+      {
+        "step": 14,
+        "moe_layer_index": 0,
+        "ref": [
+          2,
+          10,
+          21,
+          32,
+          39,
+          40
+        ],
+        "fleet": [
+          4,
+          24,
+          25,
+          55,
+          56,
+          62
+        ]
+      },
+      {
+        "step": 15,
+        "moe_layer_index": 0,
+        "ref": [
+          36,
+          38,
+          44,
+          46,
+          49,
+          60
+        ],
+        "fleet": [
+          4,
+          24,
+          25,
+          55,
+          56,
+          62
+        ]
+      },
+      {
+        "step": 16,
+        "moe_layer_index": 0,
+        "ref": [
+          2,
+          19,
+          39,
+          40,
+          49,
+          53
+        ],
+        "fleet": [
+          4,
+          24,
+          25,
+          55,
+          56,
+          62
+        ]
+      },
+      {
+        "step": 17,
+        "moe_layer_index": 0,
+        "ref": [
+          25,
+          42,
+          43,
+          51,
+          52,
+          55
+        ],
+        "fleet": [
+          4,
+          24,
+          25,
+          55,
+          56,
+          62
+        ]
+      },
+      {
+        "step": 18,
+        "moe_layer_index": 0,
+        "ref": [
+          2,
+          19,
+          20,
+          39,
+          40,
+          46
+        ],
+        "fleet": [
+          4,
+          24,
+          25,
+          55,
+          56,
+          62
+        ]
+      },
+      {
+        "step": 19,
+        "moe_layer_index": 0,
+        "ref": [
+          8,
+          15,
+          24,
+          35,
+          50,
+          53
+        ],
+        "fleet": [
+          4,
+          24,
+          25,
+          55,
+          56,
+          62
+        ]
+      },
+      {
+        "step": 20,
+        "moe_layer_index": 0,
+        "ref": [
+          7,
+          8,
+          12,
+          21,
+          30,
+          53
+        ],
+        "fleet": [
+          4,
+          24,
+          25,
+          55,
+          56,
+          62
+        ]
+      },
+      {
+        "step": 21,
+        "moe_layer_index": 0,
+        "ref": [
+          2,
+          3,
+          10,
+          32,
+          39,
+          47
+        ],
+        "fleet": [
+          4,
+          24,
+          25,
+          35,
+          55,
+          56
+        ]
+      },
+      {
+        "step": 22,
+        "moe_layer_index": 0,
+        "ref": [
+          2,
+          32,
+          33,
+          36,
+          49,
+          59
+        ],
+        "fleet": [
+          4,
+          24,
+          25,
+          35,
+          55,
+          56
+        ]
+      },
+      {
+        "step": 23,
+        "moe_layer_index": 0,
+        "ref": [
+          13,
+          22,
+          35,
+          38,
+          46,
+          60
+        ],
+        "fleet": [
+          4,
+          24,
+          25,
+          35,
+          55,
+          56
+        ]
+      },
+      {
+        "step": 24,
+        "moe_layer_index": 0,
+        "ref": [
+          1,
+          2,
+          33,
+          35,
+          40,
+          50
+        ],
+        "fleet": [
+          4,
+          24,
+          25,
+          35,
+          55,
+          56
+        ]
+      },
+      {
+        "step": 25,
+        "moe_layer_index": 0,
+        "ref": [
+          4,
+          28,
+          36,
+          44,
+          47,
+          51
+        ],
+        "fleet": [
+          4,
+          24,
+          25,
+          35,
+          55,
+          56
+        ]
+      },
+      {
+        "step": 26,
+        "moe_layer_index": 0,
+        "ref": [
+          2,
+          7,
+          11,
+          40,
+          41,
+          48
+        ],
+        "fleet": [
+          4,
+          24,
+          25,
+          35,
+          55,
+          56
+        ]
+      },
+      {
+        "step": 27,
+        "moe_layer_index": 0,
+        "ref": [
+          2,
+          7,
+          8,
+          11,
+          39,
+          59
+        ],
+        "fleet": [
+          4,
+          24,
+          25,
+          35,
+          55,
+          56
+        ]
+      },
+      {
+        "step": 28,
+        "moe_layer_index": 0,
+        "ref": [
+          0,
+          13,
+          27,
+          44,
+          49,
+          60
+        ],
+        "fleet": [
+          4,
+          24,
+          25,
+          35,
+          55,
+          56
+        ]
+      },
+      {
+        "step": 29,
+        "moe_layer_index": 0,
+        "ref": [
+          18,
+          24,
+          32,
+          42,
+          58,
+          63
+        ],
+        "fleet": [
+          4,
+          24,
+          25,
+          35,
+          55,
+          56
+        ]
+      },
+      {
+        "step": 30,
+        "moe_layer_index": 0,
+        "ref": [
+          25,
+          29,
+          42,
+          52,
+          55,
+          63
+        ],
+        "fleet": [
+          4,
+          24,
+          25,
+          35,
+          55,
+          56
+        ]
+      },
+      {
+        "step": 31,
+        "moe_layer_index": 0,
+        "ref": [
+          2,
+          18,
+          20,
+          21,
+          32,
+          39
+        ],
+        "fleet": [
+          4,
+          24,
+          25,
+          35,
+          55,
+          56
+        ]
+      }
+    ],
+    "result": "FAIL"
+  },
+  "n_pass": 4,
+  "n_fail": 9,
+  "n_missing": 6,
+  "overall": "FAIL"
+}

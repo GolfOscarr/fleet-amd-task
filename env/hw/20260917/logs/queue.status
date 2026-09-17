@@ -1,0 +1,16 @@
+2026-09-17T09:50:29Z L2_it32_tile_nt_wt PASS rc=0 mpk=1 fault=0 fwd=0 wall=48s compare=FAIL table=PASS
+2026-09-17T09:51:36Z L27_head_it32_tile_nt_wt PASS rc=0 mpk=1 fault=0 fwd=0 wall=64s compare=FAIL table=PASS
+2026-09-17T09:51:36Z DONE env/session/queue-c2.txt
+2026-09-17T09:57:57Z L2_it1_tile_fn2_nt_wt PASS rc=0 mpk=1 fault=0 fwd=0 wall=48s compare=PASS
+2026-09-17T09:58:45Z L2_it32_tile_fn2_nt_wt PASS rc=0 mpk=1 fault=0 fwd=0 wall=48s table=PASS
+2026-09-17T09:59:52Z L27_head_it32_tile_fn2_nt_wt PASS rc=0 mpk=1 fault=0 fwd=0 wall=65s compare=FAIL table=PASS
+2026-09-17T10:00:43Z L2_it1_tile_fs_nt_wt PASS rc=0 mpk=1 fault=0 fwd=0 wall=49s compare=PASS
+2026-09-17T10:01:31Z L2_it32_tile_fs_nt_wt PASS rc=0 mpk=1 fault=0 fwd=0 wall=48s table=PASS
+2026-09-17T10:02:36Z L27_head_it32_tile_fs_nt_wt PASS rc=0 mpk=1 fault=0 fwd=0 wall=63s compare=FAIL table=PASS
+2026-09-17T10:03:27Z L2_it1_tile_fn1_nt_wt PASS rc=0 mpk=1 fault=0 fwd=0 wall=48s compare=PASS
+2026-09-17T10:04:17Z L2_it32_tile_fn1_nt_wt PASS rc=0 mpk=1 fault=0 fwd=0 wall=49s table=PASS
+2026-09-17T10:05:24Z L27_head_it32_tile_fn1_nt_wt PASS rc=0 mpk=1 fault=0 fwd=0 wall=64s compare=FAIL table=PASS
+2026-09-17T10:06:15Z L2_it1_tile_fn1_fn2_fs_nt_wt PASS rc=0 mpk=1 fault=0 fwd=0 wall=49s compare=PASS
+2026-09-17T10:07:04Z L2_it32_tile_fn1_fn2_fs_nt_wt PASS rc=0 mpk=1 fault=0 fwd=0 wall=48s table=PASS
+2026-09-17T10:08:14Z L27_head_it32_tile_fn1_fn2_fs_nt_wt PASS rc=0 mpk=1 fault=0 fwd=0 wall=66s compare=FAIL table=PASS
+2026-09-17T10:08:14Z DONE env/session/queue-c5.txt

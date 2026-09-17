@@ -1,0 +1,1 @@
+== L2_it1_tile_nt_mfma_wt: /home/hotaisle/metalOps/.venv-fleet/bin/python harness/run_fleet.py --layers 2 --iters 1 --tile-linears --nt-weights --event-timing --worker-timing --mfma-attend --model-dir /home/hotaisle/.cache/huggingface/hub/models--deepseek-ai--DeepSeek-Coder-V2-Lite-Base/snapshots/ea9b066cee82f82906fdd58898cb3788b1c5d770
