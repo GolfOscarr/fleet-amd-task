@@ -77,11 +77,13 @@ flags. It replaces the CK tile whose K loop keeps one step in flight.
   same instructions in every lane; only the stores are masked.
 - The multiply: per row per lane, 32 conversions and 32 `v_fmac_f32` in
   ascending k within the lane's four runs of eight; then the halving
-  butterfly over the batch's rows: three steps in which lane l exchanges
-  half of its live row sums with lane `l ^ 32`, `l ^ 16`, `l ^ 8` (4, 2
-  and 1 values) and adds, then three single-value steps (`l ^ 4`, `l ^ 2`,
-  `l ^ 1`): 10 shuffles for eight rows against 48 for eight wave sums,
-  leaving lane l < 8 with row `r0 + l`'s sum.
+  butterfly over the batch's rows (`butterfly_sum<8>`): three steps in
+  which lane l exchanges half of its live row sums with lane `l ^ 4`,
+  `l ^ 2`, `l ^ 1` (4, 2 and 1 values) and adds, so bit w of the lane id
+  becomes bit w of the row index, then three single-value
+  steps across `l ^ 8`, `l ^ 16`, `l ^ 32`: 10 shuffles for eight rows
+  against 48 for eight wave sums, leaving lane l < 8 with row `r0 + l`'s
+  sum (every lane holds row `lane % 8`).
 - The epilogue: lane l < 8 adds the residual value in FP32 (RESIDUAL),
   rounds with `bf16r` and stores `out[r0 + l]`; rows past `rows` and
   columns past N are masked (the tail); `nt_store` as the stock epilogue.

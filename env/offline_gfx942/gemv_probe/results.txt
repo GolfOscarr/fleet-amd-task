@@ -16,3 +16,8 @@ VALU per wave per 16 rows: 512 v_fmac_f32 and about 555 shift/and conversions (t
 v_dot2_f32_bf16: the builtin needs target feature dot12-insts (gfx950); the inline asm is
 "instruction not supported on this GPU" for gfx942; the builtin compiles for gfx950. K2 of
 01-gemv-ideas.md is off for the MI300X.
+
+# bfly_probe.cu, 2026-09-18: butterfly_sum<R> (a copy of the helper of mla_common_mi300.cuh)
+# compiled for gfx942; shuffle instructions per kernel: R = 8: 10, R = 16: 17, R = 32: 32, the
+# documented counts. The lane map (lane l < R holds row l) checked by a lane-by-lane emulation
+# of the same code for R = 1 to 64.
