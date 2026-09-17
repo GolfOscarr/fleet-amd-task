@@ -36,6 +36,21 @@ Two conventions of the round, from the probe (`01`, K6 and K9):
   1,408-element row, one whole row of 512 elements, or eight or sixteen
   lanes of a row's 128- or 256-byte segment; never a lane-contiguous
   slice.
+- **A batch is not live across a prologue, and a batch's rows are not
+  guarded one by one** (found by wave 1's offline check, 2026-09-18). A
+  batch loaded before a prologue and reloaded inside the loop is not
+  coalesced with the loop's own by this compiler: 230 to 250 registers
+  against 172 at eight rows in every form tried (the reload at the top of
+  the loop, after the multiply, or a peeled first iteration), and the
+  worker union at 208 AGPRs against 100. So the first batch is issued
+  after the prologue, and the pre-load forms stay behind `GEMV_PRELOAD`,
+  `ROUTER_PRELOAD` and `MERGE_W_PRELOAD` for the VM's A/B. A branch per
+  row around a row's loads puts each row in its own basic block, and the
+  scheduler keeps only that block's loads in flight (four of 32): rows
+  past the range are loaded as the last valid row and their sums dropped
+  by the store's mask. And a heavy task body is a `__noinline__` call
+  (the stock gang kernels' form): the three inlined GEMV forms cost the
+  union 222 AGPRs, the call 102, for 67 callee-saved stores per task.
 
 ## Part 1: the GEMV linear
 
@@ -63,9 +78,9 @@ flags. It replaces the CK tile whose K loop keeps one step in flight.
   NORM: `rmsnorm_row` runs first with `out = nullptr` (the helper gains
   the null guard; today it stores unconditionally) and `out_s` the LDS
   row, and the slice is read from LDS; plain: four `load8` from x.
-- The first batch's loads, and the residual's values for RESIDUAL, are
-  issued before the prologue, so the norm's round trip and reductions run
-  under the batch's latency. The residual is read as one 2-byte load per
+- The first batch's loads, and the residual's values for RESIDUAL, follow
+  the prologue (the third convention: issuing them before it costs about
+  70 registers; `GEMV_PRELOAD=1` restores that form for the A/B). The residual is read as one 2-byte load per
   lane for the batch's rows (lanes 0 to 7 of each wave), not as a 16-byte
   chunk: a 38-row task's column start is 76 bytes into the row, so its
   output and residual pointers are 4-byte aligned at best (the stock

@@ -21,3 +21,10 @@ v_dot2_f32_bf16: the builtin needs target feature dot12-insts (gfx950); the inli
 # compiled for gfx942; shuffle instructions per kernel: R = 8: 10, R = 16: 17, R = 32: 32, the
 # documented counts. The lane map (lane l < R holds row l) checked by a lane-by-lane emulation
 # of the same code for R = 1 to 64.
+
+# order_probe.cu, 2026-09-18: the first batch before a prologue (a stand-in block reduction
+# and barrier), eight rows, -O2: MODE 1 (reload at the top of the loop, guarded) 230 VGPRs,
+# MODE 2 (reload after the multiply) 230, MODE 4 (a peeled first batch) 245, MODE 3 (no
+# pre-load, the batch loaded at the top of the body) 172; four rows: 160 with the pre-load.
+# The address form (ADDR 0, 1, 2) changes nothing (230 each; 51 of 68 loads take an
+# immediate offset). So the pre-load costs about 60 to 75 registers whatever its form.
