@@ -39,6 +39,16 @@ void _execute_task(TaskDesc const *task_desc, RuntimeConfig const &runtime_confi
 
 __device__ __forceinline__
 void _execute_gang_task(TaskDesc const *task_desc, RuntimeConfig const &runtime_config, int tile_idx) {
+#ifdef MK_CK_GANG
+  // O2: the fused w2 gang task at the model's dims (batch 1, N 2048, K 1408, mid stride 2816,
+  // 66 experts, 8 slots, 32 tiles per expert, 32 N tiles, 32 tiles per XCD). This instantiates
+  // CK's small-tile GEMM pipeline for gfx942 offline, which the day-1 build had done on the VM only.
+  if (task_desc->task_type == TASK_GANG_MOE_W2_SILU_MI300 && task_desc->variant_id == 0) {
+    kernel::gang_moe_w2_silu_linear_kernel<bfloat16, 1, 2048, 2048, 1408, 2816, 66, 8, 32, 32, 32>(
+        task_desc->input_ptrs[0], task_desc->input_ptrs[1], task_desc->input_ptrs[2], task_desc->input_ptrs[3],
+        task_desc->output_ptrs[0], task_desc->output_ptrs[1], tile_idx);
+  } else
+#endif
   if (task_desc->task_type == TASK_MLA_ATTEND_MI300 && task_desc->variant_id == 0) {
     kernel::mla_attend_mi300_task_impl<bfloat16, 16, 512, 64, 1056>(
         task_desc->input_ptrs[0], task_desc->input_ptrs[1], task_desc->input_ptrs[2],

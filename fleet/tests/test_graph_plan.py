@@ -238,3 +238,35 @@ def test_fuse_norm2_default_off_leaves_the_plan_unchanged():
     assert sum(c["method"] == "moe_router_mi300@new" for c in calls_off) == 26
     r = {c.label: c for c in plan_off.calls}["L5.router"]
     assert r.args["input"] == "h" and "w_norm" not in r.args and "h" not in r.args
+
+
+def test_fuse_silu_folds_the_silu_into_the_expert_down_projection():
+    """O2 (docs/gpu-experiments/03-acceleration): no L{l}.silu, w2 reads mid and a per-tile scratch;
+    with O1 the MoE layer has 10 operators and the graph 274."""
+    from fleet.graph_plan import REAL_DIMS as D, XCDS
+    plan, calls = B.dry_run(layers=27, head=True, fuse_norm2=True, fuse_silu=True)
+    labels = [c.label for c in plan.calls]
+    assert not any(l.endswith(".silu") for l in labels)
+    assert plan.n_ops == 274 and plan.n_tasks == 1854 - 26 * 8 and not plan.chain_violations()
+    by = {c.label: c for c in plan.calls}
+    w2 = by["L5.w2"]
+    assert w2.method == "gang_moe_w2_silu_linear_layer" and w2.tasks == XCDS
+    assert w2.args["input"] == "mid" and w2.args["output"] == "out8" and w2.args["scratch"] == "w2_scratch"
+    assert plan.tensors["w2_scratch"].shape == (XCDS * ((D.E_TOTAL + 7) // 8) * (D.H // 64), D.I_MOE)
+    assert "act8" not in plan.tensors
+    rec = [c for c in calls if c["method"] == "gang_moe_w2_silu_linear_mi300@new"]
+    assert len(rec) == 26
+    assert rec[0]["inputs"] == ["mid", "W2_1", "routing", "mask", "out8", "w2_scratch"]
+    assert rec[0]["params"] == [D.H // 64, (D.E_TOTAL + 7) // 8, ((D.E_TOTAL + 7) // 8) * (D.H // 64)]
+    # the stock w2's imaps, plus the whole scratch
+    assert rec[0]["imaps"] == [[-1, -1, -1], [-1, 1, -1], [-1, -1, -1], [-1, -1, -1], [-1, 2, -1], [-1, -1, -1]]
+    # the combine still reads out8, written by the fused w2 (the chain's shared tensor)
+    assert by["L5.combine"].args["input"] == "out8"
+
+
+def test_fuse_silu_default_off_leaves_the_plan_unchanged():
+    plan_off, calls_off = B.dry_run(layers=27, head=True)
+    assert plan_off.n_ops == 326 and "act8" in plan_off.tensors and "w2_scratch" not in plan_off.tensors
+    assert not any(c["method"] == "gang_moe_w2_silu_linear_mi300@new" for c in calls_off)
+    plan_fs, _ = B.dry_run(layers=27, head=True, fuse_silu=True)
+    assert plan_fs.n_ops == 300 and plan_fs.n_tasks == 1880 - 26 * 8

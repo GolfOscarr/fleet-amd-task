@@ -487,7 +487,7 @@ first VM session can run both the measurements and the first fusions.
 | the tiny random model of `run_reference.py --smoke` | in place | O1 and O3 compose the norm with the tiny model's modules in `test_numpy_ref` |
 | the offline translation unit `mk_tu.cu` extended with the new tasks | to do, with each item | the unit hand-writes the dispatcher calls; O2, O3, O7 and the spin task add theirs |
 | the kernel suite (`kernel_tests_mi300.cu`) extended with the new kernels and variants | to do, with each item | the suites are the first VM row |
-| the CK linear instantiated offline | unknown | O3's offline compile will show whether the offline unit can instantiate `linear_kernel_ck` for gfx942; round 1 built it on the VM only |
+| the CK linear instantiated offline | yes (2026-09-17, O2): the `ckgang` variant of `env/offline_gfx942/run.sh` instantiates the fused w2's CK small-tile pipeline for gfx942 under ROCm 7.0's hipcc, exit 0 | O3's `linear_kernel_ck` instantiation can be checked the same way |
 | the operand layout of the gfx942 16 x 16 x 16 BF16 MFMA | assumed from the ISA and the design spec | tested by emulation here, verified by the suite on the VM |
 | the VM image `ghcr.io/golfoscarr/fleet-amd-task:20260916` | pushed | the `setup` stage re-applies the patches and rebuilds the host library in about a minute; the megakernel is compiled per run, so no new image is needed |
 | the balance | $20.23, about 6.7 hours of 1x MI300X | Part 2's rows are minutes each |

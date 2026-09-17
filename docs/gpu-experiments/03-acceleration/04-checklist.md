@@ -35,14 +35,14 @@ Status: laptop part done 2026-09-17 (commit below on `local/round-3`). The kerne
 
 ## O2. The silu-mul into the expert down projection's prologue (4 h)
 
-- [ ] `gang_moe_w2_silu_mi300.cuh`: the copy of the w2 kernel with the prologue (silu-mul of the slot's row from `mid` into the tile's scratch row, BF16 rounding as the stock silu, `fast_silu`), the workgroup-scope release, `__syncthreads()`, the workgroup-scope acquire, then the CK pipeline on the scratch row
-- [ ] `new_tasks.patch`: the task type, `register_gang_moe_w2_silu_task` taking K from the weight and the input row stride from `mid`, the gang-type lists in `runtime.cc` and `persistent_kernel.cuh`, `gang_moe_w2_silu_linear_layer` in the Python API
-- [ ] `build_graph.py`: the wrapper and the scratch workspace `[256, 1408]` BF16 with `ROW_SLACK`; `graph_plan.py --fuse-silu`: `L{l}.silu` dropped, `w2` reads `mid`; under `--debug` the stock silu stays; the dry run reports 274 operators; a test
-- [ ] the offline compile: the disassembly shows `buffer_inv sc0` between the scratch stores and the first buffer load of the pipeline (if the compiler emits nothing for the workgroup-scope acquire, the CK view takes the L1-bypassing coherence value instead; record which)
-- [ ] `check_syntax.sh`; tests; `mk_tu.cu` updated
+- [x] `gang_moe_w2_silu_mi300.cuh`: the copy of the w2 kernel with the prologue (silu-mul of the slot's row from `mid` into the tile's scratch row, BF16 rounding as the stock silu, `fast_silu`), the workgroup-scope release, `__syncthreads()`, the workgroup-scope acquire, then the CK pipeline on the scratch row
+- [x] `new_tasks.patch`: the task type, `register_gang_moe_w2_silu_task` taking K from the weight and the input row stride from `mid`, the gang-type lists in `runtime.cc` and `persistent_kernel.cuh`, `gang_moe_w2_silu_linear_layer` in the Python API
+- [x] `build_graph.py`: the wrapper and the scratch workspace `[256, 1408]` BF16 with `ROW_SLACK`; `graph_plan.py --fuse-silu`: `L{l}.silu` dropped, `w2` reads `mid`; under `--debug` the stock silu stays; the dry run reports 274 operators; a test
+- [x] the offline compile: the disassembly shows `buffer_inv sc0` between the scratch stores and the first buffer load of the pipeline (if the compiler emits nothing for the workgroup-scope acquire, the CK view takes the L1-bypassing coherence value instead; record which)
+- [x] `check_syntax.sh`; tests; `mk_tu.cu` updated
 - [ ] VM: `L2_it32` compare PASS with B12 (`out8`) within threshold; the 27-layer ids; the event clock
 
-Status:
+Status: laptop part done 2026-09-17 (commit below on `local/round-3`). `fleet/tasks/mi300/gang_moe_w2_silu_mi300.cuh` is the stock w2 kernel with the prologue; task type 191 (gang) in every runtime list the stock w2 is in; registration `gang_moe_w2_silu_linear_mi300` with K from the weight and the input stride asserted to be 2K; `--fuse-silu` default off: with `--fuse-norm2` 274 operators and 1,646 tasks at 27 layers. The visibility sequence in the disassembly of the fused kernel: `flat_store_dwordx4` (the scratch row), `s_waitcnt vmcnt(0) expcnt(0) lgkmcnt(0)`, `s_barrier`, then the A loads as `buffer_load_dwordx4 ... sc0` (the workgroup-scope release alone had lowered to `lgkmcnt(0)` plus the barrier, so an explicit `s_waitcnt 0` was added). The `ckgang` variant of `env/offline_gfx942/run.sh` instantiates the CK small-tile pipeline for gfx942 offline (exit 0; the fused kernel 114 VGPRs, the worker union 235 VGPRs and 4 AGPRs, no VGPR spills), which also answers O3's open question. Checks: 160 tests (two new), check_syntax 7 PASS (the CK header is outside its reach), preflight 8 PASS, the three patches apply, the offline compile of all six variants exit 0.
 
 ## O5. The probe before an operator (1 h)
 

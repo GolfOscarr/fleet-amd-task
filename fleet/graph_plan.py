@@ -69,7 +69,8 @@ OUTPUT_ARGS = {
     "mla_prep_layer": ["c_kv", "k_pe", "ql_nope", "q_pe"], "mla_attend_layer": ["partials", "scores"],
     "mla_merge_uv_layer": ["output"], "moe_router_layer": ["h", "topk_w", "routing", "mask", "logits", "route_log"],
     "gang_moe_w13_linear_layer": ["output"], "moe_silu_mul_layer": ["output"],
-    "gang_moe_w2_linear_layer": ["output"], "moe_mul_sum_add_layer": ["output"],
+    "gang_moe_w2_linear_layer": ["output"], "gang_moe_w2_silu_linear_layer": ["output", "scratch"],
+    "moe_mul_sum_add_layer": ["output"],
     "argmax_partial_layer": ["output"], "argmax_reduce_layer": ["output"], "copy_layer": ["output"],
 }
 
@@ -168,7 +169,7 @@ def grid_for_linear(size):
 
 def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head: bool = True,
                debug: bool = False, debug_scores: bool = False, tile_linears: bool = False,
-               attend_tasks: bool = False, fuse_norm2: bool = False) -> Plan:
+               attend_tasks: bool = False, fuse_norm2: bool = False, fuse_silu: bool = False) -> Plan:
     """debug_scores: the mla_attend kernel also writes the scaled pre-softmax scores
     [NH, s_max] FP32 (boundary B5); needs the MLA_ATTEND_DEBUG_SCORES build (MPK_DEBUG_SCORES=1).
     tile_linears: issue the four dense linears (qkva, o_proj, down, lm_head) as per-tile
@@ -177,7 +178,10 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
     fuse_norm2: in the MoE layers the post-attention norm is folded into the router
     (docs/gpu-experiments/03-acceleration, O1): no L{l}.norm2 operator, the router reads x_res
     and the norm weight and writes h for the expert gate-up (kernel NORM = true). Layer 0
-    keeps its norm (its consumer is the stock silu gang kernel)."""
+    keeps its norm (its consumer is the stock silu gang kernel).
+    fuse_silu: the silu-mul folded into the expert down projection's prologue (O2): no
+    L{l}.silu operator, w2 reads mid and computes its slot's activation row into a per-tile
+    scratch (w2_scratch [8 x tiles per XCD, I_MOE]) before the unchanged CK GEMM."""
     d = dims
     assert 1 <= layers <= d.L
     assert d.H % 256 == 0                   # K of every CK linear (silent truncation otherwise)
@@ -209,7 +213,11 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
         p.t("mask", (d.E_TOTAL + 1,), "i32")
         p.t("logits_router", (1, d.E), "f32")
         p.t("mid", (1, TOPK_TOTAL_SLOTS, 2 * d.I_MOE))
-        p.t("act8", (1, TOPK_TOTAL_SLOTS, d.I_MOE))
+        if fuse_silu:
+            # one row per (XCD, tile) of the w2 gang: max_experts_per_xcd x n_tiles tiles per XCD
+            p.t("w2_scratch", (XCDS * (-(-d.E_TOTAL // XCDS)) * (d.H // 64), d.I_MOE))
+        else:
+            p.t("act8", (1, TOPK_TOTAL_SLOTS, d.I_MOE))
         p.t("out8", (1, TOPK_TOTAL_SLOTS, d.H))
         p.t("route_log", (32, d.L - 1, TOPK_TOTAL_SLOTS), "i32")
     if debug:
@@ -300,11 +308,16 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
             p.op("gang_moe_w13_linear_layer", XCDS, (2 * d.I_MOE) // 64, label=f"L{l}.w13",
                  input="h", weight=f"W13_{l}", moe_routing_indices="routing", moe_mask="mask",
                  output="mid")
-            p.op("moe_silu_mul_layer", TOPK_TOTAL_SLOTS, label=f"L{l}.silu", input="mid", output="act8",
-                 grid_dim=(1, TOPK_TOTAL_SLOTS, 1), block_dim=(256, 1, 1))
-            p.op("gang_moe_w2_linear_layer", XCDS, d.H // 64, label=f"L{l}.w2",
-                 input="act8", weight=f"W2_{l}", moe_routing_indices="routing", moe_mask="mask",
-                 output="out8")
+            if fuse_silu:
+                p.op("gang_moe_w2_silu_linear_layer", XCDS, d.H // 64, status="new", label=f"L{l}.w2",
+                     input="mid", weight=f"W2_{l}", moe_routing_indices="routing", moe_mask="mask",
+                     output="out8", scratch="w2_scratch")
+            else:
+                p.op("moe_silu_mul_layer", TOPK_TOTAL_SLOTS, label=f"L{l}.silu", input="mid", output="act8",
+                     grid_dim=(1, TOPK_TOTAL_SLOTS, 1), block_dim=(256, 1, 1))
+                p.op("gang_moe_w2_linear_layer", XCDS, d.H // 64, label=f"L{l}.w2",
+                     input="act8", weight=f"W2_{l}", moe_routing_indices="routing", moe_mask="mask",
+                     output="out8")
             p.op("moe_mul_sum_add_layer", d.H // 256, label=f"L{l}.combine", input="out8", weight="topk_w",
                  residual="x_res", output="x_res", grid_dim=(1, d.H // 256, 1), block_dim=(256, 1, 1))
         if debug:

@@ -126,6 +126,28 @@ def moe_router_layer(mpk, input, w_gate, topk_w, routing, mask, logits, route_lo
               "moe_router_norm_mi300" if fused else "moe_router_mi300", params)
 
 
+def gang_moe_w2_silu_linear_layer(mpk, input, weight, moe_routing_indices, moe_mask, output, scratch,
+                                  block_dim=(256, 1, 1)):
+    """O2 (docs/gpu-experiments/03-acceleration): the stock gang w2 with the silu-mul in its
+    prologue. input is mid [1, topk, 2K] (gate | up per slot); each tile writes its slot's
+    activation row into scratch [8 x tiles per XCD, K] and runs the CK GEMM on it. The imaps
+    and the three params are the stock gang_moe_w2_linear_layer's; K comes from the weight."""
+    assert input.num_dims == 3 and weight.num_dims == 3 and output.num_dims == 3 and scratch.num_dims == 2
+    k = weight.dim(2)
+    assert input.dim(2) == 2 * k and output.dim(2) == weight.dim(1) and scratch.dim(1) == k
+    assert weight.dim(1) % 64 == 0 and k % 128 == 0, weight.shape
+    assert moe_routing_indices.dim(0) == weight.dim(0) and moe_mask.dim(0) == weight.dim(0) + 1
+    n_tiles = weight.dim(1) // 64
+    max_e = (weight.dim(0) + 7) // 8
+    total = max_e * n_tiles
+    assert scratch.dim(0) == XCDS * total, (scratch.shape, XCDS * total)
+    _new_task(mpk, (XCDS, 1, 1), block_dim,
+              [(input, (-1, -1, -1), 2), (weight, (-1, 1, -1), 2),
+               (moe_routing_indices, (-1, -1, -1), -1), (moe_mask, (-1, -1, -1), -1),
+               (output, (-1, 2, -1), -1), (scratch, (-1, -1, -1), -1)],
+              "gang_moe_w2_silu_linear_mi300", [n_tiles, max_e, total])
+
+
 def copy_layer(mpk, input, output, grid_dim=(1, 1, 1), block_dim=(256, 1, 1)):
     """Debug builds only: snapshot of the residual after a layer (an identity task)."""
     assert input.num_dims == 2 and output.num_dims == 2 and input.dim(1) == output.dim(1)
@@ -137,6 +159,7 @@ NEW_LAYERS = {
     "mla_prep_layer": mla_prep_layer,
     "mla_attend_layer": mla_attend_layer,
     "mla_merge_uv_layer": mla_merge_uv_layer,
+    "gang_moe_w2_silu_linear_layer": gang_moe_w2_silu_linear_layer,
     "moe_router_layer": moe_router_layer,
     "copy_layer": copy_layer,
 }
@@ -274,12 +297,13 @@ def plan_json(plan):
 
 def build(packed, capture, meta, dims=REAL_DIMS, s_max=1056, layers=27, head=True, debug=False,
           stop_after=None, debug_scores=False, tile_linears=False, attend_tasks=False, num_workers=296, num_schedulers=8,
-          profiler_tensor=None, align=0, workspaces=None, fuse_norm2=False):
+          profiler_tensor=None, align=0, workspaces=None, fuse_norm2=False, fuse_silu=False):
     """On the machine: construct the PersistentKernel, attach, issue, return (mpk, host tensors, plan)."""
     import torch
     import mirage as mi
 
-    plan = G.build_plan(dims, s_max, layers, head, debug, debug_scores, tile_linears, attend_tasks, fuse_norm2)
+    plan = G.build_plan(dims, s_max, layers, head, debug, debug_scores, tile_linears, attend_tasks, fuse_norm2,
+                        fuse_silu)
     if stop_after:
         plan.truncate(stop_after)
     assert not plan.chain_violations(), f"the runtime would reject this graph: {plan.chain_violations()}"
@@ -461,8 +485,9 @@ class FakeMPK:
 
 
 def dry_run(dims=REAL_DIMS, s_max=1056, layers=27, head=True, debug=False, stop_after=None,
-            debug_scores=False, tile_linears=False, attend_tasks=False, fuse_norm2=False):
-    plan = G.build_plan(dims, s_max, layers, head, debug, debug_scores, tile_linears, attend_tasks, fuse_norm2)
+            debug_scores=False, tile_linears=False, attend_tasks=False, fuse_norm2=False, fuse_silu=False):
+    plan = G.build_plan(dims, s_max, layers, head, debug, debug_scores, tile_linears, attend_tasks, fuse_norm2,
+                        fuse_silu)
     if stop_after:
         plan.truncate(stop_after)
     assert not plan.chain_violations(), f"the runtime would reject this graph: {plan.chain_violations()}"
