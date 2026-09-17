@@ -10,8 +10,8 @@ __assert_fail                                                                48 
 __ockl_printf_begin                                                           6                    0                    0                    4                    0                    0                    0                    4
 __ockl_printf_append_string_n                                                12                    0                    0                    8                    0                    0                    0                    8
 __ockl_printf_append_args                                                     6                    0                    0                    4                    0                    0                    0                    4
-_Z17persistent_kernelN6mirage7runtime13RuntimeConfigE                       198                    7                    0                  132                    2                    0                    5                  137
-_Z13worker_kernelN6mirage7runtime13RuntimeConfigE                           120                    4                    0                   80                    2                    0                    1                   82
+_Z17persistent_kernelN6mirage7runtime13RuntimeConfigE                       186                    7                    0                  124                    2                    0                    5                  129
+_Z13worker_kernelN6mirage7runtime13RuntimeConfigE                           108                    4                    0                   72                    2                    0                    1                   74
 _Z16scheduler_kernelN6mirage7runtime13RuntimeConfigE                         78                    3                    0                   52                    0                    0                    2                   55
 
 ## nocfence
@@ -21,8 +21,8 @@ __assert_fail                                                                48 
 __ockl_printf_begin                                                           6                    0                    0                    4                    0                    0                    0                    4
 __ockl_printf_append_string_n                                                12                    0                    0                    8                    0                    0                    0                    8
 __ockl_printf_append_args                                                     6                    0                    0                    4                    0                    0                    0                    4
-_Z17persistent_kernelN6mirage7runtime13RuntimeConfigE                       198                    5                    0                  132                    2                    0                    5                  137
-_Z13worker_kernelN6mirage7runtime13RuntimeConfigE                           120                    2                    0                   80                    2                    0                    1                   82
+_Z17persistent_kernelN6mirage7runtime13RuntimeConfigE                       186                    5                    0                  124                    2                    0                    5                  129
+_Z13worker_kernelN6mirage7runtime13RuntimeConfigE                           108                    2                    0                   72                    2                    0                    1                   74
 _Z16scheduler_kernelN6mirage7runtime13RuntimeConfigE                         78                    3                    0                   52                    0                    0                    2                   55
 
 ## noafence
@@ -32,6 +32,6 @@ __assert_fail                                                                48 
 __ockl_printf_begin                                                           6                    0                    0                    4                    0                    0                    0                    4
 __ockl_printf_append_string_n                                                12                    0                    0                    8                    0                    0                    0                    8
 __ockl_printf_append_args                                                     6                    0                    0                    4                    0                    0                    0                    4
-_Z17persistent_kernelN6mirage7runtime13RuntimeConfigE                       198                    7                    0                  132                    0                    0                    5                  137
-_Z13worker_kernelN6mirage7runtime13RuntimeConfigE                           120                    4                    0                   80                    0                    0                    1                   82
+_Z17persistent_kernelN6mirage7runtime13RuntimeConfigE                       186                    7                    0                  124                    0                    0                    5                  129
+_Z13worker_kernelN6mirage7runtime13RuntimeConfigE                           108                    4                    0                   72                    0                    0                    1                   74
 _Z16scheduler_kernelN6mirage7runtime13RuntimeConfigE                         78                    3                    0                   52                    0                    0                    2                   55
