@@ -54,13 +54,13 @@ Status:
 
 ## N1. The router, one level deeper (4 h)
 
-- [ ] `moe_router_mi300.cuh`: two batches of `ROUTER_BATCH` = 8 rows per wave under `#pragma unroll 1`; the K9 map for the rows and the LDS slice; the gate weight through `StreamSrc`; the first batch before the norm; the butterfly
-- [ ] phase 5: the initialisations and the slot writes over the lanes
+- [x] `moe_router_mi300.cuh`: two batches of `ROUTER_BATCH` = 8 rows per wave under `#pragma unroll 1`; the K9 map for the rows and the LDS slice; the gate weight through `StreamSrc`; the first batch before the norm; the butterfly
+- [x] phase 5: the initialisations and the slot writes over the lanes
 - [ ] `ROUTER_BATCH` and `ROUTER_STRIDED` as defines; the binaries in `vm.sh`; the `ktime` grid
-- [ ] `check_syntax.sh`; the suite's `moe_router` rows dry run (ids, log, mask exact)
+- [x] `check_syntax.sh`; the suite's `moe_router` rows dry run (ids, log, mask exact)
 - [ ] the offline build: `k_moe_router` (at most 180 VGPRs, no scratch) and the worker line recorded here; `run.sh` gains `dev_kt.s` and the router loop's wait sequence recorded here
 
-Status:
+Status: kernel done 2026-09-18, commit ef10e6e on `local/round-4` (wave 1, agent B; cherry-picked). Two file-local helpers (`router_chunk`, `router_load_batch`); the initialisations run before the GEMV (one entry per thread, ordered against the slot writes by the GEMV's barrier) instead of after the top-k, which would race on the forced ids; the slot pick is an unrolled select so `ids[]` stays in registers. The batch and map defines (`ROUTER_BATCH` 4, 8, 16; `ROUTER_STRIDED`) compile under the host stub; the binaries in `vm.sh` and the `ktime` grid are open (the third box). Emulated numerics: logits within 2.5e-6 relative of the old order, ids and weights identical. Checks: 9 PASS, 184 tests, the suite's dry run. The offline line and the wait sequence follow with wave 1's compile.
 
 ## N3. The merge, one level deeper (5 h)
 
@@ -91,10 +91,10 @@ Status:
 
 ## L7. The bit-diff (2 h)
 
-- [ ] `harness/bitdiff.py` (differing elements, max ULP, max abs per key; a markdown table); `harness/tests/test_bitdiff.py` on two synthetic files
-- [ ] `queue.sh bitdiff <a> <b>` writing `record/bitdiff_<a>_<b>.md`; the dry run; `env/hw/tests/test_session_scripts.py`
+- [x] `harness/bitdiff.py` (differing elements, max ULP, max abs per key; a markdown table); `harness/tests/test_bitdiff.py` on two synthetic files
+- [x] `queue.sh bitdiff <a> <b>` writing `record/bitdiff_<a>_<b>.md`; the dry run; `env/hw/tests/test_session_scripts.py`
 
-Status:
+Status: done 2026-09-18, commit 4072de4 on `local/round-4` (wave 1, agent D; cherry-picked). The subcommand activates the fleet venv itself (`run` and `bisect` get it from the stage wrapper); a `BITDIFF` override for the tests; a usage section in `harness/README.md`. Checks: 193 tests (nine new), the dry run prints the command.
 
 ## L6. The stream probe (3 h)
 
