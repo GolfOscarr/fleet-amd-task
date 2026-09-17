@@ -15,10 +15,10 @@ bash env/offline_gfx942/run.sh                                            # the 
 
 ## O0. The duplicate task-type value (0.5 h)
 
-- [ ] `TASK_MLA_ATTEND_TILE_MI300` renumbered to 190 in the enum hunk and the name map of `new_tasks.patch`; the patch regenerated against the pristine fork
-- [ ] tests pass; the offline compile passes; `env/preflight.sh` 8 PASS
+- [x] `TASK_MLA_ATTEND_TILE_MI300` renumbered to 190 in the enum hunk and the name map of `new_tasks.patch`; the patch regenerated against the pristine fork
+- [x] tests pass; the offline compile passes; `env/preflight.sh` 8 PASS
 
-Status:
+Status: done 2026-09-17, commit 654b931 on `local/round-3`. Found on the way: `check_syntax.sh` had failed since session B (the suite's timing loops use HIP events the stub header did not declare); fixed in the same commit, preflight back to 8 PASS. The name map is in `profiler_persistent.py`, not `persistent_kernel.py`.
 
 ## O1. The router folds the post-attention norm (3 h)
 
