@@ -32,6 +32,17 @@ void _execute_task(TaskDesc const *task_desc, RuntimeConfig const &runtime_confi
         task_desc->output_ptrs[1], task_desc->output_ptrs[2], task_desc->output_ptrs[3],
         task_desc->output_ptrs[4], task_desc->output_ptrs[5],
         runtime_config.step[0], runtime_config.prompt_length[0], 1, 1.0f, 1e-6f);
+  } else if (task_desc->task_type == TASK_MLA_ATTEND_TILE_MI300 && task_desc->variant_id == 0) {
+    // --attend-tasks (session B): one regular task per split, tiles_per_xcd 1, the split from bid.x
+    kernel::mla_attend_mi300_task_impl<bfloat16, 16, 512, 64, 1056>(
+        task_desc->input_ptrs[0], task_desc->input_ptrs[1], task_desc->input_ptrs[2],
+        task_desc->input_ptrs[3], task_desc->output_ptrs[0], runtime_config.step[0],
+        0.1147213867929261f, 32, 33, 1, 0, (int)(task_desc->task_metadata.expert_offset & 0xFFFF),
+#ifdef MLA_ATTEND_DEBUG_SCORES
+        task_desc->output_ptrs[1]);
+#else
+        nullptr);
+#endif
   } else if (task_desc->task_type == TASK_COPY_MI300 && task_desc->variant_id == 0) {
     kernel::copy_mi300_task_impl<bfloat16, 2048>(task_desc->input_ptrs[0], task_desc->output_ptrs[0]);
   } else if (task_desc->task_type == TASK_COPY_MI300 && task_desc->variant_id == 1) {

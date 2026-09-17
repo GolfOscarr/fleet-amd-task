@@ -349,6 +349,14 @@ def test_prefetch_adds_side_operators_that_the_chain_rule_skips():
     assert {c.label: c for c in plan.calls}["L3.mla_prep"].args["qkva"] == "qkva_probe"
 
 
+def test_probe_before_an_operator_with_a_pair_of_inputs():
+    """The argmax reduce reads (amax_v, amax_i); the probe rewires the pair's shared tensor."""
+    plan, _ = B.dry_run(layers=1, head=True, probe_before="head.argmax_reduce")
+    by = {c.label: c for c in plan.calls}
+    assert by["head.probe_argmax_reduce"].args["output"] == "amax_v_probe"
+    assert by["head.argmax_reduce"].args["input"] == ("amax_v_probe", "amax_i") and not plan.chain_violations()
+
+
 def test_prefetch_default_off_leaves_the_plan_unchanged():
     plan, calls = B.dry_run(layers=27, head=True)
     assert plan.n_ops == 326 and not any(c.side for c in plan.calls)

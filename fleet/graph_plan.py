@@ -150,7 +150,13 @@ class Plan:
         prefix, op = label.split(".", 1)
         probe = Call("copy_layer", dict(input=name, output=twin, grid_dim=(1, 1, 1), block_dim=(256, 1, 1)),
                      1, 0, "new", f"probe before {label} (O5)", f"{prefix}.probe_{op}")
-        args = {k: (twin if v == name and k not in OUTPUT_ARGS[cur.method] else v) for k, v in cur.args.items()}
+        def rewire(k, v):
+            if k in OUTPUT_ARGS[cur.method]:
+                return v
+            if isinstance(v, (tuple, list)):          # a pair of inputs (argmax_reduce's values and indices)
+                return type(v)(twin if x == name else x for x in v)
+            return twin if v == name else v
+        args = {k: rewire(k, v) for k, v in cur.args.items()}
         self.calls[i] = Call(cur.method, args, cur.tasks, cur.tiles, cur.status, cur.note, cur.label)
         self.calls.insert(i, probe)
         return self

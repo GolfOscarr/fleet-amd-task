@@ -254,9 +254,11 @@ __device__ __forceinline__ void
       }
       o[j] = mfma_16x16x16_bf16(pa, b, o[j]);
     }
+    if (r1 < hi) {
 #pragma unroll
-    for (int i = 0; i < CPT; i++) {
-      buf[i] = nbuf[i];
+      for (int i = 0; i < CPT; i++) {
+        buf[i] = nbuf[i];
+      }
     }
   }
 
