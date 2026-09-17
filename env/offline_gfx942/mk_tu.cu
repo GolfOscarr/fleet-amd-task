@@ -8,6 +8,13 @@
 #include <thread>
 #include <unistd.h>
 #include "persistent_kernel.cuh"
+#ifdef MK_GEMV
+// L1c (docs/gpu-experiments/04-kernels/05-local-preparation.md): the GEMV linear's three forms
+// at the model's dims, keyed on the task type L2's patch will add (195); the header is not in
+// task_header.cuh until then, so it is included here
+#include "tasks/mi300/linear_gemv_mi300.cuh"
+#define MK_TASK_LINEAR_GEMV_MI300 ((TaskType)195)
+#endif
 
 using namespace mirage::runtime;
 
@@ -57,6 +64,25 @@ void _execute_task(TaskDesc const *task_desc, RuntimeConfig const &runtime_confi
         task_desc->input_ptrs[0], task_desc->input_ptrs[1], task_desc->output_ptrs[0],
         (int)(task_desc->task_metadata.expert_offset & 0xFFFF));
   }
+#ifdef MK_GEMV
+  // L1c: qkva with the norm (38 rows of 3,648, 96 tasks), o_proj with the residual (32 rows of
+  // 2,048, 64 tasks), the head with the final norm (256 rows of 102,400, 400 tasks)
+  else if (task_desc->task_type == MK_TASK_LINEAR_GEMV_MI300 && task_desc->variant_id == 0) {
+    kernel::linear_gemv_mi300_task_impl<bfloat16, 2048, true, false>(
+        task_desc->input_ptrs[0], task_desc->input_ptrs[1], task_desc->input_ptrs[2], nullptr,
+        task_desc->output_ptrs[0], 38, 3648, 1e-6f);
+#ifndef MK_GEMV_ONE
+  } else if (task_desc->task_type == MK_TASK_LINEAR_GEMV_MI300 && task_desc->variant_id == 1) {
+    kernel::linear_gemv_mi300_task_impl<bfloat16, 2048, false, true>(
+        task_desc->input_ptrs[0], nullptr, task_desc->input_ptrs[1], task_desc->input_ptrs[2],
+        task_desc->output_ptrs[0], 32, 2048, 0.0f);
+  } else if (task_desc->task_type == MK_TASK_LINEAR_GEMV_MI300 && task_desc->variant_id == 2) {
+    kernel::linear_gemv_mi300_task_impl<bfloat16, 2048, true, false>(
+        task_desc->input_ptrs[0], task_desc->input_ptrs[1], task_desc->input_ptrs[2], nullptr,
+        task_desc->output_ptrs[0], 256, 102400, 1e-6f);
+#endif
+  }
+#endif
 #ifdef MK_CK_LINEAR
   // O3: the per-tile linear with the norm prologue at the model's dims (batch 1, K 2048); the
   // qkva registration emits output_size 38 and stride 3648 (96 tasks), lm_head 256 and 102400

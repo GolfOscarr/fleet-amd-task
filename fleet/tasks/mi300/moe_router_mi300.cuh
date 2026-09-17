@@ -61,6 +61,12 @@
 #ifndef ROUTER_BATCH
 #define ROUTER_BATCH 8
 #endif
+// R1, the first batch before the norm: off by default for the register cost of a batch
+// live across the prologue (the probe of 2026-09-18: about 60 to 75 registers, which the
+// worker union cannot take); -DROUTER_PRELOAD=1 for the VM's A/B.
+#ifndef ROUTER_PRELOAD
+#define ROUTER_PRELOAD 0
+#endif
 
 namespace kernel {
 
@@ -148,7 +154,9 @@ __device__ __forceinline__ void
   // the norm's round trip and its two reductions run under the batch's latency; its raw words
   // stay live across the norm, whose own need is small
   uint4 raw[E_BATCH][LOADS];
+#if ROUTER_PRELOAD
   router_load_batch<T, HIDDEN, PER_LANE, E_BATCH, LOADS>(w_src, e_first, lane, raw);
+#endif
 
   // R4: the initialisations do not depend on the logits, so they run here, one entry per
   // thread, and the barrier that closes the GEMV separates them from the slot writes below
@@ -179,7 +187,10 @@ __device__ __forceinline__ void
   }
 #pragma unroll 1
   for (int e0 = e_first; e0 < e_first + E_PER_WAVE; e0 += E_BATCH) {
-    if (e0 != e_first) {                         // the first batch arrived before the norm
+#if ROUTER_PRELOAD
+    if (e0 != e_first)                           // the first batch arrived before the norm
+#endif
+    {
       router_load_batch<T, HIDDEN, PER_LANE, E_BATCH, LOADS>(w_src, e0, lane, raw);
     }
     float sums[E_BATCH];

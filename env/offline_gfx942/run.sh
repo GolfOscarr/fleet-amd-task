@@ -83,6 +83,10 @@ compile ntstreams -DMLA_NT_STREAMS=1 || ok=1
 compile cklinear -DMK_CK_LINEAR=1 || ok=1
 # O7: the MFMA attention (v_mfma_f32_16x16x16_bf16) in place of the VALU kernel
 compile mfma -DMLA_ATTEND_MFMA=1 || ok=1
+# round 4 (docs/gpu-experiments/04-kernels): the GEMV linear's three forms in the worker (L1c),
+# and the fused w2's CK path kept under MPK_W2_CK_TILE (L3; ckgang now compiles the GEMV form)
+compile gemv -DMK_GEMV=1 || ok=1
+compile w2ck -DMK_CK_GANG=1 -DMPK_W2_CK_TILE=1 || ok=1
 # I1: the worker timing build (MPK_TIMING=1 of persistent_kernel.py): the per-worker prints of our hunk
 compile timing -DMPK_ENABLE_TIMING=1 || ok=1
 # I4: the fence knobs (run_fleet.py --runtime-flags), each alone; the two fence knobs are also disassembled below
@@ -143,6 +147,16 @@ disasm() {
         -DMPK_ENABLE_GANG_TASKS $* > /out/dev_$variant.log 2>&1"
 }
 disasm ours
+disasm gemv -DMK_GEMV=1
+disasm ckgang -DMK_CK_GANG=1
+# the standalone launcher's device code (round 4): the batch loops of k_linear_gemv, k_moe_router
+# and k_mla_merge_uv are named kernels there, so their s_waitcnt vmcnt sequences can be read
+docker run --rm --platform linux/amd64 -v "$ROOT:/w" -v "$WORK/fleet:/fleet" -v "$WORK/out:/out" "$IMAGE" bash -c "
+  cd /w && hipcc -S -x hip --offload-device-only --offload-arch=gfx942 -O2 -std=c++17 \
+    -D__HIP_PLATFORM_AMD__=1 -DMIRAGE_AMD_MI300 -DMIRAGE_BACKEND_USE_ROCM -DMPK_TARGET_CC=94 -DMODE_ONLINE \
+    -I fleet -I /fleet/include -I /fleet/include/mirage/persistent_kernel \
+    fleet/tasks/kernel_tests_mi300.cu -o /out/dev_kt.s > /out/dev_kt.log 2>&1; echo \$? > /out/dev_kt.rc"
+echo "launcher disassembly (dev_kt.s): hipcc exit $(cat "$WORK/out/dev_kt.rc")"
 disasm nocfence -DMPK_NO_COMPLETION_FENCE=1
 disasm noafence -DMPK_NO_ACQUIRE_FENCE=1
 python3 - "$WORK/out" > "$HERE/fences.txt" <<'PYEOF'

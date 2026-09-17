@@ -55,6 +55,14 @@
 #ifndef MERGE_W_BATCH
 #define MERGE_W_BATCH 16     // W_uv rows per batch: two batches of 64 raw registers per wave
 #endif
+// M2, the W_uv batches issued before and under the partials: off by default for the
+// register cost of batches live across the partials phase (the probe of 2026-09-18: a batch
+// live across a prologue and reloaded in a loop costs about 60 to 75 registers more; the
+// merge measured 244 with it at a batch of 16, 205 at 8); -DMERGE_W_PRELOAD=1 for the VM's
+// A/B. Without it the W_uv rows are loaded in (f), one batch at a time.
+#ifndef MERGE_W_PRELOAD
+#define MERGE_W_PRELOAD 0
+#endif
 
 namespace kernel {
 
@@ -122,11 +130,13 @@ __device__ __forceinline__ void
   // (a) the first W_uv batch, before anything else (M2): the head's rows
   // w_row0 .. w_row0 + W_BATCH - 1, one wave-load each, kept as raw words
   int w_row0 = wave * W_ROWS_PER_WAVE;
+#if MERGE_W_PRELOAD
   uint4 w_raw[2][W_BATCH];                            // two batches alternate; (e) fills the second
 #pragma unroll
   for (int r = 0; r < W_BATCH; r++) {
     w_raw[0][r] = load16_from(w_uv_stream, (size_t)(w_row0 + r) * D_C + 8 * lane);
   }
+#endif
 
   // o[c] = sum_j w_j o_j[c] / sum_j w_j, rounded to BF16. Thread t owns two runs of
   // four columns (q = t % CHUNKS: 4 q .. and D_C / 2 + 4 q .., one 16-byte load each,
@@ -221,12 +231,14 @@ __device__ __forceinline__ void
 
   // (e) the second W_uv batch: the partials registers are consumed, so it goes out
   // under the reductions instead of after them
+#if MERGE_W_PRELOAD
   if constexpr (W_BATCHES > 1) {
 #pragma unroll
     for (int r = 0; r < W_BATCH; r++) {
       w_raw[1][r] = load16_from(w_uv_stream, (size_t)(w_row0 + W_BATCH + r) * D_C + 8 * lane);
     }
   }
+#endif
 
   // the groups' partial sums added in group order, then o rounded to BF16
 #pragma unroll
@@ -256,6 +268,33 @@ __device__ __forceinline__ void
   // the two slots of w_raw alternate, so the slot index stays a compile-time one and
   // the raw words stay in registers; a smaller MERGE_W_BATCH than half the wave's rows
   // issues the batch two ahead from inside the loop, which is why it is a loop at all
+#if !MERGE_W_PRELOAD
+  // the plain form: one batch of rows loaded, multiplied, reduced and stored at a time
+#pragma unroll 1
+  for (int b = 0; b < W_BATCHES; b++) {
+    uint4 w_raw[W_BATCH];
+#pragma unroll
+    for (int r = 0; r < W_BATCH; r++) {
+      w_raw[r] = load16_from(w_uv_stream, (size_t)(w_row0 + b * W_BATCH + r) * D_C + 8 * lane);
+    }
+    float rs[W_BATCH];
+#pragma unroll
+    for (int r = 0; r < W_BATCH; r++) {
+      unsigned const *words = reinterpret_cast<unsigned const *>(&w_raw[r]);
+      float a = 0.0f;
+#pragma unroll
+      for (int k = 0; k < 8; k++) {
+        unsigned bits = (k & 1) ? (words[k / 2] & 0xffff0000u) : (words[k / 2] << 16);
+        a += ov[k] * __uint_as_float(bits);
+      }
+      rs[r] = a;
+    }
+    float sum = butterfly_sum<W_BATCH>(rs);
+    if (lane < W_BATCH) {
+      st(attn + w_row0 + b * W_BATCH + lane, bf16r(sum));
+    }
+  }
+#else
 #pragma unroll 1
   for (int b0 = 0; b0 < W_BATCHES; b0 += 2) {
 #pragma unroll
@@ -289,6 +328,7 @@ __device__ __forceinline__ void
       }
     }
   }
+#endif
 }
 
 } // namespace kernel

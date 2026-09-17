@@ -59,8 +59,9 @@
  * boundary compare already tolerates on this path. The residual is added in
  * FP32 before the single BF16 rounding, as the stock epilogue adds it.
  *
- * Rows past the wave's range skip their loads and contribute a zero sum, so
- * every lane of a wave runs the same butterfly; only the stores are masked,
+ * Rows past the wave's range are loaded as the range's last row (a clamped
+ * index, so the batch stays one basic block and its loads in flight together)
+ * and their sums are dropped; only the stores are masked,
  * and they are 2-byte stores: a 38-row task's columns start 76 bytes into the
  * output row, so neither out nor residual is 16-byte aligned and no vector
  * access may be made on either (the stock epilogue's packed 8-byte store has
@@ -75,6 +76,15 @@
 // per CU and 110, 158 and 256 VGPRs in the probe.
 #ifndef GEMV_BATCH
 #define GEMV_BATCH 8
+#endif
+// The first batch issued before the prologue (K8 of 01-gemv-ideas: the norm's round trip
+// under the batch's latency). Off by default: with this compiler a batch that is live
+// across the prologue and reloaded inside the loop is not coalesced with the loop's own,
+// and the kernel costs about 60 to 75 more registers (the probe of 2026-09-18: 230
+// against 172 at eight rows), which the worker union cannot take. -DGEMV_PRELOAD=1 for
+// the VM's A/B.
+#ifndef GEMV_PRELOAD
+#define GEMV_PRELOAD 0
 #endif
 
 namespace kernel {
@@ -93,26 +103,43 @@ __device__ __forceinline__ int chunk_elem(int lane, int i) {
 #endif
 }
 
-// The batch's weight loads, all issued before any of them is waited on; a row
-// past the wave's range is skipped and its words are never read.
+// The batch's weight loads, all issued before any of them is waited on. A row
+// past the wave's range loads the range's last row again (a clamped index, no
+// branch): a branch per row would put each row's loads in its own basic block,
+// and the scheduler keeps only that block's loads in flight (the offline
+// disassembly of the guarded form waited vmcnt(3) (2) (1) (0) per row, four
+// loads in flight of the batch's 32). The clamped rows' sums are dropped by
+// the store's mask.
 template <typename T, int K, int BATCH, int CHUNKS>
 __device__ __forceinline__ void load_batch(dsv2::StreamSrc<T> const &w_src, int r0, int r_end,
                                            int lane, uint4 (&raw)[BATCH][CHUNKS]) {
 #pragma unroll
   for (int u = 0; u < BATCH; u++) {
-    if (r0 + u < r_end) {
+    int r = (r0 + u < r_end) ? r0 + u : r_end - 1;
 #pragma unroll
-      for (int i = 0; i < CHUNKS; i++) {
-        raw[u][i] = dsv2::load16_from(w_src, (size_t)(r0 + u) * K + chunk_elem<K>(lane, i));
-      }
+    for (int i = 0; i < CHUNKS; i++) {
+      raw[u][i] = dsv2::load16_from(w_src, (size_t)r * K + chunk_elem<K>(lane, i));
     }
   }
 }
 
 } // namespace gemv_detail
 
+// The body as a call rather than inlined into the worker's switch, the stock gang kernels'
+// form: the worker union with the three inlined forms measured 256 VGPRs and 222 AGPRs
+// offline (2026-09-18; 137 with one form), against 100 without them and 102 with the call,
+// whose price is the callee-saved stores per task (67 dwords per lane, 332 bytes of scratch).
+// -DGEMV_NOINLINE=0 inlines the body for the VM's A/B.
+#ifndef GEMV_NOINLINE
+#define GEMV_NOINLINE 1
+#endif
+#if GEMV_NOINLINE
+#define GEMV_INLINE __noinline__
+#else
+#define GEMV_INLINE __forceinline__
+#endif
 template <typename T, int K, bool NORM, bool RESIDUAL>
-__device__ __forceinline__ void
+__device__ GEMV_INLINE void
     linear_gemv_mi300_task_impl(void const *x_ptr,
                                 void const *w_norm_ptr,
                                 void const *weight_ptr,
@@ -152,12 +179,16 @@ __device__ __forceinline__ void
   // then runs under their latency
   uint4 raw[BATCH][CHUNKS];
   float res = 0.0f;
-  gemv_detail::load_batch<T, K>(w_src, r_begin, r_end, lane, raw);
+#if GEMV_PRELOAD
+  if (r_begin < r_end) {                      // a wave with no rows (rows < 4) issues nothing
+    gemv_detail::load_batch<T, K>(w_src, r_begin, r_end, lane, raw);
+  }
   if constexpr (RESIDUAL) {
     if (lane < BATCH && r_begin + lane < r_end) {
       res = ld(residual + r_begin + lane);    // 2 bytes per lane: the output row is not 16-byte aligned
     }
   }
+#endif
 
   if constexpr (NORM) {
     // the reference's order (numpy_ref.rmsnorm), the LDS copy only: no scratch row,
@@ -180,25 +211,28 @@ __device__ __forceinline__ void
 
 #pragma unroll 1
   for (int r0 = r_begin; r0 < r_end; r0 += BATCH) {
-    if (r0 != r_begin) {                      // the first batch is already in flight
+#if GEMV_PRELOAD
+    if (r0 != r_begin)                        // the first batch is already in flight
+#endif
+    {
       gemv_detail::load_batch<T, K>(w_src, r0, r_end, lane, raw);
       if constexpr (RESIDUAL) {
         res = (lane < BATCH && r0 + lane < r_end) ? ld(residual + r0 + lane) : 0.0f;
       }
     }
+    // every row of the batch is multiplied, the clamped ones included (one basic
+    // block, so the loads stay in flight together); their sums never reach a store
     float sums[BATCH];
 #pragma unroll
     for (int u = 0; u < BATCH; u++) {
       float acc = 0.0f;
-      if (r0 + u < r_end) {                   // a row past the range keeps its zero
 #pragma unroll
-        for (int i = 0; i < CHUNKS; i++) {
-          unsigned const *words = reinterpret_cast<unsigned const *>(&raw[u][i]);
+      for (int i = 0; i < CHUNKS; i++) {
+        unsigned const *words = reinterpret_cast<unsigned const *>(&raw[u][i]);
 #pragma unroll
-          for (int k = 0; k < 8; k++) {
-            unsigned bits = (k & 1) ? (words[k / 2] & 0xffff0000u) : (words[k / 2] << 16);
-            acc += xv[i][k] * __uint_as_float(bits);
-          }
+        for (int k = 0; k < 8; k++) {
+          unsigned bits = (k & 1) ? (words[k / 2] & 0xffff0000u) : (words[k / 2] << 16);
+          acc += xv[i][k] * __uint_as_float(bits);
         }
       }
       sums[u] = acc;
