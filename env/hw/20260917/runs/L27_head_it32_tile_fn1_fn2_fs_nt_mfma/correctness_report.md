@@ -72,10 +72,10 @@ Thresholds: 4 x calibrated floor.
 | `L26.B11.expert_62` | B11 | expert | - | - | - | - | exact | **MISSING_REF**  |
 | `L26.B12.shared` | B12 | expert | - | - | - | - | exact | **MISSING_REF**  |
 | `L26.B13.layer_out` | B13 | layer | - | - | - | - | exact | **MISSING_REF**  |
-| `head.B15.logits` | B15 | logits | 19.781 | 0.829 | 0.70933 | 0.041 | 0.164 | **FAIL** |
+| `head.B15.logits` | B15 | logits | 19.906 | 0.836 | 0.70890 | 0.041 | 0.164 | **FAIL** |
 | `head.B16.token` | B16 | exact | - | - | - | - | exact | **PASS** fleet 25 ref 25 |
 
 Output ids: **PASS**, 32 of 32 matched.
-Route log: **FAIL**, 32 steps compared, 62 mismatching (step, layer) pairs.
+Route log: **FAIL**, 32 steps compared, 61 mismatching (step, layer) pairs.
 
 Overall: **FAIL** (6 pass, 2 fail, 64 missing).

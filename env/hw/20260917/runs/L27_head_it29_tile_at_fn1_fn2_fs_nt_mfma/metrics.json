@@ -23,11 +23,11 @@
   },
   "kernel_filter": "prepare_kernel,worker_kernel,scheduler_kernel,persistent_kernel",
   "wall": {
-    "mpk_wall_s": 0.14934992790222168,
+    "mpk_wall_s": 0.14954710006713867,
     "iters": 29,
-    "pack_s": 5.751150369644165,
-    "build_s": 66.12198209762573,
-    "per_iteration_us_from_wall": 5149.997513869713
+    "pack_s": 5.712343215942383,
+    "build_s": 65.94931030273438,
+    "per_iteration_us_from_wall": 5156.796554039265
   },
   "fwd_pass": {
     "iterations_logged": 0,
@@ -39,7 +39,7 @@
   },
   "clock": {
     "samples": 59,
-    "gfx_mhz_median": 2103.0,
+    "gfx_mhz_median": 2104.0,
     "gfx_mhz_max": 2104.0,
     "gfx_mhz_min": 132.0,
     "mem_mhz_median": 900.0,
