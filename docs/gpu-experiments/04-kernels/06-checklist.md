@@ -64,12 +64,12 @@ Status: kernel done 2026-09-18, commit ef10e6e on `local/round-4` (wave 1, agent
 
 ## N3. The merge, one level deeper (5 h)
 
-- [ ] `mla_merge_uv_mi300.cuh`: `W_uv` batch 0 issued first (whole-row wave-loads, 16 per lane); the partials batch at `4 q` and `256 + 4 q` with `ROWS_IN_FLIGHT` = 9 and the lse words for q = 0; one barrier for `lse_s`, every thread's M, weights and total; the FMAs and `o_s` as today
-- [ ] `W_uv` batch 1 issued when the partials registers are free; the lane's eight o values in registers; the FMAs, the butterfly over 16 rows, lanes 0 to 15 storing `attn`
-- [ ] `check_syntax.sh`; the suite's `mla_merge_uv` rows dry run
+- [x] `mla_merge_uv_mi300.cuh`: `W_uv` batch 0 issued first (whole-row wave-loads, 16 per lane); the partials batch at `4 q` and `256 + 4 q` with `ROWS_IN_FLIGHT` = 9 and the lse words for q = 0; one barrier for `lse_s`, every thread's M, weights and total; the FMAs and `o_s` as today
+- [x] `W_uv` batch 1 issued when the partials registers are free; the lane's eight o values in registers; the FMAs, the butterfly over 16 rows, lanes 0 to 15 storing `attn`
+- [x] `check_syntax.sh`; the suite's `mla_merge_uv` rows dry run
 - [ ] the offline build: `k_mla_merge_uv` (at most 200 VGPRs) and the worker line recorded here; the wait sequence from `dev_kt.s`
 
-Status:
+Status: kernel done 2026-09-18, commit 60ad996 on `local/round-4` (wave 1, agent C; cherry-picked). The phases as the page orders them; the `W_uv` batches as a two-slot pipeline so `-DMERGE_W_BATCH=8` (four batches) issues and consumes them in a loop, the default 16 running the page's schedule; `ROWS_IN_FLIGHT` a literal 9 with a `static_assert` against `N_SPLITS_MAX` (33) because `pf.sh` greps the literal, `PF_W` gone (`pf.sh` prints one merge line; its test needs one). The total of the weights is summed in ascending j by every thread (deterministic; the divisor may differ in its last FP32 bit from round 3's wave sum, the suite compares `attn` against the reference within tolerance), 42 `expf` per thread. `W_uv` through `StreamSrc` (byte-identical without `MLA_NT_STREAMS`). A host emulation of the six phases with the butterfly's exact order was bit-exact against `numpy_ref.mla_merge_uv` on 128 of 128 outputs for three heads at batch 8, 16 and 32 (the agent's scratch script). LDS 10,496 bytes; about 153 raw registers in either phase. Checks: 11 PASS, 194 tests.
 
 ## L3. The w2 form (4 h)
 
