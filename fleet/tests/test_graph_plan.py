@@ -270,3 +270,25 @@ def test_fuse_silu_default_off_leaves_the_plan_unchanged():
     assert not any(c["method"] == "gang_moe_w2_silu_linear_mi300@new" for c in calls_off)
     plan_fs, _ = B.dry_run(layers=27, head=True, fuse_silu=True)
     assert plan_fs.n_ops == 300 and plan_fs.n_tasks == 1880 - 26 * 8
+
+
+def test_probe_before_inserts_a_one_task_copy_and_rewires_the_consumer():
+    """O5 (docs/gpu-experiments/03-acceleration): a copy of the chain's tensor in front of the
+    named operator, which then reads the twin; one more operator and task, the chain intact."""
+    base, _ = B.dry_run(layers=2, head=True, tile_linears=True)
+    plan, calls = B.dry_run(layers=2, head=True, tile_linears=True, probe_before="L0.o_proj")
+    assert plan.n_ops == base.n_ops + 1 and plan.n_tasks == base.n_tasks + 1 and not plan.chain_violations()
+    i = plan.index_of("L0.probe_o_proj")
+    probe, o_proj = plan.calls[i], plan.calls[i + 1]
+    assert plan.calls[i - 1].label == "L0.mla_merge_uv" and o_proj.label == "L0.o_proj"
+    assert probe.method == "copy_layer" and probe.tasks == 1
+    assert probe.args["input"] == "attn" and probe.args["output"] == "attn_probe"
+    assert plan.tensors["attn_probe"].shape == plan.tensors["attn"].shape == (1, 2048)
+    assert o_proj.args["input"] == "attn_probe" and o_proj.args["residual"] == "x_res" and o_proj.args["output"] == "x_res"
+    rec = [c for c in calls if c["method"] == "copy_mi300@new"]
+    assert len(rec) == 1 and rec[0]["inputs"] == ["attn", "attn_probe"] and rec[0]["params"] == [2048]
+    # the probe composes with --stop-after (applied first) and refuses a tensor the copy cannot take
+    cut, _ = B.dry_run(layers=2, head=True, tile_linears=True, probe_before="L0.o_proj", stop_after="L0.o_proj")
+    assert [c.label for c in cut.calls][-2:] == ["L0.probe_o_proj", "L0.o_proj"]
+    with pytest.raises(AssertionError):
+        B.dry_run(layers=2, head=True, probe_before="L1.combine")      # out8 is [1, 8, 2048]

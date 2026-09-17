@@ -114,6 +114,32 @@ class Plan:
         self.calls = self.calls[: self.index_of(stop_label) + 1]
         return self
 
+    def insert_probe(self, label):
+        """O5 (docs/gpu-experiments/03-acceleration/03-local-preparation.md): a one-task copy
+        operator in front of the labelled operator, so that operator's event gap is measured
+        with a one-task predecessor. The copy takes the [1, N] BF16 tensor the operator shares
+        with its predecessor (the chain's tensor) into a twin `<name>_probe`, and the operator
+        reads the twin; every other argument is unchanged. The label is `<prefix>.probe_<op>`.
+        Only a single-row BF16 tensor can be probed (the copy task's contract)."""
+        i = self.index_of(label)
+        assert i > 0, f"{label} has no predecessor to probe"
+        prev, cur = self.calls[i - 1], self.calls[i]
+        outs = _tensor_args(prev, OUTPUT_ARGS[prev.method])
+        ins = _tensor_args(cur, [k for k in cur.args if k not in OUTPUT_ARGS[cur.method]])
+        shared = [n for n in ins & outs
+                  if len(self.tensors[n].shape) == 2 and self.tensors[n].shape[0] == 1
+                  and self.tensors[n].dtype == "bf16"]
+        assert shared, f"{label}: no [1, N] BF16 tensor shared with {prev.label} to probe ({sorted(ins & outs)})"
+        name = sorted(shared)[0]
+        twin = self.t(name + "_probe", self.tensors[name].shape)
+        prefix, op = label.split(".", 1)
+        probe = Call("copy_layer", dict(input=name, output=twin, grid_dim=(1, 1, 1), block_dim=(256, 1, 1)),
+                     1, 0, "new", f"probe before {label} (O5)", f"{prefix}.probe_{op}")
+        args = {k: (twin if v == name and k not in OUTPUT_ARGS[cur.method] else v) for k, v in cur.args.items()}
+        self.calls[i] = Call(cur.method, args, cur.tasks, cur.tiles, cur.status, cur.note, cur.label)
+        self.calls.insert(i, probe)
+        return self
+
     def chain_violations(self):
         """Consecutive operators that share no tensor from producer outputs to consumer inputs:
         the runtime rejects such a graph at registration. Empty for a valid plan."""

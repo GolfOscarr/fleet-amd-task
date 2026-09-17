@@ -46,11 +46,11 @@ Status: laptop part done 2026-09-17 (commit below on `local/round-3`). `fleet/ta
 
 ## O5. The probe before an operator (1 h)
 
-- [ ] `graph_plan.py --probe-before <label>`: a one-task `copy` of the producer's output into a twin tensor, the named operator reading the twin; the chain check passes; a test
-- [ ] `run_fleet.py` accepts the flag and suffixes the run name (`_probe_<label>`)
+- [x] `graph_plan.py --probe-before <label>`: a one-task `copy` of the producer's output into a twin tensor, the named operator reading the twin; the chain check passes; a test
+- [x] `run_fleet.py` accepts the flag and suffixes the run name (`_probe_<label>`)
 - [ ] VM: `L2_it32 --probe-before L0.o_proj --event-timing`: the `o_proj` gap with a one-task predecessor
 
-Status:
+Status: laptop part done 2026-09-17 (commit below on `local/round-3`). `Plan.insert_probe(label)` is a post-pass on the built plan: it takes the [1, N] BF16 tensor the operator shares with its predecessor, declares the twin `<name>_probe`, inserts `copy_layer` as `<prefix>.probe_<op>` and points the operator's input at the twin; applied before `--stop-after`; it refuses a tensor the copy task cannot take (e.g. `out8` before `combine`). `run_fleet.py --probe-before LABEL`, suffix `_probe_<label>`, in the run meta. Checks: 161 tests (one new), preflight 8 PASS; no kernel or patch change.
 
 ## O6. Non-temporal loads for our cache streams (2 h)
 

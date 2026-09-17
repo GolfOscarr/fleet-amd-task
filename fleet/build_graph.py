@@ -297,13 +297,16 @@ def plan_json(plan):
 
 def build(packed, capture, meta, dims=REAL_DIMS, s_max=1056, layers=27, head=True, debug=False,
           stop_after=None, debug_scores=False, tile_linears=False, attend_tasks=False, num_workers=296, num_schedulers=8,
-          profiler_tensor=None, align=0, workspaces=None, fuse_norm2=False, fuse_silu=False):
+          profiler_tensor=None, align=0, workspaces=None, fuse_norm2=False, fuse_silu=False,
+          probe_before=None):
     """On the machine: construct the PersistentKernel, attach, issue, return (mpk, host tensors, plan)."""
     import torch
     import mirage as mi
 
     plan = G.build_plan(dims, s_max, layers, head, debug, debug_scores, tile_linears, attend_tasks, fuse_norm2,
                         fuse_silu)
+    if probe_before:
+        plan.insert_probe(probe_before)
     if stop_after:
         plan.truncate(stop_after)
     assert not plan.chain_violations(), f"the runtime would reject this graph: {plan.chain_violations()}"
@@ -485,9 +488,12 @@ class FakeMPK:
 
 
 def dry_run(dims=REAL_DIMS, s_max=1056, layers=27, head=True, debug=False, stop_after=None,
-            debug_scores=False, tile_linears=False, attend_tasks=False, fuse_norm2=False, fuse_silu=False):
+            debug_scores=False, tile_linears=False, attend_tasks=False, fuse_norm2=False, fuse_silu=False,
+            probe_before=None):
     plan = G.build_plan(dims, s_max, layers, head, debug, debug_scores, tile_linears, attend_tasks, fuse_norm2,
                         fuse_silu)
+    if probe_before:
+        plan.insert_probe(probe_before)
     if stop_after:
         plan.truncate(stop_after)
     assert not plan.chain_violations(), f"the runtime would reject this graph: {plan.chain_violations()}"
