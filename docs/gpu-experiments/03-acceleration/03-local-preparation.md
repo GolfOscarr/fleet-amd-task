@@ -372,7 +372,14 @@ merge with `W_uv` per split) needs.
 **Files.** `fleet/tasks/mi300/mla_attend_mfma_mi300.cuh` (new; the
 registration emits the same call, the choice is the define),
 `mla_common_mi300.cuh` (the MFMA fragment helpers), the suite's build
-(both variants), `run_fleet.py` (`--mfma-attend`).
+(both variants), `run_fleet.py` (`--mfma-attend`). Done 2026-09-17 with
+three departures from the sketch above: the 36 score steps are split nine
+per wave and reduced through LDS (4 KB) rather than run on one wave; the
+V fragment is read from the row-major staged tile as four strided
+`ds_read_u16` (no transposed copy, 16 KB of LDS saved); the query and the
+tile rows are stored at a stride of 584 elements (16-byte aligned, banks
+spread), the `[c_kv | k_pe]` row being one address formula for both
+products. LDS 42,176 B.
 
 **Checks here.** the offline compile with the `v_mfma_f32_16x16x16_bf16`
 mnemonic counted in the disassembly, no spills, the LDS size under 57 KB

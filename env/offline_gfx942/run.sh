@@ -81,11 +81,13 @@ compile ckgang -DMK_CK_GANG=1 || ok=1
 compile ntstreams -DMLA_NT_STREAMS=1 || ok=1
 # O3: the per-tile linear with the norm prologue instantiates the CK small-tile linear offline
 compile cklinear -DMK_CK_LINEAR=1 || ok=1
+# O7: the MFMA attention (v_mfma_f32_16x16x16_bf16) in place of the VALU kernel
+compile mfma -DMLA_ATTEND_MFMA=1 || ok=1
 
 # The standalone kernel-test launcher (fleet/tasks/kernel_tests_mi300.cu),
 # with the build line of fleet/tasks/README.md, both variants; it links to an
 # executable, so this is the day-2 binary minus the run.
-for spec in ":" "_debug:-DMLA_ATTEND_DEBUG_SCORES" "_nt:-DMLA_NT_STREAMS"; do
+for spec in ":" "_debug:-DMLA_ATTEND_DEBUG_SCORES" "_nt:-DMLA_NT_STREAMS" "_mfma:-DMLA_ATTEND_MFMA"; do
   sfx="${spec%%:*}"; v="${spec#*:}"
   docker run --rm --platform linux/amd64 -v "$ROOT:/w" -v "$WORK/fleet:/fleet" -v "$WORK/out:/out" "$IMAGE" bash -c "
     cd /w && hipcc --offload-arch=gfx942 -O2 -std=c++17 \
@@ -142,7 +144,7 @@ cat "$HERE/fences.txt"
 {
   echo "# Offline gfx942 compile, $(date -u +%Y-%m-%dT%H:%M:%SZ), $(cat "$WORK/out/hipcc.txt" | tr '\n' ' ')"
   echo "# fleet 51dce4f + gfx942.patch + new_tasks.patch + sched_xcd.patch; composable_kernel $CK_COMMIT; json $JSON_COMMIT"
-  for v in mk_ours mk_ckfmha mk_debugscores mk_ckgang mk_ntstreams mk_cklinear kernel_tests kernel_tests_debug kernel_tests_nt; do
+  for v in mk_ours mk_ckfmha mk_debugscores mk_ckgang mk_ntstreams mk_cklinear mk_mfma kernel_tests kernel_tests_debug kernel_tests_nt kernel_tests_mfma; do
     echo; echo "## $v (hipcc exit $(cat "$WORK/out/$v.rc"))"
     grep -E "Function Name|    VGPRs:|AGPRs|SGPRs Spill|VGPRs Spill|LDS Size|ScratchSize|Occupancy" "$WORK/out/$v.log" \
       | sed 's/.*remark: *//; s/ \[-Rpass.*//; s/Function Name: //' | paste - - - - - - - - \

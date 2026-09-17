@@ -83,6 +83,41 @@ __device__ __forceinline__ float ldf_from(StreamSrc<float> const &s, size_t elem
 }
 #endif
 
+// Raw 16-byte load (8 BF16 values, unconverted) at an element offset: the MFMA attention's
+// cooperative tile load (O7). Streams under MLA_NT_STREAMS as load8_from does.
+template <typename T>
+__device__ __forceinline__ uint4 load16_from(StreamSrc<T> const &s, size_t elem) {
+  static_assert(sizeof(T) == 2, "8 x 16-bit values per 16-byte load");
+#ifdef MLA_STREAM_LOADS
+  typedef unsigned int u32x4 __attribute__((ext_vector_type(4)));
+  u32x4 raw = __builtin_amdgcn_raw_buffer_load_b128(s.rsrc, (unsigned)(elem * sizeof(T)), 0, STREAM_AUX);
+  uint4 r;
+  r.x = raw[0]; r.y = raw[1]; r.z = raw[2]; r.w = raw[3];
+  return r;
+#else
+  return *reinterpret_cast<uint4 const *>(s.base + elem);
+#endif
+}
+
+// The matrix core instruction of the MFMA attention (O7, docs/gpu-experiments/03-acceleration):
+// v_mfma_f32_16x16x16_bf16 multiplies a 16 x 16 A (M x K) by a 16 x 16 B (K x N) into a
+// 16 x 16 FP32 accumulator held across the 64 lanes, four values per lane. Operand layout
+// (CK's WarpGemmAttributeMfmaImplBf16Bf16F32M16N16K16; fleet/tests/test_mfma_layout.py):
+//   lane l holds A[l % 16][4 (l / 16) + i], B[4 (l / 16) + i][l % 16], D[4 (l / 16) + i][l % 16].
+// On the host syntax check (no builtin) the wrapper returns the accumulator unchanged.
+typedef short bf16x4_t __attribute__((ext_vector_type(4)));
+typedef float f32x4_t __attribute__((ext_vector_type(4)));
+#if defined(__HIP_DEVICE_COMPILE__) && __has_builtin(__builtin_amdgcn_mfma_f32_16x16x16bf16_1k)
+#define MLA_HAS_MFMA 1
+__device__ __forceinline__ f32x4_t mfma_16x16x16_bf16(bf16x4_t a, bf16x4_t b, f32x4_t c) {
+  return __builtin_amdgcn_mfma_f32_16x16x16bf16_1k(a, b, c, 0, 0, 0);
+}
+#else
+__device__ __forceinline__ f32x4_t mfma_16x16x16_bf16(bf16x4_t, bf16x4_t, f32x4_t c) {
+  return c;
+}
+#endif
+
 // 16-byte load of 8 BF16 values as floats (dwordx4 per lane).
 template <typename T>
 __device__ __forceinline__ void load8(T const *src, float out[8]) {

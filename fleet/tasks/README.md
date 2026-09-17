@@ -40,6 +40,7 @@ choice of imap in `build_graph.py`.
 |---|---|---|---|---|---|
 | `mla_prep_mi300.cuh` | `TASK_MLA_PREP_MI300` (185), CU-task | 1 | `qkva [1,3648]`, `w_kv_norm [512]`, `W_uk [16,128,512]`, `cos [S_max,64]`, `sin [S_max,64]` | `c_kv [S_max,512]` (row `step`), `k_pe [S_max,64]` (row `step`), `ql_nope [16,512]`, `q_pe [16,64]` | `[nh, d_n, d_r, d_c]` |
 | `mla_attend_mi300.cuh` | `TASK_MLA_ATTEND_MI300` (186), gang | 8 x `tiles_per_xcd` | `ql_nope`, `q_pe`, `c_kv`, `k_pe` | `partials [n_splits,16,513]` FP32; optional second output: debug scores `[16,S_max]` FP32 | `[softmax_scale_bits, split, n_splits, tiles_per_xcd, nh, d_c, d_r]` |
+| `mla_attend_mfma_mi300.cuh` (build flag `-DMLA_ATTEND_MFMA`, selected from `mla_attend_mi300.cuh`; `--mfma-attend`, O7 of `docs/gpu-experiments/03-acceleration`) | the same task types as the VALU kernel | the same | the same | the same | the same; the scores and p x V on `v_mfma_f32_16x16x16_bf16`, the tile staged once in LDS |
 | `mla_merge_uv_mi300.cuh` | `TASK_MLA_MERGE_UV_MI300` (187), gang | 8 x `heads_per_xcd` | `partials`, `W_uv [16,128,512]` | `attn [1,2048]` | `[split, n_splits, tiles_per_xcd, nh, d_v, d_c]` |
 | `moe_router_mi300.cuh` | `TASK_MOE_ROUTER_MI300` (188), CU-task | 1 | `h [1,2048]`, `W_gate [64,2048]` | `topk_w [1,8]` FP32, `routing [66,1]` int32, `mask [67]` int32, `logits [1,64]` FP32, `route_log [32,26,8]` int32 | `[topk, n_experts, n_forced, scaling_bits, layer_index, hidden]` |
 | same file, `NORM = true` (registration `moe_router_norm_mi300`; `--fuse-norm2`, O1 of `docs/gpu-experiments/03-acceleration`) | `TASK_MOE_ROUTER_MI300` (188), CU-task | 1 | `x_res [1,2048]`, `w_norm [2048]`, `W_gate [64,2048]` | `h [1,2048]` (the normalised row, for the expert gate-up), then the five above | the six above and `eps_bits` |
@@ -169,8 +170,12 @@ parameter tables of the two files against each other).
 ## Deliberately left for the GPU
 
 - The MFMA 16x16x16 version of `mla_attend` (phase B of
-  `docs/mla-decode/04-our-kernel-spec.md`); the VALU version is the
-  correctness baseline and the fallback.
+  `docs/mla-decode/04-our-kernel-spec.md`) is written (O7, 2026-09-17,
+  `-DMLA_ATTEND_MFMA`) and its lane arithmetic tested by emulation
+  (`fleet/tests/test_mfma_layout.py`), but the instruction has not run: the
+  suite binary `kernel_tests_mfma` (and `_mfma_debug` for the scores) is
+  the first VM row; the VALU version stays the correctness baseline and
+  the fallback.
 - The register budget of the megakernel after the union with these kernels
   (`-Rpass-analysis=kernel-resource-usage`, `OPEN-PROBLEMS.md` MAJ-4).
 - The imap and event verification of day 2: that the runtime creates one
@@ -191,6 +196,8 @@ The suite binary times a kernel's grid on request (round 2, 2026-09-16):
     KT_TIME=50 KT_COLD=27 fleet/tasks/build/kernel_tests mla_attend <dir>  # the launches rotate over 27 copies of the cache (cold L2)
 
 A trial directory comes from `python fleet/tasks/kernel_tests.py --n 1 --kernel mla_attend --work-dir <dir> --keep`.
+The other builds are timed the same way (`kernel_tests_nt` for O6, `kernel_tests_mfma` for O7); the suite runs against
+one of them with `kernel_tests.py --bin fleet/tasks/build/kernel_tests_mfma --bin-debug fleet/tasks/build/kernel_tests_mfma_debug`.
 On the MI300X the attention grid (8 x 5 tiles, step 1032) costs 34 us cold or warm and the merge grid 11.5 us,
 against 146 to 215 us and 46 to 61 us inside the megakernel (`docs/gpu-experiments/02-validation/04-results.md`). The `kernels`
 stage of `env/session/vm.sh` does not rebuild an existing binary: delete `fleet/tasks/build/kernel_tests*` first.

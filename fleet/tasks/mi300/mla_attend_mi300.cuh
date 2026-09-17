@@ -30,12 +30,19 @@
  *          about 22.3 KiB. The accumulator [NH, D_C] lives in registers:
  *          each thread owns NH/4 heads x 8 columns (32 floats).
  *
- * This is the VALU version (correctness first); the MFMA 16x16x16 version of
- * the kernel spec is the later optimization.
+ * This is the VALU version (correctness first, the reference implementation
+ * and the fallback). -DMLA_ATTEND_MFMA selects the matrix-core version of
+ * mla_attend_mfma_mi300.cuh (O7, docs/gpu-experiments/03-acceleration), the
+ * same template and signature, so the registration, the launcher and the
+ * offline unit are unchanged.
  */
 #pragma once
 #include "tasks/common/common_header.cuh"
 #include "tasks/mi300/mla_common_mi300.cuh"
+
+#ifdef MLA_ATTEND_MFMA
+#include "tasks/mi300/mla_attend_mfma_mi300.cuh"
+#else
 
 namespace kernel {
 
@@ -269,3 +276,5 @@ __device__ __forceinline__ void
 }
 
 } // namespace kernel
+
+#endif // MLA_ATTEND_MFMA

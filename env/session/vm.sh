@@ -114,6 +114,13 @@ build_kernel_tests() {
   # shellcheck disable=SC2086
   [ -x fleet/tasks/build/kernel_tests_nt ] || run hipcc --offload-arch=gfx942 -O2 -std=c++17 $defs $inc \
       -DMLA_NT_STREAMS fleet/tasks/kernel_tests_mi300.cu -o fleet/tasks/build/kernel_tests_nt || return 1
+  # O7: the MFMA attention; run the suite against it with kernel_tests.py --bin fleet/tasks/build/kernel_tests_mfma
+  # shellcheck disable=SC2086
+  [ -x fleet/tasks/build/kernel_tests_mfma ] || run hipcc --offload-arch=gfx942 -O2 -std=c++17 $defs $inc \
+      -DMLA_ATTEND_MFMA fleet/tasks/kernel_tests_mi300.cu -o fleet/tasks/build/kernel_tests_mfma || return 1
+  # shellcheck disable=SC2086
+  [ -x fleet/tasks/build/kernel_tests_mfma_debug ] || run hipcc --offload-arch=gfx942 -O2 -std=c++17 $defs $inc \
+      -DMLA_ATTEND_MFMA -DMLA_ATTEND_DEBUG_SCORES fleet/tasks/kernel_tests_mi300.cu -o fleet/tasks/build/kernel_tests_mfma_debug || return 1
 }
 
 stage_kernels() {
