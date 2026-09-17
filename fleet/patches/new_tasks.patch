@@ -23,7 +23,7 @@ index 2aab442..e1292f8 100755
    int register_splitk_linear_sm100_task(threadblock::Graph const &bgraph,
                                          std::vector<int> const &params,
 diff --git a/include/mirage/persistent_kernel/persistent_kernel.cuh b/include/mirage/persistent_kernel/persistent_kernel.cuh
-index 9241ae6..7961830 100755
+index 28aade0..8c8a08d 100755
 --- a/include/mirage/persistent_kernel/persistent_kernel.cuh
 +++ b/include/mirage/persistent_kernel/persistent_kernel.cuh
 @@ -232,7 +232,8 @@ __device__ __host__ __forceinline__ bool is_gang_task_type(TaskType t) {
@@ -37,7 +37,7 @@ index 9241ae6..7961830 100755
  
  __device__ __forceinline__ bool is_termination_event(size_t event_loc,
 diff --git a/include/mirage/persistent_kernel/runtime_header.h b/include/mirage/persistent_kernel/runtime_header.h
-index f2dfe4e..e289a8c 100755
+index f2dfe4e..1bd7407 100755
 --- a/include/mirage/persistent_kernel/runtime_header.h
 +++ b/include/mirage/persistent_kernel/runtime_header.h
 @@ -83,7 +83,7 @@ unsigned long long int const EVENT_INVALID_ID = 0x7ffffffffffffffe;
@@ -57,7 +57,7 @@ index f2dfe4e..e289a8c 100755
 +  TASK_MLA_PREP_MI300 = 185,
 +  TASK_MLA_ATTEND_MI300 = 186,      // gang
 +  TASK_MLA_MERGE_UV_MI300 = 187,    // gang
-+  TASK_MLA_ATTEND_TILE_MI300 = 188, // regular: one task per split (session B, 2026-09-16)
++  TASK_MLA_ATTEND_TILE_MI300 = 190, // regular: one task per split (session B, 2026-09-16)
 +  TASK_MOE_ROUTER_MI300 = 188,
 +  TASK_COPY_MI300 = 189,
    // Hopper Tasks
@@ -168,10 +168,10 @@ index 6830b64..86bdc9c 100644
      def sampling_sm100_layer(
          self,
 diff --git a/python/mirage/mpk/profiler_persistent.py b/python/mirage/mpk/profiler_persistent.py
-index f3f98ad..d780f61 100755
+index f3f98ad..50bf2b6 100755
 --- a/python/mirage/mpk/profiler_persistent.py
 +++ b/python/mirage/mpk/profiler_persistent.py
-@@ -58,6 +58,11 @@ event_name_list = {
+@@ -58,6 +58,12 @@ event_name_list = {
      174: "TASK_GANG_MOE_W13_LINEAR_MI300",
      175: "TASK_GANG_MOE_W2_LINEAR_MI300",
      176: "TASK_DEVICE_LINEAR_MI300",
@@ -180,6 +180,7 @@ index f3f98ad..d780f61 100755
 +    187: "TASK_MLA_MERGE_UV_MI300",
 +    188: "TASK_MOE_ROUTER_MI300",
 +    189: "TASK_COPY_MI300",
++    190: "TASK_MLA_ATTEND_TILE_MI300",
      177: "TASK_DEVICE_LINEAR_RES_MI300",
      150: "TASK_HOPPER_TASK_BEGIN",
      151: "TASK_LINEAR_WITH_RESIDUAL_HOPPER",
