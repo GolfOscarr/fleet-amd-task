@@ -73,11 +73,11 @@ Status:
 
 ## L3. The w2 form (4 h)
 
-- [ ] `gang_moe_w2_silu_mi300.cuh`: the activation row into LDS; the GEMV over 64 rows with the 176-chunk map (three loads per lane, two for lanes 48 to 63); the scatter epilogue; the CK multiply kept under `MPK_W2_CK_TILE`
+- [x] `gang_moe_w2_silu_mi300.cuh`: the activation row into LDS; the GEMV over 64 rows with the 176-chunk map (three loads per lane, two for lanes 48 to 63); the scatter epilogue; the CK multiply kept under `MPK_W2_CK_TILE`
 - [ ] the suite row `gang_w2_gemv` (`-DKT_FAKE_XCD`, the `(32, 8)` launch); `numpy_ref.moe_w2`; `kernel_tests.py`
-- [ ] `check_syntax.sh`; `run.sh`: the `ckgang` variant on the GEMV form, `w2ck` on the CK form; the registers and the wait sequence recorded here
+- [ ] `check_syntax.sh` (done: the entry `gang_moe_w2_silu_mi300`, 11 PASS); `run.sh`: the `ckgang` variant on the GEMV form, `w2ck` on the CK form; the registers and the wait sequence recorded here
 
-Status:
+Status: kernel done 2026-09-18, commit 69fe6b1 on `local/round-4` (wave 1, agent E; cherry-picked, the syntax-check entry merged with L1's). The default path includes no CK header: the XCD read is a local copy named `_gang_moe_w2_xcd_id` (the stock name would be a redefinition in the runtime unit), `-DKT_FAKE_XCD` takes the XCD from `blockIdx.y` there (the suite row of L4's agent must not add it again), `fast_silu` comes from the fork's header when on the include path and a local definition under the stub, and the BF16 rounding is a local round-to-nearest-even with the NaN quieting that reproduces `__float2bfloat16` bit for bit (the suite row and the B11 and B12 boundaries are the checks). A row past a short tile is loaded as the last valid row and its store dropped (no short tile at N = 2,048). Registers at `W2_BATCH` 8: 24 x-values, 96 raw words, 8 accumulators; LDS: the 2,816-byte row. The CK fallback path is unverified here (no CK headers on the laptop): the offline `w2ck` variant is its check. Checks: 11 PASS, 194 tests.
 
 ## L4. The w13 form, one round per XCD (4 h)
 
