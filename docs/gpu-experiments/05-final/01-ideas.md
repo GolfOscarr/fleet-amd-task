@@ -184,6 +184,17 @@ time beside their gaps), not speed. Cost: three hours. If the offline
 pass finds nothing, the item is recorded as open and the round runs
 without it, as round 4 did.
 
+F4's outcome (`04-checklist.md`): the round-4 record of the hung row
+(`L2_it32_..._wt`) stops in the kernel's first phase, with worker start
+lines and no scheduler line, and the stock code has every worker print
+its start line on the hostcall path right before the ready-count barrier
+the scheduler waits on (the timing hunk made that every worker instead of
+eight). The fix is the buffer form: the timing build has no device
+`printf` at all, each worker writes its counters and XCD into a slot at
+its terminate task, and the host prints the same four lines after each
+launch. Verified on the laptop by compile and by the format test; the VM's
+first `queue-h3` row is the check that the hang is gone.
+
 ### L2. The half merge without the GEMV linears faults on 27 layers (MIN-36)
 
 The facts: `L27_head_it1_..._rf_w2cktile_mt_mh2` (the round-3 CK linears

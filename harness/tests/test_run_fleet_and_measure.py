@@ -587,3 +587,37 @@ def test_fence_knobs_are_refused_with_the_counter_forms():
         assert not run_fleet.fence_knob_conflict(p.parse_args(base + form + ["--runtime-flags=-DMPK_POLL_SLEEP=8"]))
         assert not run_fleet.fence_knob_conflict(p.parse_args(base + form))
     assert not run_fleet.fence_knob_conflict(p.parse_args(base + ["--runtime-flags=-DMPK_NO_COMPLETION_FENCE"]))
+
+
+def test_worker_timing_lines_of_the_patch_parse():
+    """F4 (docs/gpu-experiments/05-final): the timing build prints its four per-worker lines from the
+    host after each launch (new_tasks.patch, print_worker_timing); their format strings, read from the
+    patch and rendered with sample values, must parse with measure.py's regexes field by field."""
+    import re
+    patch = (ROOT / "fleet/patches/new_tasks.patch").read_text()
+    body = patch[patch.index("static void print_worker_timing()"):patch.index("extern \"C\" void launch_persistent_kernel")]
+    assert body.count("printf(") == 5           # the four lines and the missing-workers line
+    fmts = {}
+    for m in re.finditer(r'printf\(((?:\s*\+?\s*"[^"\n]*"\s*)+),', body):
+        s = "".join(re.findall(r'"([^"\n]*)"', m.group(1)))
+        fmts[s.split("]")[0] + "]"] = s
+    assert set(fmts) == {"[WORKER_XCD]", "[TIMING]", "[TASK_TIME]", "[TASK_TIME2]", "[TIMING_MISSING]"}
+    n = iter(range(100, 10_000))
+    text = ""
+    for key in ("[WORKER_XCD]", "[TIMING]", "[TASK_TIME]", "[TASK_TIME2]"):
+        f = fmts[key].replace("%llu", "%d").replace("\\n", "\n")
+        vals = [7] + [next(n) for _ in range(f.count("%d") - 1)]
+        text += f % tuple(vals)
+    w = measure.parse_worker_timing(text)
+    assert set(w) == {7}
+    assert w[7]["xcd"] == 101 and w[7]["tasks"] == 102 and w[7]["signal_cycles"] == 108
+    classes = w[7]["classes"]
+    assert set(classes) == {"linear", "linear_res", "attn", "rms", "silu", "fused",
+                            "prep", "attend", "merge", "router", "copy", "w2silu", "lnorm", "prefetch"}
+    assert classes["linear"] == {"cycles": 109, "count": 110} and classes["prefetch"]["count"] == 136
+    # the device side has no printf left under the timing define: the worker writes its slot
+    worker = patch[patch.index("if (task_desc->task_type == TASK_TERMINATE)"):patch.index("MPK_ENABLE_DEVICE_TASK_ACCUM")]
+    kept = "\n".join(l for l in worker.splitlines() if not l.startswith("-"))   # the stock's printf lines are removed
+    assert "printf(" not in kept and "worker_timing_buffer" in kept   # the comment names printf, no call does
+    # the missing-workers line is not a per-worker record
+    assert not measure.parse_worker_timing(fmts["[TIMING_MISSING]"].replace("%d", "3"))

@@ -66,7 +66,7 @@ come before every optional one.
 | Decision | Choice |
 |---|---|
 | The balance | open: the $3 rule waived for the last session (hard stop at minute 60, $3.00), or credits added first; written into S0 before `grab.sh` |
-| Order | R0 (setup, checks, reference, the `nt` suites), R1 (the compares), R2 (the finals interleaved and their `FWD_PASS` rows), R5 (the head's events), R4 (the fault), R3 (the timing build, only if F4 fixed it), then `queue-h6.txt` as the minutes allow; the pull before anything optional |
+| Order | R0 (setup, checks, reference, the `nt` suites), R1 (the compares), R2 (the finals interleaved and their `FWD_PASS` rows), R5 (the head's events), R4 (the fault), R3 (the timing build in F4's form, its first row the check), then `queue-h6.txt` as the minutes allow; the pull before anything optional |
 | Autonomy | as round 4: every RULE and DECIDE row by its written threshold, reported as it goes; nothing waits for the user except the deletion and the balance decision |
 | A compare row fails in R1 | a disagreement in the route log or a FAIL on a captured boundary names a kernel or the tolerance; the round's compare claim is dropped with the reason, the finals run regardless (the ids are their check) |
 | A suite row fails in R0 | nothing in this round changed a kernel except F6's optional fix; a FAIL names it, its file is reverted to round 4's on the laptop after the session, and the finals run on the round-4 header as pushed |
@@ -105,7 +105,7 @@ Minute marks from the provision, with round 4's measured durations
 | 30 | | `L pull` (the checkpoint; the record committed right after, before any other commit) | the commit hash | AUTO | |
 | 31 | R5 | `L start queue env/session/queue-h5.txt`; `L wait queue 5` | `table=PASS` on the three 2-layer head rows; the head's events 50, 8 and 10 in their `report_table.md`; the model row ids PASS and `compare=PASS` | DECIDE R5 (below) | a FAIL on the model row: the slices stay 50 |
 | 35 | R4 | `L start queue env/session/queue-h4.txt`; `L wait queue 4`; then, only if its first row passed, `L start queue env/session/queue-h7.txt`; `L wait queue 5` | four rows at 2 layers: the configuration (`fault=0` or `fault=1`), the cut after `L0.o_proj`, the cut after `L0.mla_merge_uv`, the halves control; the pattern names the operator (the cut after the merge runs and the cut after o_proj faults: the stock o_proj after the tile merge); `queue-h7` gives the first faulting layer count when 2 layers pass | RULE: the rows only record; the located operator goes into MIN-36 | every row faults: the fault is before the first merge, and `--stop-after L0.qkva` is the next cut if a minute remains |
-| 40 | R3 | only if F4 fixed the hang: `L start queue env/session/queue-h3.txt`; `L wait queue 4`; then `L start ktime nt`; `L wait ktime 3` | the `[TASK_TIME2]` lines in `fwd_pass.log`, the exec per class in `report_table.md`; `ktime_nt.txt` with the merge's line | RULE: a hang ends the row at the watchdog and MIN-35 stays open | |
+| 40 | R3 | `L start queue env/session/queue-h3.txt`; `L wait queue 4`; then `L start ktime nt`; `L wait ktime 3` | the first row (one iteration, the timing build in F4's buffer form) completes in under a minute with 304 `[TASK_TIME2]` lines in `fwd_pass.log` and no `[TIMING_MISSING]` line; the exec per class in `report_table.md`; `ktime_nt.txt` with the merge's line | RULE: the first row hung at the watchdog (600 s): the second row is skipped (`vm.sh kill`), MIN-35 stays open with F4's form as its reading; the row completes: MIN-35 closes | |
 | 42 | | if the minutes allow (the hard stop at minute 60 under the waived rule): `L start queue env/session/queue-h6.txt`; `L wait queue 10` | ids PASS; the batch-4 set's three medians and `FWD_PASS` against A's; the 8-event set's the same | DECIDE A2 and R5's confirmation (below) | |
 | end | end | `L pull` and its commit; `git push`; then, after the user's yes, `L delete --yes`; `L balance` shows `Hourly Rate: $0.00/hour` | | DECIDE (user: the deletion) | if the rate is not $0.00, check the TUI by hand |
 
@@ -147,7 +147,7 @@ whatever the state); with credits added, round 4's rule (below $3).
 | `env/session/queue-h5.txt` | R5: the 2-layer head at 50, 8 and 10 slices; the model row at 8 | minute 31 |
 | `env/session/queue-h4.txt` | R4: the faulting configuration at 2 layers; the graph cut after `L0.o_proj` and after `L0.mla_merge_uv`; the halves control | minute 35 |
 | `env/session/queue-h7.txt` | R4: the layer bisect at 3, 5, 9, 14 layers, only if `queue-h4`'s first row passed | minute 38 |
-| `env/session/queue-h3.txt` | R3: the timing build's two 2-layer rows (only if F4 fixed the hang) | minute 40 |
+| `env/session/queue-h3.txt` | R3: the timing build's two 2-layer rows (F4's buffer form; the first row is the check) | minute 40 |
 | `env/session/queue-h6.txt` | the optional sets: the finals with batch 4, the finals with 8 head events | minute 42 |
 
 Every row runs `--final`; the rows are split on whitespace, a define is

@@ -201,7 +201,8 @@ def build_parser():
                          "whitespace, carries it); through MPK_EXTRA_HIPCC_FLAGS")
     ap.add_argument("--worker-timing", action="store_true",
                     help="compile with MPK_TIMING=1: every worker's [TIMING], [TASK_TIME] and [TASK_TIME2] lines "
-                         "in fwd_pass.log (I1, docs/gpu-experiments/03-acceleration)")
+                         "in fwd_pass.log (I1, docs/gpu-experiments/03-acceleration), printed by the host from "
+                         "the workers' slots after each launch (F4 of 05-final: no device printf on this build)")
     ap.add_argument("--graph", choices=["model", "empty", "stream"], default="model",
                     help="empty: the empty-task ladder (I3), --ops operators of --tasks copy tasks, no model; "
                          "stream: the stream probe (L6, docs/gpu-experiments/04-kernels), --ops operators of "

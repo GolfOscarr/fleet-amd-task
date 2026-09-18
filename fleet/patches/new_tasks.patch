@@ -70,7 +70,7 @@ index 2aab442..a9ff9ea 100755
    int register_splitk_linear_sm100_task(threadblock::Graph const &bgraph,
                                          std::vector<int> const &params,
 diff --git a/include/mirage/persistent_kernel/persistent_kernel.cuh b/include/mirage/persistent_kernel/persistent_kernel.cuh
-index 9241ae6..859b307 100755
+index 9241ae6..8614771 100755
 --- a/include/mirage/persistent_kernel/persistent_kernel.cuh
 +++ b/include/mirage/persistent_kernel/persistent_kernel.cuh
 @@ -71,6 +71,11 @@
@@ -106,21 +106,17 @@ index 9241ae6..859b307 100755
  }
  
  __device__ __forceinline__ bool is_termination_event(size_t event_loc,
-@@ -750,7 +758,13 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+@@ -750,6 +758,9 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
      // Write this worker's XCD ID to shared map for scheduler to read
      if (config.worker_xcd_map != nullptr) {
        config.worker_xcd_map[worker_id] = block_xcd_id;
-+#ifdef MPK_ENABLE_TIMING
-+      // I1 (docs/gpu-experiments/03-acceleration): every worker's XCD, for the placement
-+      // of the per-worker timing lines
-+      if (true) {
-+#else
++      // F4 (docs/gpu-experiments/05-final): the stock eight on every build; the timing build
++      // reports every worker's XCD from its slot after the launch (round 3's I1 had every worker
++      // print here, before the ready-count barrier the scheduler waits on: MIN-35)
        if (worker_id < 8) {
-+#endif
          printf("[WORKER_XCD] worker_id=%d block=%d xcd=%d\n",
                 worker_id, (int)blockIdx.x, block_xcd_id);
-       }
-@@ -821,6 +835,10 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+@@ -821,6 +832,10 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
    int linear_count = 0, linear_res_count = 0;
    int attention_count = 0, rms_count = 0, silu_count = 0;
    int fused_count = 0;
@@ -131,7 +127,7 @@ index 9241ae6..859b307 100755
  #endif
  
    while (true) {
-@@ -943,7 +961,9 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+@@ -943,7 +958,9 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
            actual_counts = __atomic_load_n(
                reinterpret_cast<unsigned long long*>(&config.all_event_counters[event_index]),
                __ATOMIC_RELAXED);
@@ -142,7 +138,7 @@ index 9241ae6..859b307 100755
            // Agent-scope acquire fence (GPU-only, not system scope)
            __builtin_amdgcn_fence(__ATOMIC_ACQUIRE, "agent");
  #else
-@@ -956,13 +976,15 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+@@ -956,13 +973,15 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
                    reinterpret_cast<unsigned long long*>(&config.all_event_counters[event_index]),
                    __ATOMIC_RELAXED);
  #if defined(__HIP_PLATFORM_AMD__) || defined(MIRAGE_AMD_MI300)
@@ -160,30 +156,55 @@ index 9241ae6..859b307 100755
              __builtin_amdgcn_fence(__ATOMIC_ACQUIRE, "agent");
  #else
              __atomic_thread_fence(__ATOMIC_ACQUIRE);
-@@ -997,8 +1019,8 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+@@ -997,16 +1016,37 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
      if (task_desc->task_type == TASK_TERMINATE) {
        // Terminate
  #ifdef MPK_ENABLE_TIMING
 -      // Print timing stats before returning
 -      if (threadIdx.x == 0 && worker_id < 8) {
-+      // Print timing stats before returning (I1: every worker, not the first eight)
-+      if (threadIdx.x == 0) {
-         printf("[TIMING] worker=%d tasks=%d poll_iters=%d dep_iters=%d "
-                "poll_cycles=%llu dep_cycles=%llu exec_cycles=%llu signal_cycles=%llu\n",
-                worker_id, total_tasks_executed, total_poll_iters, total_dep_wait_iters,
-@@ -1007,6 +1029,11 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
-                worker_id, linear_cycles, linear_count, linear_res_cycles, linear_res_count,
-                attention_cycles, attention_count, rms_cycles, rms_count, silu_cycles, silu_count,
-                fused_cycles, fused_count);
-+        printf("[TASK_TIME2] worker=%d prep=%llu/%d attend=%llu/%d merge=%llu/%d router=%llu/%d copy=%llu/%d "
-+               "w2silu=%llu/%d lnorm=%llu/%d prefetch=%llu/%d\n",
-+               worker_id, ours_cycles[0], ours_count[0], ours_cycles[1], ours_count[1], ours_cycles[2], ours_count[2],
-+               ours_cycles[3], ours_count[3], ours_cycles[4], ours_count[4], ours_cycles[5], ours_count[5],
-+               ours_cycles[6], ours_count[6], ours_cycles[7], ours_count[7]);
+-        printf("[TIMING] worker=%d tasks=%d poll_iters=%d dep_iters=%d "
+-               "poll_cycles=%llu dep_cycles=%llu exec_cycles=%llu signal_cycles=%llu\n",
+-               worker_id, total_tasks_executed, total_poll_iters, total_dep_wait_iters,
+-               total_poll_cycles, total_dep_wait_cycles, total_exec_cycles, total_signal_cycles);
+-        printf("[TASK_TIME] worker=%d linear=%llu/%d linear_res=%llu/%d attn=%llu/%d rms=%llu/%d silu=%llu/%d fused=%llu/%d\n",
+-               worker_id, linear_cycles, linear_count, linear_res_cycles, linear_res_count,
+-               attention_cycles, attention_count, rms_cycles, rms_count, silu_cycles, silu_count,
+-               fused_cycles, fused_count);
++      // I1 (docs/gpu-experiments/03-acceleration) and F4 (05-final): the worker's counters into its
++      // slot (runtime_header.h, WORKER_TIMING_WORDS); the host prints the [TIMING], [TASK_TIME] and
++      // [TASK_TIME2] lines after the launch. No printf here: the hostcall path is what hung (MIN-35).
++      if (threadIdx.x == 0 && config.worker_timing_buffer != nullptr) {
++        unsigned long long *slot =
++            config.worker_timing_buffer + (size_t)worker_id * WORKER_TIMING_WORDS;
++#if defined(__HIP_PLATFORM_AMD__) || defined(MIRAGE_AMD_MI300)
++        slot[1] = (unsigned long long)(long long)block_xcd_id;
++#else
++        slot[1] = (unsigned long long)(long long)-1;
++#endif
++        slot[2] = (unsigned long long)blockIdx.x;
++        slot[3] = (unsigned long long)total_tasks_executed;
++        slot[4] = (unsigned long long)total_poll_iters;
++        slot[5] = (unsigned long long)total_dep_wait_iters;
++        slot[6] = total_poll_cycles;
++        slot[7] = total_dep_wait_cycles;
++        slot[8] = total_exec_cycles;
++        slot[9] = total_signal_cycles;
++        slot[10] = linear_cycles;        slot[11] = (unsigned long long)linear_count;
++        slot[12] = linear_res_cycles;    slot[13] = (unsigned long long)linear_res_count;
++        slot[14] = attention_cycles;     slot[15] = (unsigned long long)attention_count;
++        slot[16] = rms_cycles;           slot[17] = (unsigned long long)rms_count;
++        slot[18] = silu_cycles;          slot[19] = (unsigned long long)silu_count;
++        slot[20] = fused_cycles;         slot[21] = (unsigned long long)fused_count;
++        for (int c = 0; c < 8; c++) {
++          slot[22 + 2 * c] = ours_cycles[c];
++          slot[23 + 2 * c] = (unsigned long long)ours_count[c];
++        }
++        __threadfence();
++        slot[0] = 1ull;                  // written last: the host prints only terminated workers
        }
  #endif
  #ifdef MPK_ENABLE_DEVICE_TASK_ACCUM
-@@ -1188,6 +1215,24 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+@@ -1188,6 +1228,24 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
          case TASK_RMS_NORM: rms_cycles += task_time; rms_count++; break;
          case TASK_SILU_MUL: silu_cycles += task_time; silu_count++; break;
          case TASK_SILU_MUL_LINEAR_WITH_RESIDUAL: fused_cycles += task_time; fused_count++; break;
@@ -208,7 +229,7 @@ index 9241ae6..859b307 100755
          default: break;
        }
      }
-@@ -1239,7 +1284,9 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+@@ -1239,7 +1297,9 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
  
              if (local_count == needed_local) {
                // Last worker/task on this XCD — flush + signal global
@@ -218,7 +239,7 @@ index 9241ae6..859b307 100755
                // Gang: flush 1 (one task done). Non-gang: flush xcd_threshold.
                int flush_amount = is_gang_task_type(task_desc->task_type)
                                       ? 1 : xcd_threshold;
-@@ -1262,7 +1309,9 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+@@ -1262,7 +1322,9 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
                get_task_iteration_num(task_ids[queue_pos]);
  
            if (local_count == needed_local) {
@@ -228,7 +249,7 @@ index 9241ae6..859b307 100755
              count = atom_add_release_gpu_u64(
                  &config.all_event_counters[event_index], xcd_threshold);
              event_fired =
-@@ -1276,7 +1325,9 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+@@ -1276,7 +1338,9 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
  #endif
          {
            // Fallback: per-task fence + global atomic (NVIDIA, or uncounted events)
@@ -238,7 +259,7 @@ index 9241ae6..859b307 100755
            count = atom_add_release_gpu_u64(
                &config.all_event_counters[event_index], 1);
            event_fired =
-@@ -1335,6 +1386,11 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+@@ -1335,6 +1399,11 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
                                                   config.per_sched_queue_len],
                    event_index);
                threadfence_gpu();
@@ -250,7 +271,7 @@ index 9241ae6..859b307 100755
                size_t old;
                do {
                  old = atom_cas_release_gpu_u64(
-@@ -1342,6 +1398,7 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+@@ -1342,6 +1411,7 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
                      last_event_pos,
                      last_event_pos + 1);
                } while (old != last_event_pos);
@@ -258,7 +279,7 @@ index 9241ae6..859b307 100755
              } else {
                // Same-XCD scheduler queue — use L2-local ops
                size_t last_event_pos = atom_add_local_u64(
-@@ -1351,6 +1408,10 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+@@ -1351,6 +1421,10 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
                                                   config.per_sched_queue_len],
                    event_index);
                fence_local();
@@ -269,7 +290,7 @@ index 9241ae6..859b307 100755
                size_t old;
                do {
                  old = atom_cas_local_u64(
-@@ -1358,6 +1419,7 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+@@ -1358,6 +1432,7 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
                      last_event_pos,
                      last_event_pos + 1);
                } while (old != last_event_pos);
@@ -277,20 +298,118 @@ index 9241ae6..859b307 100755
              }
            }
  #ifdef MPK_ENABLE_PROFILING
+@@ -2171,6 +2246,17 @@ extern "C" void init_persistent_kernel(std::vector<void *> meta_tensors,
+   global_runtime_config.event_timing_count = nullptr;
+   global_runtime_config.event_timing_max_entries = 0;
+ #endif
++  // F4 (docs/gpu-experiments/05-final): the per-worker timing slots of the MPK_ENABLE_TIMING build
++#ifdef MPK_ENABLE_TIMING
++  {
++    size_t bytes = (size_t)global_runtime_config.num_workers * WORKER_TIMING_WORDS *
++                   sizeof(unsigned long long);
++    global_runtime_config.worker_timing_buffer = gpu_malloc<unsigned long long>(bytes);
++    (void)cudaMemset(global_runtime_config.worker_timing_buffer, 0, bytes);
++  }
++#else
++  global_runtime_config.worker_timing_buffer = nullptr;
++#endif
+ 
+   //  Initialize all tasks
+   global_runtime_config.all_tasks =
+@@ -2258,7 +2344,54 @@ extern "C" void init_persistent_kernel(std::vector<void *> meta_tensors,
+ 
+ // Entry point for C/C++
+ // TODO: change launch config
++#ifdef MPK_ENABLE_TIMING
++// F4 (docs/gpu-experiments/05-final): the timing lines of the MPK_ENABLE_TIMING build, printed by the
++// host from the per-worker slots after each launch in the formats harness/measure.py parses
++// ([WORKER_XCD], [TIMING], [TASK_TIME], [TASK_TIME2]); a worker whose slot is unwritten did not reach
++// its terminate task, and the count of those is the last line.
++static void print_worker_timing() {
++  int n = global_runtime_config.num_workers;
++  if (global_runtime_config.worker_timing_buffer == nullptr || n <= 0) {
++    return;
++  }
++  std::vector<unsigned long long> h((size_t)n * WORKER_TIMING_WORDS);
++  (void)cudaMemcpy(h.data(), global_runtime_config.worker_timing_buffer,
++                   h.size() * sizeof(unsigned long long), cudaMemcpyDeviceToHost);
++  int missing = 0;
++  for (int w = 0; w < n; w++) {
++    unsigned long long const *s = h.data() + (size_t)w * WORKER_TIMING_WORDS;
++    if (s[0] == 0) {
++      missing++;
++      continue;
++    }
++    printf("[WORKER_XCD] worker_id=%d block=%d xcd=%d\n", w, (int)s[2], (int)(long long)s[1]);
++    printf("[TIMING] worker=%d tasks=%d poll_iters=%d dep_iters=%d "
++           "poll_cycles=%llu dep_cycles=%llu exec_cycles=%llu signal_cycles=%llu\n",
++           w, (int)s[3], (int)s[4], (int)s[5], s[6], s[7], s[8], s[9]);
++    printf("[TASK_TIME] worker=%d linear=%llu/%d linear_res=%llu/%d attn=%llu/%d rms=%llu/%d silu=%llu/%d fused=%llu/%d\n",
++           w, s[10], (int)s[11], s[12], (int)s[13], s[14], (int)s[15], s[16], (int)s[17],
++           s[18], (int)s[19], s[20], (int)s[21]);
++    printf("[TASK_TIME2] worker=%d prep=%llu/%d attend=%llu/%d merge=%llu/%d router=%llu/%d copy=%llu/%d "
++           "w2silu=%llu/%d lnorm=%llu/%d prefetch=%llu/%d\n",
++           w, s[22], (int)s[23], s[24], (int)s[25], s[26], (int)s[27], s[28], (int)s[29],
++           s[30], (int)s[31], s[32], (int)s[33], s[34], (int)s[35], s[36], (int)s[37]);
++  }
++  if (missing > 0) {
++    printf("[TIMING_MISSING] %d of %d workers did not reach their terminate task\n", missing, n);
++  }
++  fflush(stdout);
++}
++#endif
++
+ extern "C" void launch_persistent_kernel(cudaStream_t default_stream) {
++#ifdef MPK_ENABLE_TIMING
++  // F4: the slots cleared before the launch, so an unwritten slot means this launch's worker
++  if (global_runtime_config.worker_timing_buffer != nullptr) {
++    (void)cudaMemset(global_runtime_config.worker_timing_buffer, 0,
++                     (size_t)global_runtime_config.num_workers * WORKER_TIMING_WORDS *
++                         sizeof(unsigned long long));
++  }
++#endif
+   // Prepare next persistent kernel by resetting queue pointers
+   {
+     int end_of_task_graph_event_pos = global_runtime_config.num_events - 1;
+@@ -2327,6 +2460,9 @@ extern "C" void launch_persistent_kernel(cudaStream_t default_stream) {
+ #endif
+     (void)cudaDeviceSynchronize();
+   }
++#ifdef MPK_ENABLE_TIMING
++  print_worker_timing();   // F4: after both launch forms have synchronised
++#endif
+ }
+ 
+ extern "C" void finalize_persistent_kernel() {
+@@ -2397,6 +2533,9 @@ extern "C" void finalize_persistent_kernel() {
+   if (global_runtime_config.event_timing_buffer != nullptr) {
+     gpu_free(global_runtime_config.event_timing_buffer);
+   }
++  if (global_runtime_config.worker_timing_buffer != nullptr) {   // F4
++    gpu_free(global_runtime_config.worker_timing_buffer);
++  }
+   if (global_runtime_config.event_timing_count != nullptr) {
+     gpu_free(global_runtime_config.event_timing_count);
+   }
 diff --git a/include/mirage/persistent_kernel/runtime_header.h b/include/mirage/persistent_kernel/runtime_header.h
-index f2dfe4e..df6fd77 100755
+index f2dfe4e..2f6b80e 100755
 --- a/include/mirage/persistent_kernel/runtime_header.h
 +++ b/include/mirage/persistent_kernel/runtime_header.h
-@@ -83,7 +83,7 @@ unsigned long long int const EVENT_INVALID_ID = 0x7ffffffffffffffe;
+@@ -83,7 +83,12 @@ unsigned long long int const EVENT_INVALID_ID = 0x7ffffffffffffffe;
  typedef unsigned long long int EventCounter;
  
  int const MAX_INPUTS_PER_TASK = 7;
 -int const MAX_OUTPUTS_PER_TASK = 3;
 +int const MAX_OUTPUTS_PER_TASK = 6; // mla_prep writes 4, moe_router 5, moe_router_norm 6 (was 3)
++// F4 (docs/gpu-experiments/05-final): the per-worker slot of the MPK_ENABLE_TIMING build, in 64-bit
++// words: 0 written, 1 xcd, 2 block, 3 tasks, 4 poll_iters, 5 dep_iters, 6 poll_cycles, 7 dep_cycles,
++// 8 exec_cycles, 9 signal_cycles, 10..21 the six stock classes as (cycles, count) pairs, 22..37 our
++// eight classes as pairs, 38..39 spare
++int const WORKER_TIMING_WORDS = 40;
  // Increased to 304 to support full CU utilization on AMD MI300X (304 CUs)
  // and NVIDIA Blackwell (160+ SMs which uses 144 workers)
  int const MAX_NUM_WORKERS = 304;
-@@ -144,6 +144,24 @@ enum TaskType {
+@@ -144,6 +149,24 @@ enum TaskType {
    TASK_MOE_MUL_SUM_ADD_MI300 = 173,
    TASK_GANG_MOE_W13_LINEAR_MI300 = 174,
    TASK_GANG_MOE_W2_LINEAR_MI300 = 175,
@@ -315,6 +434,18 @@ index f2dfe4e..df6fd77 100755
    // Hopper Tasks
    TASK_HOPPER_TASK_BEGIN = 150, // Hopper start placeholder, not a real task
    TASK_LINEAR_WITH_RESIDUAL_HOPPER = 151,
+@@ -363,6 +386,11 @@ struct RuntimeConfig {
+   unsigned long long *event_timing_buffer;  // [max_entries * 2]: pairs of (event_index, timestamp)
+   int *event_timing_count;                  // atomic write position
+   int event_timing_max_entries;             // buffer capacity
++  // F4 (docs/gpu-experiments/05-final): the per-worker counters of the MPK_ENABLE_TIMING build, one
++  // slot of WORKER_TIMING_WORDS per worker, written at the worker's terminate task and printed by the
++  // host after the launch. The timing build has no device printf: 304 workers printing before the
++  // ready-count barrier hung the round-4 header (MIN-35). nullptr unless MPK_ENABLE_TIMING.
++  unsigned long long *worker_timing_buffer;
+ #ifdef MIRAGE_BACKEND_USE_ROCM
+   hipStream_t worker_stream, scheduler_stream;
+   hipEvent_t prepare_done_event;
 diff --git a/include/mirage/persistent_kernel/tasks/ampere/embedding.cuh b/include/mirage/persistent_kernel/tasks/ampere/embedding.cuh
 index 9358992..3f068f4 100644
 --- a/include/mirage/persistent_kernel/tasks/ampere/embedding.cuh

@@ -78,12 +78,17 @@ Status: done 2026-09-18, no defect found by reading; the fault is located on the
 
 ## F4. The worker-timing hang (MIN-35)
 
-- [ ] `run.sh`: the `unionT` variant; its resource line against `union`'s recorded here
-- [ ] the worker's epilogue read in the disassembly (the three `printf` calls, the spills)
-- [ ] the fix if found (the `printf` split, or the device buffer and the host printer), the patch regenerated on the pristine fork, `preflight.sh`
-- [ ] otherwise the readings attached to MIN-35 and R3 dropped
+- [x] `run.sh`: the `unionT` variant; its resource line against `union`'s recorded here
+- [x] the worker's epilogue read in the disassembly (the three `printf` calls, the spills)
+- [x] the fix if found (the `printf` split, or the device buffer and the host printer), the patch regenerated on the pristine fork, `preflight.sh`
+- [x] otherwise the readings attached to MIN-35 and R3 dropped (not needed: the fix is in; R3 runs, its first row the check)
 
-Status: open.
+Status: done 2026-09-18, the buffer form written; the VM's first `queue-h3` row verifies it (R3). The readings:
+
+1. The resource line is not it. `unionT` (the round-4 union with `MPK_ENABLE_TIMING`, the build that hung) compiles, and its worker line against `union`'s, old form: 256 VGPRs both, AGPRs 226 against 171, scratch 80 bytes both, 8 VGPR spills both, SGPR spills 139 against 131, LDS 2,512 both. Nothing the launch has to size grew.
+2. The record names the phase. The hung row's log (`env/hw/20260918/runs/L2_it32_tile_at_fn1_fn2_fs_nt_mfma_wt/fwd_pass.log`) has the host's three sanity lines, then 286 `[WORKER_XCD]` lines and a cut one, no `[SCHED_XCD]` line, no forward pass, no `[TASK_TIME2]`: the kernel stopped in its first phase. In the stock worker that line is a device `printf` (a hostcall) issued right before `threadfence_gpu(); atomicAdd(worker_xcd_ready_count)`, the barrier the scheduler waits on before dispatching its first task, and the timing hunk (round 3's I1) made all 304 workers print there instead of eight. Round 3's own timing log has 296 of those 304 lines, so the path was lossy already; the round-4 header added nothing to it (every round-4 hunk of the worker loop is a knob guard), and the class switch is not it (the same fifteen types run without the define).
+3. The fix is the buffer form of `03`, step 2: the timing build has no device `printf`. `RuntimeConfig::worker_timing_buffer` (`WORKER_TIMING_WORDS` 40 per worker; `runtime_header.h`) is allocated beside the event timing buffer, cleared before every launch, freed at finalize; at its terminate task each worker's thread 0 writes its XCD, block, the seven `[TIMING]` counters, the six stock classes and our eight as (cycles, count) pairs, then the written flag; after both launch forms have synchronised, `print_worker_timing()` copies the slots to the host and prints `[WORKER_XCD]`, `[TIMING]`, `[TASK_TIME]` and `[TASK_TIME2]` per terminated worker in the formats `harness/measure.py` parses, then one `[TIMING_MISSING]` line if any slot is unwritten (a hang diagnostic for the next reader), and flushes stdout so the lines land in `fwd_pass.log`. The start line is back to the stock eight workers on every build. The non-timing build is unchanged. `new_tasks.patch` regenerated on the pristine fork (apply `gfx942.patch`, a temporary base commit, apply, edit, `git diff`, reset to 51dce4f with zero dirty tracked lines).
+4. Checks: the offline pass with the new patch, 22 of 22 compiles exit 0 (`unionT` included; the host syntax check of `graph.cc`, `runtime.cc`, `task_register.cc`); the timing worker's printf hostcall references in the `unionT` disassembly 39 before, 21 after (the stock's remain); `unionT`'s new worker line 256 VGPRs, 234 AGPRs, scratch 80, 8 spills; the preflight 9 PASS with the three patches applying in order; `check_syntax.sh` 15 PASS; 251 tests, one new: the four format strings read from the patch, rendered with sample values, parse with `measure.py`'s regexes field by field, the worker's terminate region has no `printf` call, the missing line is not a record. Docs: `01` L1, `03` F4, `05` R3 (runs; the RULE is the watchdog), `02` R3, MIN-35, the patches' README, the offline README, the help texts of `run_fleet.py` and `measure.py`.
 
 ## F6. The merge's standalone 5 us
 

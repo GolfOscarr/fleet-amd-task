@@ -220,6 +220,14 @@ Approach.
 3. If the offline pass finds nothing, the item ends as a recorded open
    problem with the disassembly attached, and R3 does not run.
 
+Outcome (`04`): the record, not the resource line, named the phase: the
+hung row's log ends among the workers' start lines with no scheduler
+line, and those lines are device `printf` calls on the hostcall path
+issued right before the ready-count barrier the scheduler waits on, by
+every worker under the timing define. The buffer form of step 2 was
+written (every timing line printed by the host from per-worker slots, no
+device `printf` on the timing build); R3 runs, its first row the check.
+
 Files. `env/offline_gfx942/run.sh` (`unionT`), `fleet/patches/new_tasks.patch`
 (regenerated on the pristine fork; `env/preflight.sh` checks the order),
 `harness/run_fleet.py` (the printer, if the buffer form), `fleet/tasks/README.md`.
