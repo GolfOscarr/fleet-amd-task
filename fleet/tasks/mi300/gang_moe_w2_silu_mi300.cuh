@@ -65,13 +65,14 @@
  *          within the pipeline's dynamic allocation the registration asks for.
  */
 #pragma once
+#ifdef MPK_W2_CK_TILE
+// The CK multiply: round 3's file verbatim (the VM of 2026-09-18 returned ids [0] and hung on
+// an inline copy of it; the file that ran round 3 is the fallback the plan names, one define).
+#include "tasks/mi300/gang_moe_w2_silu_ck_mi300.cuh"
+#else
 #include "tasks/common/common_header.cuh"
 #include "tasks/mi300/mla_common_mi300.cuh"        // StreamSrc, load16_from, load8, butterfly_sum, st
-#ifdef MPK_W2_CK_TILE
-#include "tasks/mi300/gang_moe_linear_mi300.cuh"   // ck_tile, the pipeline types
-#include "tasks/mi300/silu_mul_mi300.cuh"          // fast_silu
-#define MPK_W2_HAVE_FAST_SILU 1
-#elif __has_include("tasks/mi300/silu_mul_mi300.cuh")
+#if __has_include("tasks/mi300/silu_mul_mi300.cuh")
 #include "tasks/mi300/silu_mul_mi300.cuh"          // fast_silu, when the fork sources are on the include path
 #define MPK_W2_HAVE_FAST_SILU 1
 #endif
@@ -223,7 +224,6 @@ __device__ __noinline__ void
   int n_offset = n_tile * NPerBlock;
   extern __shared__ char smem[];
 
-#ifndef MPK_W2_CK_TILE
   // --- the prologue into LDS, then the GEMV over the tile's rows ---
   using namespace dsv2;
   (void)d_scratch;                                       // the scratch output is not written
@@ -303,108 +303,7 @@ __device__ __noinline__ void
       st(out_row + n, bf16r(acc[0]));
     }
   }
-#else
-  // --- round 3's form: the prologue into the tile's scratch row, then CK ---
-  using namespace ck_tile;
-  constexpr index_t MPerBlock = 16;
-  constexpr index_t KPerBlock = (REDUCTION_SIZE % 256 == 0) ? 256 : 128;
-  constexpr index_t NumLoopK = REDUCTION_SIZE / KPerBlock;
-  static_assert(REDUCTION_SIZE % KPerBlock == 0, "W2 REDUCTION_SIZE must be divisible by KPerBlock");
-  constexpr index_t MWarp = 1;
-  constexpr index_t NWarp = 4;
-  using BlockTile = sequence<MPerBlock, NPerBlock, KPerBlock>;
-  using BlockWarps = sequence<MWarp, NWarp>;
-  using WarpTile = sequence<MPerBlock, NPerBlock / NWarp, KPerBlock>;
-  using GemmShape = TileGemmShape<BlockTile, BlockWarps, WarpTile>;
-  using GemmTraits = TileGemmUniversalTraits<true, false, true, false,
-                                             tensor_layout::gemm::RowMajor,
-                                             tensor_layout::gemm::ColumnMajor,
-                                             tensor_layout::gemm::RowMajor>;
-  using Problem = GemmPipelineProblem<bf16, bf16, float, GemmShape, GemmTraits>;
-  using PipelinePolicy = GemmPipelineSmallTilePolicy<MPerBlock, NPerBlock, KPerBlock>;
-  using Pipeline = GemmPipelineAGmemBGmemCRegV2<Problem, PipelinePolicy>;
-
-  // the scratch row of this (XCD, tile): the runtime's tile_idx for a MoE gang
-  // task is XCD-local (n_tile_start = 0) and the XCD comes from the hardware
-  // register, as in the stock kernel
-  size_t act_row = static_cast<size_t>(xcd_id) * TOTAL_TILES_PER_XCD + static_cast<size_t>(tile_idx);
-  _gang_moe_w2_silu_row<REDUCTION_SIZE>(reinterpret_cast<uint16_t const *>(gate),
-                                        reinterpret_cast<uint16_t const *>(up),
-                                        reinterpret_cast<uint16_t *>(d_scratch) + act_row * REDUCTION_SIZE);
-  // the stores have reached L2 before any thread's pipeline loads the row: the explicit
-  // s_waitcnt 0 (vmcnt, expcnt, lgkmcnt) is added because the workgroup-scope release alone
-  // lowers to lgkmcnt(0) and the barrier outside threadgroup-split mode (the LLVM AMDGPU
-  // memory model relies on the CU's in-order vector memory pipeline; the wait makes the
-  // store's completion explicit at the cost of one wait per tile)
-  __builtin_amdgcn_s_waitcnt(0);
-  __builtin_amdgcn_fence(__ATOMIC_RELEASE, "workgroup");
-  __syncthreads();
-
-  // the scratch row as A (sc0: the L1 is bypassed, so a line an earlier task left
-  // in this CU's L1 cannot be read; the offline disassembly shows the bit)
-  bf16 const *a_base = reinterpret_cast<bf16 const *>(d_scratch) + act_row * REDUCTION_SIZE;
-  bf16 const *expert_weight =
-      reinterpret_cast<bf16 const *>(d_weight) + static_cast<int64_t>(expert_id) * OUTPUT_STRIDE * REDUCTION_SIZE;
-  bf16 const *b_base = expert_weight + static_cast<size_t>(n_offset) * REDUCTION_SIZE;
-  index_t n_size = (n_offset + NPerBlock <= OUTPUT_SIZE) ? NPerBlock : (OUTPUT_SIZE - n_offset);
-
-  auto a_tensor_view = make_naive_tensor_view<address_space_enum::global,
-                                              memory_operation_enum::set,
-                                              static_cast<amd_buffer_coherence_enum>(1)>(   // GROUP: sc0, L1 bypassed
-      a_base,
-      make_tuple(index_t(1), index_t(REDUCTION_SIZE)),
-      make_tuple(index_t(REDUCTION_SIZE), index_t(1)),
-      number<8>{},
-      number<1>{});
-#ifdef MPK_NT_WEIGHT_LOADS
-  auto b_tensor_view = make_naive_tensor_view<address_space_enum::global,
-                                              memory_operation_enum::set,
-                                              static_cast<amd_buffer_coherence_enum>(18)>(
-#else
-  auto b_tensor_view = make_naive_tensor_view<address_space_enum::global>(
-#endif
-      b_base,
-      make_tuple(n_size, index_t(REDUCTION_SIZE)),
-      make_tuple(index_t(REDUCTION_SIZE), index_t(1)),
-      number<8>{},
-      number<1>{});
-  auto a_tile_window = make_tile_window(a_tensor_view, make_tuple(number<MPerBlock>{}, number<KPerBlock>{}), {0, 0});
-  auto b_tile_window = make_tile_window(b_tensor_view, make_tuple(number<NPerBlock>{}, number<KPerBlock>{}), {0, 0});
-  Pipeline pipeline;
-  auto c_block_tile = pipeline(a_tile_window, b_tile_window, NumLoopK, smem);
-  block_sync_lds();
-
-  // ---- Epilogue: write result for this token (the stock code) ----
-  auto &c_buf = c_block_tile.get_thread_buffer();
-  index_t warp_id = threadIdx.x >> 6;
-  index_t lane_id = threadIdx.x & 63;
-  index_t tile_row = lane_id & 15;
-  index_t tile_col_base = warp_id * 16 + ((lane_id >> 4) << 2);
-  index_t global_n_base = n_offset + tile_col_base;
-  bf16 *out8 = reinterpret_cast<bf16 *>(d_output);
-  if (tile_row == 0) {
-    if (global_n_base + 3 < OUTPUT_SIZE) {
-      bf16 *out_addr = out8 + static_cast<size_t>(w2_tok) * (NUM_TOPK * OUTPUT_STRIDE) +
-                       static_cast<size_t>(topk_slot) * OUTPUT_STRIDE + global_n_base;
-      uint64_t out_packed;
-      bf16 *out = reinterpret_cast<bf16 *>(&out_packed);
-      out[0] = type_convert<bf16>(c_buf[0]);
-      out[1] = type_convert<bf16>(c_buf[1]);
-      out[2] = type_convert<bf16>(c_buf[2]);
-      out[3] = type_convert<bf16>(c_buf[3]);
-      *reinterpret_cast<uint64_t *>(out_addr) = out_packed;
-    } else {
-#pragma unroll
-      for (index_t i = 0; i < 4; i++) {
-        index_t global_n = global_n_base + i;
-        if (global_n < OUTPUT_SIZE) {
-          out8[static_cast<size_t>(w2_tok) * (NUM_TOPK * OUTPUT_STRIDE) +
-               static_cast<size_t>(topk_slot) * OUTPUT_STRIDE + global_n] = type_convert<bf16>(c_buf[i]);
-        }
-      }
-    }
-  }
-#endif
 }
 
 } // namespace kernel
+#endif  // MPK_W2_CK_TILE
