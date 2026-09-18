@@ -56,7 +56,7 @@ PMC_SETS=(
 name_of() {
   # shellcheck disable=SC2086
   "$PY" -c "import sys; sys.path.insert(0, 'harness'); import run_fleet
-print(run_fleet.run_name(run_fleet.build_parser().parse_args(sys.argv[1:] + ['--model-dir', 'x'])))" "$@"
+print(run_fleet.run_name(run_fleet.parse_args(sys.argv[1:] + ['--model-dir', 'x'])))" "$@"
 }
 
 # the prerequisites of a row, checked before anything runs: prints the reason and returns 1

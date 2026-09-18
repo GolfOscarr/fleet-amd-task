@@ -17,12 +17,12 @@ SHELLCHECK=1 bash env/preflight.sh                                        # the 
 
 ## F3. The `--final` preset
 
-- [ ] `run_fleet.py --final`: the thirteen flags and `-DMPK_W2_CK_TILE` unless named; `--no-event-timing`, `--no-nt-streams`, `--no-gemv-linears`; the run name's `_final`
-- [ ] the `--worker-timing` help text corrected (MIN-35 named)
-- [ ] `test_run_fleet_and_measure.py`: `--final` equals the spelled-out stack (246 operators, 6,386 tasks: the record's `plan.json`); the overrides; the run name
-- [ ] `harness/README.md`, `fleet/tasks/README.md`
+- [x] `run_fleet.py --final`: the thirteen flags and `-DMPK_W2_CK_TILE` unless named; `--no-event-timing`, `--no-nt-streams`, `--no-gemv-linears`; the run name's `_final`
+- [x] the `--worker-timing` help text: correct as it stands (the defect an earlier draft saw was `--pad-alloc`'s line, read across two joined ranges); nothing changed
+- [x] `test_run_fleet_and_measure.py`: `--final` equals the spelled-out stack (246 operators, 6,386 tasks: the record's `plan.json`); the overrides; the run name
+- [x] `harness/README.md`, `fleet/tasks/README.md`
 
-Status: open.
+Status: done 2026-09-18. `FINAL_STACK` and `FINAL_DEFINE` in `run_fleet.py`; `apply_final(args, argv)` sets a stack flag only when neither the option nor its `--no-` form is named in `argv`, appends the define unless a `MPK_W2_CK_TILE` define is present, and does nothing on a synthetic graph; `parse_args(argv)` is the one entry (`main`, `queue.sh`'s `name_of`, `test_queue_files.py`), so the name the queue computes before a row is the name the run writes. The name: `L27_head_it30_final_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_w2cktile_gv_lg48_mt_mh2` (the stack's slugs after `_final`, so a name still reads without the preset's table). Checks: 240 tests (three new: the preset equals the spelled-out stack field by field, every named flag and `--no-` form keeps its value and the define is not doubled, the stack's dry-run plan has 246 operators and 6,386 tasks); `DRY=1 queue.sh run` on a `--final --no-event-timing` row prints the expected name; the preflight 9 PASS with shellcheck.
 
 ## F1. The route log's tie rule
 

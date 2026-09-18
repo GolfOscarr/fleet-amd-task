@@ -263,7 +263,55 @@ def build_parser():
                          "the M4 fault candidates, docs/gpu-experiments/02-validation)")
     ap.add_argument("--workspaces-first", action="store_true",
                     help="allocate the workspaces from the plan before the weights are packed (address order)")
+    # F3 of docs/gpu-experiments/05-final: the round-4 finals' stack as one flag; a flag named on the
+    # command line (or its --no- form) keeps its own value, the rest take the stack's (apply_final)
+    ap.add_argument("--final", action="store_true",
+                    help="the round-4 finals' stack (FINAL_STACK: the round-3 flags, --nt-streams, --gemv-linears "
+                         "--linear-grid 48, --merge-tasks --merge-halves 2, -DMPK_W2_CK_TILE) for every flag not "
+                         "named on the command line; the run name gains _final (docs/gpu-experiments/05-final)")
+    ap.add_argument("--no-event-timing", dest="event_timing", action="store_false",
+                    help="with --final: the FWD_PASS clock alone (the it29 rows of the finals)")
+    ap.add_argument("--no-nt-streams", dest="nt_streams", action="store_false",
+                    help="with --final: the plain loads")
+    ap.add_argument("--no-gemv-linears", dest="gemv_linears", action="store_false",
+                    help="with --final: the stock per-tile linears (the half merge alone, MIN-36's row)")
     return ap
+
+
+# F3 (docs/gpu-experiments/05-final/03-local-preparation.md): the stack that made round 4's number,
+# 4,262 to 4,341 us per token (04-kernels/10-results.md), as the values --final gives every flag not
+# named on the command line. The define is appended unless a MPK_W2_CK_TILE define is already there.
+FINAL_STACK = {
+    "tile_linears": True, "nt_weights": True, "event_timing": True,
+    "fuse_norm2": True, "fuse_silu": True, "fuse_norm1": True,
+    "mfma_attend": True, "attend_tasks": True, "nt_streams": True,
+    "gemv_linears": True, "linear_grid": 48,
+    "merge_tasks": True, "merge_halves": 2,
+}
+FINAL_DEFINE = "-DMPK_W2_CK_TILE"
+
+
+def apply_final(args, argv):
+    """--final on a model graph: every FINAL_STACK flag not named in argv (as --flag or --no-flag,
+    either spelling of the option) takes the stack's value; the define joins the runtime flags."""
+    if not getattr(args, "final", False) or args.graph != "model":
+        return args
+    named = {a.split("=", 1)[0] for a in argv if a.startswith("--")}
+    for dest, value in FINAL_STACK.items():
+        opt = "--" + dest.replace("_", "-")
+        if opt in named or ("--no-" + dest.replace("_", "-")) in named:
+            continue
+        setattr(args, dest, value)
+    if not any("MPK_W2_CK_TILE" in f for f in args.runtime_flags):
+        args.runtime_flags = list(args.runtime_flags) + [FINAL_DEFINE]
+    return args
+
+
+def parse_args(argv=None):
+    """build_parser().parse_args plus the --final preset: the one entry every caller uses, so the run
+    name queue.sh computes before a row is the name run_fleet.py writes."""
+    argv = list(sys.argv[1:] if argv is None else argv)
+    return apply_final(build_parser().parse_args(argv), argv)
 
 
 FENCE_KNOBS = ("MPK_NO_COMPLETION_FENCE", "MPK_NO_ACQUIRE_FENCE")
@@ -316,6 +364,7 @@ def run_name(args):
     mh = f"_mh{args.merge_halves}" if args.merge_halves != 1 else ""
     rt = "_rt" if args.router_tasks else ""                         # N2 of docs/gpu-experiments/04-kernels
     mo = "_mo" if args.merge_oproj else ""                          # N5 of docs/gpu-experiments/04-kernels
+    fin = "_final" if getattr(args, "final", False) else ""        # F3 of docs/gpu-experiments/05-final
     if args.graph == "empty":      # I3: no layers, no head
         return (f"E{args.ops}x{args.tasks}" + (f"_spin{args.spin}" if args.spin else "") + f"_it{args.iters}"
                 + nts + wt + rf + al + ws + pad)
@@ -323,7 +372,7 @@ def run_name(args):
         # the load policy (--nt-streams) is what the probe A/Bs, so it is in the name
         return (f"S{args.ops}x{args.tasks}_{args.kb}kb" + ("_gang" if args.gang else "") + f"_it{args.iters}"
                 + nts + wt + rf + al + ws + pad)
-    return (f"L{args.layers}{'_head' if args.head else ''}_it{args.iters}"
+    return (f"L{args.layers}{'_head' if args.head else ''}_it{args.iters}" + fin
             + (f"_{args.stop_after}" if args.stop_after else "") + ("_scores" if args.debug_scores else "")
             + tile + at + fn1 + fn2 + fs + pf + probe + nt + nts + mf + wt + rf + sp + al + ws + pad
             + gv + lg + hg + w13 + mt + mh + rt + mo)
@@ -389,7 +438,7 @@ def tensor_addresses(host):
 
 def main():
     ap = build_parser()
-    args = ap.parse_args()
+    args = apply_final(ap.parse_args(), sys.argv[1:])   # F3: the --final preset, as parse_args does
     if args.graph == "model" and (args.layers is None or args.model_dir is None):
         ap.error("--layers and --model-dir are required for the model graph (--graph empty and --graph stream "
                  "need neither)")

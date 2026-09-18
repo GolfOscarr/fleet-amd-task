@@ -40,7 +40,7 @@ def test_every_row_parses_and_names_a_run():
             args = [t for t in toks if t not in WORDS]
             words = [t for t in toks if t in WORDS]
             assert toks[len(args):] == words, f"{q.name}: the words go last: {toks}"
-            a = p.parse_args(args + ["--model-dir", "x"])
+            a = run_fleet.parse_args(args + ["--model-dir", "x"])
             name = run_fleet.run_name(a)
             assert name and " " not in name and '"' not in name, (q.name, name)
             assert a.iters <= 32, (q.name, toks)
@@ -67,7 +67,7 @@ def test_round4_rows_build_their_plans_and_obey_the_rules():
     seen = set()
     for q in ROUND4:
         for toks in rows(q):
-            a = p.parse_args([t for t in toks if t not in WORDS] + ["--model-dir", "x"])
+            a = run_fleet.parse_args([t for t in toks if t not in WORDS] + ["--model-dir", "x"])
             assert a.iters <= 32 and (a.iters == 1 or not a.debug), (q.name, toks)
             assert not run_fleet.fence_knob_conflict(a), (q.name, toks)
             if a.graph == "stream":

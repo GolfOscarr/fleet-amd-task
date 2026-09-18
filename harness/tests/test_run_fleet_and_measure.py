@@ -326,6 +326,66 @@ def test_stream_run_gets_a_rate_per_operator(tmp_path):
     assert "| GB/s |" in md and "stream probe:" in md and "MiB per operator" in md
 
 
+# ---- F3 of docs/gpu-experiments/05-final: the --final preset -------------------------------------------
+
+FINAL_SPELLED = ["--tile-linears", "--nt-weights", "--event-timing", "--fuse-norm2", "--fuse-silu", "--fuse-norm1",
+                 "--mfma-attend", "--attend-tasks", "--nt-streams", "--gemv-linears", "--linear-grid", "48",
+                 "--merge-tasks", "--merge-halves", "2", "--runtime-flags=-DMPK_W2_CK_TILE"]
+
+
+def _fields(a):
+    d = dict(vars(a)); d.pop("final"); return d
+
+
+def test_final_preset_equals_the_spelled_out_stack():
+    base = ["--layers", "27", "--head", "--iters", "30", "--model-dir", "x"]
+    a = run_fleet.parse_args(base + ["--final"])
+    b = run_fleet.parse_args(base + FINAL_SPELLED)
+    assert _fields(a) == _fields(b)
+    assert a.linear_grid == 48 and a.merge_halves == 2 and a.runtime_flags == ["-DMPK_W2_CK_TILE"]
+    assert run_fleet.run_name(a) == "L27_head_it30_final_" + run_fleet.run_name(b)[len("L27_head_it30_"):]
+    assert run_fleet.run_name(b) == "L27_head_it30_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_w2cktile_gv_lg48_mt_mh2"
+    # the stack is exactly the thirteen flags of the round-4 finals (docs/gpu-experiments/05-final/01-ideas.md)
+    assert set(run_fleet.FINAL_STACK) == {"tile_linears", "nt_weights", "event_timing", "fuse_norm2", "fuse_silu",
+                                          "fuse_norm1", "mfma_attend", "attend_tasks", "nt_streams", "gemv_linears",
+                                          "linear_grid", "merge_tasks", "merge_halves"}
+
+
+def test_final_preset_keeps_every_flag_named_on_the_command_line():
+    base = ["--layers", "27", "--head", "--iters", "29", "--model-dir", "x", "--final"]
+    a = run_fleet.parse_args(base + ["--no-event-timing"])            # the FWD_PASS rows
+    assert a.event_timing is False and a.nt_streams and a.gemv_linears
+    a = run_fleet.parse_args(base + ["--no-nt-streams", "--no-gemv-linears"])
+    assert a.nt_streams is False and a.gemv_linears is False and a.linear_grid == 48 and a.tile_linears
+    a = run_fleet.parse_args(base + ["--linear-grid", "96", "--merge-halves", "1"])
+    assert a.linear_grid == 96 and a.merge_halves == 1 and a.merge_tasks
+    assert run_fleet.run_name(a).startswith("L27_head_it29_final_") and "_lg96_mt" in run_fleet.run_name(a)
+    a = run_fleet.parse_args(base + ["--runtime-flags=-DMPK_W2_CK_TILE", "--runtime-flags=-DMPK_POLL_SLEEP=8"])
+    assert a.runtime_flags == ["-DMPK_W2_CK_TILE", "-DMPK_POLL_SLEEP=8"]      # the define is not doubled
+    a = run_fleet.parse_args(base + ["--runtime-flags=-DMPK_POLL_SLEEP=8"])
+    assert a.runtime_flags == ["-DMPK_POLL_SLEEP=8", "-DMPK_W2_CK_TILE"]
+    # the --no- forms are no-ops without --final, and --final does nothing to a synthetic graph
+    a = run_fleet.parse_args(["--layers", "2", "--iters", "32", "--no-nt-streams", "--model-dir", "x"])
+    assert not a.nt_streams and run_fleet.run_name(a) == "L2_it32"
+    a = run_fleet.parse_args(["--graph", "stream", "--ops", "10", "--tasks", "96", "--kb", "152", "--iters", "32",
+                              "--final"])
+    assert not a.gemv_linears and a.runtime_flags == [] and run_fleet.run_name(a) == "S10x96_152kb_it32"
+
+
+def test_final_preset_builds_the_finals_plan():
+    """The round-4 finals' plan.json in the record: 246 operators and 6,386 tasks."""
+    sys.path.insert(0, str(ROOT))
+    from fleet import build_graph as B
+    from fleet import graph_plan as G
+    a = run_fleet.parse_args(["--layers", "27", "--head", "--iters", "30", "--model-dir", "x", "--final"])
+    plan, calls = B.dry_run(layers=a.layers, head=a.head, tile_linears=a.tile_linears, attend_tasks=a.attend_tasks,
+                            fuse_norm2=a.fuse_norm2, fuse_silu=a.fuse_silu, fuse_norm1=a.fuse_norm1,
+                            gemv_linears=a.gemv_linears, linear_grid=a.linear_grid, merge_tasks=a.merge_tasks,
+                            merge_halves=a.merge_halves)
+    s = G.summary(plan)
+    assert len(calls) == 246 and s["tasks"] == 6386
+
+
 # ---- P1 of docs/gpu-experiments/02-validation/01-preparation.md: the address-shift flag ----------------
 
 def test_pad_alloc_argument_and_run_name():

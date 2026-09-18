@@ -164,14 +164,11 @@ Checks. The test: `--final` alone gives the same `Plan` as the thirteen
 flags spelled out, and that plan has the finals' counts, 246 operators
 and 6,386 tasks (the record's `env/hw/20260918/runs/L27_head_it30_..._gv_lg48_mt_mh2/plan.json`); `--final --no-nt-streams` drops one;
 `--final --linear-grid 96` overrides; the run name of the finals' row is
-`L27_head_it30_final` (or the stack's slugs after `_final`, whichever the
-name function does; the test pins one). The dry run of `build_graph.py`
-with the flags spelled out (it has no `--final`; the preset lives in
-`run_fleet.py`). Also fix while there: the help text of `--worker-timing`
-reads "hold a dummy device allocation of GB gibibytes before packing
-(address shift)" (a copy of `--align-alloc`'s); it should say
-"-DMPK_ENABLE_TIMING: every worker's `[TIMING]`, `[TASK_TIME]` and
-`[TASK_TIME2]` lines; hangs the round-4 header (MIN-35)".
+`L27_head_it30_final_` followed by the stack's slugs (the test pins it).
+The dry run of `build_graph.py` with the flags spelled out (it has no
+`--final`; the preset lives in `run_fleet.py`). The `--worker-timing`
+help text is correct as it stands: an earlier draft of this page read a
+defect into it from two joined line ranges (Part 4, item 6).
 
 Time box: 2 hours. Feeds R1 to R5.
 
@@ -463,8 +460,10 @@ source read and what it changed in `01` or `02`.
    records `iters` in the meta; `compare.run` reads the meta already
    (`run_meta.get("head")`, `get("stop_after")`), so the cheap form is a
    few lines in one function.
-6. **The `--worker-timing` help text** in `run_fleet.py` is a copy of
-   `--align-alloc`'s ("hold a dummy device allocation ..."); fixed in F3.
+6. **The `--worker-timing` help text** in `run_fleet.py` is correct; the
+   "dummy device allocation" line an earlier draft attributed to it is
+   `--pad-alloc`'s, read across two joined `sed` ranges. Nothing to fix;
+   the checklist's box is struck.
 7. **The flag count.** The stack is thirteen flags and a define (`01`,
    "What round 4 left"); an earlier draft said twelve.
 8. **The finals' plan counts** are 246 operators and 6,386 tasks (the
