@@ -3,5 +3,5 @@
 # the compare is the new operator's; it overrides --merge-tasks; --probe-before takes L{l}.norm2, not
 # L{l}.o_proj). The pair on the 2-layer graph with the GEMV stack and the router in four tasks (take
 # --router-tasks out with queue_flag.py if H2 failed).
---layers 2 --iters 1 --tile-linears --nt-weights --event-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend --attend-tasks --nt-streams --gemv-linears --gemv-w13 --router-tasks --merge-oproj --runtime-flags=-DMPK_W2_CK_TILE compare continue    # H5: 0 FAIL on x_res, ids equal
---layers 2 --iters 32 --tile-linears --nt-weights --event-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend --attend-tasks --nt-streams --gemv-linears --gemv-w13 --router-tasks --merge-oproj --runtime-flags=-DMPK_W2_CK_TILE table continue    # H5: the operator's gap against 18.1 + 14.8 us
+--layers 2 --iters 1 --tile-linears --nt-weights --event-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend --attend-tasks --nt-streams --gemv-linears --router-tasks --merge-oproj --runtime-flags=-DMPK_W2_CK_TILE compare continue    # H5: 0 FAIL on x_res, ids equal
+--layers 2 --iters 32 --tile-linears --nt-weights --event-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend --attend-tasks --nt-streams --gemv-linears --router-tasks --merge-oproj --runtime-flags=-DMPK_W2_CK_TILE table continue    # H5: the operator's gap against 18.1 + 14.8 us
