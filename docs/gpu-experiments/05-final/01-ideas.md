@@ -6,8 +6,10 @@ per token on the event clock (`FWD_PASS` 4,267 to 4,310), the 32 ids equal
 on every final, below the 4,500 target. This is the last round and a
 light one: nothing here is a new kernel. The page lists what round 4 left
 open, what each item is worth, what it costs and how it is checked; the
-split into laptop and VM work is `02-local-gpu-split.md`. Every number
-names its run or its source line.
+split into laptop and VM work is `02-local-gpu-split.md`, the items in
+detail `03-local-preparation.md` (whose Part 4 double-checked this page
+against the source and changed A1, L2 and N3), the progress record
+`04-checklist.md`. Every number names its run or its source line.
 
 ## What round 4 left
 
@@ -42,24 +44,24 @@ graph against the no-knob row (498.7 us per iteration) `NO_LOCAL_CAS`
 model, the finals with `NO_LOCAL_CAS` 4,262 to 4,341 and with both knobs
 4,265 to 4,307, against 4,288 to 4,340 without: within the spread.
 
-What remains to decide is not speed but safety. The store form can
-publish slot n+1 before slot n when two workers of one XCD finish tasks
-of the same event at the same time; a scheduler reading the queue up to
-the published position would then run a task whose predecessor's slot is
-not yet written. Four finals and five 2-layer rows did not hit it, which
-is what a race looks like when it is rare. The reading to do is on the
-laptop, in the runtime's source: whether the scheduler consumes slots by
-the published position (then the hazard is real and the knob stays a
-probe) or by each slot's own ready flag (then the CAS loop is only an
-ordering nicety and the store is safe). `POLL_SLEEP=8` has no such
-question: a longer sleep only delays an idle wave's next poll, and the
-measured cost of that delay is nil on the model.
+What remained to decide was not speed but safety, and the reading is
+done (`03-local-preparation.md`, Part 4): the scheduler consumes its
+queue by position (it loads the published position and reads every slot
+up to it; the slots carry no flag of their own), and a producer reserves
+a slot, writes its event index, fences, then publishes through the CAS
+loop that waits until the position equals its slot. With the store form a
+worker that reserved slot n+1 can publish n+2 before the worker at slot
+n has written its event index, and the scheduler reads a stale slot. Two
+of an XCD's 37 workers finishing tasks of the same operator together is
+the common case, so the hazard is reachable; four finals and five 2-layer
+rows not hitting it is what a rare race looks like. `POLL_SLEEP=8` has no
+such question: a longer sleep only delays an idle wave's next poll.
 
-Worth: at most 1% of the token, likely nothing. Cost: an hour of reading
-and one VM set. Decision: `POLL_SLEEP=8` enters the default stack if the
-final session's three sets confirm it is not slower; `NO_LOCAL_CAS` only
-if the reading says the hazard is unreachable, otherwise it stays a
-knob and the results page says why.
+Worth: at most 1% of the token, likely nothing. Cost: one VM set.
+Decision: `NO_LOCAL_CAS` is unsafe by construction and stays a probe (its
+round-4 numbers stand as measured); `POLL_SLEEP=8` enters the default
+stack if the final session's interleaved sets confirm it is not slower
+on either clock.
 
 ### A2. The batch constant 4
 
@@ -191,21 +193,22 @@ with `--gemv-linears` runs every final. The plan builds all three on the
 laptop without an assert (`build_graph.py --dry-run --layers 27
 --tile-linears --merge-tasks --merge-halves 2`: 326 operators, 7,269
 tasks; with `--gemv-linears` 298 and 7,241), so the plan's shapes are
-legal and the fault is in an address a task computes. What differs
-between the two builds that run and the one that faults: the o_proj that
-consumes the merge's `attn` is the CK tile (`linear_with_residual`) in the
-faulting build and the GEMV linear in the running one, and the merge's
-tile form writes `attn` with a stride the registration passes
-(`register_mla_merge_uv_tile_mi300_task`, whole imaps). If the tile
-form's `attn` stride is the GEMV's expectation and the CK tile reads
-another (the stock per-tile linear partitions its input by the task's
-offset), the read past the end grows with the layer count. That is a
-laptop check: the two registrations' input maps for `attn` side by side,
-and the stock `linear_with_residual` registration's input partition.
+legal and the fault is in an address a task computes. The first suspect, the
+stock CK tile's 16-row read past a one-row `attn` (MIN-33), is out:
+`attn` is a `[1, NH x D_V]` plan tensor and `build_graph.new_workspace`
+backs every single-row activation with 16 rows. What differs between the
+two builds that run and the one that faults is the consumer of `attn`:
+the stock per-tile `linear_with_residual` in the faulting build, our GEMV
+linear in the running one. The readings left (`03`, F5): the stock
+linear's input map against the merge tile registration's whole-tensor
+maps (the event structure both consumers get), the two graphs' task
+types side by side, and the tile form's store offset at `halves = 2`
+against the registration's output map; a `--layers 3 --merge-halves 1`
+row on the VM separates the halves from the layer count.
 
 Worth: nothing for the number (the finals do not use the configuration);
 a correctness hole closed. Cost: two hours of reading, one VM row (45 s)
-to confirm. If the reading finds nothing, a layer bisect on the VM (3, 5,
+to confirm. If the readings find nothing, a layer bisect on the VM (3, 5,
 9 and 14 layers at one iteration, 4 minutes) locates the first faulting
 layer count for the record.
 
@@ -258,14 +261,14 @@ The report needs one table from 9.58 ms (round 2) through 4.57 to 4.60
 configuration, the clock and the ids check of each, and the per-operator
 table of a MoE layer across the rounds (`../03-acceleration/08-results.md`
 and `../04-kernels/10-results.md` have the two halves). This page is
-`03-final-numbers.md` of this set, written after the session from the
-record; the report under `docs/report` (never committed) draws on it.
+`07-final-numbers.md` of this set, drafted before the session with the
+round-4 numbers in place and filled from the record after it; the report under `docs/report` (never committed) draws on it.
 
 ## Group N: light optimisations that fit a final stage
 
 Listed for completeness; none is required for the number, and the budget
-(34 minutes of VM time under the $3 rule, 94 without it) holds one or two
-of them at most.
+(34 minutes of VM time under the $3 rule, 94 without it) holds them only
+if the rule is waived.
 
 ### N1. Three interleaved sets instead of three consecutive ones
 
@@ -280,17 +283,25 @@ file's order.
 ### N2. `POLL_SLEEP=8` and the batch constant as defaults (A1, A2)
 
 If the interleaved sets say so; otherwise the defaults stay.
+`NO_LOCAL_CAS` is out by A1's reading.
 
-### N3. The head's chunk events
+### N3. The head's event count (a plan constant)
 
-The head's 400 tasks run as 49 events of 8 tasks (`10-results.md`: 111
-us per token, 2.3 us per event); the runtime chunks a regular operator's
-tasks into events of 8 at prelaunch. A larger chunk (the runtime's
-constant, if it is one) would cut the 49 boundaries to 13 or 7. Worth: up
-to 80 us per token (2%). Cost: the constant's location in `runtime.cc`
-and one 2-layer head row; if the constant is not one, the item is off.
-This is the only speed item of the round, and it is taken only if the
-reading is one line.
+The head's 400 tasks run as 50 events (49 gaps of 2.3 us in the record,
+111 us per token, `../04-kernels/10-results.md`). The runtime makes the
+event count between two operators the gcd of the producer's and the
+consumer's partitions per dimension (`runtime.cc`, "number of events is
+the product of gcd of producer/consumer"); the head's consumer is
+`argmax_partial` at `ARGMAX_SLICES = 50` tasks (`fleet/graph_plan.py`,
+line 21, the design's D13), and gcd(400, 50) = 50. The constant is the
+plan's. At 8 slices the pair makes 8 events (gcd(320, 8) = 8 as well at
+`--head-grid 320`) and each argmax task scans 12,800 logits instead of
+2,048 (the stock kernel takes `num_elements / num_tasks` per task). Worth:
+up to 42 boundaries of 2.3 us, about 95 us per token (2%), against a
+longer last argmax task of a few microseconds. Cost: one plan argument,
+one flag (`--argmax-slices N`), one test, one 2-layer head row and one
+model compare row (`03`, F7). The round's one speed item, and it is one
+line of arithmetic once the gcd rule is read.
 
 ## Routes not taken, and why
 
