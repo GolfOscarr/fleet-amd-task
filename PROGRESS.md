@@ -91,7 +91,7 @@ library builds and a graph runs on the machine.
 
 ---
 
-## Stage 1 — Discovery ✅ **complete** (10/10)
+## Stage 1 — Discovery, **complete** (10/10)
 
 - [x] Read task description
 - [x] Init repo, branch, Fleet submodule, `.gitignore`
@@ -138,7 +138,7 @@ library builds and a graph runs on the machine.
 
 ---
 
-## Stage 2 — Design doc ✅ **complete, reviewed** — `docs/design-doc/`
+## Stage 2 — Design doc, **complete, reviewed** — `docs/design-doc/`
 
 Required as the **first deliverable**.
 
@@ -177,7 +177,7 @@ Resolvable now, without the GPU: MIN-1, MIN-2, MIN-4, MIN-5, MIN-6 (`OPEN-PROBLE
 
 ---
 
-## Stage 3 — Local work (no GPU) ✅ **complete, reviewed** (the GPU run of calibration and routing stays for day 1)
+## Stage 3 — Local work (no GPU), **complete, reviewed** (the GPU run of calibration and routing stays for day 1)
 
 Branch `local/harness`. Every item has a check that runs here; the GPU-only
 ones are written to be run on day 1 (`docs/design-doc/10-local-work.md`).
@@ -220,7 +220,7 @@ Test suite: `.venv/bin/python -m pytest harness/tests fleet/tests -q` (66 tests)
 
 ---
 
-## Stage 4 — GPU bring-up ✅ complete — hardware collection 2026-09-15, round 2 on the 1x MI300X 2026-09-16 (`docs/gpu-experiments/02-validation/`)
+## Stage 4 — GPU bring-up, complete — hardware collection 2026-09-15, round 2 on the 1x MI300X 2026-09-16 (`docs/gpu-experiments/02-validation/`)
 
 The hour of measurements that precedes the build ran on Hot Aisle VM
 `enc1-gpuvm005` (ROCm 7.2.4, hipcc 7.2.53211, two MI300X VF devices, device 0
@@ -252,7 +252,7 @@ documented as blocked. **Decide end of day 1.**
 
 ---
 
-## Stage 5 — Implementation ✅ M4 reached on the machine (2026-09-16); M2 since 2026-09-15
+## Stage 5 — Implementation, M4 reached on the machine (2026-09-16); M2 since 2026-09-15
 
 - [x] Weight loader: pack experts into W13 `[64, 2816, 2048]`, precision as a parameter — `fleet/pack_weights.py`, 272 tensors, 31.42 GB, checks pass on the VM
 - [x] Prefill → latent KV cache conversion (excluded from timed window) — captured by `run_reference.py`, consumed by `run_fleet.py`
@@ -306,10 +306,10 @@ Fleet sources.
 | Risk | Impact | Mitigation |
 |---|---|---|
 | Repo won't build for gfx942 | Strategy change | Device code compiles offline (2026-09-14); the host build is decided day 1; minimal-runtime fallback |
-| MLA task is the whole budget | Miss M3/M4 | ✅ M4 reached 2026-09-16; the MLA kernels validated and 34 us standalone |
-| Megakernel occupancy = 1 wave/SIMD | Was feared fatal | ✅ resolved — `VMCNT`=63 allows enough in-flight loads; becomes a prefetch-depth requirement (MIN-22 to confirm) |
+| MLA task is the whole budget | Miss M3/M4 | M4 reached 2026-09-16; the MLA kernels validated and 34 us standalone |
+| Megakernel occupancy = 1 wave/SIMD | Was feared fatal | resolved — `VMCNT`=63 allows enough in-flight loads; becomes a prefetch-depth requirement (MIN-22 to confirm) |
 | Attention uses 32 of 296 workers | 13–17% of budget if the model is right | measured: 33 splits run as 40 workgroups, one tile per worker; 61 splits (`--split 17`) change nothing, the cost is per tile (`docs/gpu-experiments/02-validation/06-lessons.md`) |
-| Our tasks smaller than anything Fleet measured | Dispatch overhead dominates | ✅ measured 2026-09-16: the attention kernel is 34 us standalone and 146 to 215 us in the graph; the megakernel's per-task overhead is the floor (MAJ-7, `docs/gpu-experiments/02-validation/06-lessons.md` item 1) |
+| Our tasks smaller than anything Fleet measured | Dispatch overhead dominates | measured 2026-09-16: the attention kernel is 34 us standalone and 146 to 215 us in the graph; the megakernel's per-task overhead is the floor (MAJ-7, `docs/gpu-experiments/02-validation/06-lessons.md` item 1) |
 | Top-6 experts over 8 XCDs leaves 2 idle | 25% of machine during 99 MB phase | Candidate: fold shared experts in as experts 64-65 (8 active on 8 XCDs); compare vs N-split |
 | 5 days, BF16 first | FP8 not reached | Document with arithmetic; precision as a loader parameter |
 
