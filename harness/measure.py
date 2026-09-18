@@ -58,8 +58,10 @@ SPIN_RE = re.compile(r"\[SPIN\] block=(\d+) iters=(\d+) cycles=(\d+) ticks=(\d+)
 
 
 def parse_worker_timing(text: str):
-    """I1: the runtime's per-worker counters (MPK_TIMING=1 build: [TIMING], [TASK_TIME], [TASK_TIME2] at
-    the end of the run, [WORKER_XCD] at its start) -> {worker: {...}}. Cycles are clock64, the shader
+    """I1: the runtime's per-worker counters (MPK_TIMING=1 build: [TIMING], [TASK_TIME], [TASK_TIME2] and
+    [WORKER_XCD], printed by the host from the workers' slots after each launch since F4 of
+    docs/gpu-experiments/05-final; the eight stock [WORKER_XCD] lines of the kernel's start on every build)
+    -> {worker: {...}}. Cycles are clock64, the shader
     clock (the SCLK from the spin of I2 converts them); the poll, dep, exec and signal cycles are the
     worker's lifetime over all iterations."""
     w = {}

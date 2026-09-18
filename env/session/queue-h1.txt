@@ -1,0 +1,8 @@
+# Round 5, R1 (docs/gpu-experiments/05-final/02-local-gpu-split.md): the compares on the model at one
+# iteration with the finals' stack (--final, F3), read by the tie rule (F1) and the iteration-aware
+# boundaries (F2): every captured boundary PASS, the route log PASS with its counts (one tie expected at
+# step 0, MoE layer 4, zero disagreements), the layers the reference did not capture NOT_CAPTURED.
+# The second row carries the sleep knob R2 A/Bs; the third is the 2-layer compare of round 4.
+--layers 27 --head --iters 1 --final compare continue    # R1: the stack
+--layers 27 --head --iters 1 --final --runtime-flags=-DMPK_POLL_SLEEP=8 compare continue    # R1: with the knob
+--layers 2 --iters 1 --final compare continue    # R1: the 2-layer step-0 boundaries, as round 4's G1.2

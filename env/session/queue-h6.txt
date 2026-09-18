@@ -1,0 +1,7 @@
+# Round 5, the optional set after R2 (docs/gpu-experiments/05-final/05-session-plan.md): the finals with
+# the batch constant 4 (A2: into the default only if it wins both clocks against A's set of queue-h2).
+# R2's A form at 30, 31, 32 and 29. The 8-event set is queue-h8.txt (gated by R5's choice).
+--layers 27 --head --iters 30 --final --runtime-flags=-DGEMV_BATCH=4 compare table continue    # batch 4
+--layers 27 --head --iters 31 --final --runtime-flags=-DGEMV_BATCH=4 compare table continue
+--layers 27 --head --iters 32 --final --runtime-flags=-DGEMV_BATCH=4 compare table continue
+--layers 27 --head --iters 29 --final --no-event-timing --runtime-flags=-DGEMV_BATCH=4 table continue    # FWD_PASS

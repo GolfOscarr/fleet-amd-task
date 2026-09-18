@@ -1,0 +1,9 @@
+# Round 5, R5 (docs/gpu-experiments/05-final/02-local-gpu-split.md): the head's event count (F7): the
+# 2-layer graph with the head at 8 and 10 argmax slices against the finals' 50 (the event count is
+# gcd(400, slices): 50 today), then the model at one iteration with 8 for the ids and the compare.
+# DECIDE: --argmax-slices 8 into the default if the 2-layer median falls by more than 2% and the model
+# row passes; then one more A set of R2's form with it, if the minutes allow (queue-h6.txt's third block).
+--layers 2 --head --iters 32 --final table continue    # R5: the reference, 50 slices
+--layers 2 --head --iters 32 --final --argmax-slices 8 table continue    # R5: 8 events
+--layers 2 --head --iters 32 --final --argmax-slices 10 table continue    # R5: 10 events
+--layers 27 --head --iters 1 --final --argmax-slices 8 compare continue    # R5: the model's ids and compare at 8

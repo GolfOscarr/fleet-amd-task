@@ -1,0 +1,8 @@
+# Round 5, the optional set after R5 (docs/gpu-experiments/05-final/05-session-plan.md): the finals with
+# --argmax-slices 8 (8 head events instead of 50), run only if DECIDE R5 chose 8; if R5 chose 10, the
+# four rows are edited to --argmax-slices 10, committed and pushed (L push) before the queue starts; if
+# R5 chose 50, this file does not run. R2's A form at 30, 31, 32 and 29.
+--layers 27 --head --iters 30 --final --argmax-slices 8 compare table continue    # 8 head events
+--layers 27 --head --iters 31 --final --argmax-slices 8 compare table continue
+--layers 27 --head --iters 32 --final --argmax-slices 8 compare table continue
+--layers 27 --head --iters 29 --final --no-event-timing --argmax-slices 8 table continue    # FWD_PASS

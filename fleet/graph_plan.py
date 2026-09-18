@@ -18,7 +18,7 @@ from fleet.pack_weights import Dims, REAL_DIMS, XCDS, TILE_N_QKVA, TILE_N_LM
 TILE_N_O = 32          # o_proj and down_proj (tile_n 32: 8 tiles per XCD, 02-task-graph.md)
 TILE_N_SILU = 64
 SPLIT = 32             # positions per attention split (D11)
-ARGMAX_SLICES = 50     # D13
+ARGMAX_SLICES = 50     # D13; the head's event count is gcd(head tasks, this): 50 at 400 tasks (F7 of docs/gpu-experiments/05-final)
 N_FORCED = 2           # D6: experts 64, 65 at weight 1.0
 TOPK_TOTAL_SLOTS = 8
 SOFTMAX_SCALE = 0.1147213867929261
@@ -263,7 +263,8 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
                attend_tasks: bool = False, fuse_norm2: bool = False, fuse_silu: bool = False,
                fuse_norm1: bool = False, prefetch: bool = False, gemv_linears: bool = False,
                linear_grid: int = None, head_grid: int = None, gemv_w13: bool = False, merge_tasks: bool = False,
-               merge_halves: int = 1, router_tasks: bool = False, merge_oproj: bool = False) -> Plan:
+               merge_halves: int = 1, router_tasks: bool = False, merge_oproj: bool = False,
+               argmax_slices: int = ARGMAX_SLICES) -> Plan:
     """debug_scores: the mla_attend kernel also writes the scaled pre-softmax scores
     [NH, s_max] FP32 (boundary B5); needs the MLA_ATTEND_DEBUG_SCORES build (MPK_DEBUG_SCORES=1).
     tile_linears: issue the four dense linears (qkva, o_proj, down, lm_head) as per-tile
@@ -313,6 +314,8 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
     head and the half come from the task index, and with merge_halves 2 each task multiplies
     half of its head's W_uv rows after merging the whole head. The operator keeps its label and
     its tensors, so only the task count moves (16 or 32 per layer against 8).
+    argmax_slices: the task count of the head's argmax_partial (50, the design's D13); the runtime's
+    event count for the head is gcd(head tasks, argmax_slices), 8 at 8 (F7 of docs/gpu-experiments/05-final).
     linear_grid, head_grid: the task count of qkva and o_proj, and of lm_head, under gemv_linears
     (--linear-grid, --head-grid; L2 and L5): grid_for_linear's heuristic otherwise, and also where
     linear_grid does not divide the operator's row count (linear_grid_for). Layer 0's down keeps
@@ -334,7 +337,10 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
     assert d.D_C % 256 == 0                 # K of mla_merge_uv's W_uv product
     assert d.I_DENSE_PAD % 256 == 0
     assert d.I_MOE % 128 == 0 and (2 * d.I_MOE) % 64 == 0
-    assert d.V % ARGMAX_SLICES == 0         # argmax_partial: input.dim(1) // num_tasks, no assert in the API
+    # argmax_partial: input.dim(1) // num_tasks, no assert in the API. The runtime makes the head's event
+    # count gcd(head tasks, argmax_slices) (runtime.cc, the producer/consumer partitions): 50 events of 8
+    # tasks at the design's 50; 8 at 8 (F7 of docs/gpu-experiments/05-final, --argmax-slices)
+    assert argmax_slices >= 1 and d.V % argmax_slices == 0, f"--argmax-slices {argmax_slices} does not divide {d.V}"
     p = Plan(d, s_max, layers, head, debug)
     n_splits = p.n_splits
     gemv = gemv_linears and not debug
@@ -565,8 +571,8 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
         p.t("w_final_norm", (d.H,), kind="input", source="w_final_norm")
         p.t("W_lm", (d.V, d.H), kind="input", source="W_lm")
         p.t("logits", (1, d.V))
-        p.t("amax_v", (1, ARGMAX_SLICES))
-        p.t("amax_i", (1, ARGMAX_SLICES), "i64")
+        p.t("amax_v", (1, argmax_slices))
+        p.t("amax_i", (1, argmax_slices), "i64")
         p.t("tok_out", (1, 1), "i64", "input", "meta:output_tokens")
         if gemv:
             g = linear_grid_for(d.V, head_grid)
@@ -589,8 +595,8 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
             else:
                 p.op("gang_linear_layer", XCDS, gang_tiles(d.V, TILE_N_LM), label="head.lm_head",
                      input="h", weight="W_lm", output="logits", tile_n=TILE_N_LM, output_stride=d.V)
-        p.op("argmax_partial_layer", ARGMAX_SLICES, label="head.argmax_partial", input="logits", output=("amax_v", "amax_i"),
-             grid_dim=(ARGMAX_SLICES, 1, 1), block_dim=(256, 1, 1))
+        p.op("argmax_partial_layer", argmax_slices, label="head.argmax_partial", input="logits", output=("amax_v", "amax_i"),
+             grid_dim=(argmax_slices, 1, 1), block_dim=(256, 1, 1))
         p.op("argmax_reduce_layer", 1, status="variant", note="writes tokens[step + 1]", label="head.argmax_reduce",
              input=("amax_v", "amax_i"), output="tok_out", grid_dim=(1, 1, 1),
              block_dim=(256, 1, 1), output_to_tokens=True)

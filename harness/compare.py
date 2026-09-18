@@ -75,13 +75,36 @@ def exact_scalar(a: torch.Tensor, b: torch.Tensor) -> tuple[bool, str]:
     return va == vb, f"fleet {va} ref {vb}"
 
 
-def compare_boundaries(ref: dict, fleet: dict, th: dict, floor: dict | None) -> list[dict]:
+def compare_boundaries(ref: dict, fleet: dict, th: dict, floor: dict | None, iters: int = 1,
+                       ref_later: dict | None = None) -> list[dict]:
+    """ref is the reference's step-0 file; a boundary the run dumped from a later iteration (F2 of
+    docs/gpu-experiments/05-final, common.boundary_iteration) is compared against ref_later, the
+    reference's file for that step, and reported NOT_COMPARABLE when there is none."""
     rows = []
+    # the layers the reference captured (0 and 1 on the real model): a boundary of another layer is
+    # dumped by a longer graph (the last writer of every workspace is its last layer) and is not a
+    # missing reference but an uncaptured one, reported and not counted (F2 of docs/gpu-experiments/05-final)
+    ref_layers = sorted({int(k.split(".")[0][1:]) for k in ref if re.match(r"^L\d+\.", k)})
     for key in sorted(fleet.keys(), key=sort_key):
         cls = common.boundary_class(key)
         if cls is None:
             continue                      # auxiliary tensors are not boundaries
         row = {"key": key, "boundary": common.boundary_id(key), "class": cls}
+        m_layer = re.match(r"^L(\d+)\.", key)
+        if m_layer and int(m_layer.group(1)) not in ref_layers:
+            row.update(result="NOT_CAPTURED",
+                       detail=f"the reference captures layers {', '.join(map(str, ref_layers))}")
+            rows.append(row)
+            continue
+        it = common.boundary_iteration(key, iters)
+        if it > 0:
+            row["iteration"] = it
+            if ref_later is None:
+                row.update(result="NOT_COMPARABLE",
+                           detail=f"dumped from iteration {it}; the reference has no ref_boundaries_step{it}")
+                rows.append(row)
+                continue
+            ref = ref_later
         if key not in ref:
             row.update(result="MISSING_REF")
             rows.append(row)
@@ -152,20 +175,65 @@ def compare_ids(ref_ids: list, fleet_ids: list) -> dict:
     }
 
 
-def compare_route_log(ref_log: list, fleet_log: list) -> dict:
-    """Exact set equality of the top-k ids per (step, MoE layer), up to the
-    number of steps and layers the Fleet log has."""
-    mismatches = []
+ROUTE_TOL_FALLBACK = 0.015    # 4 x the round-4 router floor (3.59e-3), when no calibration is present
+
+
+def compare_route_log(ref_log: list, fleet_log: list, router_floor: float | None = None) -> dict:
+    """The top-k ids per (step, MoE layer), up to the steps and layers the Fleet log has.
+
+    A reference without the 64 weights per entry (`w_all`, F1 of docs/gpu-experiments/05-final)
+    gets the exact rule of rounds 2 to 4: any difference is FAIL. With the weights every mismatch
+    is classified, in step-major order:
+      tie           exactly one expert differs and the reference's weights of the one that left
+                    and the one that came in are within tol_rel of the larger (tol_rel is
+                    THRESHOLD_MULTIPLIER x the calibrated router floor, the boundaries' own rule);
+      cascade       any other mismatch after an earlier tie or cascade of the same run (the swapped
+                    expert changed the hidden state; the output ids judge those steps);
+      disagreement  everything else: a single swap outside the tolerance before any tie, or more
+                    than one expert differing with no earlier tie.
+    The verdict fails on a disagreement only; the counts and every mismatch's class are reported.
+    Round 4's record (docs/gpu-experiments/05-final/01-ideas.md, C1): 309 mismatches over fifteen
+    finals, 287 single swaps, the 22 multi-expert ones all after a swap, every output id equal."""
+    has_w_all = bool(ref_log) and all("w_all" in e for step in ref_log for e in step)
+    tol_rel = (common.THRESHOLD_MULTIPLIER * float(router_floor)) if router_floor else ROUTE_TOL_FALLBACK
+    mismatches, ties, cascades, disagreements = [], [], [], []
     steps = min(len(ref_log), len(fleet_log))
     for s in range(steps):
         layers = min(len(ref_log[s]), len(fleet_log[s]))
         for j in range(layers):
             r = sorted(ref_log[s][j]["idx"])
             f = sorted(fleet_log[s][j]["idx"][: len(r)])   # Fleet may append the forced 64, 65
-            if r != f:
-                mismatches.append({"step": s, "moe_layer_index": j, "ref": r, "fleet": f})
-    return {"steps_compared": steps, "mismatches": mismatches,
-            "result": "PASS" if not mismatches and steps > 0 else ("FAIL" if mismatches else "SKIP")}
+            if r == f:
+                continue
+            m = {"step": s, "moe_layer_index": j, "ref": r, "fleet": f}
+            mismatches.append(m)
+            if not has_w_all:
+                continue
+            left, came = sorted(set(r) - set(f)), sorted(set(f) - set(r))
+            if len(left) == 1 and len(came) == 1:
+                w_all = ref_log[s][j]["w_all"]
+                w_left, w_came = float(w_all[left[0]]), float(w_all[came[0]])
+                gap, tol = abs(w_left - w_came), tol_rel * max(w_left, w_came)
+                m.update(left=left[0], came=came[0], w_left=w_left, w_came=w_came, gap=gap, tol=tol)
+                if gap <= tol:
+                    m["class"] = "tie"
+                    ties.append(m)
+                    continue
+            if ties or cascades:
+                m["class"] = "cascade"
+                cascades.append(m)
+            else:
+                m["class"] = "disagreement"
+                disagreements.append(m)
+    if steps == 0:
+        result = "SKIP"
+    elif not has_w_all:
+        result = "PASS" if not mismatches else "FAIL"
+    else:
+        result = "FAIL" if disagreements else "PASS"
+    return {"steps_compared": steps, "rule": "tie" if has_w_all else "exact",
+            "tol_rel": tol_rel if has_w_all else None, "mismatches": mismatches,
+            "ties": ties, "cascades": cascades, "disagreements": disagreements, "result": result}
 
 
 def growth_curve(ref_hidden: torch.Tensor, fleet_hidden: torch.Tensor, th_layer: float) -> dict:
@@ -194,6 +262,12 @@ def fmt(x, nd=3):
 def write_report(path: Path, result: dict):
     lines = ["# Correctness report", ""]
     lines.append(f"Thresholds: {result['threshold_source']}.")
+    if result.get("iters", 1) > 1:
+        lines.append(f"The run made {result['iters']} iterations: the boundaries other than the cache rows and the "
+                     f"first token were dumped from iteration {result['iters'] - 1} and are "
+                     + (f"compared against `{result['later_reference']}`." if result.get("later_reference")
+                        else "not comparable against the reference's step 0 (NOT_COMPARABLE below); the output "
+                             "ids and the route log carry the verdict."))
     lines.append("")
     lines.append("| Key | Boundary | Class | max_abs_err | rel_err | cos_sim | floor | threshold | Result |")
     lines.append("|---|---|---|---|---|---|---|---|---|")
@@ -216,16 +290,25 @@ def write_report(path: Path, result: dict):
     rl = result.get("route_log")
     if rl and rl["result"] == "SKIP":
         lines.append(f"Route log: **SKIP**, {rl['note']}.")
+    elif rl and rl.get("rule") == "tie":
+        lines.append(f"Route log: **{rl['result']}**, {rl['steps_compared']} steps compared, "
+                     f"{len(rl['mismatches'])} mismatching (step, layer) pairs: {len(rl['ties'])} ties, "
+                     f"{len(rl['cascades'])} cascades, {len(rl['disagreements'])} disagreements "
+                     f"(the tie rule, tol {rl['tol_rel']:.3g} of the larger weight).")
     elif rl:
         lines.append(f"Route log: **{rl['result']}**, {rl['steps_compared']} steps compared, "
-                     f"{len(rl['mismatches'])} mismatching (step, layer) pairs.")
+                     f"{len(rl['mismatches'])} mismatching (step, layer) pairs (the exact rule: the reference "
+                     f"has no per-expert weights).")
     gc = result.get("growth_curve")
     if gc:
         lines.append(f"Growth curve (B13 per layer): **{gc['result']}**, {gc['layers']} layers, "
                      f"max rel_err {fmt(gc['max_rel_err'])}, {gc['note']}.")
     lines.append("")
     lines.append(f"Overall: **{result['overall']}** ({result['n_pass']} pass, {result['n_fail']} fail, "
-                 f"{result['n_missing']} missing).")
+                 f"{result['n_missing']} missing"
+                 + (f", {result['n_not_comparable']} not comparable" if result.get("n_not_comparable") else "")
+                 + (f", {result['n_not_captured']} of layers the reference did not capture"
+                    if result.get("n_not_captured") else "") + ").")
     path.write_text("\n".join(lines) + "\n")
 
 
@@ -237,18 +320,22 @@ def run(ref_dir: Path, fleet_dir: Path, calibration_path: Path | None, report: P
 
     ref = load_file(str(ref_dir / "ref_boundaries_step0.safetensors"))
     fleet = load_file(str(fleet_dir / "fleet_boundaries.safetensors"))
+    f_meta = fleet_dir / "fleet_run_meta.json"
+    run_meta = json.loads(f_meta.read_text()) if f_meta.exists() else {}
+    iters = int(run_meta.get("iters", 1) or 1)
+    later = ref_dir / f"ref_boundaries_step{iters - 1}.safetensors"       # F2: the right form's file
+    ref_later = load_file(str(later)) if iters > 1 and later.exists() else None
     calibration = None
     if calibration_path and calibration_path.exists():
         calibration = json.loads(calibration_path.read_text())
     th, source = thresholds(calibration)
     floor = calibration.get("floor") if calibration else None
 
-    result = {"threshold_source": source, "thresholds": th}
-    result["boundaries"] = compare_boundaries(ref, fleet, th, floor)
+    result = {"threshold_source": source, "thresholds": th, "iters": iters,
+              "later_reference": str(later.name) if ref_later is not None else None}
+    result["boundaries"] = compare_boundaries(ref, fleet, th, floor, iters, ref_later)
 
     f_ids = fleet_dir / "fleet_output_ids.json"
-    f_meta = fleet_dir / "fleet_run_meta.json"
-    run_meta = json.loads(f_meta.read_text()) if f_meta.exists() else {}
     if f_ids.exists() and run_meta.get("head", True) and not run_meta.get("stop_after"):
         result["output_ids"] = compare_ids(json.loads((ref_dir / "ref_output_ids.json").read_text()),
                                            json.loads(f_ids.read_text()))
@@ -262,7 +349,7 @@ def run(ref_dir: Path, fleet_dir: Path, calibration_path: Path | None, report: P
         has_routes = any(any(layer for layer in step) for step in fleet_log) if fleet_log else False
         if has_routes or not run_meta.get("stop_after"):
             result["route_log"] = compare_route_log(json.loads((ref_dir / "ref_route_log.json").read_text()),
-                                                    fleet_log)
+                                                    fleet_log, floor.get("router") if floor else None)
         else:
             # stopped before the first router: nothing to compare (VM run 2026-09-15)
             result["route_log"] = {"result": "SKIP", "note": "truncated graph: stopped before any router"}
@@ -279,7 +366,11 @@ def run(ref_dir: Path, fleet_dir: Path, calibration_path: Path | None, report: P
     result["n_pass"] = results.count("PASS") + results.count("PARTIAL")
     result["n_fail"] = results.count("FAIL")
     result["n_missing"] = results.count("MISSING_REF")
-    result["overall"] = "PASS" if result["n_fail"] == 0 and result["n_missing"] == 0 and results else "FAIL"
+    result["n_not_comparable"] = results.count("NOT_COMPARABLE")      # neither a pass nor a failure
+    result["n_not_captured"] = results.count("NOT_CAPTURED")
+    # not-comparable rows carry no verdict: a report of only those (nothing compared) is not a PASS
+    result["overall"] = ("PASS" if result["n_fail"] == 0 and result["n_missing"] == 0 and result["n_pass"] > 0
+                         else "FAIL")
 
     report.parent.mkdir(parents=True, exist_ok=True)
     write_report(report, result)

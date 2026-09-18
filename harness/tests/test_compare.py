@@ -177,6 +177,185 @@ def test_output_ids_and_route_log(dirs):
         "step": 3, "moe_layer_index": 1, "ref": [1, 7], "fleet": [3, 7]}
 
 
+# ---- F1 of docs/gpu-experiments/05-final: the route log's tie rule --------------------------------
+
+def _w_all(top):
+    """Eight experts' weights with the given (id: weight) pairs, the rest small and distinct."""
+    w = [0.01 + 0.001 * i for i in range(8)]
+    for i, v in top.items():
+        w[i] = v
+    return w
+
+
+def _route(steps, top_ids, top_w, w_all):
+    return [[{"idx": top_ids, "w": top_w, "w_all": w_all}, {"idx": [1, 7], "w": [0.5, 0.2],
+              "w_all": _w_all({1: 0.5, 7: 0.2})}] for _ in range(steps)]
+
+
+def test_route_log_tie_rule_classifies_a_near_tie_a_cascade_and_a_disagreement(dirs):
+    ref_dir, fleet_dir, ref, ids, route, hidden = dirs
+    # the reference's sixth-slot expert 2 at 0.030 against expert 3 at 0.0297: within 4 x floor
+    ref_route = _route(6, [5, 2], [0.4, 0.030], _w_all({5: 0.4, 2: 0.030, 3: 0.0297, 4: 0.020}))
+    (ref_dir / "ref_route_log.json").write_text(json.dumps(ref_route))
+    fleet_route = [[{"idx": [5, 2, 64, 65], "w": []}, {"idx": [1, 7, 64, 65], "w": []}] for _ in range(6)]
+    fleet_route[1][0]["idx"] = [5, 3, 64, 65]            # step 1: expert 3 took expert 2's slot
+    fleet_route[3][0]["idx"] = [3, 4, 64, 65]            # step 3: two experts differ, after the tie
+    fleet_route[4][1]["idx"] = [1, 6, 64, 65]            # step 4: a single swap far from a tie, after it
+    write_fleet(fleet_dir, dict(ref), ids, fleet_route)
+    cal = ref_dir / "calibration.json"
+    cal.write_text(json.dumps({"floor": {"router": 0.0036}}))
+    r = go(ref_dir, fleet_dir, cal=cal)["route_log"]
+    assert r["rule"] == "tie" and abs(r["tol_rel"] - 4 * 0.0036) < 1e-12
+    assert r["result"] == "PASS" and len(r["mismatches"]) == 3
+    assert [m["class"] for m in r["mismatches"]] == ["tie", "cascade", "cascade"]
+    t = r["ties"][0]
+    assert (t["left"], t["came"]) == (2, 3) and abs(t["gap"] - 0.0003) < 1e-9 and t["gap"] <= t["tol"]
+    # the same swap before any tie and outside the tolerance: a disagreement, FAIL
+    ref_route = _route(6, [5, 2], [0.4, 0.030], _w_all({5: 0.4, 2: 0.030, 3: 0.020}))
+    (ref_dir / "ref_route_log.json").write_text(json.dumps(ref_route))
+    fleet_route = [[{"idx": [5, 2, 64, 65], "w": []}, {"idx": [1, 7, 64, 65], "w": []}] for _ in range(6)]
+    fleet_route[1][0]["idx"] = [5, 3, 64, 65]
+    fleet_route[3][0]["idx"] = [3, 4, 64, 65]
+    write_fleet(fleet_dir, dict(ref), ids, fleet_route)
+    r = go(ref_dir, fleet_dir, cal=cal)["route_log"]
+    # a mismatch after a disagreement is a disagreement too: only ties seed cascades
+    assert r["result"] == "FAIL" and [m["class"] for m in r["mismatches"]] == ["disagreement", "disagreement"]
+    assert r["disagreements"][0]["gap"] > r["disagreements"][0]["tol"]
+    # a multi-expert difference with no earlier tie is a disagreement too; no calibration: the fallback tolerance
+    fleet_route[1][0]["idx"] = [5, 2, 64, 65]
+    write_fleet(fleet_dir, dict(ref), ids, fleet_route)
+    r = go(ref_dir, fleet_dir)["route_log"]
+    assert r["result"] == "FAIL" and r["tol_rel"] == compare.ROUTE_TOL_FALLBACK
+    assert [m["class"] for m in r["mismatches"]] == ["disagreement"]
+    report = (fleet_dir / "correctness_report.md").read_text()
+    assert "1 disagreements (the tie rule" in report
+
+
+def test_route_log_without_weights_keeps_the_exact_rule(dirs):
+    ref_dir, fleet_dir, ref, ids, route, hidden = dirs      # the fixture's reference has no w_all
+    fleet_route = [[{"idx": [5, 2, 64, 65], "w": []}, {"idx": [1, 7, 64, 65], "w": []}] for _ in range(6)]
+    fleet_route[2][1]["idx"] = [1, 3, 64, 65]
+    write_fleet(fleet_dir, dict(ref), ids, fleet_route)
+    r = go(ref_dir, fleet_dir)["route_log"]
+    assert r["rule"] == "exact" and r["tol_rel"] is None and r["result"] == "FAIL"
+    assert r["mismatches"] == [{"step": 2, "moe_layer_index": 1, "ref": [1, 7], "fleet": [1, 3]}]
+    assert "the exact rule" in (fleet_dir / "correctness_report.md").read_text()
+
+
+def test_round4_finals_route_mismatches_are_single_swaps_and_cascades():
+    """The replay on the record (docs/gpu-experiments/05-final/03-local-preparation.md, F1): every
+    mismatch of the fifteen 48-task finals of 2026-09-18 is a single swap, or a multi-expert difference
+    after a single swap of the same run; the round-4 reference has no weights, so the tolerance itself
+    is first read on the VM (R1)."""
+    ROOT = HARNESS.parent
+    ref_log = json.loads((ROOT / "harness/ref/ref_route_log.json").read_text())
+    runs = sorted((ROOT / "env/hw/20260918/runs").glob("L27_head_it3[012]*lg48*"))
+    runs = [r for r in runs if (r / "fleet_route_log.json").exists()]
+    assert len(runs) >= 15, [r.name for r in runs]
+    total = singles = 0
+    for run in runs:
+        r = compare.compare_route_log(ref_log, json.loads((run / "fleet_route_log.json").read_text()))
+        assert r["rule"] == "exact" and r["result"] == "FAIL"
+        first_single = None
+        for m in r["mismatches"]:
+            total += 1
+            left, came = set(m["ref"]) - set(m["fleet"]), set(m["fleet"]) - set(m["ref"])
+            if len(left) == 1 and len(came) == 1:
+                singles += 1
+                first_single = m["step"] if first_single is None else first_single
+            else:
+                assert first_single is not None and m["step"] > first_single, (run.name, m)
+    assert total >= 300 and singles >= 280, (total, singles)
+
+
+# ---- F2 of docs/gpu-experiments/05-final: iteration-aware boundaries ------------------------------
+
+def test_boundary_iteration_rule():
+    assert common.boundary_iteration("head.B15.logits", 1) == 0
+    assert common.boundary_iteration("head.B15.logits", 32) == 31
+    assert common.boundary_iteration("L1.B2.q", 29) == 28
+    for key in ("L0.B3.c_kv", "L1.B3.k_pe", "head.B16.token"):     # written at step 0 and never again
+        assert common.boundary_iteration(key, 32) == 0
+
+
+def test_later_iteration_boundaries_are_not_comparable_and_the_ids_decide(dirs):
+    """The it32 rows of the round-4 record: head.B15.logits dumped from iteration 31 failed against
+    step 0 by construction; now it is NOT_COMPARABLE, the cache rows and the token still compare,
+    and the verdict is the ids' and the route log's."""
+    ref_dir, fleet_dir, ref, ids, route, hidden = dirs
+    fleet = dict(ref)
+    fleet["head.B15.logits"] = ref["head.B15.logits"] * 3.0             # a different token's logits
+    write_fleet(fleet_dir, fleet, ids, route)
+    (fleet_dir / "fleet_run_meta.json").write_text(json.dumps({"iters": 32, "head": True}))
+    r = go(ref_dir, fleet_dir)
+    rows = by_key(r)
+    assert r["iters"] == 32 and r["later_reference"] is None
+    assert rows["head.B15.logits"]["result"] == "NOT_COMPARABLE" and rows["head.B15.logits"]["iteration"] == 31
+    assert "iteration 31" in rows["head.B15.logits"]["detail"]
+    assert rows["L1.B2.q"]["result"] == "NOT_COMPARABLE"                 # every non-invariant boundary
+    assert rows["L0.B3.c_kv"]["result"] == "PASS" and rows["head.B16.token"]["result"] == "PASS"
+    assert r["overall"] == "PASS" and r["n_fail"] == 0 and r["n_not_comparable"] > 0
+    assert r["output_ids"]["result"] == "PASS" and r["route_log"]["result"] == "PASS"
+    report = (fleet_dir / "correctness_report.md").read_text()
+    assert "dumped from iteration 31" in report and "not comparable" in report
+    # the same run at one iteration: the head compares and fails as before
+    (fleet_dir / "fleet_run_meta.json").write_text(json.dumps({"iters": 1, "head": True}))
+    r = go(ref_dir, fleet_dir)
+    assert by_key(r)["head.B15.logits"]["result"] == "FAIL" and r["overall"] == "FAIL"
+    # a failing id with every boundary not comparable is still a FAIL
+    bad_ids = list(ids); bad_ids[3] = 999
+    write_fleet(fleet_dir, fleet, bad_ids, route)
+    (fleet_dir / "fleet_run_meta.json").write_text(json.dumps({"iters": 32, "head": True}))
+    r = go(ref_dir, fleet_dir)
+    assert r["overall"] == "FAIL" and r["output_ids"]["result"] == "FAIL"
+
+
+def test_boundaries_of_layers_the_reference_did_not_capture_are_reported_not_failed(dirs):
+    """A 27-layer run dumps the cache rows of layers 2 to 25 and layer 26's boundaries (the last
+    writers); the reference has layers 0 and 1: NOT_CAPTURED, not MISSING_REF (the round-4 record's
+    64 missing rows). A key absent inside a captured layer is still a missing reference."""
+    ref_dir, fleet_dir, ref, ids, route, hidden = dirs
+    fleet = dict(ref)
+    fleet["L5.B3.c_kv"] = ref["L1.B3.c_kv"].clone()
+    fleet["L26.B2.q"] = ref["L1.B2.q"].clone()
+    write_fleet(fleet_dir, fleet, ids, route)
+    r = go(ref_dir, fleet_dir)
+    rows = by_key(r)
+    assert rows["L5.B3.c_kv"]["result"] == "NOT_CAPTURED" and rows["L26.B2.q"]["result"] == "NOT_CAPTURED"
+    assert "layers 0, 1" in rows["L5.B3.c_kv"]["detail"]
+    assert r["overall"] == "PASS" and r["n_missing"] == 0 and r["n_not_captured"] == 2
+    assert "2 of layers the reference did not capture" in (fleet_dir / "correctness_report.md").read_text()
+    fleet["L1.B99.made_up"] = ref["L1.B2.q"].clone()                  # not a boundary key: ignored
+    fleet["L1.B4.q_pe"] = ref["L1.B4.q_pe"].clone()
+    del fleet["L5.B3.c_kv"]
+    write_fleet(fleet_dir, fleet, ids, route)
+    ref_short = {k: v for k, v in ref.items() if k != "L1.B4.q_pe"}
+    save_file(ref_short, str(ref_dir / "ref_boundaries_step0.safetensors"))
+    r = go(ref_dir, fleet_dir)
+    assert by_key(r)["L1.B4.q_pe"]["result"] == "MISSING_REF" and r["overall"] == "FAIL" and r["n_missing"] == 1
+
+
+def test_later_iteration_boundaries_compare_against_the_reference_step_file(dirs):
+    """The right form: ref_boundaries_step31.safetensors present, the head compares against it."""
+    ref_dir, fleet_dir, ref, ids, route, hidden = dirs
+    later = dict(ref)
+    later["head.B15.logits"] = ref["head.B15.logits"] * 3.0
+    save_file(later, str(ref_dir / "ref_boundaries_step31.safetensors"))
+    fleet = dict(ref)
+    fleet["head.B15.logits"] = later["head.B15.logits"].clone()
+    write_fleet(fleet_dir, fleet, ids, route)
+    (fleet_dir / "fleet_run_meta.json").write_text(json.dumps({"iters": 32, "head": True}))
+    r = go(ref_dir, fleet_dir)
+    rows = by_key(r)
+    assert r["later_reference"] == "ref_boundaries_step31.safetensors"
+    assert rows["head.B15.logits"]["result"] == "PASS" and rows["head.B15.logits"]["iteration"] == 31
+    assert rows["L0.B3.c_kv"]["result"] == "PASS" and r["overall"] == "PASS" and r["n_not_comparable"] == 0
+    fleet["head.B15.logits"] = ref["head.B15.logits"].clone()          # step 0's logits at iteration 31: FAIL
+    write_fleet(fleet_dir, fleet, ids, route)
+    r = go(ref_dir, fleet_dir)
+    assert by_key(r)["head.B15.logits"]["result"] == "FAIL" and "step31" in (fleet_dir / "correctness_report.md").read_text()
+
+
 def test_missing_and_shape_mismatch(dirs):
     ref_dir, fleet_dir, ref, ids, route, hidden = dirs
     b = dict(ref)

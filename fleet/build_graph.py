@@ -563,7 +563,7 @@ def build(packed, capture, meta, dims=REAL_DIMS, s_max=1056, layers=27, head=Tru
           profiler_tensor=None, align=0, workspaces=None, fuse_norm2=False, fuse_silu=False,
           probe_before=None, fuse_norm1=False, prefetch=False, gemv_linears=False, linear_grid=None,
           head_grid=None, gemv_w13=False, merge_tasks=False, merge_halves=1, router_tasks=False,
-          merge_oproj=False, plan=None):
+          merge_oproj=False, argmax_slices=G.ARGMAX_SLICES, plan=None):
     """On the machine: construct the PersistentKernel, attach, issue, return (mpk, host tensors, plan).
     plan: a ready plan (the empty ladder of I3) instead of the model's."""
     import torch
@@ -572,7 +572,7 @@ def build(packed, capture, meta, dims=REAL_DIMS, s_max=1056, layers=27, head=Tru
     if plan is None:
         plan = G.build_plan(dims, s_max, layers, head, debug, debug_scores, tile_linears, attend_tasks, fuse_norm2,
                             fuse_silu, fuse_norm1, prefetch, gemv_linears, linear_grid, head_grid, gemv_w13,
-                            merge_tasks, merge_halves, router_tasks, merge_oproj)
+                            merge_tasks, merge_halves, router_tasks, merge_oproj, argmax_slices)
     assert not gemv_w13 or num_workers // G.XCDS == G.W13_GEMV_TILES, \
         f"--gemv-w13 wants {G.W13_GEMV_TILES} workers per XCD, not {num_workers // G.XCDS}"   # L4
     if probe_before:
@@ -760,11 +760,11 @@ def dry_run(dims=REAL_DIMS, s_max=1056, layers=27, head=True, debug=False, stop_
             debug_scores=False, tile_linears=False, attend_tasks=False, fuse_norm2=False, fuse_silu=False,
             probe_before=None, fuse_norm1=False, prefetch=False, gemv_linears=False, linear_grid=None,
             head_grid=None, gemv_w13=False, merge_tasks=False, merge_halves=1, router_tasks=False,
-            merge_oproj=False, plan=None):
+            merge_oproj=False, argmax_slices=G.ARGMAX_SLICES, plan=None):
     if plan is None:
         plan = G.build_plan(dims, s_max, layers, head, debug, debug_scores, tile_linears, attend_tasks, fuse_norm2,
                             fuse_silu, fuse_norm1, prefetch, gemv_linears, linear_grid, head_grid, gemv_w13,
-                            merge_tasks, merge_halves, router_tasks, merge_oproj)
+                            merge_tasks, merge_halves, router_tasks, merge_oproj, argmax_slices)
     if probe_before:
         plan.insert_probe(probe_before)
     if stop_after:

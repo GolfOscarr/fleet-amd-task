@@ -326,6 +326,82 @@ def test_stream_run_gets_a_rate_per_operator(tmp_path):
     assert "| GB/s |" in md and "stream probe:" in md and "MiB per operator" in md
 
 
+# ---- F3 of docs/gpu-experiments/05-final: the --final preset -------------------------------------------
+
+FINAL_SPELLED = ["--tile-linears", "--nt-weights", "--event-timing", "--fuse-norm2", "--fuse-silu", "--fuse-norm1",
+                 "--mfma-attend", "--attend-tasks", "--nt-streams", "--gemv-linears", "--linear-grid", "48",
+                 "--merge-tasks", "--merge-halves", "2", "--runtime-flags=-DMPK_W2_CK_TILE"]
+
+
+def _fields(a):
+    d = dict(vars(a)); d.pop("final"); return d
+
+
+def test_final_preset_equals_the_spelled_out_stack():
+    base = ["--layers", "27", "--head", "--iters", "30", "--model-dir", "x"]
+    a = run_fleet.parse_args(base + ["--final"])
+    b = run_fleet.parse_args(base + FINAL_SPELLED)
+    assert _fields(a) == _fields(b)
+    assert a.linear_grid == 48 and a.merge_halves == 2 and a.runtime_flags == ["-DMPK_W2_CK_TILE"]
+    assert run_fleet.run_name(a) == "L27_head_it30_final_" + run_fleet.run_name(b)[len("L27_head_it30_"):]
+    assert run_fleet.run_name(b) == "L27_head_it30_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_w2cktile_gv_lg48_mt_mh2"
+    # the stack is exactly the thirteen flags of the round-4 finals (docs/gpu-experiments/05-final/01-ideas.md)
+    assert set(run_fleet.FINAL_STACK) == {"tile_linears", "nt_weights", "event_timing", "fuse_norm2", "fuse_silu",
+                                          "fuse_norm1", "mfma_attend", "attend_tasks", "nt_streams", "gemv_linears",
+                                          "linear_grid", "merge_tasks", "merge_halves"}
+
+
+def test_final_preset_keeps_every_flag_named_on_the_command_line():
+    base = ["--layers", "27", "--head", "--iters", "29", "--model-dir", "x", "--final"]
+    a = run_fleet.parse_args(base + ["--no-event-timing"])            # the FWD_PASS rows
+    assert a.event_timing is False and a.nt_streams and a.gemv_linears
+    a = run_fleet.parse_args(base + ["--no-nt-streams", "--no-gemv-linears"])
+    assert a.nt_streams is False and a.gemv_linears is False and a.tile_linears
+    assert a.linear_grid is None                                        # the grid needs the GEMV linears (R4's row)
+    assert run_fleet.run_name(a) == "L27_head_it29_final_tile_at_fn1_fn2_fs_nt_mfma_rf_w2cktile_mt_mh2"
+    a = run_fleet.parse_args(base + ["--linear-grid", "96", "--merge-halves", "1"])
+    assert a.linear_grid == 96 and a.merge_halves == 1 and a.merge_tasks
+    assert run_fleet.run_name(a).startswith("L27_head_it29_final_") and "_lg96_mt" in run_fleet.run_name(a)
+    a = run_fleet.parse_args(base + ["--runtime-flags=-DMPK_W2_CK_TILE", "--runtime-flags=-DMPK_POLL_SLEEP=8"])
+    assert a.runtime_flags == ["-DMPK_W2_CK_TILE", "-DMPK_POLL_SLEEP=8"]      # the define is not doubled
+    a = run_fleet.parse_args(base + ["--runtime-flags=-DMPK_POLL_SLEEP=8"])
+    assert a.runtime_flags == ["-DMPK_POLL_SLEEP=8", "-DMPK_W2_CK_TILE"]
+    # the --no- forms are no-ops without --final, and --final does nothing to a synthetic graph
+    a = run_fleet.parse_args(["--layers", "2", "--iters", "32", "--no-nt-streams", "--model-dir", "x"])
+    assert not a.nt_streams and run_fleet.run_name(a) == "L2_it32"
+    a = run_fleet.parse_args(["--graph", "stream", "--ops", "10", "--tasks", "96", "--kb", "152", "--iters", "32",
+                              "--final"])
+    assert not a.gemv_linears and a.runtime_flags == [] and run_fleet.run_name(a) == "S10x96_152kb_it32"
+
+
+def test_argmax_slices_flag_names_the_run_and_reaches_the_plan():
+    """F7 of docs/gpu-experiments/05-final."""
+    a = run_fleet.parse_args(["--layers", "2", "--head", "--iters", "32", "--final", "--argmax-slices", "8",
+                              "--model-dir", "x"])
+    assert a.argmax_slices == 8 and run_fleet.run_name(a).endswith("_gv_lg48_mt_mh2_as8")
+    a = run_fleet.parse_args(["--layers", "27", "--head", "--iters", "30", "--final", "--model-dir", "x"])
+    assert a.argmax_slices is None and not run_fleet.run_name(a).endswith("_as50")     # the default has no slug
+    sys.path.insert(0, str(ROOT))
+    from fleet import build_graph as B
+    plan, _ = B.dry_run(layers=2, head=True, gemv_linears=True, linear_grid=48, merge_tasks=True, merge_halves=2,
+                        argmax_slices=8)
+    assert {c.label: c for c in plan.calls}["head.argmax_partial"].tasks == 8
+
+
+def test_final_preset_builds_the_finals_plan():
+    """The round-4 finals' plan.json in the record: 246 operators and 6,386 tasks."""
+    sys.path.insert(0, str(ROOT))
+    from fleet import build_graph as B
+    from fleet import graph_plan as G
+    a = run_fleet.parse_args(["--layers", "27", "--head", "--iters", "30", "--model-dir", "x", "--final"])
+    plan, calls = B.dry_run(layers=a.layers, head=a.head, tile_linears=a.tile_linears, attend_tasks=a.attend_tasks,
+                            fuse_norm2=a.fuse_norm2, fuse_silu=a.fuse_silu, fuse_norm1=a.fuse_norm1,
+                            gemv_linears=a.gemv_linears, linear_grid=a.linear_grid, merge_tasks=a.merge_tasks,
+                            merge_halves=a.merge_halves)
+    s = G.summary(plan)
+    assert len(calls) == 246 and s["tasks"] == 6386
+
+
 # ---- P1 of docs/gpu-experiments/02-validation/01-preparation.md: the address-shift flag ----------------
 
 def test_pad_alloc_argument_and_run_name():
@@ -511,3 +587,37 @@ def test_fence_knobs_are_refused_with_the_counter_forms():
         assert not run_fleet.fence_knob_conflict(p.parse_args(base + form + ["--runtime-flags=-DMPK_POLL_SLEEP=8"]))
         assert not run_fleet.fence_knob_conflict(p.parse_args(base + form))
     assert not run_fleet.fence_knob_conflict(p.parse_args(base + ["--runtime-flags=-DMPK_NO_COMPLETION_FENCE"]))
+
+
+def test_worker_timing_lines_of_the_patch_parse():
+    """F4 (docs/gpu-experiments/05-final): the timing build prints its four per-worker lines from the
+    host after each launch (new_tasks.patch, print_worker_timing); their format strings, read from the
+    patch and rendered with sample values, must parse with measure.py's regexes field by field."""
+    import re
+    patch = (ROOT / "fleet/patches/new_tasks.patch").read_text()
+    body = patch[patch.index("static void print_worker_timing()"):patch.index("extern \"C\" void launch_persistent_kernel")]
+    assert body.count("printf(") == 5           # the four lines and the missing-workers line
+    fmts = {}
+    for m in re.finditer(r'printf\(((?:\s*\+?\s*"[^"\n]*"\s*)+),', body):
+        s = "".join(re.findall(r'"([^"\n]*)"', m.group(1)))
+        fmts[s.split("]")[0] + "]"] = s
+    assert set(fmts) == {"[WORKER_XCD]", "[TIMING]", "[TASK_TIME]", "[TASK_TIME2]", "[TIMING_MISSING]"}
+    n = iter(range(100, 10_000))
+    text = ""
+    for key in ("[WORKER_XCD]", "[TIMING]", "[TASK_TIME]", "[TASK_TIME2]"):
+        f = fmts[key].replace("%llu", "%d").replace("\\n", "\n")
+        vals = [7] + [next(n) for _ in range(f.count("%d") - 1)]
+        text += f % tuple(vals)
+    w = measure.parse_worker_timing(text)
+    assert set(w) == {7}
+    assert w[7]["xcd"] == 101 and w[7]["tasks"] == 102 and w[7]["signal_cycles"] == 108
+    classes = w[7]["classes"]
+    assert set(classes) == {"linear", "linear_res", "attn", "rms", "silu", "fused",
+                            "prep", "attend", "merge", "router", "copy", "w2silu", "lnorm", "prefetch"}
+    assert classes["linear"] == {"cycles": 109, "count": 110} and classes["prefetch"]["count"] == 136
+    # the device side has no printf left under the timing define: the worker writes its slot
+    worker = patch[patch.index("if (task_desc->task_type == TASK_TERMINATE)"):patch.index("MPK_ENABLE_DEVICE_TASK_ACCUM")]
+    kept = "\n".join(l for l in worker.splitlines() if not l.startswith("-"))   # the stock's printf lines are removed
+    assert "printf(" not in kept and "worker_timing_buffer" in kept   # the comment names printf, no call does
+    # the missing-workers line is not a per-worker record
+    assert not measure.parse_worker_timing(fmts["[TIMING_MISSING]"].replace("%d", "3"))

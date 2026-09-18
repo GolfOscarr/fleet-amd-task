@@ -1,0 +1,8 @@
+# Round 5, R4's second half (docs/gpu-experiments/05-final/05-session-plan.md): the layer bisect of MIN-36,
+# run only if queue-h4.txt's first row (the faulting configuration at 2 layers) passed, so that the fault
+# needs a layer count: 3, 5, 9 and 14 layers at one iteration (45 to 70 s a row) locate the first faulting
+# count for the record. If the 2-layer row faulted, this file is skipped: the layer count is not the cause.
+--layers 3 --iters 1 --final --no-gemv-linears compare continue    # R4: the bisect
+--layers 5 --iters 1 --final --no-gemv-linears compare continue
+--layers 9 --iters 1 --final --no-gemv-linears compare continue
+--layers 14 --iters 1 --final --no-gemv-linears compare continue

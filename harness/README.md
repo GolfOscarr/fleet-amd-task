@@ -28,7 +28,7 @@ installed with its own pins, for `run_fleet.py`, `kernel_tests.py`,
 | `make_prompt.py` | recomputes the ids and compares them with the committed file | `python harness/make_prompt.py` |
 | `common.py` | model name, positions (`HANDOVER = 1023`, `S_MAX = 1056`), boundary keys, class thresholds | imported |
 | `run_reference.py` | the HF reference: prefill `ids[0:1023]`, 32-step argmax loop from position 1023 with hooks, `generate` cross-check, all `ref_*` artifacts and the latent-cache capture | `python harness/run_reference.py --device cuda` (GPU, 31 GB); `--smoke` for a tiny random model anywhere |
-| `compare.py` | pairs `fleet_*` and `ref_*` by boundary key, metrics, thresholds (calibrated when `calibration.json` exists), exact checks, `correctness_report.md` | `python harness/compare.py --fleet <dir>` |
+| `compare.py` | pairs `fleet_*` and `ref_*` by boundary key, metrics, thresholds (calibrated when `calibration.json` exists), exact checks, `correctness_report.md`; the route log by the tie rule when the reference carries the 64 router weights per (step, layer) (`w_all`, written by `run_reference.py` since round 5): a mismatch of one expert whose two reference weights are within 4 x the router floor of the larger is a tie, any mismatch after an earlier tie a cascade, the rest disagreements, and only a disagreement fails; a reference without the weights gets the exact rule of rounds 2 to 4 (F1 of `docs/gpu-experiments/05-final`); a run of more than one iteration dumps every boundary but the cache rows and the first token from its last iteration (`common.boundary_iteration`), and those rows compare against `ref_boundaries_step{N}.safetensors` when the reference has it and read `NOT_COMPARABLE` otherwise; a boundary of a layer the reference did not capture (a 27-layer run dumps layers 2 to 26's, the reference has 0 and 1) reads `NOT_CAPTURED`; neither counts as a failure, the ids and the route log carrying the verdict (F2) | `python harness/compare.py --fleet <dir>` |
 | `bitdiff.py` | pairs two runs' `fleet_boundaries.safetensors` by key, per key the element count, the count of differing elements, the max ULP distance and the max absolute difference, as a markdown table | `python harness/bitdiff.py <dir-a> <dir-b> [--out file.md]` |
 | `numpy_ref.py` | NumPy math of `mla_prep`, `mla_attend`, `mla_merge_uv`, `moe_router` with explicit BF16 rounding; the spec the GPU kernels are tested against | imported |
 | `reassoc_check.py` | reassociation error at the real attention shapes on CPU; result in `results/reassoc_check.json` | `python harness/reassoc_check.py` |
@@ -60,6 +60,7 @@ python harness/run_fleet.py --layers 2 --model-dir $SNAP --stop-after L1.mla_att
 python harness/compare.py --fleet harness/fleet_out/L2_it1_L1.mla_attend_scores
 # M4: the full graph, 32 iterations
 python harness/run_fleet.py --layers 27 --head --iters 32 --model-dir $SNAP --event-timing
+python harness/run_fleet.py --layers 27 --head --iters 32 --model-dir $SNAP --final   # round 4's finals' stack (F3 of docs/gpu-experiments/05-final): the thirteen flags and -DMPK_W2_CK_TILE for every flag not named; --no-event-timing, --no-nt-streams, --no-gemv-linears turn one off; the run name gains _final
 python harness/compare.py --fleet harness/fleet_out/L27_head_it32
 python harness/measure.py --run harness/fleet_out/L27_head_it32
 ```

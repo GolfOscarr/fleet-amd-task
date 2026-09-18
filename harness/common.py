@@ -85,6 +85,21 @@ def boundary_class(key: str) -> str:
     return None
 
 
+STEP_INVARIANT_BOUNDARIES = ("B3.c_kv", "B3.k_pe", "B16.token")
+
+
+def boundary_iteration(key: str, iters: int) -> int:
+    """The decode iteration a dumped boundary of a run of `iters` iterations comes from
+    (run_fleet.boundary_dump reads the workspaces after the last iteration): the cache rows at the
+    handover position and the first token are written at iteration 0 and never again; every other
+    workspace holds the last iteration's values. F2 of docs/gpu-experiments/05-final: compare.py
+    compares a later-iteration boundary against the reference's file for that step when there is
+    one and reports it as not comparable otherwise, instead of failing it against step 0."""
+    if iters <= 1 or any(key.endswith(s) for s in STEP_INVARIANT_BOUNDARIES):
+        return 0
+    return iters - 1
+
+
 def boundary_id(key: str) -> str:
     if key.startswith("head."):
         return key.split(".")[1]

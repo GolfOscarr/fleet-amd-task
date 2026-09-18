@@ -3,9 +3,20 @@
 Fleet-style batch-1 decode for DeepSeek-Coder-V2-Lite-Base on one AMD MI300X.
 Time limit: 5 days. Target: gfx942, BF16, 1024-token prompt, 32 greedy tokens.
 
-Last updated: 2026-09-18 · branch `gpu/round-4` (round 4 run on the MI300X: 4.26 to 4.34 ms per token, below the 4.5 ms target; `docs/gpu-experiments/04-kernels/09-session-log.md`, `10-results.md`; prepared the same day on `local/round-4`, PR #10); round 3 was `gpu/round-3` (2026-09-17: 4.57 to 4.60 ms per token; `docs/gpu-experiments/03-acceleration/`); round 2 was `gpu/round-2` (2026-09-16: M4, the fault's cause, the timings; `docs/gpu-experiments/02-validation/`); round 1 was `local/gpu-bringup` (2026-09-15: hardware record, gate 1, M1 to M3; `docs/gpu-experiments/01-bringup/`)
+Last updated: 2026-09-18 · branch `local/round-5` (round 5, the final stage, prepared on the laptop: `docs/gpu-experiments/05-final/`, the session plan `05-session-plan.md`, its results page `07-final-numbers.md` drafted; the balance decided, the whole $4.69 under a hard stop; the VM waits on the go) · round 4 on `gpu/round-4` (run on the MI300X: 4.26 to 4.34 ms per token, below the 4.5 ms target; `docs/gpu-experiments/04-kernels/09-session-log.md`, `10-results.md`; prepared the same day on `local/round-4`, PR #10); round 3 was `gpu/round-3` (2026-09-17: 4.57 to 4.60 ms per token; `docs/gpu-experiments/03-acceleration/`); round 2 was `gpu/round-2` (2026-09-16: M4, the fault's cause, the timings; `docs/gpu-experiments/02-validation/`); round 1 was `local/gpu-bringup` (2026-09-15: hardware record, gate 1, M1 to M3; `docs/gpu-experiments/01-bringup/`)
 
-**Where we are (2026-09-18):** round 4 ran its VM session
+**Where we are (2026-09-18, later):** round 5, the final and light stage
+(`docs/gpu-experiments/05-final/`, branch `local/round-5`), is prepared
+on the laptop: the `--final` preset (round 4's stack as one flag), the
+compare made green by construction (the route log's tie rule with the
+gate's 64 softmax weights in the reference, the iteration-aware
+boundaries), the head's event count as a plan argument, the worker-timing
+hang fixed in the patch (no device printf on the timing build), the
+half-merge fault read and left to a 2-layer locator on the VM, the
+merge's standalone 5 us read offline (the weights phase) and recorded;
+the session plan (`05-session-plan.md`, about 41 minutes against a $4.69
+balance) and its results page (`07-final-numbers.md`) wait for the user's
+balance decision and go. Before that, round 4 ran its VM session
 (`docs/gpu-experiments/04-kernels/09-session-log.md`, `10-results.md`;
 branch `gpu/round-4`, 167 minutes, $8.22): the batch-1 GEMV linear for
 qkva, o_proj and the head (`--gemv-linears --linear-grid 48`), the deeper

@@ -77,7 +77,9 @@ def boundary_dump(plan, host, tokens, n_prompt, dims, iters=1):
     w = last_writers(calls)
     b, notes = {}, []
     if iters != 1:
-        notes.append(f"boundaries are from iteration {iters - 1}, not decode step 0")
+        # F2 of docs/gpu-experiments/05-final: common.boundary_iteration is the rule compare.py applies
+        notes.append(f"boundaries other than {', '.join(common.STEP_INVARIANT_BOUNDARIES)} are from iteration "
+                     f"{iters - 1}, not decode step 0")
     h = host
 
     def layer_of(label):
@@ -199,7 +201,8 @@ def build_parser():
                          "whitespace, carries it); through MPK_EXTRA_HIPCC_FLAGS")
     ap.add_argument("--worker-timing", action="store_true",
                     help="compile with MPK_TIMING=1: every worker's [TIMING], [TASK_TIME] and [TASK_TIME2] lines "
-                         "in fwd_pass.log (I1, docs/gpu-experiments/03-acceleration)")
+                         "in fwd_pass.log (I1, docs/gpu-experiments/03-acceleration), printed by the host from "
+                         "the workers' slots after each launch (F4 of 05-final: no device printf on this build)")
     ap.add_argument("--graph", choices=["model", "empty", "stream"], default="model",
                     help="empty: the empty-task ladder (I3), --ops operators of --tasks copy tasks, no model; "
                          "stream: the stream probe (L6, docs/gpu-experiments/04-kernels), --ops operators of "
@@ -237,6 +240,10 @@ def build_parser():
                          "(3,648 by 96, 48, 32; 2,048 by 64, 32; an operator N does not divide keeps the heuristic)")
     ap.add_argument("--head-grid", type=int, default=None, metavar="N",
                     help="--gemv-linears: the task count of lm_head, N dividing the vocabulary (400 or 320; L5)")
+    ap.add_argument("--argmax-slices", type=int, default=None, metavar="N",
+                    help="the task count of the head's argmax_partial (default 50, the design's D13); the runtime's "
+                         "event count for the head is gcd(head tasks, N): 8 at 8 instead of 50 (F7 of "
+                         "docs/gpu-experiments/05-final)")
     ap.add_argument("--gemv-w13", action="store_true",
                     help="issue every MoE layer's expert gate-up as our GEMV gang task, 37 tiles per expert "
                          "per XCD instead of 44, so the operator ends in one round per XCD "
@@ -263,7 +270,57 @@ def build_parser():
                          "the M4 fault candidates, docs/gpu-experiments/02-validation)")
     ap.add_argument("--workspaces-first", action="store_true",
                     help="allocate the workspaces from the plan before the weights are packed (address order)")
+    # F3 of docs/gpu-experiments/05-final: the round-4 finals' stack as one flag; a flag named on the
+    # command line (or its --no- form) keeps its own value, the rest take the stack's (apply_final)
+    ap.add_argument("--final", action="store_true",
+                    help="the round-4 finals' stack (FINAL_STACK: the round-3 flags, --nt-streams, --gemv-linears "
+                         "--linear-grid 48, --merge-tasks --merge-halves 2, -DMPK_W2_CK_TILE) for every flag not "
+                         "named on the command line; the run name gains _final (docs/gpu-experiments/05-final)")
+    ap.add_argument("--no-event-timing", dest="event_timing", action="store_false",
+                    help="with --final: the FWD_PASS clock alone (the it29 rows of the finals)")
+    ap.add_argument("--no-nt-streams", dest="nt_streams", action="store_false",
+                    help="with --final: the plain loads")
+    ap.add_argument("--no-gemv-linears", dest="gemv_linears", action="store_false",
+                    help="with --final: the stock per-tile linears (the half merge alone, MIN-36's row)")
     return ap
+
+
+# F3 (docs/gpu-experiments/05-final/03-local-preparation.md): the stack that made round 4's number,
+# 4,262 to 4,341 us per token (04-kernels/10-results.md), as the values --final gives every flag not
+# named on the command line. The define is appended unless a MPK_W2_CK_TILE define is already there.
+FINAL_STACK = {
+    "tile_linears": True, "nt_weights": True, "event_timing": True,
+    "fuse_norm2": True, "fuse_silu": True, "fuse_norm1": True,
+    "mfma_attend": True, "attend_tasks": True, "nt_streams": True,
+    "gemv_linears": True, "linear_grid": 48,
+    "merge_tasks": True, "merge_halves": 2,
+}
+FINAL_DEFINE = "-DMPK_W2_CK_TILE"
+
+
+def apply_final(args, argv):
+    """--final on a model graph: every FINAL_STACK flag not named in argv (as --flag or --no-flag,
+    either spelling of the option) takes the stack's value; the define joins the runtime flags."""
+    if not getattr(args, "final", False) or args.graph != "model":
+        return args
+    named = {a.split("=", 1)[0] for a in argv if a.startswith("--")}
+    for dest, value in FINAL_STACK.items():
+        opt = "--" + dest.replace("_", "-")
+        if opt in named or ("--no-" + dest.replace("_", "-")) in named:
+            continue
+        setattr(args, dest, value)
+    if not args.gemv_linears and "--linear-grid" not in named:
+        args.linear_grid = None            # the grid applies to the GEMV linears (graph_plan's assert)
+    if not any("MPK_W2_CK_TILE" in f for f in args.runtime_flags):
+        args.runtime_flags = list(args.runtime_flags) + [FINAL_DEFINE]
+    return args
+
+
+def parse_args(argv=None):
+    """build_parser().parse_args plus the --final preset: the one entry every caller uses, so the run
+    name queue.sh computes before a row is the name run_fleet.py writes."""
+    argv = list(sys.argv[1:] if argv is None else argv)
+    return apply_final(build_parser().parse_args(argv), argv)
 
 
 FENCE_KNOBS = ("MPK_NO_COMPLETION_FENCE", "MPK_NO_ACQUIRE_FENCE")
@@ -316,6 +373,8 @@ def run_name(args):
     mh = f"_mh{args.merge_halves}" if args.merge_halves != 1 else ""
     rt = "_rt" if args.router_tasks else ""                         # N2 of docs/gpu-experiments/04-kernels
     mo = "_mo" if args.merge_oproj else ""                          # N5 of docs/gpu-experiments/04-kernels
+    fin = "_final" if getattr(args, "final", False) else ""        # F3 of docs/gpu-experiments/05-final
+    am = f"_as{args.argmax_slices}" if getattr(args, "argmax_slices", None) else ""   # F7
     if args.graph == "empty":      # I3: no layers, no head
         return (f"E{args.ops}x{args.tasks}" + (f"_spin{args.spin}" if args.spin else "") + f"_it{args.iters}"
                 + nts + wt + rf + al + ws + pad)
@@ -323,10 +382,10 @@ def run_name(args):
         # the load policy (--nt-streams) is what the probe A/Bs, so it is in the name
         return (f"S{args.ops}x{args.tasks}_{args.kb}kb" + ("_gang" if args.gang else "") + f"_it{args.iters}"
                 + nts + wt + rf + al + ws + pad)
-    return (f"L{args.layers}{'_head' if args.head else ''}_it{args.iters}"
+    return (f"L{args.layers}{'_head' if args.head else ''}_it{args.iters}" + fin
             + (f"_{args.stop_after}" if args.stop_after else "") + ("_scores" if args.debug_scores else "")
             + tile + at + fn1 + fn2 + fs + pf + probe + nt + nts + mf + wt + rf + sp + al + ws + pad
-            + gv + lg + hg + w13 + mt + mh + rt + mo)
+            + gv + lg + hg + w13 + mt + mh + rt + mo + am)
 
 
 def run_empty(args, out, prompt, n_prompt, s_max, t0, torch, B):
@@ -389,7 +448,7 @@ def tensor_addresses(host):
 
 def main():
     ap = build_parser()
-    args = ap.parse_args()
+    args = apply_final(ap.parse_args(), sys.argv[1:])   # F3: the --final preset, as parse_args does
     if args.graph == "model" and (args.layers is None or args.model_dir is None):
         ap.error("--layers and --model-dir are required for the model graph (--graph empty and --graph stream "
                  "need neither)")
@@ -404,6 +463,7 @@ def main():
     import torch
     from safetensors.torch import load_file, save_file
     from fleet import build_graph as B
+    from fleet import graph_plan as G          # ARGMAX_SLICES (F7), and the split and workspaces-first paths
     from fleet.pack_weights import pack_all, Dims
 
     name = run_name(args)
@@ -461,7 +521,7 @@ def main():
                                 args.attend_tasks, args.fuse_norm2, args.fuse_silu, args.fuse_norm1, args.prefetch,
                                 args.gemv_linears, args.linear_grid, args.head_grid, args.gemv_w13,
                                 args.merge_tasks, args.merge_halves, args.router_tasks,
-                                args.merge_oproj)
+                                args.merge_oproj, args.argmax_slices or G.ARGMAX_SLICES)
         workspaces = B.allocate_workspaces(torch, pre_plan, args.align_alloc)
         print(f"workspaces-first: {len(workspaces)} buffers allocated before the weights")
     packed = pack_all(args.model_dir, "cuda", dims, layers=args.layers, head=args.head or None)
@@ -489,6 +549,7 @@ def main():
                               gemv_w13=args.gemv_w13,
                               merge_tasks=args.merge_tasks, merge_halves=args.merge_halves,
                               router_tasks=args.router_tasks, merge_oproj=args.merge_oproj,
+                              argmax_slices=args.argmax_slices or G.ARGMAX_SLICES,
                               align=args.align_alloc, workspaces=workspaces)
     pj = B.plan_json(plan)
     (out / "plan.json").write_text(json.dumps(pj) + "\n")
