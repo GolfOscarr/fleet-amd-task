@@ -35,7 +35,7 @@ def test_round4_queue_files_exist():
 
 def test_round5_queue_files_exist():
     names = {p.name for p in ROUND5}
-    assert {"queue-h1.txt", "queue-h2.txt", "queue-h3.txt", "queue-h4.txt", "queue-h5.txt", "queue-h6.txt", "queue-h7.txt", "queue-h8.txt", "queue-h9.txt"} == names
+    assert {"queue-h0.txt", "queue-h1.txt", "queue-h2.txt", "queue-h3.txt", "queue-h4.txt", "queue-h5.txt", "queue-h6.txt", "queue-h7.txt", "queue-h8.txt", "queue-h9.txt"} == names
     for q in ROUND5:                       # every round-5 row runs the finals' stack (F3)
         for toks in rows(q):
             assert "--final" in toks, (q.name, toks)
