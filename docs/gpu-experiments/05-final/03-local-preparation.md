@@ -381,7 +381,7 @@ and one 2-layer compare), `queue-h2.txt` (R2: the finals interleaved,
 A30 B30 A31 B31 A32 B32 with A the stack and B the stack with
 `POLL_SLEEP=8`, then A29 and B29 with `--no-event-timing`, then the six
 with `-DGEMV_BATCH=4`), `queue-h3.txt` (R3: two 2-layer rows with
-`--worker-timing --final`, only if F4 fixed the hang), `queue-h4.txt`
+`--worker-timing --final`, the first row the check of F4's fix), `queue-h4.txt`
 (R4: the fault's row with F5's fix, or the layer bisect at 3, 5, 9, 14
 with `--merge-halves 2` and a `--layers 3 --merge-halves 1` control),
 `queue-h5.txt` (R5: `--layers 2 --head --iters 32 --final --argmax-slices 8`

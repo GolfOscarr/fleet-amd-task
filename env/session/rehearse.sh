@@ -147,7 +147,7 @@ h "Minute 35, R4: the fault of MIN-36 located at 2 layers (queue-h4.txt), then t
 queue env/session/queue-h4.txt
 queue env/session/queue-h7.txt
 
-h "Minute 39, R3: the timing build, only if F4 fixed the hang (queue-h3.txt), and the merge's standalone line"
+h "Minute 39, R3: the timing build in F4's buffer form, its first row the check (queue-h3.txt), and the merge's standalone line"
 queue env/session/queue-h3.txt
 show $V ktime nt
 
