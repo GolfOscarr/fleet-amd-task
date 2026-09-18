@@ -35,6 +35,34 @@ What is new against round 3's plan:
   158 s, setup 483 s, checks 84 s, reference 74 s; a 2-layer row about
   1.6 minutes with its JIT, a model row about 1.5).
 
+## Corrections after the session (2026-09-18, `09-session-log.md`, `11-lessons.md`)
+
+The plan ran as written except where the session proved a row wrong; the
+rows below keep their text as the plan of record, with the correction
+here:
+
+- S10 and S14, the finals' PASS text: `output_ids PASS` and three per-token
+  times within 2%. The it32 compare rows fail `head.B15.logits` (the
+  boundary is captured after the reference's step) and the route log
+  (MIN-32's tail-expert flips) in round 3's record as in this one; a
+  compare of the model's boundaries is a one-iteration row.
+- Every graph row carried `--worker-timing`; it hangs the round-4 header
+  (MIN-35), so every row ran without it and the exec-per-class table of
+  "How the numbers are read" does not exist for this round. The JIT-trap
+  rule was applied on the gaps (a `gv` row's linear gaps differ from the CK
+  row's).
+- G1's reference row carried `-DMPK_W2_CK_TILE` for the inline CK path of
+  the round-4 header; that path returned ids `[0]` and hung. The define
+  now includes round 3's file verbatim; the A/B ran as `queue-f7.txt` and
+  the define joined every later file (T4).
+- The queue runs each row under `timeout ${ROW_TIMEOUT:-600}` (a row hung
+  20 minutes before it did); the o_proj fold's `ktime` row reads the
+  trial's `oproj` half.
+- The rows after the plan: `queue-f8.txt` and `f9` (the finals' compare
+  bisect and controls, which found the two failures pre-existing),
+  `queue-g3.txt` and `g4` (the GEMV linears at batch 4, the finals with
+  `POLL_SLEEP=8` and with `GEMV_BATCH=4`, at the user's request).
+
 ## Budget
 
 | | |

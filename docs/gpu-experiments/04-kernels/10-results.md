@@ -20,14 +20,14 @@ figure quoted for this model on this machine, 4.5 ms per token.
 | plus `MPK_POLL_SLEEP=8`: **the round's number** | `..._rf_w2cktile+nolocalcas+pollsleep8_gv_lg48_mt_mh2` | **4,307.0, 4,265.0, 4,293.5; `FWD_PASS` 4,267** | PASS |
 | plus `GEMV_BATCH=4` | `..._rf_w2cktile+nolocalcas+pollsleep8+gemvbatch4_gv_lg48_mt_mh2` | 4,323.4, 4,300.0, 4,291.6; `FWD_PASS` 4,289 | PASS |
 
-6.3 to 7.2% faster than round 3 on the event clock over the fifteen
-48-task runs (4,262 to 4,341 us), 4.3 to 5.2% below the 4.5 ms target;
-`FWD_PASS` 4,267 to 4,310. The two runtime knobs and the batch constant
-are within the run-to-run spread on the model (their 2-layer gains of 1
-to 7% do not carry), so the round's number is the 48-task stack, with or
-without the knobs. The 96-task set is 3% slower on the event clock and
-equal on `FWD_PASS`; the event clock is the plan's and the 48-task grid
-stays in the stack.
+5 to 7% faster than round 3 on the event clock over the fifteen 48-task
+runs (4,262 to 4,341 us; the medians 4,306 against round 3's 4,586, 6%),
+3.5 to 5.3% below the 4.5 ms target; `FWD_PASS` 4,267 to 4,310. The two
+runtime knobs and the batch constant are within the run-to-run spread on
+the model (their 2-layer gains of 1 to 7% do not carry), so the round's
+number is the 48-task stack, with or without the knobs. The 96-task set is
+3% slower on the event clock and equal on `FWD_PASS`; the event clock is
+the plan's and the 48-task grid stays in the stack.
 
 Correctness of the number's configuration: the 32 output ids match the
 reference on every final; the step-0 boundaries of the 2-layer graph pass
@@ -55,15 +55,17 @@ its non-timing equivalent 4,590).
 | attention | 338 (12.5) | 337 (12.5) | unchanged |
 | mla_prep | 287 (10.6) | 265 (9.8) | unchanged |
 | iteration start | 181 | 192 | the prelaunch of the iteration's tasks |
-| silu and combine | 147 | 130 | unchanged |
-| the head's chunks and the rest | 199 | 219 | unchanged |
-| **total** | **4,713** | **4,265** | |
+| combine (`mul_sum_add`) | 147 | 130 | unchanged |
+| the head's chunks (49 events of 8 tasks) | 141 | 111 | unchanged (2.3 us per event) |
+| embed, layer 0's dense silu linear, the argmax, the last norm | 58 | 62 | unchanged |
+| **total (the sum of the gaps; the median per iteration 4,265)** | **4,713** | **4,268** | |
 
 By family: the CK gang linears (w13, w2) 1.7 ms; our GEMV linears 0.6 ms;
 the single-task and per-head kernels (router, merge, prep, attention)
-1.4 ms; the iteration start and the small operators 0.5 ms. The bandwidth
-view: the stream probe (below) puts the megakernel's task-shaped reads at
-2.25 TB/s device-wide, and w13 sits on that line.
+1.4 ms; the iteration start, the combine, the head's chunks and the small
+operators 0.5 ms. The bandwidth view: the stream probe (below) puts the
+megakernel's task-shaped reads at 2.25 TB/s device-wide, and w13 sits on
+that line.
 
 ## The kernels, standalone (`ktime`, the suite binaries, 50 launches)
 

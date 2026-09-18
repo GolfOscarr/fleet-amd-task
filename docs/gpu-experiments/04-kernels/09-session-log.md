@@ -78,9 +78,7 @@ pulled and committed at 05:49, 06:33 and 06:58.
 
 ## Lessons
 
-- A queue row can hang; a watchdog is not optional. The one-iteration compare row of the same stack ran in 42 s while the 32-iteration row with worker timing hung, so the plan's "1.6 minutes per row" was no protection.
-- A `pkill -f` pattern that appears in the ssh command line kills the ssh session; anchor the pattern (`^bash env/session/queue.sh run`) or kill by pid.
-- A fallback path that only compiled on the laptop is not a fallback: the CK w2 path had to be replaced by the file that had actually run.
-- Read the previous round's record before blaming a lever for a compare FAIL on a row shape the previous round also ran.
-- The `ktime` stage's DRY rehearsal cannot see a wrong directory argument; a `--n 1` dry run of the stage against a generated trial would have.
-- The 2-layer graph over-rewards some levers (`GEMV_BATCH=4`: -7% at 2 layers, 0 on the model; the 48-task grid: -4% at 2 layers, the FWD_PASS clock indifferent on the model); the finals decide.
+In `11-lessons.md`: the approaches with their verdicts (Part 1), the
+lessons by area (Part 2), the next round ranked (Part 3), the mistakes of
+this session with what each cost (Part 4), and the corrections to the
+earlier pages of this set.
