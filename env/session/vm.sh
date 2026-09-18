@@ -196,7 +196,7 @@ stage_ktime() {
     echo "+ KT_TIME=$n KT_COLD=$cold $bin mla_attend $dir/mla_attend/*"; echo "+ KT_TIME=$n $bin mla_merge_uv $dir/mla_merge_uv/*"
     echo "+ KT_SPIN=1000 $bin copy $dir/copy/*"
     echo "+ KT_TIME=$n KT_COLD=$cold $bin linear_gemv_norm $dir/linear_gemv_norm/*"; echo "+ KT_TIME=$n KT_COLD=$cold $bin linear_gemv_res $dir/linear_gemv_res/*"
-    echo "+ KT_TIME=$n KT_COLD=$cold $bin moe_router $dir/moe_router/*"; echo "+ KT_TIME=$n $bin mla_merge_oproj $dir/mla_merge_oproj/*"
+    echo "+ KT_TIME=$n KT_COLD=$cold $bin moe_router $dir/moe_router/*"; echo "+ KT_TIME=$n $bin mla_merge_oproj $dir/mla_merge_oproj/*/oproj"
     echo "+ KT_TIME=$n $xcd gang_w13_gemv $dir/gang_w13_gemv/*"; echo "+ KT_TIME=$n $xcd gang_w2_gemv $dir/gang_w2_gemv/*"
     return 0
   fi
@@ -208,7 +208,7 @@ stage_ktime() {
     KT_TIME="$n" KT_COLD="$cold" "$bin" linear_gemv_norm "$dir"/linear_gemv_norm/* 2>&1 | grep -E "TIME|ok"
     KT_TIME="$n" KT_COLD="$cold" "$bin" linear_gemv_res "$dir"/linear_gemv_res/* 2>&1 | grep -E "TIME|ok"
     KT_TIME="$n" KT_COLD="$cold" "$bin" moe_router "$dir"/moe_router/* 2>&1 | grep -E "TIME|ok"
-    KT_TIME="$n" "$bin" mla_merge_oproj "$dir"/mla_merge_oproj/* 2>&1 | grep -E "TIME|ok"
+    KT_TIME="$n" "$bin" mla_merge_oproj "$dir"/mla_merge_oproj/*/oproj 2>&1 | grep -E "TIME|ok"
     if [ -x "$xcd" ]; then
       KT_TIME="$n" "$xcd" gang_w13_gemv "$dir"/gang_w13_gemv/* 2>&1 | grep -E "TIME|ok"
       KT_TIME="$n" "$xcd" gang_w2_gemv "$dir"/gang_w2_gemv/* 2>&1 | grep -E "TIME|ok"
