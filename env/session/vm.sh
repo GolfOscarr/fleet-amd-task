@@ -157,13 +157,17 @@ build_ktime_variant() {
 stage_kernels() {
   fleet_env
   local variant="${1:-}" bin="fleet/tasks/build/kernel_tests" dbg="fleet/tasks/build/kernel_tests_debug" out="fleet/tasks/results"
+  local xcd="fleet/tasks/build/kernel_tests_xcd"
   build_kernel_tests || { echo "kernel_tests did not build"; return 1; }
+  # the gang GEMV rows run on the variant's _xcd build when there is one (nt: built here), else the plain one
+  [ "$variant" = "nt" ] && { build_ktime_variant nt_xcd || { echo "kernel_tests_nt_xcd did not build"; return 1; }; }
   if [ -n "$variant" ]; then
     bin="fleet/tasks/build/kernel_tests_$variant"
     [ -x "fleet/tasks/build/kernel_tests_${variant}_debug" ] && dbg="fleet/tasks/build/kernel_tests_${variant}_debug"
+    [ -x "fleet/tasks/build/kernel_tests_${variant}_xcd" ] && xcd="fleet/tasks/build/kernel_tests_${variant}_xcd"
     out="fleet/tasks/results_$variant"
   fi
-  run python fleet/tasks/kernel_tests.py --n 100 --bin "$bin" --bin-debug "$dbg" --out "$out/kernel_tests.json" || return 1
+  run python fleet/tasks/kernel_tests.py --n 100 --bin "$bin" --bin-debug "$dbg" --bin-xcd "$xcd" --out "$out/kernel_tests.json" || return 1
   [ "$DRY" = "1" ] && return 0
   local fails; fails="$(grep -c '"FAIL"' "$out/kernel_tests.json" || true)"
   [ "$fails" = "0" ] || { echo "$fails suite(s) FAIL in $out/kernel_tests.json"; return 1; }

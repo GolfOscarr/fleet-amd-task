@@ -154,10 +154,10 @@ and gains the weight's case). Four copies defeat the XCD's 4 MB L2, not
 the 256 MB memory-side cache, as round 3's `ktime` did: the standalone
 number is L2-cold, and the graph's exec counter is the HBM number (the
 2x rule of `09-lessons.md`, lesson 6). The depth and the map are compile-time
-(`-DGEMV_BATCH=4|8|16`, `-DGEMV_STRIDED`): four suite binaries
-(`kernel_tests_gemv4`, `_gemv8`, `_gemv16`, `_gemv8s`) built by the
-`kernels` stage of `vm.sh` beside `_nt` and `_mfma`, and timed by the
-`ktime` stage (which gains a `linear_gemv` grid).
+(`-DGEMV_BATCH=4|8|16`, `-DGEMV_STRIDED`): the `ktime` stage of `vm.sh`
+builds the variants `nt_b4`, `nt_b16` and `nt_strided` beside `nt` (the
+graph rows' load policy; the router's defines travel with them) and times
+the two GEMV forms on each (L8).
 
 **Files.** `kernel_tests_mi300.cu`, `kernel_tests.py`, `harness/numpy_ref.py`
 (two one-line references), `harness/tests/test_numpy_ref.py`,

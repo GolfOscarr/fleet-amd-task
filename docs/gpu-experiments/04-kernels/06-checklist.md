@@ -142,21 +142,22 @@ Status: done 2026-09-18, commit 9231083 (wave 2, agent K; cherry-picked), type 2
 
 ## L8 and N6. The session tooling (4 h)
 
-- [ ] `queue-f2.txt` (G1, G2), `queue-f3.txt` (G3, G4), `queue-f4.txt` (G5, G6, G8), `queue-f5.txt` (G7), `queue-f6.txt` (G9), `queue-g1.txt` (H1 to H4), `queue-g2.txt` (H5); `test_queue_files.py` on every file
-- [ ] `vm.sh`: the `kernels` and `ktime` stages extended (L1b, N1)
-- [ ] `07-session-plan.md`: the rows, the PASS texts, the DECIDE rows, the fallbacks, the budget
-- [ ] `08-rehearsal.md` regenerated (`DRY=1 bash env/session/rehearse.sh`); every row and stage parses
+- [x] `queue-f2.txt` (G1, G2), `queue-f3.txt` (G3, G4), `queue-f4.txt` (G5, G6; G8 is the `bitdiff` subcommand, not a row), `queue-f5.txt` (G7 = H6), `queue-f6.txt` (G9), `queue-g1.txt` (H2, H4; H1 and H3 read from G4's row, the deeper kernels being the header), `queue-g2.txt` (H5); `test_queue_files.py` on every file, building the plan of every model row
+- [x] `queue.sh`: a compare on `--graph empty` or `stream` refused; a stream row runs without the reference tensors; the two cases in `test_session_scripts.py`
+- [x] `vm.sh`: the `kernels` stage builds `kernel_tests_xcd` and passes the variant's `_xcd` build to the gang rows; the `ktime` stage times the two GEMV forms, the router, the o_proj fold and the gang forms, and builds the variants `nt_xcd`, `nt_b4`, `nt_b16`, `nt_strided` on demand (L1b, N1)
+- [x] `07-session-plan.md`: the rows S0 to the end with the PASS texts, the RULE and DECIDE rows and their thresholds (T1 to T12), the queue files, the helpers, the playbook, the fallbacks, the budget, the decisions to confirm
+- [x] `08-rehearsal.md` regenerated (`bash env/session/rehearse.sh`); every row and stage parses (40 `run_fleet.py` lines, no guard or parse failure)
 
-Status:
+Status: done 2026-09-18, commits 7067ac4 (the queue files, the guards, the tests), ca90be7 (the stages) and the plan's commit. Every graph row carries `--nt-streams`; the CK build's rows and G1's hold the w2 multiply on CK with `-DMPK_W2_CK_TILE` so they differ in the linears alone; the head's rows are timing rows (a 2-layer graph's logits cannot match the reference; the head form is judged by the finals' ids); the fence knobs are not in G9 (the counter forms). The `ktime` variants carry both the GEMV and the router defines, so G0 and H0 read one curve each from four builds. Checks: 234 tests (the round-4 queue rows build their plans), `bash -n`, the DRY runs of the two stages, the rehearsal.
 
 ## L9. The gate (2 h)
 
-- [ ] the three patches apply on the pristine fork and regenerate cleanly (zero dirty lines after the reset)
-- [ ] the full test suite; `check_syntax.sh`; `env/preflight.sh` (8 PASS)
-- [ ] the offline compile of every variant exits 0; the worker within L1c's bounds; the standalone lines of every changed kernel recorded above
-- [ ] every box above ticked or explicitly deferred with its reason; the memory note updated
+- [x] the three patches apply on the pristine fork and regenerate cleanly (zero dirty lines after the reset)
+- [x] the full test suite; `check_syntax.sh`; `env/preflight.sh` (8 PASS)
+- [x] the offline compile of every variant exits 0; the worker within L1c's bounds; the standalone lines of every changed kernel recorded above
+- [x] every box above ticked or explicitly deferred with its reason; the memory note updated
 
-Status:
+Status: passed 2026-09-18 after L8. `preflight.sh` 8 PASS (the suite 234 passed, the syntax check 15 PASS, the dry run 326 operators and 2,285 tasks, the patches apply on a clean worktree); the fork's tracked files at zero dirty lines after the reset (`new_tasks.patch` regenerated on it this day, the timing classes); the offline compile of every variant exit 0 with the disassembly of `gemv`, `gemvnt`, `union`, `ckgang` and the launcher read (the worker union 256 VGPRs and 8 spills in every variant, as L1c bounds it; `union` 171 AGPRs and 80 bytes of scratch); the kernels' lines recorded in L1c, N1, N3, L3, L4 and N5. Deferred to the VM by design: `task_graph_check.py` on the compiled graph (S8 of `07`), the standalone timings (S4), the CK fallback path of w2 (the `w2ck` variant compiles it; the VM runs it only if G3 fails). The memory note names the four compiler conventions and the state.
 
 ## Before the VM
 
