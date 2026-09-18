@@ -21,4 +21,4 @@ produces the final numbers with every check green.
 
 | Date | State |
 |---|---|
-| 2026-09-18 | branch `local/round-5` made from `gpu/round-4` (round 4's PR #11 open); the ideas and the split written; no VM |
+| 2026-09-18 | branch `local/round-5` made from round 4's head and rebased onto `main` after PR #11 merged (51724a0); the ideas and the split written; no VM |
