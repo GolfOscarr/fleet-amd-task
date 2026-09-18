@@ -250,9 +250,8 @@ and the define unless the row names them, and one test. The queue files
 of this round use it; the round-4 files stay as they ran.
 
 Worth: the report's reproducibility. Cost: two hours. Check: the dry run
-with `--final` gives the finals' counts (298 operators; the task count of
-`plan.json` of the round-4 finals), `test_queue_files` on the round-5
-files.
+with `--final` gives the finals' counts (246 operators and 6,386 tasks,
+the record's `plan.json`), `test_queue_files` on the round-5 files.
 
 ### D2. The results across the rounds, one page
 

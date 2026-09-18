@@ -17,9 +17,9 @@ SHELLCHECK=1 bash env/preflight.sh                                        # the 
 
 ## F3. The `--final` preset
 
-- [ ] `run_fleet.py --final`: the thirteen flags and `-DMPK_W2_CK_TILE` unless named; `--no-event-timing`, `--no-nt-streams`; the run name's `_final`
+- [ ] `run_fleet.py --final`: the thirteen flags and `-DMPK_W2_CK_TILE` unless named; `--no-event-timing`, `--no-nt-streams`, `--no-gemv-linears`; the run name's `_final`
 - [ ] the `--worker-timing` help text corrected (MIN-35 named)
-- [ ] `test_run_fleet_and_measure.py`: `--final` equals the spelled-out stack (298 operators, the finals' task count from the record's `plan.json`); the two overrides; the run name
+- [ ] `test_run_fleet_and_measure.py`: `--final` equals the spelled-out stack (246 operators, 6,386 tasks: the record's `plan.json`); the overrides; the run name
 - [ ] `harness/README.md`, `fleet/tasks/README.md`
 
 Status: open.
@@ -72,7 +72,7 @@ Status: open.
 ## F4. The worker-timing hang (MIN-35)
 
 - [ ] `run.sh`: the `unionT` variant; its resource line against `union`'s recorded here
-- [ ] the worker's epilogue read in the disassembly (the two `printf` calls, the spills)
+- [ ] the worker's epilogue read in the disassembly (the three `printf` calls, the spills)
 - [ ] the fix if found (the `printf` split, or the device buffer and the host printer), the patch regenerated on the pristine fork, `preflight.sh`
 - [ ] otherwise the readings attached to MIN-35 and R3 dropped
 

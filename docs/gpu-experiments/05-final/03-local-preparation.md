@@ -44,8 +44,11 @@ Approach.
    file `ref_route_weights.json` if the log's readers should not change).
    The hidden state the logits need is the layer's post-attention normed
    input, which the capture has for layer 1 at step 0; for every layer and
-   step it is one more hook on the gate's input (`cap.in_first(gate)` in
-   the capture's idiom), and the softmax of `h @ W_gate^T` in float32.
+   step it is one more hook on the gate's input (`cap.inp(gate, key)`, the
+   capture's forward pre-hook, as `L{l}.layer_in` and `B6.attn` use it),
+   and the softmax of `h @ W_gate^T` in float32. The log's top-6 weights
+   are that softmax unnormalised (they sum to 0.49 at step 0, layer 0), so
+   `w_all` agrees with them element for element.
 2. `compare_route_log(ref_log, fleet_log, floor)` in `harness/compare.py`
    classifies each mismatching (step, layer):
    - `tie`: exactly one expert differs, and
@@ -114,7 +117,7 @@ when it exists. The record's it32 rows then compare against step 31.
 
 Files. `harness/compare.py` (`run`, `write_report`, `compare_boundaries`'s
 result vocabulary), `harness/run_fleet.py` (the meta carries `iters`
-already: confirm the key), `harness/run_reference.py` (the right form),
+already, `meta_out` in `main`), `harness/run_reference.py` (the right form),
 `harness/README.md`, `harness/tests/test_compare.py`.
 
 Checks. `test_compare.py`: a fixture with `iters: 32` in the meta and no
@@ -144,9 +147,10 @@ did not name on the command line, the stack's value: `tile_linears`,
 `-DMPK_W2_CK_TILE` appended to `runtime_flags` unless a `MPK_W2_CK_TILE`
 define is already there. "Not named" is read from `sys.argv` (the
 parser's defaults are `False`, so a bare `--final --no-event-timing`
-needs the `--no-` forms: add `--no-event-timing` and `--no-nt-streams`,
-the two a row wants off, as `store_false` on the same destinations; the
-rest are turned off by not using `--final`). The run name gains `_final`
+needs the `--no-` forms: add `--no-event-timing`, `--no-nt-streams` and
+`--no-gemv-linears`, the three a row of this round wants off, as
+`store_false` on the same destinations; the rest are turned off by not
+using `--final`). The run name gains `_final`
 before the per-flag slugs; `graph_plan.py` is untouched (it receives the
 flags as today). `queue_flag.py` learns nothing new: `--final` is a
 word like any other in a row.
@@ -156,10 +160,9 @@ Files. `harness/run_fleet.py` (`build_parser`, `apply_final`, `run_name`),
 `fleet/tasks/README.md` (the flags table), `env/session/queue_flag.py`
 (only if the `--no-` forms need the idempotence rule extended).
 
-Checks. The test: `--final` alone gives the same `Plan` (operator count
-298, task count as the round-4 finals' `plan.json`: read it from the
-record, `env/hw/20260918/runs/L27_head_it30_..._gv_lg48_mt_mh2/plan.json`)
-as the thirteen flags spelled out; `--final --no-nt-streams` drops one;
+Checks. The test: `--final` alone gives the same `Plan` as the thirteen
+flags spelled out, and that plan has the finals' counts, 246 operators
+and 6,386 tasks (the record's `env/hw/20260918/runs/L27_head_it30_..._gv_lg48_mt_mh2/plan.json`); `--final --no-nt-streams` drops one;
 `--final --linear-grid 96` overrides; the run name of the finals' row is
 `L27_head_it30_final` (or the stack's slugs after `_final`, whichever the
 name function does; the test pins one). The dry run of `build_graph.py`
@@ -187,8 +190,11 @@ Approach.
    timing adds is in the patch (`new_tasks.patch`, the `MPK_ENABLE_TIMING`
    hunks): a `printf` of every worker's XCD at start (round 3's I1 made it
    every worker, not eight), two `clock64` reads around each task, the
-   eight-class switch, and two `printf` calls of nine and seventeen
-   arguments at the terminate task. The candidates in order: (a) the
+   eight-class switch, and three `printf` calls of 8, 13 and 17
+   arguments at the terminate task (`[TIMING]`, `[TASK_TIME]`,
+   `[TASK_TIME2]`). `run.sh` has a `timing` variant already (round 3's,
+   the base header without the round-4 tasks); `unionT` is the first
+   compile of the timing build over the round-4 union.
    worker's scratch and spills in `unionT` against `union` (the round-4
    union is at 256 VGPRs with 8 spills already; a `printf` with seventeen
    live values at the end can push the epilogue's spill into scratch the
@@ -292,8 +298,8 @@ a scratch variant, `compile kt_r3`), the wait sequences and the LDS
 traffic of the gang form side by side: N3 moved the `W_uv` batch before
 the partials and added the lse words to the partials batch; N5 added the
 optional `attn_s` store (a null pointer in the gang form, so a branch per
-value). The likely cost is the second: 128 predicated stores per head
-that the round-3 form did not have, or the `W_uv` batch's 16 wave-loads
+value). The likely cost is the second: a predicated store per value under a
+wave-uniform null test that the round-3 form did not have, or the `W_uv` batch's 16 wave-loads
 per lane now issued before the partials and drained by the partials'
 `vmcnt(0)`. If the disassembly names it, the fix is one `if constexpr`
 on a template flag (`HAS_ATTN_S`) so the gang and tile forms compile
@@ -385,8 +391,7 @@ Approach. `04-checklist.md` holds one box per deliverable above, ticked
 with the date and the commit when its check has run; the gate is
 `SHELLCHECK=1 bash env/preflight.sh` at 9 PASS (the suite, the syntax
 check, the dry run, the patches on a clean tree, shellcheck), the offline
-compile of every variant (`union`, `unionT`, `ckgang`, `w2ck`, `gemv`,
-`gemvnt`, the launcher), the fork at zero dirty tracked lines after the
+compile of every variant of `run.sh` (17 today, `unionT` the 18th), the fork at zero dirty tracked lines after the
 patch check, the memory note. The results page of the round
 (`07-final-numbers.md`) is drafted before the session with the round-4
 numbers in place and the round-5 rows empty, so the session fills a
@@ -462,3 +467,11 @@ source read and what it changed in `01` or `02`.
    `--align-alloc`'s ("hold a dummy device allocation ..."); fixed in F3.
 7. **The flag count.** The stack is thirteen flags and a define (`01`,
    "What round 4 left"); an earlier draft said twelve.
+8. **The finals' plan counts** are 246 operators and 6,386 tasks (the
+   record's `plan.json`), not the 298 of the dry run without the fusions;
+   F3's test pins the record's numbers.
+9. **The capture's hooks** are `out`, `inp` and `out_tuple` (`Capture` in
+   `run_reference.py`); F1 uses `inp` on the gate. The timing build's
+   epilogue has three `printf` calls (8, 13 and 17 arguments), and
+   `run.sh` already compiles a `timing` variant of the base header, so
+   `unionT` is the union's first timing compile.
