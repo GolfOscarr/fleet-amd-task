@@ -4,5 +4,5 @@
 # fallback path under -DMPK_W2_CK_TILE returned ids [0] without a FWD_PASS line and hung at 32 iterations
 # (probe_p2 against probe_p1), so every row runs the header's w2 GEMV form and its gap is read from
 # queue-f2.txt's G1.2 row against round 3's 23.9 us.
---layers 2 --iters 1 --tile-linears --nt-weights --event-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend --attend-tasks --nt-streams --gemv-linears --gemv-w13 compare continue    # G4: w13 in one round
---layers 2 --iters 32 --tile-linears --nt-weights --event-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend --attend-tasks --nt-streams --gemv-linears --gemv-w13 table continue    # G4; H1 and H3 read the router and merge exec from this row
+--layers 2 --iters 1 --tile-linears --nt-weights --event-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend --attend-tasks --nt-streams --gemv-linears --gemv-w13 --runtime-flags=-DMPK_W2_CK_TILE compare continue    # G4: w13 in one round
+--layers 2 --iters 32 --tile-linears --nt-weights --event-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend --attend-tasks --nt-streams --gemv-linears --gemv-w13 --runtime-flags=-DMPK_W2_CK_TILE table continue    # G4; H1 and H3 read the router and merge exec from this row
