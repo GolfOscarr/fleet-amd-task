@@ -1,5 +1,9 @@
 # 05 - Session plan: one short session on a 1x MI300X, the final numbers with every check green
 
+Run on 2026-09-18 (11:09 to 12:26 UTC, 77 minutes): the log in
+`08-session-log.md`, the numbers in `07-final-numbers.md`. The plan below
+is as it stood at the go; the rows ran in this order with these rules.
+
 Written 2026-09-18 after the laptop items F3, F1, F2, F7 and F8 of
 `03-local-preparation.md` (the checklist `04-checklist.md`). One session,
 in round 4's shape (`../04-kernels/07-session-plan.md`): every row is one
@@ -60,7 +64,7 @@ line overrides the marks if it reads earlier.
 | the branch pushed | `git status` clean, `git log origin/local/round-5..local/round-5` empty | at F9 |
 | no VM, no address | `L balance` shows `No virtual machines`; `env/session/vm.ip` absent; no `grab.sh` process | at S0 |
 | the queue files | `.venv/bin/python -m pytest harness/tests/test_queue_files.py -q` (every round-5 row parses, names a unique run, builds its plan); `06-rehearsal.md` regenerated | F8 |
-| the decisions below | the balance decision, taken 2026-09-18 (the whole balance, the hard stop); the go for the VM | the go open |
+| the decisions below | the balance decision, taken 2026-09-18 (the whole balance, the hard stop); the go for the VM | the go given 2026-09-18 11:08 UTC |
 
 ## Decisions
 

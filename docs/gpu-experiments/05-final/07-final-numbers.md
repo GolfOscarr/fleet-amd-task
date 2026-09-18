@@ -99,7 +99,7 @@ F5's readings found nothing static (`04-checklist.md`); the rows locate.
 | 2 layers, halves 2 (the round-4 configuration) | 0, compare PASS (19 boundaries) | the configuration runs at 2 layers: the layer count matters, `queue-h7` bisects |
 | 2 layers, `--stop-after L0.o_proj` | 0 | |
 | 2 layers, `--stop-after L0.mla_merge_uv` | 0 | |
-| 2 layers, `--merge-halves 1` (the halves control) | **2**, `HSA_STATUS_ERROR_MEMORY_APERTURE_VIOLATION` (`hipErrorIllegalAddress`), rc 1 | the one-half merge faults at 2 layers already, with round 4's fault class |
+| 2 layers, `--merge-halves 1` (the halves control) | **faults**: rc 1, the queue's two fault lines (`HSA_STATUS_ERROR_MEMORY_APERTURE_VIOLATION` and the `hipErrorIllegalAddress` it raises) | the one-half merge faults at 2 layers already, with round 4's fault class |
 | `queue-h7`: 3, 5, 9, 14 layers, halves 2 | 0, 0, 0, 0 (compare PASS on each) | the halves-2 fault needs more than 14 layers, or the head (round 4's faulting run was `L27_head`; the bisect rows have no head) |
 
 Into MIN-36: the fault is not in the stock o_proj after the merge (both
