@@ -790,10 +790,10 @@ def test_stream_probe_plan_counts_tensors_and_chain():
     plan = build_stream_plan(ops=10, tasks=96, kb=152)          # qkva's shape: 38 rows per task
     rows = stream_rows(152)
     assert rows == 38 and plan.n_ops == 10 and plan.n_tasks == 960 and not plan.chain_violations()
-    assert plan.tensors["stream_w_a"].shape == (96 * rows, STREAM_K)
-    assert plan.tensors["stream_w_a"].kind == "new" and plan.tensors["stream_dummy_a"].dtype == "i32"
+    assert plan.tensors["stream_w_0"].shape == (96 * rows, STREAM_K)
+    assert plan.tensors["stream_w_0"].kind == "new" and plan.tensors["stream_dummy_a"].dtype == "i32"
     assert plan.tensors["stream_dummy_a"].shape == (96, 4)
-    assert [c.args["weight"] for c in plan.calls[:3]] == ["stream_w_a", "stream_w_b", "stream_w_a"]
+    assert [c.args["weight"] for c in plan.calls[:3]] == ["stream_w_0", "stream_w_1", "stream_w_2"]   # one weight per operator: nothing re-read from the 256 MB cache
     assert [c.args["dummy"] for c in plan.calls[:3]] == ["stream_dummy_a", "stream_dummy_b", "stream_dummy_a"]
     assert [c.args["prev"] for c in plan.calls[:3]] == ["stream_dummy_b", "stream_dummy_a", "stream_dummy_b"]
     assert [c.label for c in plan.calls[:2]] == ["S0.stream", "S1.stream"]
@@ -802,11 +802,11 @@ def test_stream_probe_plan_counts_tensors_and_chain():
     assert len(rec) == 10 and rec[0]["params"] == [] and rec[0]["grid_dim"] == (96, 1, 1)
     # the weight by the grid, the chain's dummy whole and ignored, the task's dummy row out
     assert rec[0]["imaps"] == [[0, -1, -1], [-1, -1, -1], [0, -1, -1]]
-    assert rec[0]["inputs"] == ["stream_w_a", "stream_dummy_b", "stream_dummy_a"]
+    assert rec[0]["inputs"] == ["stream_w_0", "stream_dummy_b", "stream_dummy_a"]
     # the 296-task row of G5, one task per CU at 256 KB
     plan = build_stream_plan(ops=10, tasks=296, kb=256)
     assert plan.n_ops == 10 and plan.n_tasks == 2960 and not plan.chain_violations()
-    assert plan.tensors["stream_w_a"].shape == (296 * 64, STREAM_K)
+    assert plan.tensors["stream_w_0"].shape == (296 * 64, STREAM_K)
 
 
 def test_stream_probe_gang_plan_is_eight_tasks_of_tiles_per_xcd():
@@ -817,7 +817,7 @@ def test_stream_probe_gang_plan_is_eight_tasks_of_tiles_per_xcd():
     rows = stream_rows(304)
     assert rows == 76 and plan.n_ops == 10 and plan.n_tasks == 80 and not plan.chain_violations()
     assert all(c.tasks == 8 and c.tiles == 37 for c in plan.calls)
-    assert plan.tensors["stream_w_a"].shape == (8 * 37 * rows, STREAM_K)
+    assert plan.tensors["stream_w_0"].shape == (8 * 37 * rows, STREAM_K)
     assert plan.tensors["stream_dummy_a"].shape == (8 * 37, 4)
     assert 8 * 37 * 304 * 1024 == 8 * 37 * rows * STREAM_K * 2        # 90 MiB, w13's eight experts
     _, calls = B.dry_run(plan=plan)

@@ -805,6 +805,38 @@ void run_moe_router(std::string const &dir) {
                      (int)param(p, "layer_index"), float_from_bits(param(p, "scaling_bits")),
                      float_from_bits(param(p, "eps_bits")));
   finish_launch();
+  // KT_TIME=N: N more launches of the one-task router under hipEvents (H0 of
+  // docs/gpu-experiments/04-kernels/04-router-merge-split.md: the standalone time at each
+  // ROUTER_BATCH, with and without ROUTER_STRIDED). KT_COLD=K rotates over K
+  // copies of the 256 KB gate weight (K >= 17 exceeds an XCD's 4 MB L2), as the GEMV row does
+  // over its weight, so the time is the L2-cold one. The route log's row is rewritten with the
+  // same values by every launch, so the stored outputs stay the first launch's.
+  if (char const *kt = std::getenv("KT_TIME")) {
+    int n = std::atoi(kt);
+    int cold = std::getenv("KT_COLD") ? std::atoi(std::getenv("KT_COLD")) : 1;
+    size_t w_bytes = (size_t)N_EXPERTS * HIDDEN * 2;
+    std::vector<void *> w(cold);
+    for (int k = 0; k < cold; k++) {
+      HIP_CHECK(hipMalloc(&w[k], w_bytes));
+      HIP_CHECK(hipMemcpy(w[k], b.get("w_gate"), w_bytes, hipMemcpyDeviceToDevice));
+    }
+    HIP_CHECK(hipDeviceSynchronize());
+    hipEvent_t t0, t1;
+    hipEventCreate(&t0); hipEventCreate(&t1);
+    hipEventRecord(t0, 0);
+    for (int i = 0; i < n; i++) {
+      hipLaunchKernelGGL(k_moe_router, dim3(1), dim3(256), SMEM_BYTES, 0,
+                         b.get("x_res"), b.get("w_norm"), w[i % cold], b.get("h"), b.get("topk_w"),
+                         b.get("routing"), b.get("mask"), b.get("logits"), b.get("route_log"), m.meta,
+                         (int)param(p, "layer_index"), float_from_bits(param(p, "scaling_bits")),
+                         float_from_bits(param(p, "eps_bits")));
+    }
+    hipEventRecord(t1, 0); hipEventSynchronize(t1);
+    float ms = 0; hipEventElapsedTime(&ms, t0, t1);
+    std::fprintf(stderr, "TIME moe_router launches=%d batch=%d weight_copies=%d mean_us=%.2f\n",
+                 n, ROUTER_BATCH, cold, ms * 1000.0f / n);
+    for (int k = 0; k < cold; k++) { hipFree(w[k]); }
+  }
   b.store_outputs();
 }
 

@@ -229,9 +229,9 @@ def build_parser():
     ap.add_argument("--tile-linears", action="store_true",
                     help="issue qkva, o_proj, down and lm_head as per-tile linear_layer tasks (MAJ-7, docs/gpu-experiments/02-validation P5)")
     ap.add_argument("--gemv-linears", action="store_true",
-                    help="issue qkva, o_proj, layer 0's down and lm_head as our GEMV task, with the input norm "
-                         "and the residual add as its template flags (L2, docs/gpu-experiments/04-kernels); "
-                         "no norm operator and no scratch tensor; off under --debug")
+                    help="issue qkva, o_proj and lm_head as our GEMV task, with the input norm and the residual "
+                         "add as its template flags (L2, docs/gpu-experiments/04-kernels); no norm operator and "
+                         "no scratch tensor; layer 0's down (K 11,264) stays the stock per-tile linear; off under --debug")
     ap.add_argument("--linear-grid", type=int, default=None, metavar="N",
                     help="--gemv-linears: the task count of qkva and o_proj, N dividing the row count "
                          "(3,648 by 96, 48, 32; 2,048 by 64, 32; an operator N does not divide keeps the heuristic)")
@@ -256,13 +256,26 @@ def build_parser():
                     help="fold o_proj into the merge: one operator of 32 regular tasks per layer, "
                          "labelled L{l}.o_proj, whose last-arriving task sums the partial vectors "
                          "into x_res (N5, docs/gpu-experiments/04-kernels); it replaces both the "
-                         "merge and the o_proj operator, and overrides --merge-tasks")
+                         "merge and the o_proj operator, overrides --merge-tasks, and is not gated by "
+                         "--debug; --probe-before L{l}.o_proj does not apply to the folded operator")
     ap.add_argument("--align-alloc", type=int, default=0, metavar="BYTES",
                     help="re-base every weight, capture and workspace on a BYTES-aligned address (power of two; "
                          "the M4 fault candidates, docs/gpu-experiments/02-validation)")
     ap.add_argument("--workspaces-first", action="store_true",
                     help="allocate the workspaces from the plan before the weights are packed (address order)")
     return ap
+
+
+FENCE_KNOBS = ("MPK_NO_COMPLETION_FENCE", "MPK_NO_ACQUIRE_FENCE")
+
+
+def fence_knob_conflict(args):
+    """N2 and N5 (docs/gpu-experiments/04-kernels): the counter forms (--router-tasks, --merge-oproj)
+    need the runtime's completion fence, which writes the last task's plain counter reset back
+    to memory before the next layer's memory-side atomics read it, and the acquire fence before a
+    task's reads; either I4 knob in --runtime-flags makes the graph hang after the first layer."""
+    return bool((args.router_tasks or args.merge_oproj)
+                and any(k in f for f in args.runtime_flags for k in FENCE_KNOBS))
 
 
 def runtime_flags_slug(flags):
@@ -305,10 +318,11 @@ def run_name(args):
     mo = "_mo" if args.merge_oproj else ""                          # N5 of docs/gpu-experiments/04-kernels
     if args.graph == "empty":      # I3: no layers, no head
         return (f"E{args.ops}x{args.tasks}" + (f"_spin{args.spin}" if args.spin else "") + f"_it{args.iters}"
-                + wt + rf + al + ws + pad)
-    if args.graph == "stream":     # L6: the stream probe, the empty ladder's name with the bytes read
+                + nts + wt + rf + al + ws + pad)
+    if args.graph == "stream":     # L6: the stream probe, the empty ladder's name with the bytes read;
+        # the load policy (--nt-streams) is what the probe A/Bs, so it is in the name
         return (f"S{args.ops}x{args.tasks}_{args.kb}kb" + ("_gang" if args.gang else "") + f"_it{args.iters}"
-                + wt + rf + al + ws + pad)
+                + nts + wt + rf + al + ws + pad)
     return (f"L{args.layers}{'_head' if args.head else ''}_it{args.iters}"
             + (f"_{args.stop_after}" if args.stop_after else "") + ("_scores" if args.debug_scores else "")
             + tile + at + fn1 + fn2 + fs + pf + probe + nt + nts + mf + wt + rf + sp + al + ws + pad
@@ -379,6 +393,13 @@ def main():
     if args.graph == "model" and (args.layers is None or args.model_dir is None):
         ap.error("--layers and --model-dir are required for the model graph (--graph empty and --graph stream "
                  "need neither)")
+    # N2 and N5 (docs/gpu-experiments/04-kernels): the counter forms rely on the runtime's completion
+    # fence (the last task's plain reset store reaches memory through it; without it the next layer's
+    # memory-side atomics read the stale count and no task ever routes or sums again) and on the
+    # acquire fence before a task's reads, so the two I4 fence knobs cannot be paired with them
+    if fence_knob_conflict(args):
+        ap.error("--router-tasks and --merge-oproj need both runtime fences: drop the MPK_NO_COMPLETION_FENCE / "
+                 "MPK_NO_ACQUIRE_FENCE knob (the counter's reset and the last task's reads depend on them)")
 
     import torch
     from safetensors.torch import load_file, save_file
@@ -423,6 +444,13 @@ def main():
     if args.graph in ("empty", "stream"):
         return run_empty(args, out, prompt, n_prompt, s_max, t0, torch, B)
     dims = Dims.from_config(json.loads((Path(args.model_dir) / "config.json").read_text()))
+    # the plan's asserts (a grid that divides nothing, --merge-halves without --merge-tasks, a probe
+    # label the o_proj fold makes invalid) fire here, on the dry run, before the weight pack rather
+    # than minutes into the row
+    B.dry_run(dims, s_max, args.layers, args.head, args.debug, args.stop_after, args.debug_scores,
+              args.tile_linears, args.attend_tasks, args.fuse_norm2, args.fuse_silu, args.probe_before,
+              args.fuse_norm1, args.prefetch, args.gemv_linears, args.linear_grid, args.head_grid,
+              args.gemv_w13, args.merge_tasks, args.merge_halves, args.router_tasks, args.merge_oproj)
     if args.align_alloc:
         assert args.align_alloc >= 512 and args.align_alloc & (args.align_alloc - 1) == 0, "--align-alloc: power of two, >= 512"
     workspaces = None

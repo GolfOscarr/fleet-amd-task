@@ -246,8 +246,9 @@ def moe_router_norm(x_res, w_norm, W_gate, *, eps=1e-6, topk=6, n_experts=64, fo
 
 
 def silu(x):
-    """SiLU in FP32, the arithmetic of the kernels' fast_silu (silu_mul_mi300.cuh):
-    x / (1 + exp(-x)), no BF16 rounding of its own."""
+    """SiLU in FP32, the exact form of the kernels' fast_silu (silu_mul_mi300.cuh computes
+    x * rcpf(1 + __expf(-x)) with the fast reciprocal and exp, a few FP32 ulp away, which the
+    BF16 rounding of the product absorbs): x / (1 + exp(-x)), no BF16 rounding of its own."""
     x = np.asarray(x, F32)
     return (x / (F32(1.0) + np.exp(-x, dtype=F32))).astype(F32)
 

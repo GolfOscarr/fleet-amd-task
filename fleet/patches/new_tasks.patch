@@ -70,7 +70,7 @@ index 2aab442..a9ff9ea 100755
    int register_splitk_linear_sm100_task(threadblock::Graph const &bgraph,
                                          std::vector<int> const &params,
 diff --git a/include/mirage/persistent_kernel/persistent_kernel.cuh b/include/mirage/persistent_kernel/persistent_kernel.cuh
-index 9241ae6..01005c7 100755
+index 9241ae6..859b307 100755
 --- a/include/mirage/persistent_kernel/persistent_kernel.cuh
 +++ b/include/mirage/persistent_kernel/persistent_kernel.cuh
 @@ -71,6 +71,11 @@
@@ -183,7 +183,7 @@ index 9241ae6..01005c7 100755
        }
  #endif
  #ifdef MPK_ENABLE_DEVICE_TASK_ACCUM
-@@ -1188,6 +1215,21 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+@@ -1188,6 +1215,24 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
          case TASK_RMS_NORM: rms_cycles += task_time; rms_count++; break;
          case TASK_SILU_MUL: silu_cycles += task_time; silu_count++; break;
          case TASK_SILU_MUL_LINEAR_WITH_RESIDUAL: fused_cycles += task_time; fused_count++; break;
@@ -191,8 +191,11 @@ index 9241ae6..01005c7 100755
 +        case TASK_MLA_PREP_MI300: ours_cycles[0] += task_time; ours_count[0]++; break;
 +        case TASK_MLA_ATTEND_MI300:
 +        case TASK_MLA_ATTEND_TILE_MI300: ours_cycles[1] += task_time; ours_count[1]++; break;
-+        case TASK_MLA_MERGE_UV_MI300: ours_cycles[2] += task_time; ours_count[2]++; break;
-+        case TASK_MOE_ROUTER_MI300: ours_cycles[3] += task_time; ours_count[3]++; break;
++        case TASK_MLA_MERGE_UV_MI300:
++        case TASK_MLA_MERGE_UV_TILE_MI300:      // N4: the regular merge task (round 4)
++        case TASK_MLA_MERGE_OPROJ_MI300: ours_cycles[2] += task_time; ours_count[2]++; break;   // N5: the merge with o_proj folded in
++        case TASK_MOE_ROUTER_MI300:
++        case TASK_MOE_ROUTER4_MI300: ours_cycles[3] += task_time; ours_count[3]++; break;        // N2: the four-task router
 +        case TASK_COPY_MI300: ours_cycles[4] += task_time; ours_count[4]++; break;
 +        case TASK_GANG_MOE_W2_SILU_MI300:
 +        case TASK_GANG_MOE_W13_GEMV_MI300: ours_cycles[5] += task_time; ours_count[5]++; break;
@@ -205,7 +208,7 @@ index 9241ae6..01005c7 100755
          default: break;
        }
      }
-@@ -1239,7 +1281,9 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+@@ -1239,7 +1284,9 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
  
              if (local_count == needed_local) {
                // Last worker/task on this XCD — flush + signal global
@@ -215,7 +218,7 @@ index 9241ae6..01005c7 100755
                // Gang: flush 1 (one task done). Non-gang: flush xcd_threshold.
                int flush_amount = is_gang_task_type(task_desc->task_type)
                                       ? 1 : xcd_threshold;
-@@ -1262,7 +1306,9 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+@@ -1262,7 +1309,9 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
                get_task_iteration_num(task_ids[queue_pos]);
  
            if (local_count == needed_local) {
@@ -225,7 +228,7 @@ index 9241ae6..01005c7 100755
              count = atom_add_release_gpu_u64(
                  &config.all_event_counters[event_index], xcd_threshold);
              event_fired =
-@@ -1276,7 +1322,9 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+@@ -1276,7 +1325,9 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
  #endif
          {
            // Fallback: per-task fence + global atomic (NVIDIA, or uncounted events)
@@ -235,7 +238,7 @@ index 9241ae6..01005c7 100755
            count = atom_add_release_gpu_u64(
                &config.all_event_counters[event_index], 1);
            event_fired =
-@@ -1335,6 +1383,11 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+@@ -1335,6 +1386,11 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
                                                   config.per_sched_queue_len],
                    event_index);
                threadfence_gpu();
@@ -247,7 +250,7 @@ index 9241ae6..01005c7 100755
                size_t old;
                do {
                  old = atom_cas_release_gpu_u64(
-@@ -1342,6 +1395,7 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+@@ -1342,6 +1398,7 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
                      last_event_pos,
                      last_event_pos + 1);
                } while (old != last_event_pos);
@@ -255,7 +258,7 @@ index 9241ae6..01005c7 100755
              } else {
                // Same-XCD scheduler queue — use L2-local ops
                size_t last_event_pos = atom_add_local_u64(
-@@ -1351,6 +1405,10 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+@@ -1351,6 +1408,10 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
                                                   config.per_sched_queue_len],
                    event_index);
                fence_local();
@@ -266,7 +269,7 @@ index 9241ae6..01005c7 100755
                size_t old;
                do {
                  old = atom_cas_local_u64(
-@@ -1358,6 +1416,7 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
+@@ -1358,6 +1419,7 @@ __device__ __forceinline__ void execute_worker(RuntimeConfig config,
                      last_event_pos,
                      last_event_pos + 1);
                } while (old != last_event_pos);

@@ -1,7 +1,8 @@
 // Offline gfx942 compile of the patched megakernel headers plus the two
 // dispatchers the runtime's code generator emits (runtime.cc:1562-1640),
-// written here by hand for the five new tasks with the call code that
-// task_register.cc emits for them. Linking the device object therefore
+// written here by hand for our task types (round 3's eleven, and under MK_GEMV
+// the round-4 ones) with the call code that task_register.cc emits for them.
+// Linking the device object therefore
 // exercises the worker kernel's register union with our kernels (MAJ-4).
 // Compile flags: persistent_kernel.py for mode=online, batch 1, USE_GANG=1.
 #include <vector>
@@ -170,10 +171,11 @@ __device__ __forceinline__
 void _execute_gang_task(TaskDesc const *task_desc, RuntimeConfig const &runtime_config, int tile_idx) {
 #ifdef MK_CK_GANG
   // O2: the fused w2 gang task at the model's dims (batch 1, N 2048, K 1408, mid stride 2816,
-  // 66 experts, 8 slots, 32 tiles per expert, 32 N tiles, 32 tiles per XCD). This instantiates
-  // CK's small-tile GEMM pipeline for gfx942 offline, which the day-1 build had done on the VM only.
+  // 66 experts, 8 slots, 32 tiles per expert, 32 N tiles, 288 tiles per XCD: 9 experts x 32, the
+  // registration's params[2]). This instantiates CK's small-tile GEMM pipeline for gfx942 offline,
+  // which the day-1 build had done on the VM only.
   if (task_desc->task_type == TASK_GANG_MOE_W2_SILU_MI300 && task_desc->variant_id == 0) {
-    kernel::gang_moe_w2_silu_linear_kernel<bfloat16, 1, 2048, 2048, 1408, 2816, 66, 8, 32, 32, 32>(
+    kernel::gang_moe_w2_silu_linear_kernel<bfloat16, 1, 2048, 2048, 1408, 2816, 66, 8, 32, 32, 288>(
         task_desc->input_ptrs[0], task_desc->input_ptrs[1], task_desc->input_ptrs[2], task_desc->input_ptrs[3],
         task_desc->output_ptrs[0], task_desc->output_ptrs[1], tile_idx);
   } else

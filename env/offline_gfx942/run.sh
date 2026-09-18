@@ -89,6 +89,9 @@ compile gemv -DMK_GEMV=1 || ok=1
 compile w2ck -DMK_CK_GANG=1 -DMPK_W2_CK_TILE=1 || ok=1
 # the build the VM makes for the round-4 rows: every round-4 task under the streaming loads
 compile gemvnt -DMK_GEMV=1 -DMLA_NT_STREAMS=1 || ok=1
+# the worker G1's row builds (02-local-gpu-split.md): the round-3 levers (the MFMA attention,
+# the w2 GEMV form, the streaming loads) stacked on every round-4 task
+compile union -DMK_GEMV=1 -DMK_CK_GANG=1 -DMLA_ATTEND_MFMA=1 -DMLA_NT_STREAMS=1 || ok=1
 # I1: the worker timing build (MPK_TIMING=1 of persistent_kernel.py): the per-worker prints of our hunk
 compile timing -DMPK_ENABLE_TIMING=1 || ok=1
 # I4: the fence knobs (run_fleet.py --runtime-flags), each alone; the two fence knobs are also disassembled below
@@ -151,6 +154,7 @@ disasm() {
 disasm ours
 disasm gemv -DMK_GEMV=1
 disasm gemvnt -DMK_GEMV=1 -DMLA_NT_STREAMS=1
+disasm union -DMK_GEMV=1 -DMK_CK_GANG=1 -DMLA_ATTEND_MFMA=1 -DMLA_NT_STREAMS=1
 disasm ckgang -DMK_CK_GANG=1
 # the standalone launcher's device code (round 4): the batch loops of k_linear_gemv, k_moe_router
 # and k_mla_merge_uv are named kernels there, so their s_waitcnt vmcnt sequences can be read
@@ -198,7 +202,7 @@ cat "$HERE/fences.txt"
 {
   echo "# Offline gfx942 compile, $(date -u +%Y-%m-%dT%H:%M:%SZ), $(cat "$WORK/out/hipcc.txt" | tr '\n' ' ')"
   echo "# fleet 51dce4f + gfx942.patch + new_tasks.patch + sched_xcd.patch; composable_kernel $CK_COMMIT; json $JSON_COMMIT"
-  for v in mk_ours mk_ckfmha mk_debugscores mk_ckgang mk_ntstreams mk_cklinear mk_mfma mk_gemv mk_gemvnt mk_w2ck mk_timing mk_nocfence mk_noafence mk_nobcastcas mk_nolocalcas mk_sleep8 kernel_tests kernel_tests_debug kernel_tests_nt kernel_tests_mfma; do
+  for v in mk_ours mk_ckfmha mk_debugscores mk_ckgang mk_ntstreams mk_cklinear mk_mfma mk_gemv mk_gemvnt mk_union mk_w2ck mk_timing mk_nocfence mk_noafence mk_nobcastcas mk_nolocalcas mk_sleep8 kernel_tests kernel_tests_debug kernel_tests_nt kernel_tests_mfma; do
     echo; echo "## $v (hipcc exit $(cat "$WORK/out/$v.rc"))"
     grep -E "Function Name|    VGPRs:|AGPRs|SGPRs Spill|VGPRs Spill|LDS Size|ScratchSize|Occupancy" "$WORK/out/$v.log" \
       | sed 's/.*remark: *//; s/ \[-Rpass.*//; s/Function Name: //' | paste - - - - - - - - \

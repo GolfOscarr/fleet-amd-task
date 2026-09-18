@@ -45,8 +45,8 @@ independent; the order here is the patch's file order.
 ```
 
 207 is free (204 to 206 are N2's, N4's and L6's gang form after the first integration; 200 to 203 are the fork's scheduler task types).
-descriptor's 7 inputs and 6 outputs already hold this task's 5 and 3, the
-largest of the round.
+Nothing else in this header changes: the descriptor's 7 inputs and 6 outputs
+already hold this task's 5 and 3, the largest of the round.
 
 (The block stands on its own if N4's is not applied: the line it goes after
 is then `TASK_LINEAR_GEMV_MI300 = 195,` and the added line is the same.)

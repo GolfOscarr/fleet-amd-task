@@ -487,3 +487,27 @@ def test_fault_fix_flags_and_run_names():
     a = p.parse_args(["--layers", "8", "--head", "--iters", "2", "--model-dir", "x", "--align-alloc", "4096",
                       "--workspaces-first", "--pad-alloc", "1"])
     assert run_fleet.run_name(a) == "L8_head_it2_al4096_wsfirst_pad1"
+
+
+def test_stream_and_empty_run_names_carry_the_load_policy():
+    # the stream probe A/Bs the streaming loads (L6, docs/gpu-experiments/04-kernels), so a row with
+    # --nt-streams must not share a run directory with the row without it
+    p = run_fleet.build_parser()
+    a = p.parse_args(["--graph", "stream", "--ops", "10", "--tasks", "37", "--kb", "304", "--gang",
+                      "--iters", "32", "--nt-streams", "--worker-timing"])
+    assert run_fleet.run_name(a) == "S10x37_304kb_gang_it32_nts_wt"
+    a = p.parse_args(["--graph", "empty", "--ops", "100", "--tasks", "40", "--iters", "32", "--nt-streams"])
+    assert run_fleet.run_name(a) == "E100x40_it32_nts"
+
+
+def test_fence_knobs_are_refused_with_the_counter_forms():
+    # N2 and N5: the last task's plain counter reset needs the completion fence's write-back and the
+    # last task's reads the acquire fence; either knob would hang the graph after the first layer
+    p = run_fleet.build_parser()
+    base = ["--layers", "2", "--iters", "1", "--model-dir", "x"]
+    for form in (["--router-tasks"], ["--merge-oproj"]):
+        for knob in ("--runtime-flags=-DMPK_NO_COMPLETION_FENCE", "--runtime-flags=-DMPK_NO_ACQUIRE_FENCE"):
+            assert run_fleet.fence_knob_conflict(p.parse_args(base + form + [knob]))
+        assert not run_fleet.fence_knob_conflict(p.parse_args(base + form + ["--runtime-flags=-DMPK_POLL_SLEEP=8"]))
+        assert not run_fleet.fence_knob_conflict(p.parse_args(base + form))
+    assert not run_fleet.fence_knob_conflict(p.parse_args(base + ["--runtime-flags=-DMPK_NO_COMPLETION_FENCE"]))

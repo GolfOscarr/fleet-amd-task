@@ -8,7 +8,7 @@ kernels' Python wrappers and the silent constraints the design lists) is
 checked here; build_graph.py turns it into mpk.* calls on the machine.
 
 Counts are cross-checked in the tests against docs/design-doc/sources/
-graph_counts.py: 326 operators and 1,880 tasks for the full graph.
+graph_counts.py: 326 operators and 2,285 tasks for the full graph (round 3's per-head prep task).
 """
 import struct
 from dataclasses import dataclass, field
@@ -281,16 +281,16 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
     the stock per-tile linear with a prologue that normalises the row into a per-task scratch
     row (qkva_scratch [96, H], lm_scratch [400, H]), so they are per-tile whether or not
     tile_linears is set. Off under debug (the stock norms stay, and the snapshot wiring).
-    gemv_linears: the four dense linears at batch 1 (qkva, o_proj, layer 0's down, lm_head) as our
-    GEMV kernel instead of the CK tile (L2 of docs/gpu-experiments/04-kernels, kernel L1): one
-    linear_gemv_mi300 task type for all four, with the input norm (qkva, lm_head) and the residual
-    add (o_proj, down) as template flags, so there is no L{l}.norm1 and no head.norm, as with
-    fuse_norm1, and no scratch tensor at all (the normalised row stays in LDS). The grids are
-    fuse_norm1 + tile_linears', so the operator and task counts are theirs. Off under debug (the
-    snapshot wiring needs the stock norms, as fuse_norm1 does). Layer 0's down is the one call
-    site whose K is not H: 11,264, so a row is 22 sixteen-byte loads per lane instead of 4 and a
-    batch of 8 rows is 704 VGPRs of raw words; -DGEMV_BATCH=2 is the knob if the VM's A/B finds
-    it spilling (the kernel's body is a call, so the worker union does not carry those registers).
+    gemv_linears: the dense linears at batch 1 (qkva, o_proj, lm_head) as our GEMV kernel instead
+    of the CK tile (L2 of docs/gpu-experiments/04-kernels, kernel L1): one linear_gemv_mi300 task
+    type for the three, with the input norm (qkva, lm_head) and the residual add (o_proj) as
+    template flags, so there is no L{l}.norm1 and no head.norm, as with fuse_norm1, and no
+    scratch tensor at all (the normalised row stays in LDS). The grids are fuse_norm1 +
+    tile_linears', so the operator and task counts are theirs. Off under debug (the snapshot
+    wiring needs the stock norms, as fuse_norm1 does). Layer 0's down is the one call site whose
+    K is not H: 11,264, and the kernel keeps a lane's K slice in registers (K / 64 values, bounded
+    at 4,096 by its static_assert), so that operator stays the stock per-tile linear (the code
+    below; S4 of 05-local-preparation.md leaves it to a later pass).
     router_tasks: the MoE layers' router as four regular tasks of 16 experts each, the last to
     arrive reading the 64 logits back and routing (N2 of docs/gpu-experiments/04-kernels, R5). It
     is the fused router's split form, so for those layers it carries fuse_norm2's wiring (no
@@ -644,24 +644,27 @@ def build_stream_plan(ops: int, tasks: int, kb: int, gang: bool = False,
     of N tasks (or of 8 tiles x N tiles_per_xcd, --gang) that read `kb` kilobytes each with the
     GEMV's load loop and no multiply, on the empty ladder's machinery (I3).
 
-    Two weight tensors alternate as the empty ladder's two copy tensors do, so an operator never
-    reads the tensor the operator before it has just read. The weight is an input and never an
-    output, so it cannot be what makes an operator a consumer of its predecessor, which the
-    runtime requires of every operator (runtime.cc, register_mugraph: assert(num_shared_tensors
-    >= 1)): two dummies alternate as well, each operator writing one and reading the other, and
-    that second dummy is an input of the task the kernel never touches (fleet/patches/hunks/
-    L6-stream.md, the last note). Every tensor is `new` (a zeroed buffer): the probe measures the
-    time the bytes take to arrive, not their values."""
+    Every operator reads its own weight tensor (stream_w_0, stream_w_1, ...): the G5 shapes are
+    74 to 90 MB per tensor, so two alternating tensors (the empty ladder's form) would keep
+    the whole working set inside the 256 MB memory-side cache and the second operator on would
+    read at a cache rate, not the streaming rate the model runs at (the double-check of
+    2026-09-18); ops x 90 MB is nothing on 192 GB. The weight is an input and never an output,
+    so it cannot be what makes an operator a consumer of its predecessor, which the runtime
+    requires of every operator (runtime.cc, register_mugraph: assert(num_shared_tensors >= 1)):
+    two dummies alternate, each operator writing one and reading the other, and that second
+    dummy is an input of the task the kernel never touches (fleet/patches/hunks/L6-stream.md,
+    the last note). Every tensor is `new` (a zeroed buffer): the probe measures the time the
+    bytes take to arrive, not their values."""
     assert ops >= 1 and tasks >= 1
     rows = stream_rows(kb)
     p = Plan(dims, s_max, 0, False, False)
     tiles = XCDS * tasks if gang else tasks          # the tasks, or the tiles over the 8 XCD slots
     for s in ("a", "b"):
-        p.t(f"stream_w_{s}", (tiles * rows, STREAM_K))
         p.t(f"stream_dummy_{s}", (tiles, 4), "i32")
     for k in range(ops):
+        p.t(f"stream_w_{k}", (tiles * rows, STREAM_K))
         cur, prev = ("a", "b") if k % 2 == 0 else ("b", "a")
-        args = dict(weight=f"stream_w_{cur}", prev=f"stream_dummy_{prev}", dummy=f"stream_dummy_{cur}",
+        args = dict(weight=f"stream_w_{k}", prev=f"stream_dummy_{prev}", dummy=f"stream_dummy_{cur}",
                     block_dim=(256, 1, 1))
         if gang:
             p.op("stream_gang_layer", XCDS, tasks, status="new", label=f"S{k}.stream",
