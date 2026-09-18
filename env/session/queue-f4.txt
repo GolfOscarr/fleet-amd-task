@@ -1,0 +1,13 @@
+# Round 4, G5 and G6 (docs/gpu-experiments/04-kernels/02-local-gpu-split.md). G5, the stream probe: no
+# model; every operator reads its own tensor of --tasks x --kb (the gang form 37 tiles per XCD at 304 KB,
+# w13's tile to 0.3%; the regular forms qkva's and a 64-row shape), measure.py turns the gaps into GB/s;
+# once without --nt-streams, the policy the probe A/Bs. G6, the head as GEMV tasks: timing rows only (the
+# ids and the compare of a 2-layer graph with the head cannot match the 27-layer reference; the head
+# form's correctness is G7's ids), at the default grid (400 tasks of 256 rows) and at --head-grid 320.
+# G8's bit-diff is the subcommand `queue.sh bitdiff <run-a> <run-b>`, not a row (07-session-plan.md).
+--graph stream --ops 10 --tasks 37 --kb 304 --gang --iters 32 --event-timing --worker-timing --nt-streams table continue    # G5: the gang form, 296 workers, 304 KB per tile
+--graph stream --ops 10 --tasks 37 --kb 304 --gang --iters 32 --event-timing --worker-timing table continue    # G5: the same with plain loads
+--graph stream --ops 10 --tasks 96 --kb 152 --iters 32 --event-timing --worker-timing --nt-streams table continue    # G5: qkva's shape, 96 regular tasks of 38 rows
+--graph stream --ops 10 --tasks 296 --kb 256 --iters 32 --event-timing --worker-timing --nt-streams table continue    # G5: 296 regular tasks of 64 rows
+--layers 2 --head --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend --attend-tasks --nt-streams --gemv-linears --gemv-w13 table continue    # G6: the head at the default grid, its chunk events against 141 us
+--layers 2 --head --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend --attend-tasks --nt-streams --gemv-linears --gemv-w13 --head-grid 320 table continue    # G6: 320 tasks of 320 rows

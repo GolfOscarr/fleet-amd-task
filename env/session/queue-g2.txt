@@ -1,0 +1,7 @@
+# Round 4, H5 (docs/gpu-experiments/04-kernels/04-router-merge-split.md): the merge with o_proj folded in
+# (--merge-oproj: one operator labelled L{l}.o_proj replaces the merge and o_proj, so the x_res boundary of
+# the compare is the new operator's; it overrides --merge-tasks; --probe-before takes L{l}.norm2, not
+# L{l}.o_proj). The pair on the 2-layer graph with the GEMV stack and the router in four tasks (take
+# --router-tasks out with queue_flag.py if H2 failed).
+--layers 2 --iters 1 --tile-linears --nt-weights --event-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend --attend-tasks --nt-streams --gemv-linears --gemv-w13 --router-tasks --merge-oproj compare continue    # H5: 0 FAIL on x_res, ids equal
+--layers 2 --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend --attend-tasks --nt-streams --gemv-linears --gemv-w13 --router-tasks --merge-oproj table continue    # H5: the operator's gap against 18.1 + 14.8 us

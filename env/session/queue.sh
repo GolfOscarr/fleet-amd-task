@@ -24,7 +24,8 @@
 #   <utc> <name> PASS|FAIL rc=<n> mpk=<n> fault=<n> fwd=<n> wall=<s>s [compare=PASS|FAIL] [measure=PASS|FAIL]
 # and STOP <name> when a FAIL without 'continue' ends the queue.
 # Guards, before a row runs: --iters at most 32; --debug only with --iters 1; compare (and any
-# untruncated run) needs harness/ref/ref_cache.safetensors; measure needs the profiler on PATH.
+# untruncated model run) needs harness/ref/ref_cache.safetensors, and a synthetic graph (--graph empty
+# or stream, which load no reference) takes no compare; measure needs the profiler on PATH.
 #
 # Bitdiff: harness/bitdiff.py (L7, docs/gpu-experiments/04-kernels/05-local-preparation.md) on
 # two FLEET_OUT run directories that persist for the session; the fleet venv is activated here
@@ -72,9 +73,11 @@ row_guard() {
   if [ "$iters" -gt 32 ] 2>/dev/null; then echo "guard: --iters $iters is above 32 (the RoPE tables hold 1,056 positions)"; return 1; fi
   if [[ " ${args[*]} " == *" --debug "* ]] && [ "$iters" != "1" ]; then
     echo "guard: --debug is the growth curve at step 0; it needs --iters 1 (got $iters)"; return 1; fi
+  if [[ "$flags" == *compare* ]] && [[ " ${args[*]} " == *" --graph empty "* || " ${args[*]} " == *" --graph stream "* ]]; then
+    echo "guard: a synthetic graph (--graph empty or stream) has no boundaries to compare"; return 1; fi
   if [[ "$flags" == *compare* ]] && [ ! -f "$REF_DIR/ref_cache.safetensors" ]; then
     echo "guard: compare needs $REF_DIR/ref_cache.safetensors (run the reference stage first)"; return 1; fi
-  if [[ " ${args[*]} " != *" --stop-after "* ]] && [[ " ${args[*]} " != *" --graph empty "* ]] && [ ! -f "$REF_DIR/ref_cache.safetensors" ] && [ "$DRY" != "1" ]; then
+  if [[ " ${args[*]} " != *" --stop-after "* ]] && [[ " ${args[*]} " != *" --graph empty "* ]] && [[ " ${args[*]} " != *" --graph stream "* ]] && [ ! -f "$REF_DIR/ref_cache.safetensors" ] && [ "$DRY" != "1" ]; then
     echo "guard: run_fleet.py loads $REF_DIR/ref_cache.safetensors (run the reference stage first)"; return 1; fi
   if [[ "$flags" == *measure* ]] && [ "$DRY" != "1" ] && ! command -v "${PROFILER%% *}" >/dev/null 2>&1; then
     echo "guard: measure needs $PROFILER on PATH"; return 1; fi

@@ -1,0 +1,15 @@
+# Round 4, G9 (if time; docs/gpu-experiments/04-kernels/02-local-gpu-split.md): round 3's sleep and CAS
+# knobs one at a time on the round-4 stack (the GEMV linears and w13), each with the boundary compare at
+# step 0 and the 32-iteration table. The fence knobs (MPK_NO_COMPLETION_FENCE, MPK_NO_ACQUIRE_FENCE) are
+# not here: the counter forms (--router-tasks, --merge-oproj) rely on the runtime's fences and run_fleet.py
+# refuses the pair; round 3 measured them on the stock forms. One define per --runtime-flags, in the = form.
+--layers 2 --iters 1 --tile-linears --nt-weights --event-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend --attend-tasks --nt-streams --gemv-linears --gemv-w13 --runtime-flags=-DMPK_NO_BCAST_CAS compare continue
+--layers 2 --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend --attend-tasks --nt-streams --gemv-linears --gemv-w13 --runtime-flags=-DMPK_NO_BCAST_CAS table continue
+--layers 2 --iters 1 --tile-linears --nt-weights --event-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend --attend-tasks --nt-streams --gemv-linears --gemv-w13 --runtime-flags=-DMPK_NO_LOCAL_CAS compare continue
+--layers 2 --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend --attend-tasks --nt-streams --gemv-linears --gemv-w13 --runtime-flags=-DMPK_NO_LOCAL_CAS table continue
+--layers 2 --iters 1 --tile-linears --nt-weights --event-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend --attend-tasks --nt-streams --gemv-linears --gemv-w13 --runtime-flags=-DMPK_POLL_SLEEP=8 compare continue
+--layers 2 --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend --attend-tasks --nt-streams --gemv-linears --gemv-w13 --runtime-flags=-DMPK_POLL_SLEEP=8 table continue
+--layers 2 --iters 1 --tile-linears --nt-weights --event-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend --attend-tasks --nt-streams --gemv-linears --gemv-w13 --runtime-flags=-DMPK_POLL_SLEEP=32 compare continue
+--layers 2 --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend --attend-tasks --nt-streams --gemv-linears --gemv-w13 --runtime-flags=-DMPK_POLL_SLEEP=32 table continue
+--layers 2 --iters 1 --tile-linears --nt-weights --event-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend --attend-tasks --nt-streams --gemv-linears --gemv-w13 --runtime-flags=-DMPK_POLL_SLEEP=127 compare continue
+--layers 2 --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend --attend-tasks --nt-streams --gemv-linears --gemv-w13 --runtime-flags=-DMPK_POLL_SLEEP=127 table continue

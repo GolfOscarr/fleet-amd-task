@@ -1,5 +1,6 @@
-"""Every row of every round-3 queue file parses as run_fleet.py arguments, names a run, and carries only
-the queue's trailing words (docs/gpu-experiments/03-acceleration/05-session-plan.md); a typo fails here."""
+"""Every row of every round-3 and round-4 queue file parses as run_fleet.py arguments, names a run, and
+carries only the queue's trailing words (docs/gpu-experiments/03-acceleration/05-session-plan.md,
+04-kernels/07-session-plan.md); a typo fails here, and a round-4 row's flags must build a plan."""
 import sys
 from pathlib import Path
 
@@ -7,7 +8,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import run_fleet  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent.parent
-QUEUES = sorted((ROOT / "env/session").glob("queue-[cd]*.txt"))
+ROUND4 = sorted((ROOT / "env/session").glob("queue-[fg][0-9].txt"))   # not the fixtures queue-fault*, queue-fix*
+QUEUES = sorted((ROOT / "env/session").glob("queue-[cd]*.txt")) + ROUND4
 WORDS = {"compare", "table", "measure", "continue"}
 
 
@@ -22,6 +24,12 @@ def test_round3_queue_files_exist():
     names = {p.name for p in QUEUES}
     assert {"queue-c2.txt", "queue-c3.txt", "queue-c4.txt", "queue-c5.txt", "queue-c6.txt",
             "queue-d7.txt", "queue-d8.txt", "queue-d9.txt"} <= names
+
+
+def test_round4_queue_files_exist():
+    names = {p.name for p in ROUND4}
+    assert {"queue-f2.txt", "queue-f3.txt", "queue-f4.txt", "queue-f5.txt", "queue-f6.txt",
+            "queue-g1.txt", "queue-g2.txt"} == names
 
 
 def test_every_row_parses_and_names_a_run():
@@ -43,9 +51,42 @@ def test_every_row_parses_and_names_a_run():
 
 
 def test_knob_rows_use_the_equals_form():
-    for toks in rows(ROOT / "env/session/queue-c4.txt"):
-        for t in toks:
-            assert not t.startswith("--runtime-flags ") and (not t.startswith("--runtime-flags") or "=" in t), toks
+    for q in (ROOT / "env/session/queue-c4.txt", ROOT / "env/session/queue-f6.txt", ROOT / "env/session/queue-f2.txt"):
+        for toks in rows(q):
+            for t in toks:
+                assert not t.startswith("--runtime-flags ") and (not t.startswith("--runtime-flags") or "=" in t), toks
+
+
+def test_round4_rows_build_their_plans_and_obey_the_rules():
+    """Every model row of the round-4 files builds its plan (the flag asserts fire here, not on the VM),
+    carries --nt-streams (L1c: the round-4 kernels' load policy), never pairs a fence knob with a counter
+    form, and never probes the o_proj label under the fold; the stream rows read whole 4 KB rows."""
+    sys.path.insert(0, str(ROOT))
+    from fleet import build_graph as B
+    p = run_fleet.build_parser()
+    seen = set()
+    for q in ROUND4:
+        for toks in rows(q):
+            a = p.parse_args([t for t in toks if t not in WORDS] + ["--model-dir", "x"])
+            assert a.iters <= 32 and (a.iters == 1 or not a.debug), (q.name, toks)
+            assert not run_fleet.fence_knob_conflict(a), (q.name, toks)
+            if a.graph == "stream":
+                assert a.kb % 4 == 0 and a.ops >= 1 and a.tasks >= 1, (q.name, toks)
+                continue
+            assert a.nt_streams or not (a.gemv_linears or a.gemv_w13 or a.router_tasks or a.merge_oproj), (q.name, toks)
+            key = (a.layers, a.head, a.gemv_linears, a.linear_grid, a.head_grid, a.gemv_w13, a.merge_tasks,
+                   a.merge_halves, a.router_tasks, a.merge_oproj, a.fuse_norm1, a.fuse_norm2, a.fuse_silu,
+                   a.tile_linears, a.attend_tasks, a.probe_before)
+            if key in seen:
+                continue
+            seen.add(key)
+            B.dry_run(layers=a.layers, head=a.head, debug=a.debug, stop_after=a.stop_after,
+                      debug_scores=a.debug_scores, tile_linears=a.tile_linears, attend_tasks=a.attend_tasks,
+                      fuse_norm2=a.fuse_norm2, fuse_silu=a.fuse_silu, probe_before=a.probe_before,
+                      fuse_norm1=a.fuse_norm1, prefetch=a.prefetch, gemv_linears=a.gemv_linears,
+                      linear_grid=a.linear_grid, head_grid=a.head_grid, gemv_w13=a.gemv_w13,
+                      merge_tasks=a.merge_tasks, merge_halves=a.merge_halves, router_tasks=a.router_tasks,
+                      merge_oproj=a.merge_oproj)
 
 
 def test_queue_flag_removes_a_failed_lever(tmp_path):

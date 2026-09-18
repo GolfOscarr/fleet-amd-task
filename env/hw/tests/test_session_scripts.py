@@ -478,3 +478,27 @@ def test_vm_preflight_kill_gdb_and_laptop_wait_report_in_dry_mode(tree, tmp_path
     (tmp_path / "vm.started").write_text(str(int(__import__("time").time()) - 90 * 60))
     r = sh([str(SESSION / "laptop.sh"), "report"], env)
     assert "minute 90 since provisioning" in r.stdout and "about $4.49 billed" in r.stdout   # 1.5 h at 2.99
+
+
+def test_queue_guards_refuse_compare_on_a_synthetic_graph(tree):
+    """Round 4 (L8): --graph empty and --graph stream load no reference and have no boundaries, so a
+    compare word on such a row is a FAIL row without a run; without the word the row runs even when the
+    reference tensors are absent."""
+    tmp, env = tree
+    env["DRY"] = "1"
+    q = tmp / "queue.txt"
+    q.write_text("--graph stream --ops 10 --tasks 37 --kb 304 --gang --iters 32 --nt-streams table compare continue\n"
+                 "--graph stream --ops 10 --tasks 37 --kb 304 --gang --iters 32 --nt-streams table continue\n")
+    r = sh([str(SESSION / "queue.sh"), "run", str(q)], env)
+    assert r.returncode == 0, r.stdout + r.stderr
+    rows = (tmp / "logs/queue.status").read_text().rstrip().splitlines()
+    assert "FAIL guard: a synthetic graph" in rows[0] and "S10x37_304kb_gang_it32_nts" in rows[0]
+    assert rows[1].split()[1] == "S10x37_304kb_gang_it32_nts" and " PASS " in rows[1] and "table=PASS" in rows[1]
+    (tmp / "ref/ref_cache.safetensors").unlink()                       # no reference stage: the stream row still runs
+    env["DRY"] = "0"
+    q.write_text("--graph stream --ops 10 --tasks 96 --kb 152 --iters 32 --nt-streams continue\n"
+                 "--layers 2 --iters 32 continue\n")
+    r = sh([str(SESSION / "queue.sh"), "run", str(q)], env)
+    rows = (tmp / "logs/queue.status").read_text().rstrip().splitlines()
+    assert any(l.split()[1] == "S10x96_152kb_it32_nts" and " PASS " in l for l in rows), rows
+    assert any("L2_it32 FAIL guard: run_fleet.py loads" in l for l in rows), rows
