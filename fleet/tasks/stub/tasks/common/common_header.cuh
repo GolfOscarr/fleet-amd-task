@@ -36,6 +36,7 @@ inline float __shfl_xor(float v, int, int = 64) { return v; }
 inline int __shfl_xor(int v, int, int = 64) { return v; }
 inline unsigned __shfl_xor(unsigned v, int, int = 64) { return v; }
 inline float __shfl_down(float v, int, int = 64) { return v; }
+inline float __shfl(float v, int, int = 64) { return v; }
 inline unsigned __float_as_uint(float x) {
   unsigned u;
   __builtin_memcpy(&u, &x, 4);

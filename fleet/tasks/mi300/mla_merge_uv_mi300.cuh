@@ -11,12 +11,13 @@
  * attn[h * D_V + v] = sum_c o[c] * W_uv[h, v, c] with FP32 accumulation, BF16 store.
  *
  * Phases (round 4, M1 to M3 of docs/gpu-experiments/04-kernels/03-router-merge-ideas.md):
- * round 3's four dependent round trips become about two, and every wave-load a
- * contiguous KB.
- *   (a) the first W_uv batch is issued before anything else. Wave w owns rows
- *       D_V / WAVES * w .. of the head; one row of D_C BF16 is exactly one
- *       wave-load (lane l takes the elements 8 l .. 8 l + 7), MERGE_W_BATCH rows
- *       held as raw words.
+ * round 3's four dependent round trips become three (the partials batch, then
+ * the W_uv batches), and every wave-load a contiguous KB.
+ *   (a) wave w owns the W_uv rows D_V / WAVES * w .. of the head; one row of
+ *       D_C BF16 is exactly one wave-load (lane l takes the elements 8 l .. 8 l
+ *       + 7), loaded in (f) in batches of MERGE_W_BATCH rows held as raw words.
+ *       M2, a batch issued here before the partials, was measured and dropped
+ *       (the note at MERGE_W_BATCH below).
  *   (b) the partials batch: thread (q = tid % CHUNKS, s = tid / CHUNKS) reads,
  *       for its rows j = s, s + GROUPS, ... < live, the floats 4 q .. 4 q + 3 and
  *       D_C / 2 + 4 q .. of the head's row in split j (two 16-byte loads, each of
@@ -27,10 +28,9 @@
  *   (d) the FMAs in ascending j into eight accumulators (the two runs of four
  *       columns), the GROUPS partial sums added in group order through red_s,
  *       o_s[c] = bf16r(sum * inv_tot), as round 3.
- *   (e) the second W_uv batch is issued as soon as the partials registers are
- *       consumed, before (d)'s reductions rather than after them.
  *   (f) the lane's eight o values are read from o_s[8 lane ..] into registers once;
- *       per row eight FMAs against them, the batch's row sums reduced by one
+ *       then one W_uv batch at a time: its rows loaded, per row eight FMAs against
+ *       the o values, the batch's row sums reduced by one
  *       halving butterfly (butterfly_sum<MERGE_W_BATCH>, which leaves row r's
  *       total in lane r), and the lanes below the batch store attn as BF16.
  *
@@ -56,10 +56,10 @@
  * LDS    : lse_s [64], o_s [D_C], the split groups' partial sums red_s [4][D_C] FP32:
  *          10.25 KiB. Round 3's weight row and its total in LDS are gone: every thread
  *          holds the total, so (c) needs no second barrier.
- * Registers: through (d) about 72 partials words + 9 lse + 64 W_uv + the eight
- *          accumulators, and through (e) and (f) 64 + 64 W_uv + the eight o values
- *          + the batch's row sums: about 155 either way, under 180 with the
- *          addressing (the offline build's k_mla_merge_uv line is the check).
+ * Registers: through (d) about 72 partials words + 9 lse + the eight accumulators,
+ *          and in (f) 64 W_uv words + the eight o values + the batch's row sums:
+ *          under 180 with the addressing (the offline build's k_mla_merge_uv line
+ *          is the check: 166 VGPRs, no scratch).
  */
 #pragma once
 #include "tasks/common/common_header.cuh"
@@ -68,14 +68,10 @@
 #ifndef MERGE_W_BATCH
 #define MERGE_W_BATCH 16     // W_uv rows per batch: two batches of 64 raw registers per wave
 #endif
-// M2, the W_uv batches issued before and under the partials: off by default for the
-// register cost of batches live across the partials phase (the probe of 2026-09-18: a batch
-// live across a prologue and reloaded in a loop costs about 60 to 75 registers more; the
-// merge measured 244 with it at a batch of 16, 205 at 8); -DMERGE_W_PRELOAD=1 for the VM's
-// A/B. Without it the W_uv rows are loaded in (f), one batch at a time.
-#ifndef MERGE_W_PRELOAD
-#define MERGE_W_PRELOAD 0
-#endif
+// M2 (the W_uv batches issued before and under the partials) was measured and dropped: a
+// batch live across the partials phase costs about 60 to 75 registers with this compiler
+// (the probe of 2026-09-18: 244 against 166 at a batch of 16, 205 at 8), which the worker
+// union cannot take; the rows are loaded in (f), one batch at a time.
 
 namespace kernel {
 
@@ -142,16 +138,8 @@ __device__ __forceinline__ void
     live = WAVE;   // unreachable when the asserts hold; never read past lse_s
   }
 
-  // (a) the first W_uv batch, before anything else (M2): the head's rows
-  // w_row0 .. w_row0 + W_BATCH - 1, one wave-load each, kept as raw words
+  // (a) the W_uv rows this wave multiplies in (f): w_row0 .. w_row0 + W_ROWS_PER_WAVE - 1
   int w_row0 = half * W_ROWS_PER_HALF + wave * W_ROWS_PER_WAVE;
-#if MERGE_W_PRELOAD
-  uint4 w_raw[2][W_BATCH];                            // two batches alternate; (e) fills the second
-#pragma unroll
-  for (int r = 0; r < W_BATCH; r++) {
-    w_raw[0][r] = load16_from(w_uv_stream, (size_t)(w_row0 + r) * D_C + 8 * lane);
-  }
-#endif
 
   // o[c] = sum_j w_j o_j[c] / sum_j w_j, rounded to BF16. Thread t owns two runs of
   // four columns (q = t % CHUNKS: 4 q .. and D_C / 2 + 4 q .., one 16-byte load each,
@@ -244,17 +232,6 @@ __device__ __forceinline__ void
     }
   }
 
-  // (e) the second W_uv batch: the partials registers are consumed, so it goes out
-  // under the reductions instead of after them
-#if MERGE_W_PRELOAD
-  if constexpr (W_BATCHES > 1) {
-#pragma unroll
-    for (int r = 0; r < W_BATCH; r++) {
-      w_raw[1][r] = load16_from(w_uv_stream, (size_t)(w_row0 + W_BATCH + r) * D_C + 8 * lane);
-    }
-  }
-#endif
-
   // the groups' partial sums added in group order, then o rounded to BF16
 #pragma unroll
   for (int k = 0; k < RUN; k++) {
@@ -280,11 +257,7 @@ __device__ __forceinline__ void
   for (int k = 0; k < 8; k++) {
     ov[k] = o_s[8 * lane + k];
   }
-  // the two slots of w_raw alternate, so the slot index stays a compile-time one and
-  // the raw words stay in registers; a smaller MERGE_W_BATCH than half the wave's rows
-  // issues the batch two ahead from inside the loop, which is why it is a loop at all
-#if !MERGE_W_PRELOAD
-  // the plain form: one batch of rows loaded, multiplied, reduced and stored at a time
+  // one batch of rows loaded, multiplied, reduced and stored at a time
 #pragma unroll 1
   for (int b = 0; b < W_BATCHES; b++) {
     uint4 w_raw[W_BATCH];
@@ -313,45 +286,6 @@ __device__ __forceinline__ void
       }
     }
   }
-#else
-#pragma unroll 1
-  for (int b0 = 0; b0 < W_BATCHES; b0 += 2) {
-#pragma unroll
-    for (int slot = 0; slot < 2; slot++) {
-      int b = b0 + slot;
-      if (b >= W_BATCHES) {
-        continue;
-      }
-      float rs[W_BATCH];
-#pragma unroll
-      for (int r = 0; r < W_BATCH; r++) {
-        unsigned const *words = reinterpret_cast<unsigned const *>(&w_raw[slot][r]);
-        float a = 0.0f;
-#pragma unroll
-        for (int k = 0; k < 8; k++) {
-          unsigned bits = (k & 1) ? (words[k / 2] & 0xffff0000u) : (words[k / 2] << 16);
-          a += ov[k] * __uint_as_float(bits);
-        }
-        rs[r] = a;
-      }
-      if (b + 2 < W_BATCHES) {                        // the slot is free: the next batch but one
-        int next = w_row0 + (b + 2) * W_BATCH;
-#pragma unroll
-        for (int r = 0; r < W_BATCH; r++) {
-          w_raw[slot][r] = load16_from(w_uv_stream, (size_t)(next + r) * D_C + 8 * lane);
-        }
-      }
-      float sum = butterfly_sum<W_BATCH>(rs);
-      if (lane < W_BATCH) {
-        float v = bf16r(sum);
-        st(attn + w_row0 + b * W_BATCH + lane, v);
-        if (attn_s != nullptr) {                      // N5: the half's values, at the half's own index
-          attn_s[wave * W_ROWS_PER_WAVE + b * W_BATCH + lane] = v;
-        }
-      }
-    }
-  }
-#endif
 }
 
 // The gang entry point (task type TASK_MLA_MERGE_UV_MI300): the tile decode of the header,

@@ -316,6 +316,8 @@ def linear_gemv_layer(mpk, input, w_norm, weight, residual, output, grid_dim, no
     if residual_add:
         assert residual is not None and residual.num_dims == 2, "the residual add needs a [1, N]"
         assert residual.dim(0) == 1 and residual.dim(1) == output.dim(1), (residual.shape, output.shape)
+        # the kernel reads one residual value per lane for the wave's rows (linear_gemv_mi300.cuh)
+        assert output.dim(1) // grid_dim[0] <= 4 * 64, (output.dim(1), grid_dim[0])
     else:
         assert residual is None, "the plain form takes no residual"
     inputs = [(input, (-1, -1, -1), 1)]

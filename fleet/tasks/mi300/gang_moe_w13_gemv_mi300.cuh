@@ -45,8 +45,11 @@
  * elements per lane of h, four load8 from global, read once before the loop; no
  * prologue precedes the first batch (the round's third convention: a batch live
  * across a prologue and reloaded inside the loop is not coalesced with the
- * loop's own by this compiler, and the pre-load forms stay behind GEMV_PRELOAD
- * in the dense kernel). The FMAs run on the raw words in ascending k within each
+ * loop's own by this compiler; the pre-load forms were measured and dropped).
+ * The arguments are made wave-uniform on entry (uniform_ptr and uniform_int of
+ * mla_common_mi300.cuh): a __noinline__ kernel's arguments arrive in VGPRs, and
+ * a buffer resource built from a VGPR pointer costs every weight load a
+ * v_readfirstlane waterfall loop. The FMAs run on the raw words in ascending k within each
  * chunk, as the dense GEMV's loop; butterfly_sum<W13_BATCH> then leaves the
  * total of row r0 + l on lane l, and lane l < W13_BATCH stores one BF16 element
  * of mid at the stock scatter's address.
@@ -109,6 +112,13 @@ __device__ __noinline__ void
                              void *output_ptr,
                              int tile_idx) {
   using namespace dsv2;
+  // the tile's arguments, identical across the wave, made scalar (see the header)
+  input_ptr = uniform_ptr(input_ptr);
+  weight_ptr = uniform_ptr(weight_ptr);
+  routing_ptr = uniform_ptr(routing_ptr);
+  mask_ptr = uniform_ptr(mask_ptr);
+  output_ptr = uniform_ptr(output_ptr);
+  tile_idx = uniform_int(tile_idx);
   constexpr int BATCH = W13_BATCH;
   constexpr int BIG_TILES = 4, BIG_ROWS = 77, SMALL_ROWS = 76;
   static_assert(TILES == 37 && BIG_TILES * BIG_ROWS + (TILES - BIG_TILES) * SMALL_ROWS == N,

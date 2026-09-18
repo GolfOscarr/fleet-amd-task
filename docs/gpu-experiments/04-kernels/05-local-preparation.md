@@ -43,14 +43,22 @@ Two conventions of the round, from the probe (`01`, K6 and K9):
   against 172 at eight rows in every form tried (the reload at the top of
   the loop, after the multiply, or a peeled first iteration), and the
   worker union at 208 AGPRs against 100. So the first batch is issued
-  after the prologue, and the pre-load forms stay behind `GEMV_PRELOAD`,
-  `ROUTER_PRELOAD` and `MERGE_W_PRELOAD` for the VM's A/B. A branch per
+  after the prologue; the pre-load forms were measured and removed (the
+  final check of 2026-09-18: a lever that costs 60 to 75 registers is not
+  worth its code). A branch per
   row around a row's loads puts each row in its own basic block, and the
   scheduler keeps only that block's loads in flight (four of 32): rows
   past the range are loaded as the last valid row and their sums dropped
   by the store's mask. And a heavy task body is a `__noinline__` call
   (the stock gang kernels' form): the three inlined GEMV forms cost the
   union 222 AGPRs, the call 102, for 67 callee-saved stores per task.
+  A call-form kernel makes its arguments wave-uniform on entry
+  (`uniform_ptr`, `uniform_int` in `mla_common_mi300.cuh`, the stock gang
+  kernels' `__uniform_addr`): its arguments arrive in VGPRs, and a buffer
+  resource built from a VGPR pointer wraps every weight load in a
+  `v_readfirstlane` waterfall loop (the offline build of 2026-09-18 under
+  `MLA_NT_STREAMS` had one per weight load of the four call-form kernels;
+  `StreamSrc` now applies `uniform_ptr` to its base for every kernel).
 
 ## Part 1: the GEMV linear
 
@@ -80,8 +88,15 @@ flags. It replaces the CK tile whose K loop keeps one step in flight.
   row, and the slice is read from LDS; plain: four `load8` from x.
 - The first batch's loads, and the residual's values for RESIDUAL, follow
   the prologue (the third convention: issuing them before it costs about
-  70 registers; `GEMV_PRELOAD=1` restores that form for the A/B). The residual is read as one 2-byte load per
-  lane for the batch's rows (lanes 0 to 7 of each wave), not as a 16-byte
+  70 registers; the pre-load form was removed). The residual is read once
+  per wave before the prologue, one 2-byte load per lane at a clamped row
+  of the wave's range (a residual task has at most 256 rows,
+  `build_graph.py` asserts it; the head's larger tasks have no residual),
+  and each batch takes its rows' values by one shuffle at
+  the store: a residual load inside the loop, however placed, was sunk by
+  the compiler into the store's branch and waited there after the
+  butterfly, once per batch (the offline build of 2026-09-18). It is not
+  read as a 16-byte
   chunk: a 38-row task's column start is 76 bytes into the row, so its
   output and residual pointers are 4-byte aligned at best (the stock
   epilogue's packed 8-byte store has the same problem and falls back to
@@ -180,8 +195,10 @@ scratch size unchanged (64 bytes per lane); the AGPR count against the
 ### L2. The task type and the plan flag (I1, I2)
 
 **Direction.** The GEMV as the per-tile linear of the plan under
-`--gemv-linears`: qkva with the norm, o_proj and layer 0's down with the
-residual, the head with the final norm; no scratch tensors.
+`--gemv-linears`: qkva with the norm, o_proj with the residual, the head
+with the final norm; no scratch tensors. Layer 0's down (K 11,264) stays
+the stock per-tile linear: the kernel keeps a lane's K slice in registers
+and bounds K at 4,096 (S4, a later pass).
 
 **Core approach.**
 
@@ -393,8 +410,9 @@ one ULP, one by many); the queue action's dry run.
 before the VM is billed.
 
 **Core approach.** `queue-f2.txt` (G1, G2: the 2-layer pairs with
-`--gemv-linears` and the grid sweep), `queue-f3.txt` (G3, G4: `--gemv-w2`
-under `--runtime-flags` and `--gemv-w13`), `queue-f4.txt` (G5's stream
+`--gemv-linears` and the grid sweep), `queue-f3.txt` (G3, G4: the w2 GEMV
+form, which is `--fuse-silu`'s default path in the pushed header, its CK
+fallback `--runtime-flags=-DMPK_W2_CK_TILE`, and `--gemv-w13`), `queue-f4.txt` (G5's stream
 rows, G6's head rows, G8's bit-diff action), `queue-f5.txt` (the finals
 at 30, 31, 32 and the `FWD_PASS` row), `queue-f6.txt` (G9: round 3's
 knob rows), `queue-g1.txt` (H1 to H4), `queue-g2.txt` (H5); the `kernels`

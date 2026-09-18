@@ -45,8 +45,10 @@
  * lane l < W2_BATCH stores one BF16 element.
  *
  * Rounding: fast_silu in FP32, the product rounded to BF16 (round to nearest
- * even, the bits __float2bfloat16 gives), element for element what
- * silu_mul_task_impl does, so act is bit-identical to the un-fused graph's.
+ * even, the bits __float2bfloat16 gives for every non-NaN value; a NaN's
+ * payload may differ under ROCm 7's static_cast form, and a NaN in mid is a
+ * bug upstream anyway), element for element what silu_mul_task_impl does, so
+ * act is bit-identical to the un-fused graph's.
  * The BF16 x BF16 products of the multiply are exact in FP32; only the
  * summation order differs from the CK path's (a serial chain per lane over the
  * lane's chunks, then the butterfly tree), which is the difference the
@@ -83,9 +85,11 @@
 namespace kernel {
 
 #ifndef MPK_W2_HAVE_FAST_SILU
-// The stock silu_mul task's fast_silu (tasks/mi300/silu_mul_mi300.cuh), for the
-// builds whose include path has no fork sources: the host syntax check, where
-// nothing runs. Every build that generates device code has the fork's own.
+// A stand-in for the stock silu_mul task's fast_silu (tasks/mi300/silu_mul_mi300.cuh,
+// x * rcpf(1 + __expf(-x)): the fast reciprocal and exp, a few FP32 ulp from this
+// exact form before the BF16 rounding), for the builds whose include path has no fork
+// sources: the host syntax check, where nothing runs. Every build that generates
+// device code (the launcher, the runtime, the offline unit) has the fork's own.
 __device__ __forceinline__ float fast_silu(float x) {
   return x / (1.0f + expf(-x));
 }
@@ -108,8 +112,11 @@ __device__ __forceinline__ int _gang_moe_w2_xcd_id() {
 #endif
 }
 
-// FP32 -> BF16 bits, round to nearest even with HIP's NaN rule: the bits
-// __float2bfloat16 produces, so the fused row is the stock silu's row.
+// FP32 -> BF16 bits, round to nearest even (ROCm 6's __float2bfloat16_raw: the bits
+// __float2bfloat16 produces for every non-NaN value, checked against torch's conversion
+// on a million values including every tie pattern), so the fused row is the stock
+// silu's row; a NaN is kept quiet in its 16 bits, where ROCm 7's static_cast form sets
+// the quiet bit instead (a NaN in mid is a bug upstream, so the difference is moot).
 __device__ __forceinline__ uint16_t _gang_moe_w2_bf16(float x) {
   unsigned u = __float_as_uint(x);
   if (~u & 0x7f800000u) {
@@ -170,6 +177,17 @@ __device__ __noinline__ void
                                     void *output_ptr,
                                     void *scratch_ptr,
                                     int tile_idx) {
+  // the tile's arguments, identical across the wave, made scalar as the stock gang kernels
+  // do with __uniform_addr (dsv2::uniform_ptr, mla_common_mi300.cuh: a __noinline__
+  // kernel's arguments arrive in VGPRs, and a buffer resource built from a VGPR pointer
+  // costs every weight load a v_readfirstlane waterfall loop)
+  mid_ptr = dsv2::uniform_ptr(mid_ptr);
+  weight_ptr = dsv2::uniform_ptr(weight_ptr);
+  routing_ptr = dsv2::uniform_ptr(routing_ptr);
+  mask_ptr = dsv2::uniform_ptr(mask_ptr);
+  output_ptr = dsv2::uniform_ptr(output_ptr);
+  scratch_ptr = dsv2::uniform_ptr(scratch_ptr);
+  tile_idx = dsv2::uniform_int(tile_idx);
   static_assert(BATCH_SIZE == 1, "the prologue computes one token's row per tile");
   static_assert(IN_STRIDE >= 2 * REDUCTION_SIZE, "mid holds gate then up per slot");
   static_assert(REDUCTION_SIZE % 8 == 0, "16-byte vectors of 8 BF16");

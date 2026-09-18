@@ -114,6 +114,21 @@ __device__ MERGE_OPROJ_INLINE void
                                     int n_splits,
                                     int idx) {
   using namespace dsv2;
+  // the task's arguments, identical across the wave, made scalar (uniform_ptr and
+  // uniform_int of mla_common_mi300.cuh: a __noinline__ kernel's arguments arrive in
+  // VGPRs, and a buffer resource built from a VGPR pointer costs every W_o load a
+  // v_readfirstlane waterfall loop)
+  partials_ptr = uniform_ptr(partials_ptr);
+  w_uv_ptr = uniform_ptr(w_uv_ptr);
+  w_o_ptr = uniform_ptr(w_o_ptr);
+  x_res_ptr = uniform_ptr(x_res_ptr);
+  counter_ptr = uniform_ptr(counter_ptr);
+  attn_ptr = uniform_ptr(attn_ptr);
+  workspace_ptr = uniform_ptr(workspace_ptr);
+  step = uniform_int(step);
+  split = uniform_int(split);
+  n_splits = uniform_int(n_splits);
+  idx = uniform_int(idx);
   static_assert(sizeof(T) == 2, "the raw-word conversion below is BF16's");
   static_assert(HALVES == 1 || HALVES == 2, "a task is a whole head or a half of one");
   static_assert(HIDDEN % (WAVES * 8) == 0, "the four waves take whole groups of eight rows");

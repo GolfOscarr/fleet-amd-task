@@ -35,6 +35,36 @@ __device__ __forceinline__ void st(T *p, float x) {
   *p = static_cast<T>(x);
 }
 
+// Wave-uniform arguments, the fork's __uniform_addr (linear_ck_mi300.cuh), which the stock
+// gang kernels apply to every pointer. A __noinline__ kernel receives its arguments in
+// VGPRs, so the compiler cannot see that every lane holds the same value: the loop bounds
+// stay in VGPRs, and a buffer load whose resource comes from such a pointer is wrapped in
+// a v_readfirstlane waterfall loop (the offline build of 2026-09-18 under MLA_NT_STREAMS:
+// one loop per weight load of the round-4 call-form kernels; the fork's comment puts the
+// cost at about 40% of a GEMM K loop). readfirstlane makes the value scalar; every caller
+// passes the task's pointers and counts, identical across the wave. On the host syntax
+// check they are the identity.
+#if defined(__HIP_DEVICE_COMPILE__)
+__device__ __forceinline__ int uniform_int(int v) {
+  return __builtin_amdgcn_readfirstlane(v);
+}
+template <typename T>
+__device__ __forceinline__ T *uniform_ptr(T *p) {
+  uintptr_t a = reinterpret_cast<uintptr_t>(p);
+  unsigned lo = __builtin_amdgcn_readfirstlane(static_cast<unsigned>(a));
+  unsigned hi = __builtin_amdgcn_readfirstlane(static_cast<unsigned>(a >> 32));
+  return reinterpret_cast<T *>((static_cast<uintptr_t>(hi) << 32) | lo);
+}
+#else
+__device__ __forceinline__ int uniform_int(int v) {
+  return v;
+}
+template <typename T>
+__device__ __forceinline__ T *uniform_ptr(T *p) {
+  return p;
+}
+#endif
+
 // Streaming loads (docs/gpu-experiments/03-acceleration, O6; -DMLA_NT_STREAMS): the
 // policy the stock linears give their weight loads under -DMPK_NT_WEIGHT_LOADS,
 // CK's amd_buffer_coherence_enum value 18 on gfx942 (bit 4 = sc1, bit 1 = nt:
@@ -52,8 +82,11 @@ template <typename T>
 struct StreamSrc {
   T const *base;
   __amdgpu_buffer_rsrc_t rsrc;
+  // the base made wave-uniform first: a resource built from a VGPR pointer costs every
+  // load a waterfall loop (uniform_ptr above)
   __device__ __forceinline__ explicit StreamSrc(T const *p)
-      : base(p), rsrc(__builtin_amdgcn_make_buffer_rsrc(const_cast<T *>(p), 0, 0xFFFFFFFFu, BUFFER_RSRC_WORD3)) {}
+      : base(uniform_ptr(p)),
+        rsrc(__builtin_amdgcn_make_buffer_rsrc(const_cast<T *>(base), 0, 0xFFFFFFFFu, BUFFER_RSRC_WORD3)) {}
 };
 template <typename T>
 __device__ __forceinline__ void load8_from(StreamSrc<T> const &s, size_t elem, float out[8]) {
@@ -74,7 +107,7 @@ __device__ __forceinline__ float ldf_from(StreamSrc<float> const &s, size_t elem
 template <typename T>
 struct StreamSrc {
   T const *base;
-  __device__ __forceinline__ explicit StreamSrc(T const *p) : base(p) {}
+  __device__ __forceinline__ explicit StreamSrc(T const *p) : base(uniform_ptr(p)) {}
 };
 template <typename T>
 __device__ __forceinline__ void load8_from(StreamSrc<T> const &s, size_t elem, float out[8]);

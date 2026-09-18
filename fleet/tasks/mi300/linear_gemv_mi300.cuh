@@ -38,15 +38,26 @@
  * the LDS copy) and from x with 16-byte loads otherwise. The weight goes
  * through StreamSrc, the sc1 nt policy of the linears under -DMLA_NT_STREAMS
  * (round 2, E2: 20% on the CK weight loads); x, the residual and the output
- * are plain.
+ * are plain. The arguments are made wave-uniform on entry (uniform_ptr and
+ * uniform_int of mla_common_mi300.cuh): the body is a __noinline__ call, whose
+ * arguments arrive in VGPRs, and a buffer resource built from a VGPR pointer
+ * costs every weight load a v_readfirstlane waterfall loop.
  *
- * What is in flight across the prologue: the first batch's raw words
- * (GEMV_BATCH x 4 x 4 VGPRs) and, for RESIDUAL, one 2-byte residual value per
- * lane, both issued before the norm runs, so the norm's own loads, its block
- * reduction and its LDS round trip happen under the batch's latency (K8). The
- * live registers of a batch are those raw words, the 32 x-values and
- * GEMV_BATCH row sums; the norm's own need (8 x-values and 8 weight values)
- * is small beside them.
+ * Nothing is in flight across the prologue: K8 of 01-gemv-ideas (the first
+ * batch issued before the norm) was measured and dropped, since a batch live
+ * across the prologue and reloaded inside the loop is not coalesced with the
+ * loop's own by this compiler and costs about 60 to 75 registers (the probe
+ * of 2026-09-18: 230 against 172 at eight rows), which the worker union
+ * cannot take. The live registers of a batch are its raw words (GEMV_BATCH x
+ * 4 x 4 VGPRs), the 32 x-values and GEMV_BATCH row sums.
+ *
+ * The residual (RESIDUAL) is read once per wave before the loop, one 2-byte
+ * value per lane at a clamped row of the wave's range (at most WAVE rows per
+ * wave: build_graph.py bounds a residual task at 256 rows; the head's tasks
+ * may be larger, they have no residual), and each batch takes its rows'
+ * values by one shuffle at the store. A load inside the loop, however placed,
+ * was sunk by the compiler into the store's branch and waited there after the
+ * butterfly, once per batch (the offline build of 2026-09-18).
  *
  * The numerics. Every product is a BF16 times a BF16, exact in FP32; the
  * accumulation order is a lane's chain of 32 products (ascending k inside
@@ -76,15 +87,6 @@
 // per CU and 110, 158 and 256 VGPRs in the probe.
 #ifndef GEMV_BATCH
 #define GEMV_BATCH 8
-#endif
-// The first batch issued before the prologue (K8 of 01-gemv-ideas: the norm's round trip
-// under the batch's latency). Off by default: with this compiler a batch that is live
-// across the prologue and reloaded inside the loop is not coalesced with the loop's own,
-// and the kernel costs about 60 to 75 more registers (the probe of 2026-09-18: 230
-// against 172 at eight rows), which the worker union cannot take. -DGEMV_PRELOAD=1 for
-// the VM's A/B.
-#ifndef GEMV_PRELOAD
-#define GEMV_PRELOAD 0
 #endif
 
 namespace kernel {
@@ -149,6 +151,13 @@ __device__ GEMV_INLINE void
                                 int o_stride,
                                 float eps) {
   using namespace dsv2;
+  // the task's arguments, identical across the wave, made scalar (see the header)
+  x_ptr = uniform_ptr(x_ptr);
+  w_norm_ptr = uniform_ptr(w_norm_ptr);
+  weight_ptr = uniform_ptr(weight_ptr);
+  residual_ptr = uniform_ptr(residual_ptr);
+  output_ptr = uniform_ptr(output_ptr);
+  rows = uniform_int(rows);
   constexpr int BATCH = GEMV_BATCH;
   static_assert(K % (8 * WAVE) == 0, "16-byte loads, K / 64 elements per lane");
   static_assert(K <= 4096, "a lane's K slice lives in registers (K / 64 values); layer 0's dense down (K 11,264) is not this kernel's");
@@ -176,20 +185,17 @@ __device__ GEMV_INLINE void
 
   StreamSrc<T> w_src(static_cast<T const *>(weight_ptr));
 
-  // the first batch, and its residual values, before the prologue (K8): the norm
-  // then runs under their latency
-  uint4 raw[BATCH][CHUNKS];
-  float res = 0.0f;
-#if GEMV_PRELOAD
-  if (r_begin < r_end) {                      // a wave with no rows (rows < 4) issues nothing
-    gemv_detail::load_batch<T, K>(w_src, r_begin, r_end, lane, raw);
-  }
+  // the wave's residual values, read once before the prologue: lane l holds row
+  // r_begin + l's value (a clamped row; the wave has at most WAVE rows), 2 bytes per
+  // lane since the output row is not 16-byte aligned; the store below takes a batch's
+  // values by one shuffle, so the loop carries no residual load
+  float res_w = 0.0f;
   if constexpr (RESIDUAL) {
-    if (lane < BATCH && r_begin + lane < r_end) {
-      res = ld(residual + r_begin + lane);    // 2 bytes per lane: the output row is not 16-byte aligned
+    if (r_begin < r_end) {                    // wave-uniform: a wave with no rows (rows < 4) reads nothing
+      int rr = (r_begin + lane < r_end) ? r_begin + lane : r_end - 1;
+      res_w = ld(residual + rr);
     }
   }
-#endif
 
   if constexpr (NORM) {
     // the reference's order (numpy_ref.rmsnorm), the LDS copy only: no scratch row,
@@ -212,15 +218,8 @@ __device__ GEMV_INLINE void
 
 #pragma unroll 1
   for (int r0 = r_begin; r0 < r_end; r0 += BATCH) {
-#if GEMV_PRELOAD
-    if (r0 != r_begin)                        // the first batch is already in flight
-#endif
-    {
-      gemv_detail::load_batch<T, K>(w_src, r0, r_end, lane, raw);
-      if constexpr (RESIDUAL) {
-        res = (lane < BATCH && r0 + lane < r_end) ? ld(residual + r0 + lane) : 0.0f;
-      }
-    }
+    uint4 raw[BATCH][CHUNKS];
+    gemv_detail::load_batch<T, K>(w_src, r0, r_end, lane, raw);
     // every row of the batch is multiplied, the clamped ones included (one basic
     // block, so the loads stay in flight together); their sums never reach a store
     float sums[BATCH];
@@ -240,11 +239,13 @@ __device__ GEMV_INLINE void
     }
     butterfly_sum<BATCH>(sums);               // lane l < BATCH now holds row r0 + l's total
     int r = r0 + lane;
+    float v = sums[0];
+    if constexpr (RESIDUAL) {
+      // row r0 + l's residual sits in lane r0 - r_begin + l; the residual in FP32, before
+      // the one rounding (the lanes past the batch read some lane and never store)
+      v += __shfl(res_w, r0 - r_begin + lane, WAVE);
+    }
     if (lane < BATCH && r < r_end) {
-      float v = sums[0];
-      if constexpr (RESIDUAL) {
-        v += res;                             // the residual in FP32, before the one rounding
-      }
       st(out + r, bf16r(v));
     }
   }

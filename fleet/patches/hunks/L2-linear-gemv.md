@@ -178,7 +178,7 @@ The emitted call for the plan's three forms, to compare against the
         task_desc->output_ptrs[0],
         38, 3648,
         1.000000000e-06f);
-    // o_proj (the residual; 64 tasks of 32 rows; layer 0's down is the same with K 11264)
+    // o_proj (the residual; 64 tasks of 32 rows; layer 0's down, K 11,264, is not this kernel's: it stays the stock per-tile linear)
     kernel::linear_gemv_mi300_task_impl<bfloat16, 2048, false, true>(
         task_desc->input_ptrs[0],
         nullptr,
@@ -260,8 +260,9 @@ CK linear's alone.
 
 `05-local-preparation.md`'s L2 and `01-gemv-ideas.md`'s I1 both say the
 residual is passed whole. It is not: the kernel reads
-`residual + r0 + lane`, the same local row index it stores with
-(`linear_gemv_mi300.cuh`, the epilogue; its header says "residual [1, N]
+`residual + r_begin + lane`, a task-local row index like the one it stores
+with (`linear_gemv_mi300.cuh`, the wave's residual read before the
+prologue; its header says "residual [1, N]
 BF16 (RESIDUAL only; the task's columns)", and so does the row in
 `fleet/tasks/README.md`), so a whole residual would give every task but
 `bid.x == 0` the first task's columns. The registration therefore asserts
