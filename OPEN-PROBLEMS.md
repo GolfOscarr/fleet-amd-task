@@ -3,7 +3,7 @@
 Consolidated index of everything unresolved, so a problem can be located without
 re-reading four doc sets. Detail lives in each set's `99-open-questions.md`.
 
-Last updated: 2026-09-18 (round 4 run on `gpu/round-4`: 4.26 to 4.34 ms per token, `docs/gpu-experiments/04-kernels/10-results.md`; MIN-33 (the runtime knobs) resolved, MIN-35 and MIN-36 opened, MAJ-8, MIN-32 and MIN-34 given their round-4 readings; round 3 run on `gpu/round-3`: 4.57 to 4.60 ms per token, MAJ-7 attributed) · 5 major open (MAJ-8: the runtime's per-task completion cost, 0.19 us per regular task; MAJ-7 resolved as a measurement defect) · **18 minor open** · 34 resolved · 9 documentation defects
+Last updated: 2026-09-18 (round 5 prepared on `local/round-5`, `docs/gpu-experiments/05-final/`: MIN-35 fixed in `new_tasks.patch` by the buffer form of the timing build, the VM's first timing row the check; MIN-36 read on the laptop with nothing static differing, its 2-layer locator in the session plan; MIN-32's tie rule in the compare (F1); round 4 run on `gpu/round-4`: 4.26 to 4.34 ms per token, `docs/gpu-experiments/04-kernels/10-results.md`; MIN-33 (the runtime knobs) resolved, MIN-35 and MIN-36 opened, MAJ-8, MIN-32 and MIN-34 given their round-4 readings; round 3 run on `gpu/round-3`: 4.57 to 4.60 ms per token, MAJ-7 attributed) · 5 major open (MAJ-8: the runtime's per-task completion cost, 0.19 us per regular task; MAJ-7 resolved as a measurement defect) · **18 minor open** · 34 resolved · 9 documentation defects
 
 **When** — `local` = resolvable without a GPU · `gpu` = needs the MI300X ·
 `build` = needs a working toolchain

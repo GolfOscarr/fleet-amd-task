@@ -31,8 +31,9 @@ Session: date, minutes of VM time, cost, the balance decision (S0 of
 | | `..._it31_final_..._pollsleep8+...` | | | |
 | | `..._it32_final_..._pollsleep8+...` | | | |
 | B, `FWD_PASS` clock | `..._it29_final_..._pollsleep8+...` | | | |
-| the batch-4 set (optional, `queue-h6`) | `..._final_..._gemvbatch4+w2cktile_...` it30/31/32, it29 | | | |
-| the 8-event set (optional, `queue-h6`) | `..._final_..._as8` it30/31/32, it29 | | | |
+| the batch-4 set (optional, `queue-h6`) | `..._final_..._rf_gemvbatch4+w2cktile_...` it30/31/32, it29 | | | |
+| the 8-event set (optional, `queue-h8`, only if R5 chose it) | `..._final_..._as8` (or `_as10`) it30/31/32, it29 | | | |
+| A's set again (optional, `queue-h9`, only if A's medians spread by more than 2%) | the three A names again (the first set moved to `<name>.prev-<utc>`) | | | |
 
 The round's number: A's three (or B's, if A1 chose it) and its `FWD_PASS`,
 against round 4's 4,262 to 4,341 and the 4,500 target. To fill.

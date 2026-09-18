@@ -140,14 +140,17 @@ queue env/session/queue-h1.txt
 h "Minute 21, R2: the finals interleaved, A the stack and B the stack with POLL_SLEEP=8, then the FWD_PASS rows (queue-h2.txt)"
 queue env/session/queue-h2.txt
 
-h "Minute 30, R5: the head's event count at 8 and 10 argmax slices (queue-h5.txt)"
+h "Minute 30, the checkpoint pull: the record so far, committed right after, before any other commit"
+show $L pull
+
+h "Minute 33, R5: the head's event count at 8 and 10 argmax slices (queue-h5.txt)"
 queue env/session/queue-h5.txt
 
-h "Minute 35, R4: the fault of MIN-36 located at 2 layers (queue-h4.txt), then the layer bisect only if the 2-layer row passed (queue-h7.txt)"
+h "Minute 37, R4: the fault of MIN-36 located at 2 layers (queue-h4.txt), then the layer bisect only if the 2-layer row passed (queue-h7.txt)"
 queue env/session/queue-h4.txt
 queue env/session/queue-h7.txt
 
-h "Minute 39, R3: the timing build in F4's buffer form, its first row the check (queue-h3.txt), and the merge's standalone line"
+h "Minute 41, R3: the timing build in F4's buffer form, its first row the check (queue-h3.txt), and the merge's standalone line"
 queue env/session/queue-h3.txt
 show $V ktime nt
 
@@ -159,7 +162,7 @@ h "Minute 58, the plain-build suites if the minutes allow (round 4's K1: every c
 show $V kernels
 queue env/session/queue-h9.txt
 
-h "The end: pull and commit the record, push, then the deletion after the user's yes"
+h "Minute 70, the hard stop: no new queue; then the end by 78: pull and commit the record, push, then the deletion after the user's yes (by 82)"
 show $L pull
 show $L report --balance
 show $L delete --yes
