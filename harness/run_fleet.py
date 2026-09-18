@@ -5,6 +5,9 @@
                                 [--model-dir <snapshot>] [--ref harness/ref] [--out harness/fleet_out/<name>]
                                 [--event-timing] [--nt-weights] [--pad-alloc GB] [--align-alloc BYTES]
                                 [--workspaces-first] [--tile-linears] [--attend-tasks] [--split N]
+                                [--gemv-linears [--linear-grid N] [--head-grid N]] [--gemv-w13]
+                                [--merge-tasks [--merge-halves N]] [--router-tasks] [--merge-oproj]
+    python harness/run_fleet.py --graph stream --ops M --tasks N --kb K [--gang] [--iters K] [--event-timing]
 
 --align-alloc BYTES re-bases every weight, capture and workspace on an aligned address and
 --workspaces-first allocates the workspaces before the weights (the candidate M4 fault fixes,
@@ -197,11 +200,19 @@ def build_parser():
     ap.add_argument("--worker-timing", action="store_true",
                     help="compile with MPK_TIMING=1: every worker's [TIMING], [TASK_TIME] and [TASK_TIME2] lines "
                          "in fwd_pass.log (I1, docs/gpu-experiments/03-acceleration)")
-    ap.add_argument("--graph", choices=["model", "empty"], default="model",
-                    help="empty: the empty-task ladder (I3), --ops operators of --tasks copy tasks, no model")
-    ap.add_argument("--ops", type=int, default=100, help="--graph empty: operators per iteration")
-    ap.add_argument("--tasks", type=int, default=8, help="--graph empty: tasks per operator")
+    ap.add_argument("--graph", choices=["model", "empty", "stream"], default="model",
+                    help="empty: the empty-task ladder (I3), --ops operators of --tasks copy tasks, no model; "
+                         "stream: the stream probe (L6, docs/gpu-experiments/04-kernels), --ops operators of "
+                         "--tasks tasks reading --kb kilobytes each with the GEMV's load loop and no multiply")
+    ap.add_argument("--ops", type=int, default=100, help="--graph empty or stream: operators per iteration")
+    ap.add_argument("--tasks", type=int, default=8,
+                    help="--graph empty or stream: tasks per operator; under --gang, tiles per XCD")
     ap.add_argument("--spin", type=int, default=0, help="--graph empty: the shader-clock spin per task (I2)")
+    ap.add_argument("--kb", type=int, default=256,
+                    help="--graph stream: kilobytes one task or tile reads (a multiple of 4: a row of the "
+                         "probe's [*, 2048] BF16 tensor is 4 KB)")
+    ap.add_argument("--gang", action="store_true",
+                    help="--graph stream: one gang operator of 8 x --tasks tiles instead of --tasks regular tasks")
     ap.add_argument("--prefetch", action="store_true",
                     help="the side operators of O8 (docs/gpu-experiments/03-acceleration): weight prefetches on the "
                          "idle workers beside qkva, o_proj and w13 (needs the runtime patch's side-operator branch)")
@@ -217,12 +228,54 @@ def build_parser():
                     help="hold a dummy device allocation of GB gibibytes before packing (address shift)")
     ap.add_argument("--tile-linears", action="store_true",
                     help="issue qkva, o_proj, down and lm_head as per-tile linear_layer tasks (MAJ-7, docs/gpu-experiments/02-validation P5)")
+    ap.add_argument("--gemv-linears", action="store_true",
+                    help="issue qkva, o_proj and lm_head as our GEMV task, with the input norm and the residual "
+                         "add as its template flags (L2, docs/gpu-experiments/04-kernels); no norm operator and "
+                         "no scratch tensor; layer 0's down (K 11,264) stays the stock per-tile linear; off under --debug")
+    ap.add_argument("--linear-grid", type=int, default=None, metavar="N",
+                    help="--gemv-linears: the task count of qkva and o_proj, N dividing the row count "
+                         "(3,648 by 96, 48, 32; 2,048 by 64, 32; an operator N does not divide keeps the heuristic)")
+    ap.add_argument("--head-grid", type=int, default=None, metavar="N",
+                    help="--gemv-linears: the task count of lm_head, N dividing the vocabulary (400 or 320; L5)")
+    ap.add_argument("--gemv-w13", action="store_true",
+                    help="issue every MoE layer's expert gate-up as our GEMV gang task, 37 tiles per expert "
+                         "per XCD instead of 44, so the operator ends in one round per XCD "
+                         "(L4, docs/gpu-experiments/04-kernels)")
+    ap.add_argument("--merge-tasks", action="store_true",
+                    help="issue the merge as NH x halves regular tasks with whole-tensor imaps instead of "
+                         "the 8-task gang (N4, docs/gpu-experiments/04-kernels)")
+    ap.add_argument("--merge-halves", type=int, default=1, metavar="N",
+                    help="--merge-tasks: 1 (a whole head per task, 16 tasks) or 2 (a half of the head's "
+                         "W_uv rows after the same merge, 32 tasks)")
+    ap.add_argument("--router-tasks", action="store_true",
+                    help="issue the MoE layers' router as four regular tasks of 16 experts, the last to "
+                         "arrive reading the 64 logits back and routing (N2, docs/gpu-experiments/04-kernels); "
+                         "the fused router's split form, so those layers lose their norm operator as with "
+                         "--fuse-norm2; off under --debug")
+    ap.add_argument("--merge-oproj", action="store_true",
+                    help="fold o_proj into the merge: one operator of 32 regular tasks per layer, "
+                         "labelled L{l}.o_proj, whose last-arriving task sums the partial vectors "
+                         "into x_res (N5, docs/gpu-experiments/04-kernels); it replaces both the "
+                         "merge and the o_proj operator, overrides --merge-tasks, and is not gated by "
+                         "--debug; --probe-before L{l}.o_proj does not apply to the folded operator")
     ap.add_argument("--align-alloc", type=int, default=0, metavar="BYTES",
                     help="re-base every weight, capture and workspace on a BYTES-aligned address (power of two; "
                          "the M4 fault candidates, docs/gpu-experiments/02-validation)")
     ap.add_argument("--workspaces-first", action="store_true",
                     help="allocate the workspaces from the plan before the weights are packed (address order)")
     return ap
+
+
+FENCE_KNOBS = ("MPK_NO_COMPLETION_FENCE", "MPK_NO_ACQUIRE_FENCE")
+
+
+def fence_knob_conflict(args):
+    """N2 and N5 (docs/gpu-experiments/04-kernels): the counter forms (--router-tasks, --merge-oproj)
+    need the runtime's completion fence, which writes the last task's plain counter reset back
+    to memory before the next layer's memory-side atomics read it, and the acquire fence before a
+    task's reads; either I4 knob in --runtime-flags makes the graph hang after the first layer."""
+    return bool((args.router_tasks or args.merge_oproj)
+                and any(k in f for f in args.runtime_flags for k in FENCE_KNOBS))
 
 
 def runtime_flags_slug(flags):
@@ -255,20 +308,37 @@ def run_name(args):
     pf = "_pf" if args.prefetch else ""
     wt = "_wt" if args.worker_timing else ""
     rf = f"_rf_{runtime_flags_slug(args.runtime_flags)}" if args.runtime_flags else ""
+    gv = "_gv" if args.gemv_linears else ""                         # L2 of docs/gpu-experiments/04-kernels
+    lg = f"_lg{args.linear_grid}" if args.linear_grid else ""
+    hg = f"_hg{args.head_grid}" if args.head_grid else ""
+    w13 = "_w13" if args.gemv_w13 else ""                           # L4 of docs/gpu-experiments/04-kernels
+    mt = "_mt" if args.merge_tasks else ""                          # N4 of docs/gpu-experiments/04-kernels
+    mh = f"_mh{args.merge_halves}" if args.merge_halves != 1 else ""
+    rt = "_rt" if args.router_tasks else ""                         # N2 of docs/gpu-experiments/04-kernels
+    mo = "_mo" if args.merge_oproj else ""                          # N5 of docs/gpu-experiments/04-kernels
     if args.graph == "empty":      # I3: no layers, no head
         return (f"E{args.ops}x{args.tasks}" + (f"_spin{args.spin}" if args.spin else "") + f"_it{args.iters}"
-                + wt + rf + al + ws + pad)
+                + nts + wt + rf + al + ws + pad)
+    if args.graph == "stream":     # L6: the stream probe, the empty ladder's name with the bytes read;
+        # the load policy (--nt-streams) is what the probe A/Bs, so it is in the name
+        return (f"S{args.ops}x{args.tasks}_{args.kb}kb" + ("_gang" if args.gang else "") + f"_it{args.iters}"
+                + nts + wt + rf + al + ws + pad)
     return (f"L{args.layers}{'_head' if args.head else ''}_it{args.iters}"
             + (f"_{args.stop_after}" if args.stop_after else "") + ("_scores" if args.debug_scores else "")
-            + tile + at + fn1 + fn2 + fs + pf + probe + nt + nts + mf + wt + rf + sp + al + ws + pad)
+            + tile + at + fn1 + fn2 + fs + pf + probe + nt + nts + mf + wt + rf + sp + al + ws + pad
+            + gv + lg + hg + w13 + mt + mh + rt + mo)
 
 
 def run_empty(args, out, prompt, n_prompt, s_max, t0, torch, B):
-    """I3: the empty-task ladder. No model, no weights, no reference: the plan's two workspaces, the
-    meta tensors, the run and the log; the record has the same files (ids are zeros)."""
+    """I3 and L6: the synthetic graphs. The empty-task ladder (--graph empty) and the stream probe
+    (--graph stream) share this path: no model, no weights, no reference, just the plan's own
+    workspaces, the meta tensors, the run and the log; the record has the same files (ids are
+    zeros). measure.py reads the stream run's shape back from fleet_run_meta.json for its GB/s
+    column."""
     import json as _json
     from fleet import graph_plan as G
-    plan = G.build_empty_plan(args.ops, args.tasks, args.spin)
+    plan = (G.build_stream_plan(args.ops, args.tasks, args.kb, args.gang) if args.graph == "stream"
+            else G.build_empty_plan(args.ops, args.tasks, args.spin))
     meta = B.make_meta(torch, s_max, prompt, n_prompt)
     t1 = time.time()
     mpk, host, plan = B.build({}, {}, meta, s_max=s_max, layers=0, head=False, align=args.align_alloc, plan=plan)
@@ -283,7 +353,8 @@ def run_empty(args, out, prompt, n_prompt, s_max, t0, torch, B):
     meta["tokens"][0, n_prompt:] = 0
     torch.cuda.synchronize()
     meta_out = {
-        "graph": "empty", "ops": args.ops, "tasks_per_op": args.tasks, "spin": args.spin, "iters": args.iters,
+        "graph": args.graph, "ops": args.ops, "tasks_per_op": args.tasks, "spin": args.spin,
+        "kb": args.kb, "gang": args.gang, "iters": args.iters,
         "s_max": s_max, "n_prompt": n_prompt, "worker_timing": args.worker_timing,
         "plan_ops": len(pj["calls"]), "plan_tasks": sum(c["tasks"] for c in pj["calls"]),
         "env": {k: os.environ.get(k) for k in ("MPK_EVENT_TIMING", "MPK_TIMING", "USE_GANG", "AMDGPU_TARGETS",
@@ -306,7 +377,9 @@ def run_empty(args, out, prompt, n_prompt, s_max, t0, torch, B):
     (out / "fleet_output_ids.json").write_text(_json.dumps([0] * args.iters) + "\n")
     meta_out.update({"timings_s": wall, "completed": True})
     (out / "fleet_run_meta.json").write_text(_json.dumps(meta_out, indent=2) + "\n")
-    print(f"empty ladder {args.ops} x {args.tasks}; mpk() {t_mpk * 1e3:.1f} ms for {args.iters} iterations -> {out}")
+    what = (f"stream probe {args.ops} x {args.tasks}{' gang' if args.gang else ''} at {args.kb} KB"
+            if args.graph == "stream" else f"empty ladder {args.ops} x {args.tasks}")
+    print(f"{what}; mpk() {t_mpk * 1e3:.1f} ms for {args.iters} iterations -> {out}")
 
 
 def tensor_addresses(host):
@@ -318,7 +391,15 @@ def main():
     ap = build_parser()
     args = ap.parse_args()
     if args.graph == "model" and (args.layers is None or args.model_dir is None):
-        ap.error("--layers and --model-dir are required for the model graph (--graph empty needs neither)")
+        ap.error("--layers and --model-dir are required for the model graph (--graph empty and --graph stream "
+                 "need neither)")
+    # N2 and N5 (docs/gpu-experiments/04-kernels): the counter forms rely on the runtime's completion
+    # fence (the last task's plain reset store reaches memory through it; without it the next layer's
+    # memory-side atomics read the stale count and no task ever routes or sums again) and on the
+    # acquire fence before a task's reads, so the two I4 fence knobs cannot be paired with them
+    if fence_knob_conflict(args):
+        ap.error("--router-tasks and --merge-oproj need both runtime fences: drop the MPK_NO_COMPLETION_FENCE / "
+                 "MPK_NO_ACQUIRE_FENCE knob (the counter's reset and the last task's reads depend on them)")
 
     import torch
     from safetensors.torch import load_file, save_file
@@ -360,9 +441,16 @@ def main():
         pad = torch.empty(int(args.pad_alloc * 2 ** 30), dtype=torch.uint8, device="cuda")
         print(f"pad-alloc {args.pad_alloc:g} GiB at 0x{pad.data_ptr():x}")
     t0 = time.time()
-    if args.graph == "empty":
+    if args.graph in ("empty", "stream"):
         return run_empty(args, out, prompt, n_prompt, s_max, t0, torch, B)
     dims = Dims.from_config(json.loads((Path(args.model_dir) / "config.json").read_text()))
+    # the plan's asserts (a grid that divides nothing, --merge-halves without --merge-tasks, a probe
+    # label the o_proj fold makes invalid) fire here, on the dry run, before the weight pack rather
+    # than minutes into the row
+    B.dry_run(dims, s_max, args.layers, args.head, args.debug, args.stop_after, args.debug_scores,
+              args.tile_linears, args.attend_tasks, args.fuse_norm2, args.fuse_silu, args.probe_before,
+              args.fuse_norm1, args.prefetch, args.gemv_linears, args.linear_grid, args.head_grid,
+              args.gemv_w13, args.merge_tasks, args.merge_halves, args.router_tasks, args.merge_oproj)
     if args.align_alloc:
         assert args.align_alloc >= 512 and args.align_alloc & (args.align_alloc - 1) == 0, "--align-alloc: power of two, >= 512"
     workspaces = None
@@ -370,7 +458,10 @@ def main():
         # the plan's tensors do not depend on --stop-after (it only cuts calls)
         from fleet import graph_plan as G
         pre_plan = G.build_plan(dims, s_max, args.layers, args.head, args.debug, args.debug_scores, args.tile_linears,
-                                args.attend_tasks, args.fuse_norm2, args.fuse_silu, args.fuse_norm1, args.prefetch)
+                                args.attend_tasks, args.fuse_norm2, args.fuse_silu, args.fuse_norm1, args.prefetch,
+                                args.gemv_linears, args.linear_grid, args.head_grid, args.gemv_w13,
+                                args.merge_tasks, args.merge_halves, args.router_tasks,
+                                args.merge_oproj)
         workspaces = B.allocate_workspaces(torch, pre_plan, args.align_alloc)
         print(f"workspaces-first: {len(workspaces)} buffers allocated before the weights")
     packed = pack_all(args.model_dir, "cuda", dims, layers=args.layers, head=args.head or None)
@@ -394,6 +485,10 @@ def main():
                               debug_scores=args.debug_scores, tile_linears=args.tile_linears,
                               attend_tasks=args.attend_tasks, fuse_norm2=args.fuse_norm2, fuse_silu=args.fuse_silu,
                               probe_before=args.probe_before, fuse_norm1=args.fuse_norm1, prefetch=args.prefetch,
+                              gemv_linears=args.gemv_linears, linear_grid=args.linear_grid, head_grid=args.head_grid,
+                              gemv_w13=args.gemv_w13,
+                              merge_tasks=args.merge_tasks, merge_halves=args.merge_halves,
+                              router_tasks=args.router_tasks, merge_oproj=args.merge_oproj,
                               align=args.align_alloc, workspaces=workspaces)
     pj = B.plan_json(plan)
     (out / "plan.json").write_text(json.dumps(pj) + "\n")
@@ -415,6 +510,10 @@ def main():
         "attend_tasks": args.attend_tasks, "fuse_norm2": args.fuse_norm2, "fuse_silu": args.fuse_silu,
         "probe_before": args.probe_before, "fuse_norm1": args.fuse_norm1, "mfma_attend": args.mfma_attend,
         "prefetch": args.prefetch, "worker_timing": args.worker_timing, "runtime_flags": args.runtime_flags,
+        "gemv_linears": args.gemv_linears, "linear_grid": args.linear_grid, "head_grid": args.head_grid,
+        "gemv_w13": args.gemv_w13,
+        "merge_tasks": args.merge_tasks, "merge_halves": args.merge_halves,
+        "router_tasks": args.router_tasks, "merge_oproj": args.merge_oproj,
         "ops": len(pj["calls"]), "tasks": sum(c["tasks"] for c in pj["calls"]),
         "env": {k: os.environ.get(k) for k in ("MPK_EVENT_TIMING", "MPK_TIMING", "USE_NT_WEIGHTS", "USE_GANG",
                                                 "AMDGPU_TARGETS", "MPK_DEBUG_SCORES", "MPK_EXTRA_HIPCC_FLAGS")},

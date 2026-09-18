@@ -1,0 +1,15 @@
+# Round 4, G1 and G2 (docs/gpu-experiments/04-kernels/02-local-gpu-split.md; 07-session-plan.md): the
+# per-tile GEMV linear against the CK build on the 2-layer graph, then the grid sweep of qkva. Every
+# round-3 lever stays on; --nt-streams is the load policy of the round-4 kernels (L1c of 06-checklist.md:
+# the plain build waits vmcnt(0) per batch); -DMPK_W2_CK_TILE keeps the w2 multiply on CK, so the CK
+# build's rows and G1's differ in the linears alone (the w2 GEMV form is G3, queue-f3.txt). Each pair:
+# the boundaries at decode step 0 (compare), then 32 iterations with the worker timing (table);
+# G1.3 is the GEMV row once more with plain loads, the load policy's A/B for the round-4 kernels.
+--layers 2 --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend --attend-tasks --runtime-flags=-DMPK_W2_CK_TILE table continue    # G1.0: round 3's final build, the reference for --nt-streams
+--layers 2 --iters 1 --tile-linears --nt-weights --event-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend --attend-tasks --nt-streams --runtime-flags=-DMPK_W2_CK_TILE compare continue    # G1.1: the CK build (G8's bit-diff reads this run's tensors)
+--layers 2 --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend --attend-tasks --nt-streams --runtime-flags=-DMPK_W2_CK_TILE table continue    # G1.1
+--layers 2 --iters 1 --tile-linears --nt-weights --event-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend --attend-tasks --nt-streams --gemv-linears --runtime-flags=-DMPK_W2_CK_TILE compare continue    # G1.2: the GEMV linears (qkva, o_proj; the head off)
+--layers 2 --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend --attend-tasks --nt-streams --gemv-linears --runtime-flags=-DMPK_W2_CK_TILE table continue    # G1.2: the qkva and o_proj gaps against 14.8 us
+--layers 2 --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend --attend-tasks --gemv-linears --runtime-flags=-DMPK_W2_CK_TILE table continue    # G1.3: the same with plain loads (the open item of L1c: the streaming build's first wait drains 8 to 12 of 32 loads, the plain build's flat loads wait vmcnt(0) per batch)
+--layers 2 --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend --attend-tasks --nt-streams --gemv-linears --linear-grid 48 --runtime-flags=-DMPK_W2_CK_TILE table continue    # G2: qkva in 48 tasks of 76 rows (o_proj stays at 64)
+--layers 2 --iters 32 --tile-linears --nt-weights --event-timing --worker-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend --attend-tasks --nt-streams --gemv-linears --linear-grid 32 --runtime-flags=-DMPK_W2_CK_TILE table continue    # G2: qkva in 32 tasks of 114 rows, o_proj in 32 of 64

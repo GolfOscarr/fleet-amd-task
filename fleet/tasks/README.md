@@ -20,8 +20,10 @@ no HIP, no device code). Correctness is established on the GPU by
 256 threads (four wavefronts of 64), dynamic LDS `extern __shared__ char smem[]`
 with 57 KiB available, `void const *` / `void *` arguments, FP32
 accumulation, BF16 storage. A gang task receives `tile_idx`; the runtime
-sets `task_metadata.n_tile_start = bid.x * tiles_per_xcd` for the two new
-gang types (the rule of `TASK_GANG_ATTN_*`, `runtime.cc`), so a tile decodes
+sets `task_metadata.n_tile_start = bid.x * tiles_per_xcd` for the gang types
+that decode an XCD slot (`mla_attend`, `mla_merge_uv` and the round-4
+`stream_gang`; the MoE gang forms keep 0, the rule of `TASK_GANG_ATTN_*`
+against the MoE one, `runtime.cc`), so a tile decodes
 its XCD slot as `xcd = tile_idx / tiles_per_xcd`. `step` reaches a task as
 `runtime_config.step[0]` in the emitted call (as `embedding` does);
 `tokens` as `runtime_config.tokens`; the prompt length as
@@ -39,15 +41,22 @@ choice of imap in `build_graph.py`.
 | File | Task type (enum) | Grid | Inputs, in order | Outputs, in order | Params (`register_task`) |
 |---|---|---|---|---|---|
 | `mla_prep_mi300.cuh` | `TASK_MLA_PREP_MI300` (185), CU-task | 16 (one per head; task 0 writes the cache rows; the head from `expert_offset`) | `qkva [1,3648]`, `w_kv_norm [512]`, `W_uk [16,128,512]`, `cos [S_max,64]`, `sin [S_max,64]` | `c_kv [S_max,512]` (row `step`), `k_pe [S_max,64]` (row `step`), `ql_nope [16,512]`, `q_pe [16,64]` | `[nh, d_n, d_r, d_c]` |
-| `mla_attend_mi300.cuh` | `TASK_MLA_ATTEND_MI300` (186), gang | 8 x `tiles_per_xcd` | `ql_nope`, `q_pe`, `c_kv`, `k_pe` | `partials [n_splits,16,513]` FP32; optional second output: debug scores `[16,S_max]` FP32 | `[softmax_scale_bits, split, n_splits, tiles_per_xcd, nh, d_c, d_r]` |
+| `mla_attend_mi300.cuh` | `TASK_MLA_ATTEND_MI300` (186), gang | 8 x `tiles_per_xcd` | `ql_nope`, `q_pe`, `c_kv`, `k_pe` | `partials [n_splits,16,516]` FP32 (the row is 513 padded to a multiple of 4, `graph_plan.partials_row`); optional second output: debug scores `[16,S_max]` FP32 | `[softmax_scale_bits, split, n_splits, tiles_per_xcd, nh, d_c, d_r]` |
 | `mla_attend_mfma_mi300.cuh` (build flag `-DMLA_ATTEND_MFMA`, selected from `mla_attend_mi300.cuh`; `--mfma-attend`, O7 of `docs/gpu-experiments/03-acceleration`) | the same task types as the VALU kernel | the same | the same | the same | the same; the scores and p x V on `v_mfma_f32_16x16x16_bf16`, the tile staged once in LDS |
 | `mla_merge_uv_mi300.cuh` | `TASK_MLA_MERGE_UV_MI300` (187), gang | 8 x `heads_per_xcd` | `partials`, `W_uv [16,128,512]` | `attn [1,2048]` | `[split, n_splits, tiles_per_xcd, nh, d_v, d_c]` |
+| same file, `mla_merge_uv_tile_mi300_task_impl` | `TASK_MLA_MERGE_UV_TILE_MI300` (205), regular (registration `mla_merge_uv_tile_mi300`; `--merge-tasks [--merge-halves 2]`, N4 of `docs/gpu-experiments/04-kernels`; the enum, the name maps, the `expert_offset` list, the registration and the dispatcher branch are the blocks of `fleet/patches/hunks/N4-merge-tile.md`, folded into `new_tasks.patch` on 2026-09-18) | `nh x halves` tasks (16 or 32) | `partials`, `W_uv` (both whole) | `attn [1,2048]` (whole) | `[split, n_splits, halves]`; the task's (head, half) is its `bid.x` through the `expert_offset` metadata (`h = idx / halves`, `half = idx % halves`) |
+| `mla_merge_oproj_mi300.cuh` | `TASK_MLA_MERGE_OPROJ_MI300` (207), regular (registration `mla_merge_oproj_mi300`; `--merge-oproj`, N5 of `docs/gpu-experiments/04-kernels`; the enum, the name maps, the `expert_offset` list, the include, the registration and the dispatcher branch are the blocks of `fleet/patches/hunks/N5-merge-oproj.md`, folded into `new_tasks.patch` on 2026-09-18) | `nh x halves` tasks (32 at halves 2) | `partials`, `W_uv`, `W_o [2048,2048]`, `x_res [1,2048]`, `counter [1]` int32 (all whole) | `x_res [1,2048]` (written in place by the last task to arrive), `attn [1,2048]`, `workspace [nh x halves,2048]` FP32 (all whole) | `[split, n_splits, halves]`; the task's (head, half) is its `bid.x` through the `expert_offset` metadata |
 | `moe_router_mi300.cuh` | `TASK_MOE_ROUTER_MI300` (188), CU-task | 1 | `h [1,2048]`, `W_gate [64,2048]` | `topk_w [1,8]` FP32, `routing [66,1]` int32, `mask [67]` int32, `logits [1,64]` FP32, `route_log [32,26,8]` int32 | `[topk, n_experts, n_forced, scaling_bits, layer_index, hidden]` |
 | same file, `NORM = true` (registration `moe_router_norm_mi300`; `--fuse-norm2`, O1 of `docs/gpu-experiments/03-acceleration`) | `TASK_MOE_ROUTER_MI300` (188), CU-task | 1 | `x_res [1,2048]`, `w_norm [2048]`, `W_gate [64,2048]` | `h [1,2048]` (the normalised row, for the expert gate-up), then the five above | the six above and `eps_bits` |
+| same file, `SPLIT = 4` (registration `moe_router_norm4_mi300`; `--router-tasks`, N2 of `docs/gpu-experiments/04-kernels`; the enum, the name maps, the `expert_offset` list, the registration and the dispatcher branch are the blocks of `fleet/patches/hunks/N2-router4.md`, folded into `new_tasks.patch` on 2026-09-18) | `TASK_MOE_ROUTER4_MI300` (204), regular | 4 | `x_res [1,2048]`, `w_norm [2048]`, `W_gate [64,2048]`, `counter [1]` int32 (all whole) | the fused form's six (all whole) | the fused form's seven; the task's part is its `bid.x` through the `expert_offset` metadata |
 | `gang_moe_w2_silu_mi300.cuh` | `TASK_GANG_MOE_W2_SILU_MI300` (191), gang (registration `gang_moe_w2_silu_linear_mi300`; `--fuse-silu`, O2 of `docs/gpu-experiments/03-acceleration`) | 8 x 32 tiles | `mid [1,8,2816]` (gate then up per slot), `W2 [66,2048,1408]`, `routing`, `mask` | `out8 [1,8,2048]`, `w2_scratch [256,1408]` (one activation row per (XCD, tile)) | the stock w2's `[tiles_per_expert, max_experts_per_xcd, total_tiles_per_xcd]`; K from the weight |
 | `copy_mi300.cuh` | `TASK_COPY_MI300` (189), CU-task | 1 | `x [1,N]` | `y [1,N]` | `[N]` |
 | `prefetch_mi300.cuh` | `TASK_PREFETCH_MI300` (193), regular, a side operator (registration `prefetch_mi300`; `--prefetch`, O8 of `docs/gpu-experiments/03-acceleration`) | `grid_for_linear(N)` stripes | `W [N,K]` (the task's `N / grid` rows) | `dummy [grid,4]` int32 (the task's row: one XOR word per wave, so the loads are not elided) | none |
 | same file, `prefetch_moe_mi300_task_impl` | `TASK_PREFETCH_MOE_MI300` (194), regular, a side operator (registration `prefetch_moe_mi300`) | `8 x parts` | `W [E,N,K]` (whole), `mask [E+1]` | `dummy [8 x parts,4]` int32 | `[parts]`; the task's (slot, part) is its `bid.x` through the `expert_offset` metadata |
+| `gang_moe_w13_gemv_mi300.cuh` | `TASK_GANG_MOE_W13_GEMV_MI300` (196), gang (registration `gang_moe_w13_gemv_mi300`; `--gemv-w13`, L4 of `docs/gpu-experiments/04-kernels`; the enum, the name maps, the include, the gang lists, the registration and the name branch are the blocks of `fleet/patches/hunks/L4-w13-gemv.md`, folded into `new_tasks.patch` on 2026-09-18) | 8 x 37 tiles (one per worker of an XCD, S1, against the stock 8 x 44) | `h [1,2048]`, `W13 [66,2816,2048]`, `routing`, `mask` | `mid [1,8,2816]` (the slot's gate then up row) | the stock w13's `[tiles_per_expert, max_experts_per_xcd, total_tiles_per_xcd]` with `tiles_per_expert` 37; K from the weight |
+| `linear_gemv_mi300.cuh` | `TASK_LINEAR_GEMV_MI300` (195), regular (registration `linear_gemv_mi300`; `--gemv-linears`, L1 and L2 of `docs/gpu-experiments/04-kernels`; the enum, the name maps, the include, the registration and the dispatcher branch are the blocks of `fleet/patches/hunks/L2-linear-gemv.md`, folded into `new_tasks.patch` on 2026-09-18) | `grid_for_linear(N)` tasks (96 for `qkva`, 64 for `o_proj`, 400 for `lm_head`; `--linear-grid N` and `--head-grid N` override the first two and the last; layer 0's `down` stays the stock per-tile linear, its K 11,264 exceeding the kernel's 4,096 bound) | `x [1,2048]` (whole), `w_norm [2048]` (NORM), `W [N,2048]` (the task's `N / grid` rows), `residual [1,N]` (RESIDUAL, the task's columns) | `out [1,N]` (the task's columns) | `[norm, residual, eps_bits]`; the output size and stride as the stock per-tile `linear` |
+| `stream_mi300.cuh` | `TASK_STREAM_MI300` (197), regular (registration `stream_mi300`; `--graph stream`, L6 of `docs/gpu-experiments/04-kernels`; the enum, the name maps, the include, the gang lists, the registrations and the dispatcher branches are the blocks of `fleet/patches/hunks/L6-stream.md`, folded into `new_tasks.patch` on 2026-09-18) | `--tasks N` tasks (96 at 152 KB, 296 at 256 KB: the two regular rows of G5) | `W [rows,2048]` (the task's `rows / N` rows), the previous operator's `dummy [*,4]` int32 (whole, never read: the tensor that makes this operator a consumer of the one before it) | `dummy [N,4]` int32 (the task's row: one XOR word per wave, so the loads are not elided) | none; the per-task row count from the partitioned input's dim 0 |
+| same file, `stream_gang_mi300_task_impl` | `TASK_STREAM_GANG_MI300` (206), gang (registration `stream_gang_mi300`; `--graph stream --gang`) | 8 x `tiles_per_xcd` (37 tiles of 304 KB: w13's shape, the gang row of G5) | `W [8 x tiles_per_xcd x rows_per_tile,2048]` (whole), the previous operator's `dummy` (whole) | `dummy [8 x tiles_per_xcd,4]` int32 (whole; the tile's row) | `[rows_per_tile, tiles_per_xcd]`; the tile decode of `mla_merge_uv` |
 | `linear_norm_mi300.cuh` | `TASK_LINEAR_NORM_MI300` (192), regular (registration `linear_norm_mi300`; `--fuse-norm1`, O3 of `docs/gpu-experiments/03-acceleration`) | `grid_for_linear(N)` tasks (96 for `qkva`, 400 for `lm_head`) | `x [1,2048]` (whole), `w_norm [2048]`, `W [N,2048]` (the task's `N / grid` rows) | `out [1,N]` (the task's columns), `scratch [grid,2048]` (the task's normalised row) | `[eps_bits]`; the output size and stride as the stock per-tile `linear` |
 
 Float parameters travel as IEEE-754 bit patterns (`register_task` takes
@@ -91,6 +100,35 @@ Head `h = xcd * heads_per_xcd + t`; live splits `ceil((step + 1) / split)`;
 rounded to BF16; `attn[h] = o @ W_uv[h]^T` with FP32 accumulation, two
 lanes per output element. LDS about 2.3 KiB.
 
+The regular form (N4) shares that body. It takes `h = idx / halves` and
+`half = idx % halves` from the task index instead of the gang tile decode
+and reads every tensor whole; with `halves = 2` it merges the whole head
+and multiplies only the `W_uv` rows `64 half .. 64 half + 63`, storing the
+matching 64 columns of `attn`. A row's lane sums are reduced by
+`butterfly_sum<MERGE_W_BATCH>` in both forms and the batch constant does
+not change with `halves`, so the two write the same bits (the suite's
+`mla_merge_uv_tile` rows check it against the gang launch).
+
+### `mla_merge_oproj`
+
+N5: the same merge with o_proj folded into it, `halves = 2` always (32
+tasks). Phases 1 to 3 are the regular form's body, which also leaves the
+task's 64 `attn` values in LDS; then each task streams its 128-byte slice of
+every row of `W_o [2048, 2048]` (eight lanes per row, eight rows per
+wave-load, batches of `OPROJ_BATCH` wave-loads under `#pragma unroll 1`),
+reduces each row over its eight lanes by three xor steps and writes the row's
+partial into `workspace[idx]` as FP32. Then the counter pattern of the
+four-task router: a barrier, an agent-scope release fence in every thread,
+thread 0's acq-rel add and the broadcast of "last" through LDS. The last task
+runs an acquire fence, and thread `t` sums the 32 partials of its eight
+columns in ascending task order, adds `x_res` in FP32, rounds once and stores
+the eight values in place; thread 0 resets the counter. `attn` is still
+written, so the boundary keeps its row, and it is the same float the
+`--merge-tasks --merge-halves 2` form writes; `x_res` is a new FP32 order (32
+partial sums of 64 terms), deterministic, of the GEMV linear's class. The
+suite's `mla_merge_oproj` row checks both, and that the counter comes back at
+zero.
+
 ### `moe_router`
 
 Four waves own 16 experts each, one 16-byte load per lane per 8 columns;
@@ -100,6 +138,19 @@ take the last slots at weight 1.0; `routing[e] = slot + 1`, `mask[slot] =
 id`, `mask[66] = 8`, unused mask entries `-1` (as the stock kernel; the
 consumers read only `mask[count]` and `mask[0..count)`); `route_log[step -
 (prompt_len - 1)][layer_index][slot] = id`. LDS 256 B.
+
+`SPLIT = 4` (N2) is the same kernel over four tasks of 16 experts. Every
+task normalises (only part 0 stores `h`), multiplies its four experts per
+wave and writes its 16 logits to `logit_s` and to the `logits` tensor;
+then an agent-scope release fence by every thread, thread 0's acq-rel add
+on the counter and the broadcast of "last" through LDS. The task that saw
+the fourth increment runs an acquire fence in every thread, reads the 64
+logits back and runs the softmax, the top-k and the slot writes exactly as
+the one-task form does, then thread 0 resets the counter. The cross-lane
+reduction is `butterfly_sum<ROUTER_BATCH>` in both forms (the wave's four
+experts are one batch whose unused rows hold zero, and the butterfly never
+mixes rows), so every output is bit-identical; the suite's `moe_router4`
+row checks that against the one-task row.
 
 ### Side operators (in `new_tasks.patch`, O8)
 
@@ -137,7 +188,7 @@ in a build's `task_graph_rank0.json`.
 
 ## `kernel_tests`: each kernel in isolation against `numpy_ref.py`
 
-`kernel_tests_mi300.cu` wraps each of the five kernels in a `__global__`
+`kernel_tests_mi300.cu` wraps each kernel in a `__global__`
 function of 256 threads with the worker's dynamic LDS and calls the
 `*_task_impl` as the registration's emitted call does: the same template
 dims, `step` and `prompt_length` read from device memory like
@@ -176,10 +227,31 @@ checked too. Tests: the five kernels, the two prefetch tasks of O8
 (`prefetch`, `prefetch_moe`: the dummy output is the XOR of every word of
 the streamed slice per wave, so the stripe and the expert (slot, part)
 indexing against `mask` are checked exactly, and a slot past the active
-count must leave its row untouched), `mla_attend_scores` (the
+count must leave its row untouched), the stream probe of L6 (`stream`: four
+tasks of 38 rows, so the batch round-robin over the waves and the clamped
+last batch both appear in the expected XOR words), `mla_attend_scores` (the
 `-DMLA_ATTEND_DEBUG_SCORES` build's second output, B5), and
 `mla_attend_splits` (one split of 1056 rows versus 33 splits of 32,
-through both the attend and the merge kernel). Tolerances, argued in the
+through both the attend and the merge kernel), `mla_merge_oproj` (N5: the
+folded operator's 32 tasks beside the 32-task merge on the same inputs, so
+`attn` is compared bit for bit and `x_res` against `numpy_ref.mla_merge_oproj`
+within the BF16 row tolerance, with the counter back at zero), and the three
+forms of the
+GEMV linear (L1: `linear_gemv`, `linear_gemv_norm` and `linear_gemv_res`,
+one launch per grid of tasks, so the split of the weight's rows and the
+output's columns over the tasks is checked with the arithmetic), and the two
+MoE gang kernels (L3 and L4: `gang_w13_gemv` and `gang_w2_gemv`, one launch
+of `(tiles, 8)` blocks per trial with the tile index `blockIdx.x` and the XCD
+`blockIdx.y`, so every (XCD, tile) pair runs once and all eight slots are
+compared against `numpy_ref.moe_w13` and `numpy_ref.moe_w2`). Those two rows
+need the `-DKT_FAKE_XCD` binary (`fleet/tasks/build/kernel_tests_xcd`, the
+build line in the launcher's header; `--bin-xcd` names another path) and are
+reported as SKIP without it, as `mla_attend_scores` is without the debug
+binary. Their trial files hold the eight active experts' weight slabs alone
+(92 MB of `W13` and 46 MB of `W2` per trial; the model's 66 experts would be
+761 MB), so their mask names the ids 0 to 7 rather than the router's own
+eight, which include the forced 64 and 65; the kernels take the ids from the
+mask, so nothing else about the decode changes. Tolerances, argued in the
 driver's header comment: bit-exact for the RoPE outputs, the router's
 selection (derived from the kernel's own FP32 logits, so a near tie cannot
 fail it), the copy and the untouched entries; `rel_err <= 1e-4` for FP32
@@ -210,8 +282,9 @@ parameter tables of the two files against each other).
   event with 8 triggers between the gang tasks, and that the per-task
   pointer offsets are as the registrations assume (`02-task-graph.md`,
   "Every operator").
-- Whether `MAX_OUTPUTS_PER_TASK = 5` (raised from 3 for `mla_prep` and the
-  router) has any effect beyond the task-descriptor size.
+- Whether `MAX_OUTPUTS_PER_TASK = 6` (raised from 3 for `mla_prep`, the
+  router and, in round 4, the fused router's six outputs) has any effect
+  beyond the task-descriptor size.
 - The `kernel_tests` run itself: the launcher and driver above are
   syntax-checked and dry-run here, but no kernel has executed
   (`07-correctness.md`).
@@ -222,6 +295,9 @@ The suite binary times a kernel's grid on request (round 2, 2026-09-16):
 
     KT_TIME=50 fleet/tasks/build/kernel_tests mla_attend <trial dir>      # 50 launches under hipEvents, mean us to stderr
     KT_TIME=50 KT_COLD=27 fleet/tasks/build/kernel_tests mla_attend <dir>  # the launches rotate over 27 copies of the cache (cold L2)
+
+    KT_TIME=50 KT_COLD=4 fleet/tasks/build/kernel_tests linear_gemv <dir>   # the 96-task qkva grid over 4 copies of the 15 MB weight
+    KT_TIME=50 KT_COLD=27 fleet/tasks/build/kernel_tests_nt linear_gemv_norm <dir>   # the same for the norm form (qkva's) and, with linear_gemv_res, the residual form (o_proj's 64 tasks); the TIME line names the form
 
 A trial directory comes from `python fleet/tasks/kernel_tests.py --n 1 --kernel mla_attend --work-dir <dir> --keep`.
 `KT_SPIN=1000 fleet/tasks/build/kernel_tests copy <dir>` adds a launch whose thread 0 spins 1,000 iterations and prints the

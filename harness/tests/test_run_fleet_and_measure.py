@@ -28,8 +28,9 @@ def host_buffers(plan_json, fill):
     return h
 
 
-def dump(layers, head, stop_after=None, iters=1, debug=False, debug_scores=False):
-    plan, _ = B.dry_run(REAL_DIMS, 1024 + iters, layers, head, debug, stop_after, debug_scores)
+def dump(layers, head, stop_after=None, iters=1, debug=False, debug_scores=False, **flags):
+    plan, _ = B.dry_run(REAL_DIMS, 1024 + iters, layers, head, debug, stop_after, debug_scores,
+                        **flags)
     pj = B.plan_json(plan)
     h = host_buffers(pj, lambda i: float(i % 7 + 1))
     h["mask"] = torch.tensor([5, 2, 9, 1, 40, 63, 64, 65, 8] + [-1] * 58, dtype=torch.int32)
@@ -47,6 +48,19 @@ def test_dump_after_o_proj_of_layer1():
     assert b["L1.B2.q"].shape == (3072,) and b["L1.B7.x_res_attn"].shape == (2048,)
     assert torch.equal(b["L1.B3.c_kv"], h["c_kv_1"][1023])
     assert all(common.boundary_class(k) for k in keys)
+
+
+def test_dump_after_the_folded_o_proj_of_layer1():
+    """N5: with --merge-oproj one operator writes attn and x_res, and it carries o_proj's label,
+    so the B6 and B7 rows of the layer are keyed exactly as they are without the flag."""
+    b, _, h = dump(layers=2, head=False, stop_after="L1.o_proj", merge_oproj=True)
+    keys = {k for k in b if ".B" in k}
+    assert keys == {"L1.B1.norm1", "L1.B2.q", "L1.B4.q_pe", "L1.B6.attn", "L1.B7.x_res_attn",
+                    "L0.B3.c_kv", "L0.B3.k_pe", "L1.B3.c_kv", "L1.B3.k_pe"}
+    assert torch.equal(b["L1.B6.attn"], h["attn"][0]) and b["L1.B7.x_res_attn"].shape == (2048,)
+    assert all(common.boundary_class(k) for k in keys)
+    plain, _, _ = dump(layers=2, head=False, stop_after="L1.o_proj")
+    assert set(plain) == set(b)
 
 
 def test_dump_full_layer1_and_head():
@@ -279,6 +293,39 @@ def test_measure_end_to_end(tmp_path):
     assert "| time per iteration from the kernel trace (us) |  | 2000.0 |" in md
 
 
+def test_stream_run_gets_a_rate_per_operator(tmp_path):
+    """L6: on a --graph stream run measure.py turns every operator's event gap into a GB/s (the
+    bytes the operator read over the gap) and reports the median over the operators after the
+    first, whose gap carries the iteration's own start."""
+    from fleet import graph_plan as G
+    run = tmp_path / "run"
+    run.mkdir()
+    plan, _ = B.dry_run(plan=G.build_stream_plan(ops=4, tasks=96, kb=152))
+    (run / "plan.json").write_text(json.dumps(B.plan_json(plan)))
+    (run / "fleet_run_meta.json").write_text(json.dumps(
+        {"graph": "stream", "ops": 4, "tasks_per_op": 96, "kb": 152, "gang": False, "iters": 3}))
+    (run / "wall.json").write_text(json.dumps({"mpk_wall_s": 0.001, "iters": 3}))
+    # five events per iteration (unused, the iteration start, the four operators); the gap of
+    # event e is 100 ticks (1 us) times e, so operator i's gap is (i + 2) us
+    entries, t = [], 0
+    for _ in range(3):
+        for e in range(6):
+            t += 100 * e
+            entries.append([e, t])
+    (run / "event_timing.json").write_text(json.dumps({"entries": entries, "num_events": 498}))
+    m = measure.measure(run)
+    bytes_per_op = 96 * 152 * 1024
+    assert m["stream"]["bytes_per_op"] == bytes_per_op and m["stream"]["operators"] == 4
+    ops = [r for r in m["event_timing"]["per_op"] if r["op"] == "stream_layer"]
+    assert len(ops) == 4 and [round(r["mean_us"], 3) for r in ops] == [2.0, 3.0, 4.0, 5.0]
+    assert all(abs(r["gb_per_s"] - bytes_per_op / (r["mean_us"] * 1e-6) / 1e9) < 1e-12 for r in ops)
+    # the median over operators 2, 3 and 4: 1 us is 14.95 GB/s of these bytes, so 4 us is a quarter
+    assert abs(m["stream"]["median_gb_per_s"] - bytes_per_op / 4e-6 / 1e9) < 1e-9
+    assert m["stream"]["operators_in_median"] == 3
+    md = measure.report_table(m)
+    assert "| GB/s |" in md and "stream probe:" in md and "MiB per operator" in md
+
+
 # ---- P1 of docs/gpu-experiments/02-validation/01-preparation.md: the address-shift flag ----------------
 
 def test_pad_alloc_argument_and_run_name():
@@ -308,6 +355,15 @@ def test_pad_alloc_argument_and_run_name():
     a = p.parse_args(["--graph", "empty", "--ops", "100", "--tasks", "40", "--iters", "32", "--event-timing",
                       "--worker-timing", "--spin", "1000", "--model-dir", "x"])
     assert run_fleet.run_name(a) == "E100x40_spin1000_it32_wt"                    # I3
+    # the stream probe's three rows of G5 (L6): the empty ladder's name with the bytes read
+    a = p.parse_args(["--graph", "stream", "--ops", "10", "--tasks", "96", "--kb", "152",
+                      "--iters", "32", "--event-timing"])
+    assert (a.kb, a.gang) == (152, False) and run_fleet.run_name(a) == "S10x96_152kb_it32"
+    a = p.parse_args(["--graph", "stream", "--ops", "10", "--tasks", "296", "--kb", "256", "--iters", "32"])
+    assert run_fleet.run_name(a) == "S10x296_256kb_it32"
+    a = p.parse_args(["--graph", "stream", "--ops", "10", "--tasks", "37", "--kb", "304", "--gang",
+                      "--iters", "32", "--worker-timing"])
+    assert a.gang and run_fleet.run_name(a) == "S10x37_304kb_gang_it32_wt"
     # the = form: a value starting with a dash is an option to argparse otherwise
     a = p.parse_args(["--layers", "2", "--iters", "32", "--runtime-flags=-DMPK_NO_COMPLETION_FENCE",
                       "--runtime-flags=-DMPK_POLL_SLEEP=8", "--model-dir", "x"])
@@ -315,6 +371,36 @@ def test_pad_alloc_argument_and_run_name():
     assert run_fleet.run_name(a) == "L2_it32_rf_nocompletionfence+pollsleep8"     # I4
     assert run_fleet.runtime_flags_slug(["-DMPK_NO_BCAST_CAS"]) == "nobcastcas" and run_fleet.runtime_flags_slug([]) == ""
     assert run_fleet.runtime_flags_slug(['"-DMPK_NO_BCAST_CAS"']) == "nobcastcas"   # a stray quote from a queue row
+    # the GEMV linear and its grids, last in the name (L2 and L5, docs/gpu-experiments/04-kernels)
+    a = p.parse_args(["--layers", "2", "--iters", "32", "--gemv-linears", "--model-dir", "x"])
+    assert a.gemv_linears and a.linear_grid is None and a.head_grid is None
+    assert run_fleet.run_name(a) == "L2_it32_gv"
+    a = p.parse_args(["--layers", "27", "--head", "--iters", "32", "--gemv-linears", "--linear-grid", "48",
+                      "--head-grid", "320", "--nt-streams", "--model-dir", "x"])
+    assert (a.linear_grid, a.head_grid) == (48, 320)
+    assert run_fleet.run_name(a) == "L27_head_it32_nts_gv_lg48_hg320"
+    a = p.parse_args(["--layers", "2", "--iters", "32", "--model-dir", "x"])
+    assert not a.gemv_linears and run_fleet.run_name(a) == "L2_it32"        # unchanged without the flag
+    # the w13 GEMV gang task, after the three GEMV suffixes (L4)
+    a = p.parse_args(["--layers", "27", "--head", "--iters", "32", "--gemv-w13", "--model-dir", "x"])
+    assert a.gemv_w13 and run_fleet.run_name(a) == "L27_head_it32_w13"
+    a = p.parse_args(["--layers", "27", "--head", "--iters", "32", "--gemv-linears", "--head-grid", "320",
+                      "--gemv-w13", "--model-dir", "x"])
+    assert run_fleet.run_name(a) == "L27_head_it32_gv_hg320_w13"
+    a = p.parse_args(["--layers", "2", "--iters", "32", "--model-dir", "x"])
+    assert not a.gemv_w13 and run_fleet.run_name(a) == "L2_it32"
+    # the merge and router splits and the folded o_proj, in that order after the GEMV suffixes
+    # (N4, N2 and N5 of docs/gpu-experiments/04-kernels)
+    a = p.parse_args(["--layers", "27", "--head", "--iters", "32", "--merge-tasks",
+                      "--merge-halves", "2", "--router-tasks", "--model-dir", "x"])
+    assert run_fleet.run_name(a) == "L27_head_it32_mt_mh2_rt"
+    a = p.parse_args(["--layers", "27", "--head", "--iters", "32", "--merge-oproj", "--model-dir", "x"])
+    assert a.merge_oproj and run_fleet.run_name(a) == "L27_head_it32_mo"
+    a = p.parse_args(["--layers", "27", "--head", "--iters", "32", "--gemv-linears", "--gemv-w13",
+                      "--router-tasks", "--merge-oproj", "--model-dir", "x"])
+    assert run_fleet.run_name(a) == "L27_head_it32_gv_w13_rt_mo"
+    a = p.parse_args(["--layers", "2", "--iters", "32", "--model-dir", "x"])
+    assert not a.merge_oproj and run_fleet.run_name(a) == "L2_it32"
 
 
 def test_tensor_addresses_records_every_host_tensor():
@@ -401,3 +487,27 @@ def test_fault_fix_flags_and_run_names():
     a = p.parse_args(["--layers", "8", "--head", "--iters", "2", "--model-dir", "x", "--align-alloc", "4096",
                       "--workspaces-first", "--pad-alloc", "1"])
     assert run_fleet.run_name(a) == "L8_head_it2_al4096_wsfirst_pad1"
+
+
+def test_stream_and_empty_run_names_carry_the_load_policy():
+    # the stream probe A/Bs the streaming loads (L6, docs/gpu-experiments/04-kernels), so a row with
+    # --nt-streams must not share a run directory with the row without it
+    p = run_fleet.build_parser()
+    a = p.parse_args(["--graph", "stream", "--ops", "10", "--tasks", "37", "--kb", "304", "--gang",
+                      "--iters", "32", "--nt-streams", "--worker-timing"])
+    assert run_fleet.run_name(a) == "S10x37_304kb_gang_it32_nts_wt"
+    a = p.parse_args(["--graph", "empty", "--ops", "100", "--tasks", "40", "--iters", "32", "--nt-streams"])
+    assert run_fleet.run_name(a) == "E100x40_it32_nts"
+
+
+def test_fence_knobs_are_refused_with_the_counter_forms():
+    # N2 and N5: the last task's plain counter reset needs the completion fence's write-back and the
+    # last task's reads the acquire fence; either knob would hang the graph after the first layer
+    p = run_fleet.build_parser()
+    base = ["--layers", "2", "--iters", "1", "--model-dir", "x"]
+    for form in (["--router-tasks"], ["--merge-oproj"]):
+        for knob in ("--runtime-flags=-DMPK_NO_COMPLETION_FENCE", "--runtime-flags=-DMPK_NO_ACQUIRE_FENCE"):
+            assert run_fleet.fence_knob_conflict(p.parse_args(base + form + [knob]))
+        assert not run_fleet.fence_knob_conflict(p.parse_args(base + form + ["--runtime-flags=-DMPK_POLL_SLEEP=8"]))
+        assert not run_fleet.fence_knob_conflict(p.parse_args(base + form))
+    assert not run_fleet.fence_knob_conflict(p.parse_args(base + ["--runtime-flags=-DMPK_NO_COMPLETION_FENCE"]))

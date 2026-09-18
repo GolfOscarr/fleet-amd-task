@@ -117,6 +117,10 @@ def test_launcher_contract():
     L = Launcher(CU.read_text())
     assert L.consts["QKVA"] == K.QKVA and L.consts["S_MAX"] == K.S_MAX and L.consts["N_TOTAL"] == K.N_TOTAL
     assert (L.consts["ROUTE_STEPS"], L.consts["ROUTE_LAYERS"], L.consts["N_SLOTS"]) == K.ROUTE_SHAPE
+    # the MoE gang rows (L3, L4): the launch grids and the trial's expert count
+    assert (L.consts["W13_N"], L.consts["W13_TILES"]) == (K.W13_N, K.W13_TILES) == (2816, 37)
+    assert L.consts["W2_TILES"] == K.W2_TILES == 32 and L.consts["GANG_EXPERTS"] == K.GANG_EXPERTS == 8
+    assert L.consts["W13_K"] == L.consts["W2_N"] == K.D.H and L.consts["W2_K"] == K.D.I_MOE
     assert set(L.tables) == set(K.KERNELS) == set(L.runs)
     for name, kernel in K.KERNELS.items():
         for make in ([kernel.make] + ([K.make_mla_attend_scores] if name == "mla_attend" else [])):

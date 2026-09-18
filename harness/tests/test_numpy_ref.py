@@ -152,6 +152,36 @@ def test_attend_merge_against_reference_attention(step):
         assert rel(dec, ref_attn) < 1e-2 and rel(dec_scores, ref_scores) < 1e-2
 
 
+def test_merge_oproj_lands_on_the_attention_and_residual_boundaries(step):
+    """N5: mla_merge_oproj is the merge of mla_merge_uv followed by the residual output
+    projection, the two references the folded operator replaces, so its returns are the model's
+    B6 attention output and its B7 residual within the reassociation tolerance."""
+    d = dims(step["cfg"])
+    P, s_max = step["P"], step["s_max"]
+    scale = float(step["model"].model.layers[0].self_attn.softmax_scale)
+    for l in (0, 1):
+        layer = step["model"].model.layers[l]
+        qkva, w_kv_norm, W_uk, W_uv, cos_row, sin_row = layer_inputs(step, l)
+        c_row, k_pe_row, ql_nope, q_pe = R.mla_prep(qkva, w_kv_norm, W_uk, cos_row, sin_row, **d)
+        c_prefill, k_prefill = step["rows"][l]
+        c_kv = np.zeros((s_max, d["d_c"]), np.float32)
+        k_pe = np.zeros((s_max, d["d_r"]), np.float32)
+        c_kv[:P] = R.from_torch_bf16(c_prefill)
+        k_pe[:P] = R.from_torch_bf16(k_prefill)
+        c_kv[P], k_pe[P] = c_row, k_pe_row
+        partials = R.mla_attend(ql_nope, q_pe, c_kv, k_pe, P, scale, split=4)
+        W_o = R.from_torch_bf16(layer.self_attn.o_proj.weight)
+        res = R.from_torch_bf16(step["cap"].store[f"L{l}.layer_in"]).reshape(-1)
+        attn, x_res = R.mla_merge_oproj(partials, W_uv, W_o, res, P, split=4)
+        assert np.array_equal(attn, R.mla_merge_uv(partials, W_uv, P, split=4))
+        assert np.array_equal(x_res, R.linear_residual(attn, W_o, res))
+        ref_attn = R.from_torch_bf16(step["cap"].store[f"L{l}.B6.attn"]).reshape(-1)
+        ref_x = R.from_torch_bf16(step["cap"].store[f"L{l}.B7.x_res_attn"]).reshape(-1)
+        e_a, e_x = rel(attn, ref_attn), rel(x_res, ref_x)
+        print(f"layer {l}: merge with o_proj folded in, rel_err attn {e_a:.3e}, x_res {e_x:.3e}")
+        assert e_a < 3e-2 and e_x < 3e-2
+
+
 def test_router_matches_gate(step):
     model, cap, cfg = step["model"], step["cap"], step["cfg"]
     l = 1
@@ -219,8 +249,92 @@ def test_linear_norm_matches_modules(step):
         assert rel(h, exp_h) < 2e-3, rel(h, exp_h)
         assert q.shape == exp_q.shape and rel(q, exp_q) < 4e-3, rel(q, exp_q)
         # the same product on the module's own normalised row: the linear half alone
-        q2 = R.bf16(W @ exp_h)
+        q2 = R.linear(exp_h, W)
         assert rel(q2, exp_q) < 4e-3, rel(q2, exp_q)
+        assert np.array_equal(q2, R.bf16(W @ exp_h))
+
+
+def test_linear_and_residual_match_modules(step):
+    """L1: the two references of the GEMV linear without a prologue. linear is the plain
+    product (the norm's own row against the module's projection, the check above at one
+    remove) and linear_residual is the output projection followed by the residual add,
+    whose sum the reference model makes in BF16 and this one in FP32 before the single
+    rounding: the o_proj input and the layer's residual against the row the
+    post-attention norm receives."""
+    model, cap = step["model"], step["cap"]
+    for l in (0, 1):
+        layer = model.model.layers[l]
+        attn = R.from_torch_bf16(cap.store[f"L{l}.B6.attn"]).reshape(-1)
+        res = R.from_torch_bf16(cap.store[f"L{l}.layer_in"]).reshape(-1)
+        W_o = R.from_torch_bf16(layer.self_attn.o_proj.weight)
+        got = R.linear_residual(attn, W_o, res)
+        exp = R.from_torch_bf16(cap.store[f"L{l}.B7.x_res_attn"]).reshape(-1)
+        assert got.shape == exp.shape and rel(got, exp) < 4e-3, rel(got, exp)
+        # the residual is the only difference between the two references
+        assert np.array_equal(R.linear_residual(attn, W_o, np.zeros_like(res)), R.linear(attn, W_o))
+
+
+def expert_w13_w2(layer, ids):
+    """The packing of pack_weights.pack_moe for the experts `ids` of a MoE layer: W13[e] is the
+    expert's gate rows then its up rows, W2[e] its down projection."""
+    experts = layer.mlp.experts
+    w13 = np.stack([np.concatenate([R.from_torch_bf16(experts[e].gate_proj.weight),
+                                    R.from_torch_bf16(experts[e].up_proj.weight)]) for e in ids])
+    w2 = np.stack([R.from_torch_bf16(experts[e].down_proj.weight) for e in ids])
+    return w13, w2
+
+
+def test_moe_w13_and_w2_match_the_expert_modules(step):
+    """L3 and L4: the two MoE gang kernels' references against the tiny model's own expert
+    modules. moe_w13 is the gate-up projection of the slot's expert (one BF16 rounding after the
+    FP32 accumulation, as the kernel stores it) and moe_w2 the silu-mul of that row followed by
+    the down projection, which together are the expert's forward on the routed row."""
+    model, cap, cfg = step["model"], step["cap"], step["cfg"]
+    l = 1
+    layer = model.model.layers[l]
+    h = R.from_torch_bf16(cap.store[f"L{l}.gate_in"]).reshape(-1)
+    n_slots = cfg.n_routed_experts                       # every expert of the tiny model gets a slot
+    ids = list(range(n_slots))
+    w13, w2 = expert_w13_w2(layer, ids)
+    mask = np.full(n_slots + 1, -1, np.int32)
+    mask[:n_slots] = ids
+    mask[n_slots] = n_slots                              # the count sits in the last entry
+    mid = R.moe_w13(h, w13, mask, n_slots)
+    assert mid.shape == (n_slots, 2 * cfg.moe_intermediate_size) and np.isfinite(mid).all()
+    out8 = R.moe_w2(mid, w2, mask, n_slots)
+    assert out8.shape == (n_slots, cfg.hidden_size)
+    i = cfg.moe_intermediate_size
+    for s, e in enumerate(ids):
+        expert = layer.mlp.experts[e]
+        x = torch.tensor(h, dtype=torch.bfloat16).reshape(1, -1)
+        with torch.inference_mode():
+            ref_gate = R.from_torch_bf16(expert.gate_proj(x)).reshape(-1)
+            ref_up = R.from_torch_bf16(expert.up_proj(x)).reshape(-1)
+            ref_out = R.from_torch_bf16(expert(x)).reshape(-1)
+        # the projection: the module rounds to BF16 once, as the kernel does
+        assert rel(mid[s, :i], ref_gate) < 4e-3 and rel(mid[s, i:], ref_up) < 4e-3
+        # the whole expert: silu(gate) * up, then down
+        assert rel(out8[s], ref_out) < 8e-3, (s, rel(out8[s], ref_out))
+    # a slot past the active count is the untouched sentinel, as the kernels leave it
+    short = mask.copy()
+    short[n_slots] = 2
+    part = R.moe_w13(h, w13, short, n_slots)
+    assert np.array_equal(part[:2], mid[:2]) and np.isnan(part[2:]).all()
+    # the mask names the slot's expert: a permuted mask permutes the rows and nothing else
+    perm = [3, 1, 0, 2] + ids[4:]
+    pmask = mask.copy()
+    pmask[:n_slots] = perm
+    assert np.array_equal(R.moe_w13(h, w13, pmask, n_slots), mid[perm])
+
+
+def test_silu_matches_torch():
+    x = np.linspace(-8, 8, 257, dtype=np.float32)
+    got = R.silu(x)
+    exp = torch.nn.functional.silu(torch.tensor(x)).numpy()
+    assert np.allclose(got, exp, rtol=1e-6, atol=1e-7)
+    # the fused w2's rounding: silu in FP32, the product rounded to BF16 once
+    up = np.linspace(1.0, 2.0, 257, dtype=np.float32)
+    assert np.array_equal(R.bf16(got * up), R.bf16(R.silu(x) * up))
 
 
 def test_router_tie_break_and_combine():

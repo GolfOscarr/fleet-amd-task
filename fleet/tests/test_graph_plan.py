@@ -315,6 +315,399 @@ def test_fuse_norm1_default_off_and_debug_keep_the_stock_norms():
     assert not plan_dbg.chain_violations()
 
 
+# ---- the GEMV linear (docs/gpu-experiments/04-kernels, L2 and L5) --------------------------
+
+def test_gemv_linears_flips_the_three_dense_linears():
+    """L2: qkva, o_proj and lm_head become one GEMV task type, with the input norm and the residual
+    add as its flags; layer 0's down (K 11,264) stays the stock per-tile linear; no norm operator,
+    no scratch tensor, and the chain holds."""
+    from fleet.graph_plan import grid_for_linear, REAL_DIMS as D
+    plan, calls = B.dry_run(layers=27, head=True, gemv_linears=True)
+    labels = [c.label for c in plan.calls]
+    assert not any(l.endswith(".norm1") for l in labels) and "head.norm" not in labels
+    assert "qkva_scratch" not in plan.tensors and "lm_scratch" not in plan.tensors
+    assert not plan.chain_violations()
+    by = {c.label: c for c in plan.calls}
+    for label in ("L5.qkva", "L5.o_proj", "head.lm_head"):
+        assert by[label].method == "linear_gemv_layer" and by[label].status == "new"
+    q = by["L5.qkva"]
+    assert q.tasks == grid_for_linear(D.Q_OUT + D.KVA_OUT) == 96 and q.args["input"] == "x_res"
+    assert q.args["w_norm"] == "w_norm1_5" and q.args["norm"] and not q.args["residual_add"]
+    assert q.args["residual"] is None and q.args["eps"] == G.RMS_EPS
+    o = by["L5.o_proj"]
+    assert o.tasks == grid_for_linear(D.H) == 64 and o.args["input"] == "attn"
+    assert o.args["residual"] == "x_res" and o.args["output"] == "x_res" and o.args["residual_add"]
+    assert o.args["w_norm"] is None and not o.args["norm"]
+    dn = by["L0.down"]                      # the stock per-tile residual linear, K 11,264
+    assert dn.method == "linear_with_residual_layer" and dn.args["weight"] == "W_down_pad"
+    lm = by["head.lm_head"]
+    assert lm.tasks == grid_for_linear(D.V) == 400 and lm.args["w_norm"] == "w_final_norm" and lm.args["norm"]
+    # the gate-up and the MoE linears stay gang, as under --tile-linears
+    assert by["L0.gate_up"].method == "gang_linear_silu_layer"
+    assert by["L5.w13"].method == "gang_moe_w13_linear_layer"
+    # the recorded calls: the registration's input order, the imaps of the fused per-tile linear
+    # plus the residual partitioned like the output, and the three params
+    rec = [c for c in calls if c["method"] == "linear_gemv_mi300@new"]
+    assert len(rec) == 27 + 27 + 1
+    assert rec[0]["inputs"] == ["x_res", "w_norm1_0", "W_qkva_0", "qkva"]
+    assert rec[0]["imaps"] == [[-1, -1, -1], [-1, -1, -1], [0, -1, -1], [1, -1, -1]]
+    assert rec[0]["params"] == [1, 0, G.float_bits(G.RMS_EPS)]
+    assert rec[1]["inputs"] == ["attn", "W_o_0", "x_res", "x_res"]
+    assert rec[1]["imaps"] == [[-1, -1, -1], [0, -1, -1], [1, -1, -1], [1, -1, -1]]
+    assert rec[1]["params"] == [0, 1, G.float_bits(0.0)]
+    assert rec[-1]["inputs"] == ["x_res", "w_final_norm", "W_lm", "logits"]
+    assert rec[-1]["params"] == [1, 0, G.float_bits(G.RMS_EPS)]
+
+
+def test_gemv_linears_keeps_the_counts_of_the_fused_per_tile_plan():
+    """L2: the operator count is unchanged and so is the task count at the default grids: the flag
+    swaps the kernel of the four linears, it does not add or remove an operator or a task."""
+    plan, _ = B.dry_run(layers=27, head=True, gemv_linears=True)
+    ref, _ = B.dry_run(layers=27, head=True, fuse_norm1=True, tile_linears=True)
+    assert (plan.n_ops, plan.n_tasks) == (ref.n_ops, ref.n_tasks) == (298, 6593)
+    plan2, _ = B.dry_run(layers=27, head=True, fuse_norm2=True, fuse_silu=True, gemv_linears=True)
+    ref2, _ = B.dry_run(layers=27, head=True, fuse_norm2=True, fuse_silu=True, fuse_norm1=True, tile_linears=True)
+    assert (plan2.n_ops, plan2.n_tasks) == (ref2.n_ops, ref2.n_tasks) == (246, 6359)
+    assert not plan2.chain_violations()
+
+
+def test_gemv_linears_grid_overrides():
+    """L2's --linear-grid and L5's --head-grid: the task count is the only thing that moves, and an
+    override that does not divide an operator's rows (48 against o_proj's 2,048) leaves it alone."""
+    from fleet.graph_plan import REAL_DIMS as D
+    base, _ = B.dry_run(layers=27, head=True, gemv_linears=True)
+    lg48, _ = B.dry_run(layers=27, head=True, gemv_linears=True, linear_grid=48)
+    by = {c.label: c for c in lg48.calls}
+    assert by["L5.qkva"].tasks == 48 and by["L5.qkva"].args["grid_dim"] == (48, 1, 1)
+    assert by["L5.o_proj"].tasks == 64 and by["L0.down"].tasks == 64      # 48 does not divide 2,048
+    assert lg48.n_ops == base.n_ops and lg48.n_tasks == base.n_tasks - 27 * (96 - 48) == 5297
+    lg32, _ = B.dry_run(layers=27, head=True, gemv_linears=True, linear_grid=32)
+    by32 = {c.label: c for c in lg32.calls}
+    assert by32["L5.qkva"].tasks == 32 and by32["L5.o_proj"].tasks == 32
+    assert by32["L0.down"].tasks == 64                                   # the page's override names qkva and o_proj
+    assert lg32.n_tasks == base.n_tasks - 27 * (96 - 32) - 27 * (64 - 32) == 4001
+    hg320, _ = B.dry_run(layers=27, head=True, gemv_linears=True, head_grid=320)
+    assert {c.label: c for c in hg320.calls}["head.lm_head"].tasks == 320
+    assert hg320.n_ops == base.n_ops and hg320.n_tasks == base.n_tasks - 80 == 6513
+    for plan in (lg48, lg32, hg320):
+        assert not plan.chain_violations()
+    # the head's override is a single operator: it must divide the vocabulary
+    with pytest.raises(AssertionError):
+        B.dry_run(layers=1, head=True, gemv_linears=True, head_grid=300)
+    with pytest.raises(AssertionError):
+        B.dry_run(layers=1, head=True, gemv_linears=True, linear_grid=100)   # divides neither 3,648 nor 2,048
+    with pytest.raises(AssertionError):
+        B.dry_run(layers=1, head=True, linear_grid=32)                       # only under the flag
+    assert D.V % 320 == 0
+
+
+def test_gemv_linears_default_off_and_debug_keep_the_stock_plan():
+    plan_off, calls_off = B.dry_run(layers=27, head=True)
+    assert plan_off.n_ops == 326 and not any(c["method"] == "linear_gemv_mi300@new" for c in calls_off)
+    assert {c.label: c.method for c in plan_off.calls}["L0.qkva"] == "gang_linear_layer"
+    # under --debug the stock norms and the snapshot wiring stay, as with --fuse-norm1
+    plan_dbg, calls_dbg = B.dry_run(layers=27, head=True, debug=True, gemv_linears=True)
+    plan_dbg0, _ = B.dry_run(layers=27, head=True, debug=True)
+    assert plan_dbg.n_ops == plan_dbg0.n_ops and plan_dbg.n_tasks == plan_dbg0.n_tasks
+    assert not any(c["method"] == "linear_gemv_mi300@new" for c in calls_dbg)
+    assert not plan_dbg.chain_violations()
+
+
+@pytest.mark.parametrize("head,layers", [(True, 27), (False, 2), (True, 1)])
+def test_gemv_linears_keeps_the_chain_rule(head, layers):
+    plan, _ = B.dry_run(layers=layers, head=head, gemv_linears=True, fuse_norm2=True, fuse_silu=True)
+    assert plan.chain_violations() == []
+
+
+# ---- the w13 GEMV gang task (docs/gpu-experiments/04-kernels, L4) --------------------------
+
+def w13_ranges(n=2816, tiles=37):
+    """The tile ranges the kernel computes by arithmetic, re-derived here from the page's own
+    words (4 tiles of 77 rows from 77 t, then 76 from 308 + 76 (t - 4)) rather than from
+    graph_plan.w13_tile_rows, so the two formulas are compared and not just repeated."""
+    out = []
+    for t in range(tiles):
+        out.append((77 * t, 77) if t < 4 else (308 + 76 * (t - 4), 76))
+    return out
+
+
+def test_w13_tile_ranges_partition_the_expert_rows():
+    """S1: the 37 tiles cover 2,816 = 4 x 77 + 33 x 76 exactly once, and graph_plan's formula
+    (which the suite's reference reuses) is the same one."""
+    from fleet.graph_plan import REAL_DIMS as D, W13_GEMV_TILES, w13_tile_rows
+    n = 2 * D.I_MOE
+    assert (n, W13_GEMV_TILES) == (2816, 37) and G.NUM_WORKERS // 8 == 37
+    ranges = [w13_tile_rows(t) for t in range(W13_GEMV_TILES)]
+    assert ranges == w13_ranges(n, W13_GEMV_TILES)
+    assert [r for _, r in ranges] == [77] * 4 + [76] * 33
+    assert sum(r for _, r in ranges) == n == 4 * 77 + 33 * 76
+    covered = [0] * n
+    for r0, rows in ranges:
+        assert 0 <= r0 and r0 + rows <= n
+        for i in range(r0, r0 + rows):
+            covered[i] += 1
+    assert covered == [1] * n                      # a partition: every row in exactly one tile
+    assert ranges[0][0] == 0 and ranges[4][0] == 308 and ranges[-1] == (2740, 76)
+    with pytest.raises(AssertionError):
+        w13_tile_rows(W13_GEMV_TILES)
+    # a wave of the tile takes ceil(rows / 4) with the last one short, the GEMV's own map
+    assert [-(-r // 4) for _, r in ranges] == [20] * 4 + [19] * 33
+
+
+def test_w13_store_map_covers_every_row_once():
+    """The kernel's epilogue: wave w of a tile owns rows [w * RPW, min((w + 1) * RPW, rows)) with
+    RPW = ceil(rows / 4), walks them in batches of eight, and lane l < 8 of the batch stores row
+    r0 + l when r0 + l is inside the wave's range. Emulated here over the whole grid: every one of
+    the 2,816 rows of the expert is stored exactly once, by one (tile, wave, batch, lane)."""
+    from fleet.graph_plan import REAL_DIMS as D, W13_GEMV_TILES, w13_tile_rows
+    n, batch, waves = 2 * D.I_MOE, 8, 4
+    stored = {}
+    for tile in range(W13_GEMV_TILES):
+        row0, rows = w13_tile_rows(tile, n)
+        for wave in range(waves):
+            rpw = -(-rows // waves)
+            r_begin, r_end = wave * rpw, min((wave + 1) * rpw, rows)
+            r_end = max(r_end, r_begin)
+            for r0 in range(r_begin, r_end, batch):
+                for lane in range(batch):
+                    r = r0 + lane
+                    if r < r_end:
+                        key = row0 + r
+                        assert key not in stored, (key, stored.get(key), (tile, wave, r0, lane))
+                        stored[key] = (tile, wave, r0, lane)
+    assert sorted(stored) == list(range(n))
+    # the clamped rows a short batch loads are inside the wave's range, so no load leaves the tile
+    for tile in range(W13_GEMV_TILES):
+        row0, rows = w13_tile_rows(tile, n)
+        rpw = -(-rows // waves)
+        for wave in range(waves):
+            r_begin, r_end = wave * rpw, min((wave + 1) * rpw, rows)
+            for r0 in range(r_begin, max(r_end, r_begin), batch):
+                for u in range(batch):
+                    r = r0 + u if r0 + u < r_end else r_end - 1
+                    assert 0 <= row0 + r < n
+
+
+def test_gemv_w13_flips_every_moe_layer_and_records_37_tiles():
+    """L4: the flag swaps the method of the 26 w13 operators, keeping the label, the tensors and
+    the 8 tasks; the tiles recorded are 37 per expert and 9 x 37 per XCD (the registration's
+    third param), against the stock 44 and 9 x 44."""
+    from fleet.graph_plan import W13_GEMV_TILES
+    plan, calls = B.dry_run(layers=27, head=True, gemv_w13=True)
+    base, base_calls = B.dry_run(layers=27, head=True)
+    assert (plan.n_ops, plan.n_tasks) == (base.n_ops, base.n_tasks) == (326, 2285)
+    assert not plan.chain_violations()
+    by, by_base = {c.label: c for c in plan.calls}, {c.label: c for c in base.calls}
+    w13 = [c for c in plan.calls if c.label.endswith(".w13")]
+    assert len(w13) == 26                          # layer 0 is dense: no expert gate-up
+    for c in w13:
+        assert c.method == "gang_moe_w13_gemv_layer" and c.status == "new"
+        assert c.tasks == 8 and c.tiles == W13_GEMV_TILES == 37
+        assert c.args["input"] == "h" and c.args["output"] == "mid"
+        assert c.args["moe_routing_indices"] == "routing" and c.args["moe_mask"] == "mask"
+        assert c.args["tiles_per_expert"] == 37
+    assert by_base["L5.w13"].method == "gang_moe_w13_linear_layer" and by_base["L5.w13"].tiles == 44
+    assert by["L5.w2"].method == by_base["L5.w2"].method          # the down projection is untouched
+    assert by["L5.router"].method == by_base["L5.router"].method
+    assert plan.tensors.keys() == base.tensors.keys()             # no tensor added or dropped
+    rec = [c for c in calls if c["method"] == "gang_moe_w13_gemv_mi300@new"]
+    assert len(rec) == 26
+    assert rec[0]["inputs"] == ["h", "W13_1", "routing", "mask", "mid"]
+    assert rec[0]["imaps"] == [[-1, -1, -1], [-1, 1, -1], [-1, -1, -1], [-1, -1, -1], [-1, 2, -1]]
+    assert rec[0]["params"] == [37, 9, 9 * 37] == [37, 9, 333]    # tiles, max experts per XCD, total
+    assert rec[0]["grid_dim"] == (8, 1, 1)
+    # the stock form's params for comparison: 44 tiles, 9 x 44 per XCD
+    stock = [c for c in base_calls if c["task_type"] == "gang_moe_w13_linear_mi300"]
+    assert len(stock) == 26 and stock[0]["params"] == [44, 9, 9 * 44]
+
+
+def test_gemv_w13_default_off_and_independent_of_the_other_flags():
+    plan_off, calls_off = B.dry_run(layers=27, head=True)
+    assert not any(c["method"] == "gang_moe_w13_gemv_mi300@new" for c in calls_off)
+    assert {c.label: c.method for c in plan_off.calls}["L5.w13"] == "gang_moe_w13_linear_layer"
+    # it is not disabled by --debug (it changes no norm) and composes with the other flags
+    plan_dbg, calls_dbg = B.dry_run(layers=27, head=True, debug=True, gemv_w13=True)
+    assert sum(c["method"] == "gang_moe_w13_gemv_mi300@new" for c in calls_dbg) == 26
+    assert not plan_dbg.chain_violations()
+    both, calls_both = B.dry_run(layers=27, head=True, gemv_linears=True, fuse_norm2=True,
+                                 fuse_silu=True, gemv_w13=True)
+    ref, _ = B.dry_run(layers=27, head=True, gemv_linears=True, fuse_norm2=True, fuse_silu=True)
+    assert (both.n_ops, both.n_tasks) == (ref.n_ops, ref.n_tasks) == (246, 6359)
+    assert sum(c["method"] == "gang_moe_w13_gemv_mi300@new" for c in calls_both) == 26
+    assert not both.chain_violations()
+
+
+@pytest.mark.parametrize("head,layers", [(True, 27), (False, 2), (True, 1)])
+def test_gemv_w13_keeps_the_chain_rule(head, layers):
+    plan, calls = B.dry_run(layers=layers, head=head, gemv_w13=True)
+    assert plan.chain_violations() == []
+    # one layer is the dense MLP alone: the flag then changes nothing
+    assert sum(c["method"] == "gang_moe_w13_gemv_mi300@new" for c in calls) == max(layers - 1, 0)
+
+def test_router_tasks_issues_the_router_as_four_tasks():
+    """N2: --router-tasks makes each MoE layer's router four regular tasks of the fused kernel,
+    with the arrival counter as a fourth input; the norm2 operator goes, as under --fuse-norm2."""
+    plan, calls = B.dry_run(layers=27, head=True, router_tasks=True)
+    fused, _ = B.dry_run(layers=27, head=True, fuse_norm2=True)
+    labels = [c.label for c in plan.calls]
+    assert "L0.norm2" in labels and not any(l.endswith(".norm2") for l in labels if l != "L0.norm2")
+    assert plan.n_ops == fused.n_ops == 300
+    assert plan.n_tasks == fused.n_tasks + 26 * 3 == 2337        # three more tasks per MoE layer
+    assert not plan.chain_violations()
+    assert plan.tensors["router_counter"].shape == (1,) and plan.tensors["router_counter"].dtype == "i32"
+    assert plan.tensors["router_counter"].kind == "new"          # a zeroed buffer at allocation
+    r = {c.label: c for c in plan.calls}["L5.router"]
+    assert r.method == "moe_router_norm4_layer" and r.tasks == 4 and r.status == "new"
+    assert r.args["input"] == "x_res" and r.args["w_norm"] == "w_norm2_5" and r.args["h"] == "h"
+    assert r.args["counter"] == "router_counter" and r.args["eps"] == G.RMS_EPS
+    # the recorded call: four inputs (the counter last), six outputs, the fused router's params
+    rec = [c for c in calls if c["method"] == "moe_router_norm4_mi300@new"]
+    assert len(rec) == 26 and not any(c["method"].startswith("moe_router_mi300") for c in calls)
+    assert rec[0]["inputs"] == ["x_res", "w_norm2_1", "W_gate_1", "router_counter", "h", "topk_w",
+                                "routing", "mask", "logits_router", "route_log"]
+    assert rec[0]["imaps"] == [[-1, -1, -1]] * 10                # every tensor whole
+    assert rec[0]["grid_dim"] == (4, 1, 1)
+    assert len(rec[0]["params"]) == 7 and rec[0]["params"][6] == G.float_bits(G.RMS_EPS)
+    # the gate-up still reads h, which part 0 of the router writes
+    assert {c.label: c for c in plan.calls}["L5.w13"].args["input"] == "h"
+
+
+def test_router_tasks_default_off_and_debug_keeps_the_one_task_form():
+    plan_off, calls_off = B.dry_run(layers=27, head=True)
+    assert "router_counter" not in plan_off.tensors
+    assert not any(c["method"] == "moe_router_norm4_mi300@new" for c in calls_off)
+    assert sum(c["method"] == "moe_router_mi300@new" for c in calls_off) == 26
+    plan_dbg, calls_dbg = B.dry_run(layers=27, head=True, debug=True, router_tasks=True)
+    plan_dbg0, _ = B.dry_run(layers=27, head=True, debug=True)
+    assert plan_dbg.n_ops == plan_dbg0.n_ops and plan_dbg.n_tasks == plan_dbg0.n_tasks
+    assert not any(c["method"] == "moe_router_norm4_mi300@new" for c in calls_dbg)
+    assert "router_counter" not in plan_dbg.tensors and not plan_dbg.chain_violations()
+
+
+@pytest.mark.parametrize("head,layers", [(True, 27), (False, 2), (True, 1)])
+def test_router_tasks_keeps_the_chain_rule(head, layers):
+    plan, _ = B.dry_run(layers=layers, head=head, router_tasks=True, merge_tasks=True,
+                        gemv_linears=True, fuse_silu=True)
+    assert plan.chain_violations() == []
+
+
+def test_merge_tasks_issues_the_merge_as_regular_tasks():
+    """N4: --merge-tasks turns the 8-task merge gang into 16 regular tasks (32 with
+    --merge-halves 2) with whole-tensor imaps, the operator keeping its label and its tensors."""
+    from fleet.graph_plan import REAL_DIMS as D
+    base, _ = B.dry_run(layers=27, head=True)
+    for halves, per_layer in ((1, 16), (2, 32)):
+        plan, calls = B.dry_run(layers=27, head=True, merge_tasks=True, merge_halves=halves)
+        by = {c.label: c for c in plan.calls}
+        m = by["L5.mla_merge_uv"]
+        assert m.method == "mla_merge_uv_tile_layer" and m.status == "new"
+        assert m.tasks == per_layer == D.NH * halves and m.args["halves"] == halves
+        assert m.args["partials"] == "partials" and m.args["w_uv"] == "W_uv_5" and m.args["output"] == "attn"
+        assert plan.n_ops == base.n_ops == 326
+        assert plan.n_tasks == base.n_tasks + 27 * (per_layer - 8) == 2285 + 27 * (per_layer - 8)
+        assert not plan.chain_violations()
+        # the recorded call: three whole tensors and the three params the registration reads
+        rec = [c for c in calls if c["method"] == "mla_merge_uv_tile_mi300@new"]
+        assert len(rec) == 27 and not any(c["method"] == "mla_merge_uv_mi300@new" for c in calls)
+        assert rec[0]["inputs"] == ["partials", "W_uv_0", "attn"]
+        assert rec[0]["imaps"] == [[-1, -1, -1], [-1, -1, -1], [-1, -1, -1]]
+        assert rec[0]["params"] == [G.SPLIT, plan.n_splits, halves]
+        assert rec[0]["grid_dim"] == (per_layer, 1, 1)
+
+
+def test_merge_tasks_default_off_and_the_halves_are_checked():
+    plan_off, calls_off = B.dry_run(layers=27, head=True)
+    assert not any(c["method"] == "mla_merge_uv_tile_mi300@new" for c in calls_off)
+    assert sum(c["method"] == "mla_merge_uv_mi300@new" for c in calls_off) == 27
+    assert {c.label: c.tasks for c in plan_off.calls}["L5.mla_merge_uv"] == 8
+    with pytest.raises(AssertionError):
+        B.dry_run(layers=1, head=False, merge_tasks=True, merge_halves=3)
+    with pytest.raises(AssertionError):
+        B.dry_run(layers=1, head=False, merge_halves=2)                  # only under the flag
+
+
+@pytest.mark.parametrize("head,layers,halves", [(True, 27, 1), (False, 2, 2), (True, 1, 2)])
+def test_merge_tasks_keeps_the_chain_rule(head, layers, halves):
+    plan, _ = B.dry_run(layers=layers, head=head, merge_tasks=True, merge_halves=halves,
+                        gemv_linears=True, fuse_norm2=True, fuse_silu=True)
+    assert plan.chain_violations() == []
+
+
+def test_merge_oproj_folds_o_proj_into_the_merge():
+    """N5: --merge-oproj replaces the merge and the o_proj operators of every layer by one
+    operator of 32 regular tasks, labelled L{l}.o_proj so --stop-after and the x_res boundary keep
+    their key; it allocates the partial workspace and the arrival counter once."""
+    from fleet.graph_plan import REAL_DIMS as D
+    base, _ = B.dry_run(layers=27, head=True)
+    plan, calls = B.dry_run(layers=27, head=True, merge_oproj=True)
+    labels = [c.label for c in plan.calls]
+    assert not any(l.endswith(".mla_merge_uv") for l in labels)
+    assert [l for l in labels if l.endswith(".o_proj")] == [f"L{i}.o_proj" for i in range(27)]
+    assert plan.n_ops == base.n_ops - 27 == 299
+    # the gang o_proj (8 tasks) and the gang merge (8) become one operator of 32
+    assert plan.n_tasks == base.n_tasks + 27 * (32 - 8 - 8) == 2285 + 27 * 16
+    assert not plan.chain_violations()
+    assert plan.tensors["oproj_ws"].shape == (D.NH * G.OPROJ_HALVES, D.H)
+    assert plan.tensors["oproj_ws"].dtype == "f32" and plan.tensors["oproj_ws"].kind == "new"
+    assert plan.tensors["oproj_counter"].shape == (1,) and plan.tensors["oproj_counter"].dtype == "i32"
+    assert plan.tensors["oproj_counter"].kind == "new"      # a zeroed buffer at allocation
+    m = {c.label: c for c in plan.calls}["L5.o_proj"]
+    assert m.method == "mla_merge_oproj_layer" and m.status == "new"
+    assert m.tasks == D.NH * G.OPROJ_HALVES == 32 and m.args["halves"] == G.OPROJ_HALVES
+    assert m.args["partials"] == "partials" and m.args["w_uv"] == "W_uv_5" and m.args["w_o"] == "W_o_5"
+    assert m.args["residual"] == m.args["output"] == "x_res"
+    assert m.args["attn"] == "attn" and m.args["workspace"] == "oproj_ws"
+    assert m.args["counter"] == "oproj_counter"
+    assert (m.args["split"], m.args["n_splits"]) == (G.SPLIT, plan.n_splits)
+    # the recorded call: five whole inputs (x_res fourth, the counter fifth), three whole outputs
+    rec = [c for c in calls if c["method"] == "mla_merge_oproj_mi300@new"]
+    assert len(rec) == 27
+    assert not any(c["method"] in ("mla_merge_uv_mi300@new", "mla_merge_uv_tile_mi300@new")
+                   for c in calls)
+    assert rec[0]["inputs"] == ["partials", "W_uv_0", "W_o_0", "x_res", "oproj_counter",
+                                "x_res", "attn", "oproj_ws"]
+    assert rec[0]["imaps"] == [[-1, -1, -1]] * 8            # every tensor whole
+    assert rec[0]["params"] == [G.SPLIT, plan.n_splits, G.OPROJ_HALVES]
+    assert rec[0]["grid_dim"] == (32, 1, 1)
+    # attn's and x_res's last writer is this operator, whose label carries the layer
+    assert {c.label for c in plan.calls if "attn" in c.args.values()} >= {"L5.o_proj"}
+
+
+def test_merge_oproj_under_the_per_tile_and_gemv_o_proj():
+    """The task drop is 64 + 8 - 32 wherever o_proj is the per-tile or the GEMV form, and the
+    flag overrides --merge-tasks (its merge is the tile form at two halves)."""
+    for flags in ({"gemv_linears": True}, {"tile_linears": True}):
+        base, _ = B.dry_run(layers=27, head=True, **flags)
+        plan, _ = B.dry_run(layers=27, head=True, merge_oproj=True, **flags)
+        assert plan.n_ops == base.n_ops - 27
+        assert plan.n_tasks == base.n_tasks - 27 * (64 + 8 - 32)
+        assert not plan.chain_violations()
+        assert not any(c.label.endswith(".mla_merge_uv") for c in plan.calls)
+    over, calls = B.dry_run(layers=27, head=True, merge_oproj=True, merge_tasks=True, merge_halves=2)
+    alone, _ = B.dry_run(layers=27, head=True, merge_oproj=True)
+    assert over.n_ops == alone.n_ops and over.n_tasks == alone.n_tasks
+    assert not any(c["method"] == "mla_merge_uv_tile_mi300@new" for c in calls)
+
+
+def test_merge_oproj_default_off_leaves_the_plan_unchanged():
+    plan_off, calls_off = B.dry_run(layers=27, head=True)
+    assert "oproj_ws" not in plan_off.tensors and "oproj_counter" not in plan_off.tensors
+    assert not any(c["method"] == "mla_merge_oproj_mi300@new" for c in calls_off)
+    assert sum(c["method"] == "mla_merge_uv_mi300@new" for c in calls_off) == 27
+
+
+@pytest.mark.parametrize("head,layers", [(True, 27), (False, 2), (True, 1)])
+def test_merge_oproj_keeps_the_chain_rule(head, layers):
+    plan, calls = B.dry_run(layers=layers, head=head, merge_oproj=True, gemv_linears=True,
+                            router_tasks=True, gemv_w13=True, fuse_silu=True)
+    assert plan.chain_violations() == []
+    assert sum(c["method"] == "mla_merge_oproj_mi300@new" for c in calls) == layers
+    # --stop-after keeps working on the label the folded operator carries
+    stopped, _ = B.dry_run(layers=layers, head=head, merge_oproj=True,
+                           stop_after=f"L{layers - 1}.o_proj")
+    assert stopped.calls[-1].label == f"L{layers - 1}.o_proj"
+
+
 def test_prefetch_adds_side_operators_that_the_chain_rule_skips():
     """O8 (docs/gpu-experiments/03-acceleration): --prefetch adds three side operators per layer
     (the layer's W_o after qkva, the next layer's W_qkva after o_proj, the active experts' W2 after
@@ -386,6 +779,62 @@ def test_empty_ladder_is_a_chain_of_copy_operators_with_one_event_per_boundary()
     _, calls = B.dry_run(layers=2, head=False, debug=True)
     rec = [c for c in calls if c["method"] == "copy_mi300@new"]
     assert rec and rec[0]["params"] == [REAL_DIMS.H] and rec[0]["imaps"] == [[-1, -1, -1], [-1, -1, -1]]
+
+
+def test_stream_probe_plan_counts_tensors_and_chain():
+    """L6 (M7 of docs/gpu-experiments/04-kernels/01-gemv-ideas.md): M operators of N tasks reading
+    kb kilobytes each over two weight tensors and two dummies, the empty ladder's alternation;
+    every operator reads the dummy the one before it wrote, which is what the runtime's chain rule
+    needs from an operator whose only output is that dummy."""
+    from fleet.graph_plan import build_stream_plan, stream_rows, STREAM_K
+    plan = build_stream_plan(ops=10, tasks=96, kb=152)          # qkva's shape: 38 rows per task
+    rows = stream_rows(152)
+    assert rows == 38 and plan.n_ops == 10 and plan.n_tasks == 960 and not plan.chain_violations()
+    assert plan.tensors["stream_w_0"].shape == (96 * rows, STREAM_K)
+    assert plan.tensors["stream_w_0"].kind == "new" and plan.tensors["stream_dummy_a"].dtype == "i32"
+    assert plan.tensors["stream_dummy_a"].shape == (96, 4)
+    assert [c.args["weight"] for c in plan.calls[:3]] == ["stream_w_0", "stream_w_1", "stream_w_2"]   # one weight per operator: nothing re-read from the 256 MB cache
+    assert [c.args["dummy"] for c in plan.calls[:3]] == ["stream_dummy_a", "stream_dummy_b", "stream_dummy_a"]
+    assert [c.args["prev"] for c in plan.calls[:3]] == ["stream_dummy_b", "stream_dummy_a", "stream_dummy_b"]
+    assert [c.label for c in plan.calls[:2]] == ["S0.stream", "S1.stream"]
+    _, calls = B.dry_run(plan=plan)
+    rec = [c for c in calls if c["task_type"] == "stream_mi300"]
+    assert len(rec) == 10 and rec[0]["params"] == [] and rec[0]["grid_dim"] == (96, 1, 1)
+    # the weight by the grid, the chain's dummy whole and ignored, the task's dummy row out
+    assert rec[0]["imaps"] == [[0, -1, -1], [-1, -1, -1], [0, -1, -1]]
+    assert rec[0]["inputs"] == ["stream_w_0", "stream_dummy_b", "stream_dummy_a"]
+    # the 296-task row of G5, one task per CU at 256 KB
+    plan = build_stream_plan(ops=10, tasks=296, kb=256)
+    assert plan.n_ops == 10 and plan.n_tasks == 2960 and not plan.chain_violations()
+    assert plan.tensors["stream_w_0"].shape == (296 * 64, STREAM_K)
+
+
+def test_stream_probe_gang_plan_is_eight_tasks_of_tiles_per_xcd():
+    """The gang row of G5: 8 XCD slots x 37 tiles, each tile reading 304 KB of one whole tensor
+    (w13's shape at 8 active experts), the dummy whole with a row per tile."""
+    from fleet.graph_plan import build_stream_plan, stream_rows, STREAM_K
+    plan = build_stream_plan(ops=10, tasks=37, kb=304, gang=True)
+    rows = stream_rows(304)
+    assert rows == 76 and plan.n_ops == 10 and plan.n_tasks == 80 and not plan.chain_violations()
+    assert all(c.tasks == 8 and c.tiles == 37 for c in plan.calls)
+    assert plan.tensors["stream_w_0"].shape == (8 * 37 * rows, STREAM_K)
+    assert plan.tensors["stream_dummy_a"].shape == (8 * 37, 4)
+    assert 8 * 37 * 304 * 1024 == 8 * 37 * rows * STREAM_K * 2        # 90 MiB, w13's eight experts
+    _, calls = B.dry_run(plan=plan)
+    rec = [c for c in calls if c["task_type"] == "stream_gang_mi300"]
+    assert len(rec) == 10 and rec[0]["params"] == [rows, 37] and rec[0]["grid_dim"] == (8, 1, 1)
+    assert rec[0]["imaps"] == [[-1, -1, -1], [-1, -1, -1], [-1, -1, -1]]
+
+
+def test_stream_probe_kb_must_be_whole_rows():
+    """A task reads whole 4 KB rows, so a --kb that is not a multiple of 4 is refused rather than
+    rounded: the byte count is the numerator of the rate the probe reports. w13's 305 KB of the
+    pages is run at 304."""
+    from fleet.graph_plan import build_stream_plan, stream_rows
+    with pytest.raises(AssertionError) as e:
+        build_stream_plan(ops=2, tasks=4, kb=305, gang=True)
+    assert "304" in str(e.value) and "308" in str(e.value)
+    assert stream_rows(4) == 1 and stream_rows(256) == 64
 
 
 def test_probe_before_inserts_a_one_task_copy_and_rewires_the_consumer():

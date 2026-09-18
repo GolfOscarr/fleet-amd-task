@@ -3,6 +3,7 @@
 
     python fleet/tasks/kernel_tests.py [--n 100] [--seed 0] [--kernel NAME ...]
         [--bin fleet/tasks/build/kernel_tests] [--bin-debug fleet/tasks/build/kernel_tests_debug]
+        [--bin-xcd fleet/tasks/build/kernel_tests_xcd]
         [--dry-run] [--work-dir DIR] [--keep] [--out fleet/tasks/results/kernel_tests.json]
     (--dry-run writes fleet/tasks/results/kernel_tests_dryrun.json, which is gitignored)
 
@@ -14,9 +15,32 @@ binary once per test over all trial directories, reads the outputs back and
 compares them with harness/numpy_ref.py output by output.
 
 Tests (--kernel selects; default all):
-  mla_prep, mla_attend, mla_merge_uv, moe_router, copy, prefetch, prefetch_moe
+  mla_prep, mla_attend, mla_merge_uv, moe_router, copy, prefetch, prefetch_moe, stream
       n random trials each, one launch per trial (the two prefetch suites, O8: the XOR of the
       streamed slice per wave, so the stripe and the expert (slot, part) indexing are exact)
+  linear_gemv, linear_gemv_norm, linear_gemv_res
+      the three forms of the GEMV linear (L1, docs/gpu-experiments/04-kernels): a whole grid of
+      tasks per launch (96 tasks of 38 rows of qkva; 64 of 32 rows with the residual), against
+      bf16(W @ x), numpy_ref.linear_norm and bf16(W @ x + res)
+  gang_w13_gemv, gang_w2_gemv
+      the two MoE gang kernels (L3 and L4, docs/gpu-experiments/04-kernels), from the
+      -DKT_FAKE_XCD build: one launch of (tiles, 8) blocks covers every (XCD, tile) pair, the
+      tile index is blockIdx.x and the XCD blockIdx.y, so all eight slots of the token are
+      computed and compared with numpy_ref.moe_w13 and numpy_ref.moe_w2. A trial holds only the
+      eight active experts' weight slabs (the model's 66 would be 761 MB of W13), so the mask
+      names the ids 0 to 7 rather than the router's own eight; the kernels read the ids from
+      the mask, so nothing else changes.
+  mla_merge_uv_tile, mla_merge_uv_tile2
+      the merge as 16 or 32 regular tasks (N4, docs/gpu-experiments/04-kernels), each trial run
+      through both launches: the reference check of the gang row, plus attn bit for bit against it
+  mla_merge_oproj
+      the merge with o_proj folded in (N5, docs/gpu-experiments/04-kernels): 32 regular tasks with
+      a zeroed counter, each trial run through the tile launch as well, so attn is checked bit for
+      bit against the 32-task merge and x_res against numpy_ref's merge then o_proj with the
+      residual; the counter must come back at zero
+  moe_router4
+      the router as four tasks with a zeroed counter (N2), each trial run through both launches:
+      the reference check of the one-task row, plus every output bit for bit against it
   mla_attend_scores   the -DMLA_ATTEND_DEBUG_SCORES build's second output (boundary B5)
   mla_attend_splits   one split of 1056 rows versus 33 splits of 32 rows through
                       both the attend and the merge kernel (isolates the merge)
@@ -70,11 +94,17 @@ TILES_PER_XCD = -(-N_SPLITS // XCDS)                     # 5
 QKVA = D.Q_OUT + D.KVA_OUT                               # 3648
 N_SLOTS = D.TOPK + G.N_FORCED                            # 8
 N_TOTAL = D.E + G.N_FORCED                               # 66
+W13_N = 2 * D.I_MOE                                      # 2816: the expert's gate and up rows
+W13_TILES = G.W13_GEMV_TILES                             # 37 (L4: one tile per worker of an XCD)
+W2_TILES = D.H // 64                                     # 32 tiles per expert of the fused w2
+OPROJ_HALVES = G.OPROJ_HALVES                            # 2 (N5: one task per half head, 32 in all)
+GANG_EXPERTS = 8                                         # the expert slabs a gang trial file holds
 ROUTE_SHAPE = (common.N_STEPS, D.L - 1, G.TOPK_TOTAL_SLOTS)   # [32, 26, 8] (graph_plan.py)
 FORCED = tuple(range(D.E, D.E + G.N_FORCED))
 
 DEFAULT_BIN = ROOT / "fleet/tasks/build/kernel_tests"
 DEFAULT_BIN_DEBUG = ROOT / "fleet/tasks/build/kernel_tests_debug"
+DEFAULT_BIN_XCD = ROOT / "fleet/tasks/build/kernel_tests_xcd"
 DEFAULT_OUT = ROOT / "fleet/tasks/results/kernel_tests.json"
 DEFAULT_OUT_DRY = ROOT / "fleet/tasks/results/kernel_tests_dryrun.json"     # gitignored
 BUILD_HINT = ("build it from the repository root with the line in its header, starting with "
@@ -455,6 +485,42 @@ def check_mla_merge_uv(t, p, exp, got):
     return [row_bf16("attn", got["attn"], exp["attn"])]
 
 
+# --- mla_merge_oproj (N5) ---------------------------------------------------
+
+# The merge with o_proj folded in: the tile row's tensors plus W_o [H, H], the residual x_res
+# (read and written in place), the arrival counter and the [32, H] FP32 workspace the 32 tasks
+# write their partial vectors into. The workspace is not read back (only the kernel's own last
+# task reads it; x_res is the sum of every row of it).
+
+def tensors_mla_merge_oproj(params):
+    return [T("partials", "f32", (params["n_splits"], D.NH, P_ROW)),
+            T("w_uv", "bf16", (D.NH, D.D_V, D.D_C)), T("w_o", "bf16", (D.H, D.H)),
+            T("x_res", "bf16", (D.H,), True), T("counter", "i32", (1,), True),
+            T("attn", "bf16", (D.NH * D.D_V,), True),
+            T("workspace", "f32", (D.NH * OPROJ_HALVES, D.H))]
+
+
+def make_mla_merge_oproj(rng):
+    t, p = make_mla_merge_uv(rng)
+    t["w_o"] = bf16_normal(rng, (D.H, D.H), D.H ** -0.5)
+    t["x_res"] = bf16_normal(rng, (D.H,))
+    t["counter"] = np.zeros(1, np.int32)
+    t["workspace"] = np.zeros((D.NH * OPROJ_HALVES, D.H), F32)
+    return t, p
+
+
+def ref_mla_merge_oproj(t, p):
+    attn, x_res = R.mla_merge_oproj(t["partials"], t["w_uv"], t["w_o"], t["x_res"], p["step"],
+                                    split=p["split"], d_c=D.D_C)
+    return {"attn": attn, "x_res": x_res, "counter": np.zeros(1, np.int32)}
+
+
+def check_mla_merge_oproj(t, p, exp, got):
+    return [row_bf16("attn", got["attn"], exp["attn"]),
+            row_bf16("x_res", got["x_res"], exp["x_res"]),
+            row_exact("counter", got["counter"], exp["counter"], "the last task resets it")]
+
+
 # --- moe_router -------------------------------------------------------------
 
 def tensors_moe_router(params):
@@ -527,6 +593,28 @@ def check_moe_router(t, p, exp, got):
     return rows
 
 
+def tensors_moe_router4(params):
+    # N2: the fused form's tensors plus the arrival counter, which the last task resets to zero
+    t = tensors_moe_router(params)
+    return t[:3] + [T("counter", "i32", (1,), True)] + t[3:]
+
+
+def make_moe_router4(rng):
+    t, p = make_moe_router(rng)
+    t["counter"] = np.zeros(1, np.int32)            # the plan's new tensors are zeroed buffers
+    return t, p
+
+
+def ref_moe_router4(t, p):
+    return dict(ref_moe_router(t, p), counter=np.zeros(1, np.int32))
+
+
+def check_moe_router4(t, p, exp, got):
+    rows = check_moe_router(t, p, exp, got)
+    rows.append(row_exact("counter", got["counter"], exp["counter"], note="reset by the last task"))
+    return rows
+
+
 # --- prefetch (O8) ----------------------------------------------------------
 
 PF_GRID, PF_ROWS = 4, 32          # the launcher's constants: a W_o-like [128, 2048] in 4 stripes
@@ -562,6 +650,44 @@ def check_prefetch(t, p, exp, got):
     return [row_exact("dummy", got["dummy"], exp["dummy"], "the XOR of every word of the stripe, per wave")]
 
 
+# --- stream (L6) ------------------------------------------------------------
+
+STREAM_GRID, STREAM_ROWS, STREAM_BATCH = 4, 38, 8   # the launcher's constants; 38 rows is 5 batches
+
+
+def stream_xor_per_wave(rows_bf16):
+    """What stream_mi300.cuh writes for one task: the task's rows are cut into batches of eight
+    (the last one filled by loading the task's last row again), batch b is wave b % 4's, and a
+    wave's word is the XOR of every 32-bit word of its batches' rows (the 64 lanes of a wave read
+    a row exactly once between them, and the butterfly XORs their words)."""
+    n = rows_bf16.shape[0]
+    words = np.ascontiguousarray(to_file(rows_bf16, "bf16")).reshape(n, -1).view(np.uint32)
+    per_row = np.bitwise_xor.reduce(words, axis=1)
+    out = np.zeros(4, np.uint32)
+    for b in range(-(-n // STREAM_BATCH)):
+        for u in range(STREAM_BATCH):
+            out[b % 4] ^= per_row[min(b * STREAM_BATCH + u, n - 1)]
+    return out.view(np.int32)
+
+
+def tensors_stream(params):
+    return [T("w", "bf16", (STREAM_GRID * STREAM_ROWS, D.H)), T("dummy", "i32", (STREAM_GRID, 4), True)]
+
+
+def make_stream(rng):
+    return {"w": bf16_normal(rng, (STREAM_GRID * STREAM_ROWS, D.H)), "dummy": sentinel("i32", (STREAM_GRID, 4))}, {}
+
+
+def ref_stream(t, p):
+    dummy = np.stack([stream_xor_per_wave(t["w"][b * STREAM_ROWS:(b + 1) * STREAM_ROWS])
+                      for b in range(STREAM_GRID)])
+    return {"dummy": dummy}
+
+
+def check_stream(t, p, exp, got):
+    return [row_exact("dummy", got["dummy"], exp["dummy"], "the XOR of every word the task loaded, per wave")]
+
+
 def tensors_prefetch_moe(params):
     return [T("w", "bf16", (N_TOTAL, PF_N, PF_K)), T("mask", "i32", (N_TOTAL + 1,)),
             T("dummy", "i32", (N_SLOTS * PF_PARTS, 4), True)]
@@ -594,6 +720,129 @@ def check_prefetch_moe(t, p, exp, got):
     return [row_exact("dummy", got["dummy"], exp["dummy"], "per (slot, part): the active expert's rows; sentinel past the count")]
 
 
+# --- linear_gemv (L1) -------------------------------------------------------
+
+# The whole output of a grid of tasks, as the graph runs it: the launcher splits the 3,648 rows
+# of qkva into 96 tasks of 38 (the plain and the norm form) and the 2,048 rows of o_proj into 64
+# tasks of 32 (the residual form), and hands each task its rows of the weight and its columns of
+# the output. The reference is the whole product, so the row partition is checked too.
+
+
+def tensors_linear_gemv(params):
+    return [T("x", "bf16", (D.H,)), T("w", "bf16", (QKVA, D.H)), T("out", "bf16", (QKVA,), True)]
+
+
+def make_linear_gemv(rng):
+    return {"x": bf16_normal(rng, (D.H,)), "w": bf16_normal(rng, (QKVA, D.H), D.H ** -0.5),
+            "out": sentinel("bf16", (QKVA,))}, {}
+
+
+def ref_linear_gemv(t, p):
+    return {"out": R.linear(t["x"], t["w"])}
+
+
+def check_linear_gemv(t, p, exp, got):
+    return [row_bf16("out", got["out"], exp["out"])]
+
+
+def tensors_linear_gemv_norm(params):
+    return [T("x", "bf16", (D.H,)), T("w_norm", "bf16", (D.H,)), T("w", "bf16", (QKVA, D.H)),
+            T("out", "bf16", (QKVA,), True)]
+
+
+def make_linear_gemv_norm(rng):
+    t = {"x": bf16_normal(rng, (D.H,), 4.0), "w_norm": bf16_normal(rng, (D.H,)),
+         "w": bf16_normal(rng, (QKVA, D.H), D.H ** -0.5), "out": sentinel("bf16", (QKVA,))}
+    return t, {"eps_bits": G.float_bits(G.RMS_EPS)}
+
+
+def ref_linear_gemv_norm(t, p):
+    # the fused prologue (the task's NORM): numpy_ref.linear_norm, whose h the GEMV keeps in
+    # LDS instead of writing it to the scratch row the CK path needs
+    _, out = R.linear_norm(t["x"], t["w_norm"], t["w"], bits_to_float(p["eps_bits"]))
+    return {"out": out}
+
+
+def tensors_linear_gemv_res(params):
+    return [T("x", "bf16", (D.H,)), T("w", "bf16", (D.H, D.H)), T("residual", "bf16", (D.H,)),
+            T("out", "bf16", (D.H,), True)]
+
+
+def make_linear_gemv_res(rng):
+    return {"x": bf16_normal(rng, (D.H,)), "w": bf16_normal(rng, (D.H, D.H), D.H ** -0.5),
+            "residual": bf16_normal(rng, (D.H,)), "out": sentinel("bf16", (D.H,))}, {}
+
+
+def ref_linear_gemv_res(t, p):
+    return {"out": R.linear_residual(t["x"], t["w"], t["residual"])}
+
+
+# --- the MoE gang kernels (L3 and L4) ---------------------------------------
+
+# One launch is the whole operator of one layer: (tiles, 8) blocks, the tile index blockIdx.x and
+# the XCD blockIdx.y (the -DKT_FAKE_XCD build). Eight experts are active, one per XCD, so every
+# slot of the token is written and the reference is the whole [8, N] output. The trial's weight
+# holds those eight experts' slabs alone and the mask names the ids 0 to 7: the model's 66 slabs
+# would be 761 MB of W13 per trial, and the decode never sees an id the mask does not give it.
+
+
+def gang_mask_and_routing(rng):
+    """routing [E + 2, 1] and mask [E + 3] as the router writes them for eight active experts,
+    in a random slot order: mask[s] is slot s's expert id and routing[e] is that slot plus one."""
+    ids = rng.permutation(GANG_EXPERTS).astype(np.int32)
+    mask = np.full(N_TOTAL + 1, -1, np.int32)
+    mask[:N_SLOTS] = ids
+    mask[N_TOTAL] = N_SLOTS
+    routing = np.zeros((N_TOTAL, 1), np.int32)
+    for s, e in enumerate(ids):
+        routing[int(e), 0] = s + 1
+    return routing, mask
+
+
+def tensors_gang_w13_gemv(params):
+    return [T("h", "bf16", (D.H,)), T("w13", "bf16", (GANG_EXPERTS, W13_N, D.H)),
+            T("routing", "i32", (N_TOTAL, 1)), T("mask", "i32", (N_TOTAL + 1,)),
+            T("mid", "bf16", (N_SLOTS, W13_N), True)]
+
+
+def make_gang_w13_gemv(rng):
+    routing, mask = gang_mask_and_routing(rng)
+    return {"h": bf16_normal(rng, (D.H,)),
+            "w13": bf16_normal(rng, (GANG_EXPERTS, W13_N, D.H), D.H ** -0.5),
+            "routing": routing, "mask": mask,
+            "mid": sentinel("bf16", (N_SLOTS, W13_N))}, {}
+
+
+def ref_gang_w13_gemv(t, p):
+    return {"mid": R.moe_w13(t["h"], t["w13"], t["mask"], N_SLOTS)}
+
+
+def check_gang_w13_gemv(t, p, exp, got):
+    return [row_bf16("mid", got["mid"], exp["mid"])]
+
+
+def tensors_gang_w2_gemv(params):
+    return [T("mid", "bf16", (N_SLOTS, W13_N)), T("w2", "bf16", (GANG_EXPERTS, D.H, D.I_MOE)),
+            T("routing", "i32", (N_TOTAL, 1)), T("mask", "i32", (N_TOTAL + 1,)),
+            T("out8", "bf16", (N_SLOTS, D.H), True)]
+
+
+def make_gang_w2_gemv(rng):
+    routing, mask = gang_mask_and_routing(rng)
+    return {"mid": bf16_normal(rng, (N_SLOTS, W13_N)),
+            "w2": bf16_normal(rng, (GANG_EXPERTS, D.H, D.I_MOE), D.I_MOE ** -0.5),
+            "routing": routing, "mask": mask,
+            "out8": sentinel("bf16", (N_SLOTS, D.H))}, {}
+
+
+def ref_gang_w2_gemv(t, p):
+    return {"out8": R.moe_w2(t["mid"], t["w2"], t["mask"], N_SLOTS)}
+
+
+def check_gang_w2_gemv(t, p, exp, got):
+    return [row_bf16("out8", got["out8"], exp["out8"])]
+
+
 # --- copy -------------------------------------------------------------------
 
 def tensors_copy(params):
@@ -617,10 +866,29 @@ KERNELS = {
     "mla_attend": Kernel("mla_attend", tensors_mla_attend, make_mla_attend, ref_mla_attend, check_mla_attend),
     "mla_merge_uv": Kernel("mla_merge_uv", tensors_mla_merge_uv, make_mla_merge_uv, ref_mla_merge_uv,
                            check_mla_merge_uv),
+    # N4: the same tensors and the same reference, launched as NH * halves regular tasks
+    "mla_merge_uv_tile": Kernel("mla_merge_uv_tile", tensors_mla_merge_uv, make_mla_merge_uv,
+                                ref_mla_merge_uv, check_mla_merge_uv),
+    # N5: the merge with o_proj folded in, 32 tasks and a last-task reduction into x_res
+    "mla_merge_oproj": Kernel("mla_merge_oproj", tensors_mla_merge_oproj, make_mla_merge_oproj,
+                              ref_mla_merge_oproj, check_mla_merge_oproj),
     "moe_router": Kernel("moe_router", tensors_moe_router, make_moe_router, ref_moe_router, check_moe_router),
+    "moe_router4": Kernel("moe_router4", tensors_moe_router4, make_moe_router4, ref_moe_router4,
+                          check_moe_router4),
     "copy": Kernel("copy", tensors_copy, make_copy, ref_copy, check_copy),
     "prefetch": Kernel("prefetch", tensors_prefetch, make_prefetch, ref_prefetch, check_prefetch),
     "prefetch_moe": Kernel("prefetch_moe", tensors_prefetch_moe, make_prefetch_moe, ref_prefetch_moe, check_prefetch_moe),
+    "stream": Kernel("stream", tensors_stream, make_stream, ref_stream, check_stream),
+    "linear_gemv": Kernel("linear_gemv", tensors_linear_gemv, make_linear_gemv, ref_linear_gemv,
+                          check_linear_gemv),
+    "linear_gemv_norm": Kernel("linear_gemv_norm", tensors_linear_gemv_norm, make_linear_gemv_norm,
+                               ref_linear_gemv_norm, check_linear_gemv),
+    "linear_gemv_res": Kernel("linear_gemv_res", tensors_linear_gemv_res, make_linear_gemv_res,
+                              ref_linear_gemv_res, check_linear_gemv),
+    "gang_w13_gemv": Kernel("gang_w13_gemv", tensors_gang_w13_gemv, make_gang_w13_gemv,
+                            ref_gang_w13_gemv, check_gang_w13_gemv),
+    "gang_w2_gemv": Kernel("gang_w2_gemv", tensors_gang_w2_gemv, make_gang_w2_gemv,
+                           ref_gang_w2_gemv, check_gang_w2_gemv),
 }
 
 
@@ -680,7 +948,8 @@ def run_binary(binary, kernel, dirs):
 @dataclass
 class Ctx:
     binary: object                # Path, or None for --dry-run
-    binary_debug: object
+    binary_debug: object          # the -DMLA_ATTEND_DEBUG_SCORES build
+    binary_xcd: object            # the -DKT_FAKE_XCD build (the two MoE gang rows)
     work: Path
     n: int
     seed: int
@@ -727,7 +996,7 @@ def run_single(ctx, name, kernel, make=None, binary="bin"):
         tensors, params = make(rng)
         write_trial(d, kernel, tensors, params)
         dirs.append(d)
-    run_binary(getattr(ctx, "binary" if binary == "bin" else "binary_debug"), kernel, dirs)
+    run_binary(getattr(ctx, "binary" if binary == "bin" else f"binary_{binary}"), kernel, dirs)
     rows = []
     for d in dirs:
         tensors, params, got = read_trial(d, kernel)
@@ -786,19 +1055,111 @@ def run_splits(ctx, name):
     return summarize(name, rows)
 
 
+def run_merge_tile(ctx, name, halves):
+    """N4: the merge as NH * halves regular tasks against the gang launch on the same inputs.
+    A row of attn is reduced by the same butterfly over the same lane sums in both forms, so
+    the two agree bit for bit; the reference check of the gang row applies to the tile row
+    unchanged."""
+    rng = trial_rng(ctx, name)
+    gang, tile = KERNELS["mla_merge_uv"], KERNELS["mla_merge_uv_tile"]
+    trials = []
+    for i in range(ctx.n):
+        base = ctx.work / name / f"{i:03d}"
+        tensors, p = make_mla_merge_uv(rng)
+        write_trial(base / "gang", gang, tensors, p)
+        write_trial(base / "tile", tile, tensors, dict(p, halves=halves))
+        trials.append(base)
+    run_binary(ctx.binary, gang, [b / "gang" for b in trials])
+    run_binary(ctx.binary, tile, [b / "tile" for b in trials])
+    rows = []
+    for base in trials:
+        t, p, g = read_trial(base / "gang", gang)
+        _, pt, k = read_trial(base / "tile", tile)
+        r = tile.check(t, pt, tile.reference(t, pt), k)
+        r.append(row_exact(f"attn: {D.NH * halves} tasks vs the gang", k["attn"], g["attn"]))
+        rows.append(r)
+    return summarize(name, rows)
+
+
+def run_merge_oproj(ctx, name):
+    """N5: the merge with o_proj folded in, against numpy_ref and against the 32-task merge on the
+    same partials and W_uv. The merge phases are the tile form's at two halves, so attn is the same
+    float; x_res is a new accumulation order (32 partial sums of 64 terms) and takes the BF16 row
+    tolerance the GEMV linear's output takes."""
+    rng = trial_rng(ctx, name)
+    tile, oproj = KERNELS["mla_merge_uv_tile"], KERNELS["mla_merge_oproj"]
+    trials = []
+    for i in range(ctx.n):
+        base = ctx.work / name / f"{i:03d}"
+        tensors, p = make_mla_merge_oproj(rng)
+        write_trial(base / "tile", tile,
+                    {k: tensors[k] for k in ("partials", "w_uv", "attn")},
+                    dict(p, halves=OPROJ_HALVES))
+        write_trial(base / "oproj", oproj, tensors, p)
+        trials.append(base)
+    run_binary(ctx.binary, tile, [b / "tile" for b in trials])
+    run_binary(ctx.binary, oproj, [b / "oproj" for b in trials])
+    rows = []
+    for base in trials:
+        _, _, g = read_trial(base / "tile", tile)
+        t, p, k = read_trial(base / "oproj", oproj)
+        r = oproj.check(t, p, oproj.reference(t, p), k)
+        r.append(row_exact(f"attn: the folded operator vs the {D.NH * OPROJ_HALVES}-task merge",
+                           k["attn"], g["attn"]))
+        rows.append(r)
+    return summarize(name, rows)
+
+
+def run_router4(ctx, name):
+    """N2: the router over four tasks against the one-task kernel on the same inputs. A logit's
+    lane chain and its butterfly are the batch constant's in both forms, so every output matches
+    bit for bit; the reference check of the one-task row applies to the four-task row unchanged."""
+    rng = trial_rng(ctx, name)
+    one, four = KERNELS["moe_router"], KERNELS["moe_router4"]
+    trials = []
+    for i in range(ctx.n):
+        base = ctx.work / name / f"{i:03d}"
+        tensors, p = make_moe_router(rng)
+        write_trial(base / "one", one, tensors, p)
+        write_trial(base / "four", four, dict(tensors, counter=np.zeros(1, np.int32)), p)
+        trials.append(base)
+    run_binary(ctx.binary, one, [b / "one" for b in trials])
+    run_binary(ctx.binary, four, [b / "four" for b in trials])
+    rows = []
+    for base in trials:
+        _, _, g = read_trial(base / "one", one)
+        t, p, k = read_trial(base / "four", four)
+        r = four.check(t, p, four.reference(t, p), k)
+        for out in ("h", "topk_w", "routing", "mask", "logits", "route_log"):
+            r.append(row_exact(f"{out}: four tasks vs one", k[out], g[out]))
+        rows.append(r)
+    return summarize(name, rows)
+
+
 TESTS = {
     "mla_prep": lambda ctx: run_single(ctx, "mla_prep", KERNELS["mla_prep"]),
     "mla_attend": lambda ctx: run_single(ctx, "mla_attend", KERNELS["mla_attend"]),
     "mla_merge_uv": lambda ctx: run_single(ctx, "mla_merge_uv", KERNELS["mla_merge_uv"]),
+    "mla_merge_uv_tile": lambda ctx: run_merge_tile(ctx, "mla_merge_uv_tile", 1),
+    "mla_merge_uv_tile2": lambda ctx: run_merge_tile(ctx, "mla_merge_uv_tile2", 2),
+    "mla_merge_oproj": lambda ctx: run_merge_oproj(ctx, "mla_merge_oproj"),
     "moe_router": lambda ctx: run_single(ctx, "moe_router", KERNELS["moe_router"]),
+    "moe_router4": lambda ctx: run_router4(ctx, "moe_router4"),
     "copy": lambda ctx: run_single(ctx, "copy", KERNELS["copy"]),
     "prefetch": lambda ctx: run_single(ctx, "prefetch", KERNELS["prefetch"]),
     "prefetch_moe": lambda ctx: run_single(ctx, "prefetch_moe", KERNELS["prefetch_moe"]),
+    "stream": lambda ctx: run_single(ctx, "stream", KERNELS["stream"]),
+    "linear_gemv": lambda ctx: run_single(ctx, "linear_gemv", KERNELS["linear_gemv"]),
+    "linear_gemv_norm": lambda ctx: run_single(ctx, "linear_gemv_norm", KERNELS["linear_gemv_norm"]),
+    "linear_gemv_res": lambda ctx: run_single(ctx, "linear_gemv_res", KERNELS["linear_gemv_res"]),
+    "gang_w13_gemv": lambda ctx: run_single(ctx, "gang_w13_gemv", KERNELS["gang_w13_gemv"], binary="xcd"),
+    "gang_w2_gemv": lambda ctx: run_single(ctx, "gang_w2_gemv", KERNELS["gang_w2_gemv"], binary="xcd"),
     "mla_attend_scores": lambda ctx: run_single(ctx, "mla_attend_scores", KERNELS["mla_attend"],
                                                 make=make_mla_attend_scores, binary="debug"),
     "mla_attend_splits": lambda ctx: run_splits(ctx, "mla_attend_splits"),
 }
-NEEDS_DEBUG_BINARY = {"mla_attend_scores"}
+# test -> the build variant it needs, by the suffix of the Ctx field and of the --bin-* option
+NEEDS_BINARY = {"mla_attend_scores": "debug", "gang_w13_gemv": "xcd", "gang_w2_gemv": "xcd"}
 
 
 # ----------------------------------------------------------------------------
@@ -825,6 +1186,8 @@ def main(argv=None):
     ap.add_argument("--kernel", action="append", choices=sorted(TESTS), help="test to run (default: all)")
     ap.add_argument("--bin", default=str(DEFAULT_BIN), help="the compiled kernel_tests_mi300.cu")
     ap.add_argument("--bin-debug", default=str(DEFAULT_BIN_DEBUG), help="the -DMLA_ATTEND_DEBUG_SCORES build")
+    ap.add_argument("--bin-xcd", default=str(DEFAULT_BIN_XCD),
+                    help="the -DKT_FAKE_XCD build (the gang_w13_gemv and gang_w2_gemv rows)")
     ap.add_argument("--dry-run", action="store_true", help="no binary: the references stand in for the kernels")
     ap.add_argument("--work-dir", default=None, help="trial directories (default: a temporary directory)")
     ap.add_argument("--keep", action="store_true", help="keep the trial directories")
@@ -834,28 +1197,33 @@ def main(argv=None):
     args = ap.parse_args(argv)
 
     names = args.kernel or list(TESTS)
-    binary = binary_debug = None
+    binary = binary_debug = binary_xcd = None
     if not args.dry_run:
-        binary, binary_debug = Path(args.bin), Path(args.bin_debug)
+        binary, binary_debug, binary_xcd = Path(args.bin), Path(args.bin_debug), Path(args.bin_xcd)
         if not binary.exists():
             sys.exit(f"no binary at {binary} (the compiled fleet/tasks/kernel_tests_mi300.cu): {BUILD_HINT}")
         if not binary_debug.exists():
             binary_debug = None
+        if not binary_xcd.exists():
+            binary_xcd = None
     work = Path(args.work_dir) if args.work_dir else Path(tempfile.mkdtemp(prefix="kernel_tests."))
     work.mkdir(parents=True, exist_ok=True)
-    ctx = Ctx(binary, binary_debug, work, args.n, args.seed)
+    ctx = Ctx(binary, binary_debug, binary_xcd, work, args.n, args.seed)
 
     result = {"n": args.n, "seed": args.seed, "dry_run": args.dry_run,
               "binary": None if args.dry_run else str(binary),
               "binary_debug": None if args.dry_run or binary_debug is None else str(binary_debug),
+              "binary_xcd": None if args.dry_run or binary_xcd is None else str(binary_xcd),
               "tolerances": {"f32_rel": F32_REL, "bf16_rel": BF16_REL, "bf16_ulp": BF16_ULP,
                              "bf16_abs_floor": BF16_ABS_FLOOR, "partials_o_rel": PARTIALS_O_REL, "lse_abs": LSE_ABS, "splits_rel": SPLITS_REL},
               "tests": {}}
     try:
         for name in names:
-            if name in NEEDS_DEBUG_BINARY and not args.dry_run and binary_debug is None:
-                result["tests"][name] = {"result": "SKIP", "note": f"no debug binary at {args.bin_debug}"}
-                print(f"SKIP {name} (no debug binary at {args.bin_debug})")
+            variant = NEEDS_BINARY.get(name)
+            if variant and not args.dry_run and getattr(ctx, f"binary_{variant}") is None:
+                path = getattr(args, f"bin_{variant}")
+                result["tests"][name] = {"result": "SKIP", "note": f"no {variant} binary at {path}"}
+                print(f"SKIP {name} (no {variant} binary at {path})")
                 continue
             s = TESTS[name](ctx)
             result["tests"][name] = s

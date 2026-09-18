@@ -1,0 +1,27 @@
+# Round 4: kernels
+
+The fourth GPU round. Round 3 (`../03-acceleration/`) took the decode from
+9.58 to 4.57 to 4.60 ms per token on the event clock; the target is the
+production vLLM figure quoted for this model on this machine, 4.5 ms. This
+round works the kernels that hold the remaining time: the CK linears
+(2.7 ms per token, a latency-bound K loop), the router (0.5 ms) and the
+merge (0.5 ms). The runtime's per-task completion cost (MAJ-8) stays a
+separate item.
+
+| File | What |
+|---|---|
+| [`01-gemv-ideas.md`](01-gemv-ideas.md) | every idea for a batch-1 GEMV linear of our own in place of the CK tile, double-checked against the source and the offline compiler (`env/offline_gfx942/gemv_probe/`): what bounds each linear today (the latency chain, the XCD's rate, or between), the bytes-in-flight arithmetic, the kernel forms (VALU on raw words, MFMA from registers, direct-to-LDS staging; the packed dot2 is not on gfx942), the load policy, the batch depth with its measured register cost, the fused prologues without scratch rows; w13 in one round per XCD and the rows per task; the integration, the VM rows, the routes not chosen; the stack (0.57 ms certain, 1.25 possible) and the decisions before the split |
+| [`02-local-gpu-split.md`](02-local-gpu-split.md) | the laptop items L1 to L9 (the kernel, its suite rows and offline variant, the task type and flag, the w2 and w13 forms, the head, the stream probe, the bit-diff, the session tooling, the gate) with deliverable, check, time box and the VM row each feeds; the VM rows G0 to G8 with PASS text and DECIDE rows; the budget; the dependency graph |
+| [`03-router-merge-ideas.md`](03-router-merge-ideas.md) | the router and the merge, double-checked: what each does today phase by phase and where its round trips are; the router's ideas (the first weight batch before the norm, the depth under the unroll pragma, the coalesced map, the writes in parallel, four tasks with the last one routing, the streaming policy) and the merge's (the lse read folded into the partials batch, `W_uv` issued first, the coalesced maps with o in registers, two tasks per head, o_proj folded in by per-head partial products and a last-task reduction, regular tasks); the routes not chosen; the stack (0.37 ms certain, 0.8 possible) |
+| [`04-router-merge-split.md`](04-router-merge-split.md) | the laptop items N1 to N6 and the VM rows H0 to H6 for the router and the merge, joining the GEMV session; the dependency graph |
+| [`05-local-preparation.md`](05-local-preparation.md) | the laptop work in detail: the GEMV tile kernel and its forms (L1 to L9) and the router and merge items (N1 to N6), each with its direction, its core approach at the level of lane maps, batches, registers and phases, the files it touches, the checks that run here, the time box and the VM row; the order of work (57 hours, a first session possible after 23); the double-check of the page against the source |
+| [`06-checklist.md`](06-checklist.md) | the progress record: one box per deliverable, ticked only when its laptop check has run, the status line with the date and the commit; the gate before the VM |
+| [`07-session-plan.md`](07-session-plan.md) | the session: one command per row with its PASS text, the RULE and DECIDE rows with their thresholds against round 3's numbers, the queue files, the helpers, the failure playbook, the fallbacks and the budget; the decisions to confirm before the VM |
+| [`08-rehearsal.md`](08-rehearsal.md) | every command of the session expanded in DRY mode by `env/session/rehearse.sh`: the stages, the queue rows as `run_fleet.py` lines, the mid-session edit |
+
+## Status
+
+| Date | State |
+|---|---|
+| 2026-09-17 | branch `local/round-4` made; the codebase and the round-3 record re-read; the ideas for the GEMV linear written, expanded and double-checked (`01`; the probe under `env/offline_gfx942/gemv_probe/` settled the dot2 question, the batch depth's control and its register cost); the laptop and VM split written (`02`); the router and merge ideas written and double-checked (`03`) with their split (`04`); the local preparation (`05`) and its checklist (`06`) written and double-checked; the laptop work is next, the session plan (`07`) with it; no VM |
+| 2026-09-18 | the laptop work of `05` done for the kernels: the GEMV linear (L1 to L3), the w13 form (L4), the stream probe (L6), the bit-diff (L7), the router and merge items (N1 to N5), each with its suite rows, plan flag and offline variant, recorded in `06`; a double-check and a final check by the lead corrected the records, removed the pre-load forms and made the call-form kernels' arguments wave-uniform (the fourth convention of `05`); the session tooling (L8, N6: seven queue files, the guards, the kernels and ktime stages, the session plan `07` and the rehearsal `08`) done the same day; open: the gate (L9); no VM |

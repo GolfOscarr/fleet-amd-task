@@ -35,6 +35,36 @@ __device__ __forceinline__ void st(T *p, float x) {
   *p = static_cast<T>(x);
 }
 
+// Wave-uniform arguments, the fork's __uniform_addr (linear_ck_mi300.cuh), which the stock
+// gang kernels apply to every pointer. A __noinline__ kernel receives its arguments in
+// VGPRs, so the compiler cannot see that every lane holds the same value: the loop bounds
+// stay in VGPRs, and a buffer load whose resource comes from such a pointer is wrapped in
+// a v_readfirstlane waterfall loop (the offline build of 2026-09-18 under MLA_NT_STREAMS:
+// one loop per weight load of the round-4 call-form kernels; the fork's comment puts the
+// cost at about 40% of a GEMM K loop). readfirstlane makes the value scalar; every caller
+// passes the task's pointers and counts, identical across the wave. On the host syntax
+// check they are the identity.
+#if defined(__HIP_DEVICE_COMPILE__)
+__device__ __forceinline__ int uniform_int(int v) {
+  return __builtin_amdgcn_readfirstlane(v);
+}
+template <typename T>
+__device__ __forceinline__ T *uniform_ptr(T *p) {
+  uintptr_t a = reinterpret_cast<uintptr_t>(p);
+  unsigned lo = __builtin_amdgcn_readfirstlane(static_cast<unsigned>(a));
+  unsigned hi = __builtin_amdgcn_readfirstlane(static_cast<unsigned>(a >> 32));
+  return reinterpret_cast<T *>((static_cast<uintptr_t>(hi) << 32) | lo);
+}
+#else
+__device__ __forceinline__ int uniform_int(int v) {
+  return v;
+}
+template <typename T>
+__device__ __forceinline__ T *uniform_ptr(T *p) {
+  return p;
+}
+#endif
+
 // Streaming loads (docs/gpu-experiments/03-acceleration, O6; -DMLA_NT_STREAMS): the
 // policy the stock linears give their weight loads under -DMPK_NT_WEIGHT_LOADS,
 // CK's amd_buffer_coherence_enum value 18 on gfx942 (bit 4 = sc1, bit 1 = nt:
@@ -52,8 +82,11 @@ template <typename T>
 struct StreamSrc {
   T const *base;
   __amdgpu_buffer_rsrc_t rsrc;
+  // the base made wave-uniform first: a resource built from a VGPR pointer costs every
+  // load a waterfall loop (uniform_ptr above)
   __device__ __forceinline__ explicit StreamSrc(T const *p)
-      : base(p), rsrc(__builtin_amdgcn_make_buffer_rsrc(const_cast<T *>(p), 0, 0xFFFFFFFFu, BUFFER_RSRC_WORD3)) {}
+      : base(uniform_ptr(p)),
+        rsrc(__builtin_amdgcn_make_buffer_rsrc(const_cast<T *>(base), 0, 0xFFFFFFFFu, BUFFER_RSRC_WORD3)) {}
 };
 template <typename T>
 __device__ __forceinline__ void load8_from(StreamSrc<T> const &s, size_t elem, float out[8]) {
@@ -74,7 +107,7 @@ __device__ __forceinline__ float ldf_from(StreamSrc<float> const &s, size_t elem
 template <typename T>
 struct StreamSrc {
   T const *base;
-  __device__ __forceinline__ explicit StreamSrc(T const *p) : base(p) {}
+  __device__ __forceinline__ explicit StreamSrc(T const *p) : base(uniform_ptr(p)) {}
 };
 template <typename T>
 __device__ __forceinline__ void load8_from(StreamSrc<T> const &s, size_t elem, float out[8]);
@@ -144,6 +177,43 @@ __device__ __forceinline__ float wave_sum(float x) {
   return x;
 }
 
+// The halving butterfly (docs/gpu-experiments/04-kernels/01-gemv-ideas.md, K1; round 4): a lane
+// holds R partial sums, one per row of a batch (R a power of two, at most 64), and every row's
+// total over the 64 lanes is wanted. R separate wave sums would be 6 R shuffles; here each of the
+// log2(R) halving steps pairs lane l with lane l ^ w (w = R / 2, R / 4, ..., 1): the lane whose
+// bit w is clear keeps the lower half of its live rows and the partner the upper half, each sends
+// the half it gives up and adds the half it receives, so the live rows halve and the row index
+// accumulates in the low log2(R) bits of the lane id (bit w of the lane is bit w of the row). The
+// remaining single sum crosses the high bits w = R, 2 R, ..., 32 as a plain xor tree.
+// R - 1 + (6 - log2 R) shuffles: 10 for 8 rows, 17 for 16, 32 for 32. On return every lane holds
+// the total of row (lane % R), so lane l < R holds row l (checked by emulation and by the
+// gfx942 compile of env/offline_gfx942/gemv_probe/bfly_probe.cu, 2026-09-18).
+template <int R>
+__device__ __forceinline__ float butterfly_sum(float (&v)[R]) {
+  static_assert(R >= 1 && R <= WAVE && (R & (R - 1)) == 0, "R rows, a power of two up to the wave");
+  int lane = threadIdx.x % WAVE;
+  int live = R;
+#pragma unroll
+  for (int w = R / 2; w >= 1; w >>= 1) {
+    int half = live / 2;
+    bool upper = (lane & w) != 0;
+#pragma unroll
+    for (int i = 0; i < R / 2; i++) {
+      if (i < half) {
+        float keep = upper ? v[half + i] : v[i];
+        float send = upper ? v[i] : v[half + i];
+        v[i] = keep + __shfl_xor(send, w, WAVE);
+      }
+    }
+    live = half;
+  }
+#pragma unroll
+  for (int w = R; w < WAVE; w <<= 1) {
+    v[0] += __shfl_xor(v[0], w, WAVE);
+  }
+  return v[0];
+}
+
 __device__ __forceinline__ float wave_max(float x) {
 #pragma unroll
   for (int off = WAVE / 2; off > 0; off >>= 1) {
@@ -176,7 +246,9 @@ __device__ __forceinline__ float block_sum(float x, float *red) {
 // Each thread handles the elements i = tid, tid + 256, ...; `red` is 4
 // floats of LDS. `out_s`, when given, receives the same row in LDS so the
 // caller can read it back without a round trip through global memory
-// (the router's norm prologue, docs/gpu-experiments/03-acceleration O1).
+// (the router's norm prologue, docs/gpu-experiments/03-acceleration O1);
+// `out` may be nullptr when only the LDS copy is wanted (the GEMV linear's
+// norm prologue, docs/gpu-experiments/04-kernels, round 4).
 template <typename T, int N>
 __device__ __forceinline__ void rmsnorm_row(T const *x, T const *w, T *out, float eps,
                                             float *red, T *out_s = nullptr) {
@@ -209,7 +281,9 @@ __device__ __forceinline__ void rmsnorm_row(T const *x, T const *w, T *out, floa
         int e = (i * NUM_THREADS + threadIdx.x) * 8 + k;
         float xn = bf16r(xv[i][k] * rinv);
         float y = bf16r(wv[i][k] * xn);
-        st(out + e, y);
+        if (out != nullptr) {          // round 4: the fused GEMV keeps the row in LDS only
+          st(out + e, y);
+        }
         if (out_s != nullptr) {
           st(out_s + e, y);
         }
@@ -226,7 +300,9 @@ __device__ __forceinline__ void rmsnorm_row(T const *x, T const *w, T *out, floa
     for (int i = threadIdx.x; i < N; i += NUM_THREADS) {
       float xn = bf16r(ld(x + i) * rinv);
       float y = bf16r(ld(w + i) * xn);
-      st(out + i, y);
+      if (out != nullptr) {
+        st(out + i, y);
+      }
       if (out_s != nullptr) {
         st(out_s + i, y);
       }

@@ -8,7 +8,7 @@ kernels' Python wrappers and the silent constraints the design lists) is
 checked here; build_graph.py turns it into mpk.* calls on the machine.
 
 Counts are cross-checked in the tests against docs/design-doc/sources/
-graph_counts.py: 326 operators and 1,880 tasks for the full graph.
+graph_counts.py: 326 operators and 2,285 tasks for the full graph (round 3's per-head prep task).
 """
 import struct
 from dataclasses import dataclass, field
@@ -25,6 +25,25 @@ SOFTMAX_SCALE = 0.1147213867929261
 ROUTED_SCALING = 1.0
 RMS_EPS = 1e-6                 # rms_norm_eps of config.json; the fused router's norm (O1)
 PREFETCH_PARTS = 32            # O8: tasks per active expert of the W2 prefetch (2048 rows / 32 = 64 rows, 180 KB each)
+NUM_WORKERS = 296              # build_graph.build's default; it is not passed to build_plan, so the
+                               # tile count of L4 is checked against the constant here
+W13_GEMV_TILES = NUM_WORKERS // XCDS   # 37: one w13 tile per worker of an XCD (S1 of 01-gemv-ideas.md)
+OPROJ_HALVES = 2               # N5: the merge with o_proj folded in is always one task per half head
+                               # (32 tasks, 128 bytes of W_o per row per task); --merge-halves does not apply
+
+
+def w13_tile_rows(tile: int, n: int = 2 * REAL_DIMS.I_MOE, tiles: int = W13_GEMV_TILES):
+    """(first row, row count) of one tile of the w13 GEMV gang kernel (L4, S1): the 37 tiles
+    partition the expert's n rows as 4 of ceil(n / tiles) then the rest of floor(n / tiles),
+    which at n = 2,816 is 4 x 77 + 33 x 76. The kernel computes the same two numbers from
+    tile_idx by arithmetic (gang_moe_w13_gemv_mi300.cuh), and the suite's reference reuses
+    this function so both sides read one formula."""
+    assert 0 <= tile < tiles, (tile, tiles)
+    small, big_tiles = n // tiles, n % tiles
+    big = small + 1
+    if tile < big_tiles:
+        return big * tile, big
+    return big_tiles * big + small * (tile - big_tiles), small
 
 
 def float_bits(x: float) -> int:
@@ -71,13 +90,19 @@ OUTPUT_ARGS = {
     "gang_linear_with_residual_layer": ["output"], "gang_linear_silu_layer": ["output"],
     "linear_layer": ["output"], "linear_with_residual_layer": ["output"],
     "linear_norm_layer": ["output", "scratch"],
+    "linear_gemv_layer": ["output"],
     "prefetch_layer": ["dummy"], "prefetch_moe_layer": ["dummy"],
     "mla_prep_layer": ["c_kv", "k_pe", "ql_nope", "q_pe"], "mla_attend_layer": ["partials", "scores"],
-    "mla_merge_uv_layer": ["output"], "moe_router_layer": ["h", "topk_w", "routing", "mask", "logits", "route_log"],
-    "gang_moe_w13_linear_layer": ["output"], "moe_silu_mul_layer": ["output"],
+    "mla_merge_uv_layer": ["output"], "mla_merge_uv_tile_layer": ["output"],
+    "mla_merge_oproj_layer": ["output", "attn", "workspace"],
+    "moe_router_layer": ["h", "topk_w", "routing", "mask", "logits", "route_log"],
+    "moe_router_norm4_layer": ["h", "topk_w", "routing", "mask", "logits", "route_log"],
+    "gang_moe_w13_linear_layer": ["output"], "gang_moe_w13_gemv_layer": ["output"],
+    "moe_silu_mul_layer": ["output"],
     "gang_moe_w2_linear_layer": ["output"], "gang_moe_w2_silu_linear_layer": ["output", "scratch"],
     "moe_mul_sum_add_layer": ["output"],
     "argmax_partial_layer": ["output"], "argmax_reduce_layer": ["output"], "copy_layer": ["output"],
+    "stream_layer": ["dummy"], "stream_gang_layer": ["dummy"],
 }
 
 
@@ -215,10 +240,30 @@ def grid_for_linear(size):
     return 64
 
 
+def linear_grid_for(size, override=None, strict=True):
+    """The task count of a dense linear: the override of --linear-grid or --head-grid when one is
+    given, else the heuristic of grid_for_linear. The runtime hands each task size / grid rows of
+    the weight and the same columns of the output, so an override must divide the row count: the
+    page's values are 3,648 by 96, 48 or 32, 2,048 by 64 or 32, and 102,400 by 400 or 320 (L2 and
+    L5 of docs/gpu-experiments/04-kernels/05-local-preparation.md). strict is the single-operator
+    case (--head-grid): the override must divide. --linear-grid names two operators of different
+    row counts, so a value that divides one and not the other (48: 3,648 but not 2,048) leaves
+    the other at the heuristic instead of failing the plan."""
+    if override is None:
+        return grid_for_linear(size)
+    assert override >= 1, override
+    if size % override:
+        assert not strict, (size, override)
+        return grid_for_linear(size)
+    return override
+
+
 def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head: bool = True,
                debug: bool = False, debug_scores: bool = False, tile_linears: bool = False,
                attend_tasks: bool = False, fuse_norm2: bool = False, fuse_silu: bool = False,
-               fuse_norm1: bool = False, prefetch: bool = False) -> Plan:
+               fuse_norm1: bool = False, prefetch: bool = False, gemv_linears: bool = False,
+               linear_grid: int = None, head_grid: int = None, gemv_w13: bool = False, merge_tasks: bool = False,
+               merge_halves: int = 1, router_tasks: bool = False, merge_oproj: bool = False) -> Plan:
     """debug_scores: the mla_attend kernel also writes the scaled pre-softmax scores
     [NH, s_max] FP32 (boundary B5); needs the MLA_ATTEND_DEBUG_SCORES build (MPK_DEBUG_SCORES=1).
     tile_linears: issue the four dense linears (qkva, o_proj, down, lm_head) as per-tile
@@ -236,6 +281,47 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
     the stock per-tile linear with a prologue that normalises the row into a per-task scratch
     row (qkva_scratch [96, H], lm_scratch [400, H]), so they are per-tile whether or not
     tile_linears is set. Off under debug (the stock norms stay, and the snapshot wiring).
+    gemv_linears: the dense linears at batch 1 (qkva, o_proj, lm_head) as our GEMV kernel instead
+    of the CK tile (L2 of docs/gpu-experiments/04-kernels, kernel L1): one linear_gemv_mi300 task
+    type for the three, with the input norm (qkva, lm_head) and the residual add (o_proj) as
+    template flags, so there is no L{l}.norm1 and no head.norm, as with fuse_norm1, and no
+    scratch tensor at all (the normalised row stays in LDS). The grids are fuse_norm1 +
+    tile_linears', so the operator and task counts are theirs. Off under debug (the snapshot
+    wiring needs the stock norms, as fuse_norm1 does). Layer 0's down is the one call site whose
+    K is not H: 11,264, and the kernel keeps a lane's K slice in registers (K / 64 values, bounded
+    at 4,096 by its static_assert), so that operator stays the stock per-tile linear (the code
+    below; S4 of 05-local-preparation.md leaves it to a later pass).
+    router_tasks: the MoE layers' router as four regular tasks of 16 experts each, the last to
+    arrive reading the 64 logits back and routing (N2 of docs/gpu-experiments/04-kernels, R5). It
+    is the fused router's split form, so for those layers it carries fuse_norm2's wiring (no
+    L{l}.norm2 operator; the router reads x_res and the norm weight and writes h) and it adds one
+    tensor, router_counter [1] int32, shared by every layer and zeroed at allocation. Three more
+    tasks per MoE layer; off under debug, as fuse_norm1 and gemv_linears are.
+    merge_oproj: the merge with o_proj folded into it (N5 of docs/gpu-experiments/04-kernels, M5):
+    for every layer the merge and the o_proj operators become one operator of NH * OPROJ_HALVES
+    (32) regular tasks labelled L{l}.o_proj, so --stop-after and the compare's x_res boundary keep
+    their key and the attn boundary's last writer is the same operator. Each task merges its head,
+    stores its 64 attn values and multiplies them by its 128-byte slice of every row of W_o into a
+    partial vector; the last task to arrive sums the 32 partials, adds the residual and stores
+    x_res in place. It adds two tensors, oproj_ws [32, H] FP32 and oproj_counter [1] int32, both
+    shared by every layer and zeroed at allocation. One operator fewer per layer; the tasks drop by
+    64 + 8 - 32 where o_proj is the per-tile or GEMV form (--tile-linears, --gemv-linears) and rise
+    by 32 - 8 - 8 where it is the 8-task gang. It overrides --merge-tasks (its merge is the tile
+    form at two halves), and it needs no other flag.
+    merge_tasks, merge_halves: the merge as NH * merge_halves regular tasks with whole-tensor
+    imaps instead of the 8-task gang (N4 of docs/gpu-experiments/04-kernels, M6 and M4): the
+    head and the half come from the task index, and with merge_halves 2 each task multiplies
+    half of its head's W_uv rows after merging the whole head. The operator keeps its label and
+    its tensors, so only the task count moves (16 or 32 per layer against 8).
+    linear_grid, head_grid: the task count of qkva and o_proj, and of lm_head, under gemv_linears
+    (--linear-grid, --head-grid; L2 and L5): grid_for_linear's heuristic otherwise, and also where
+    linear_grid does not divide the operator's row count (linear_grid_for). Layer 0's down keeps
+    the heuristic (it is one operator, and the page's override names qkva and o_proj).
+    gemv_w13: every MoE layer's expert gate-up as our GEMV gang task instead of the stock CK
+    one (L4 of docs/gpu-experiments/04-kernels): the same operator with the same label, the same
+    tensors and the same 8 tasks, but 37 tiles per expert (one per worker of an XCD, S1) instead
+    of 2,816 / 64 = 44, so the operator ends in one round per XCD. Independent of gemv_linears
+    and of --debug: it changes no norm and allocates no tensor.
     prefetch: the side operators of O8 (idea D1): each registered right after the operator it
     accompanies and given, by the runtime patch, that operator's dependent event, so its tasks
     run on the workers that hold none of that operator's tasks. Three per layer: after qkva
@@ -251,7 +337,21 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
     assert d.V % ARGMAX_SLICES == 0         # argmax_partial: input.dim(1) // num_tasks, no assert in the API
     p = Plan(d, s_max, layers, head, debug)
     n_splits = p.n_splits
-    fuse1 = fuse_norm1 and not debug
+    gemv = gemv_linears and not debug
+    fuse1 = fuse_norm1 and not debug               # the GEMV form folds the norm in too, below
+    if gemv_w13:
+        # the gang loop hands tile t to the worker of rank t mod (workers per XCD), so one round
+        # per XCD needs exactly as many tiles as that XCD has workers. num_workers is an argument
+        # of build_graph.build and never reaches the plan, so the constant is what is checked.
+        assert NUM_WORKERS // XCDS == W13_GEMV_TILES == 37, (NUM_WORKERS, W13_GEMV_TILES)
+        assert sum(w13_tile_rows(t, 2 * d.I_MOE)[1] for t in range(W13_GEMV_TILES)) == 2 * d.I_MOE
+    router4 = router_tasks and not debug
+    assert merge_halves in (1, 2), merge_halves
+    assert merge_halves == 1 or merge_tasks, "--merge-halves applies to --merge-tasks"
+    assert linear_grid is None or gemv_linears, "--linear-grid applies to --gemv-linears"
+    assert head_grid is None or gemv_linears, "--head-grid applies to --gemv-linears"
+    assert linear_grid is None or (d.Q_OUT + d.KVA_OUT) % linear_grid == 0 or d.H % linear_grid == 0, \
+        f"--linear-grid {linear_grid} divides neither {d.Q_OUT + d.KVA_OUT} nor {d.H}"
     if prefetch:
         p.t("pf_dummy_o", (grid_for_linear(d.H), 4), "i32")
         p.t("pf_dummy_qkva", (grid_for_linear(d.Q_OUT + d.KVA_OUT), 4), "i32")
@@ -265,14 +365,20 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
     p.t("x_res", (1, d.H))
     p.t("h", (1, d.H))
     p.t("qkva", (1, d.Q_OUT + d.KVA_OUT))
-    if fuse1:
+    if fuse1 and not gemv:
         # one normalised row per task of the fused per-tile linear (the runtime offsets the
-        # scratch pointer by rows / grid x bid.x, so the row count is the grid)
+        # scratch pointer by rows / grid x bid.x, so the row count is the grid); the GEMV
+        # folds the same norm in but keeps the row in LDS, so it allocates none
         p.t("qkva_scratch", (grid_for_linear(d.Q_OUT + d.KVA_OUT), d.H))
     p.t("ql_nope", (d.NH, d.D_C))
     p.t("q_pe", (d.NH, d.D_R))
     p.t("partials", (n_splits, d.NH, partials_row(d.D_C)), "f32")   # padded row, P2
     p.t("attn", (1, d.NH * d.D_V))
+    if merge_oproj:
+        # N5: the 32 tasks' partial vectors and their arrival counter, one pair for all the layers
+        # (the chain serialises them, and the last task of each resets the counter to zero)
+        p.t("oproj_ws", (d.NH * OPROJ_HALVES, d.H), "f32")
+        p.t("oproj_counter", (1,), "i32")
     p.t("cos", (s_max, d.D_R), kind="input", source="capture:cos")
     p.t("sin", (s_max, d.D_R), kind="input", source="capture:sin")
     if layers >= 1:
@@ -282,6 +388,10 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
         p.t("routing", (d.E_TOTAL, 1), "i32")
         p.t("mask", (d.E_TOTAL + 1,), "i32")
         p.t("logits_router", (1, d.E), "f32")
+        if router4:
+            # N2: the arrival counter of the four-task router, one for all the MoE layers (the
+            # chain serialises them, and the last task of each resets it to zero)
+            p.t("router_counter", (1,), "i32")
         p.t("mid", (1, TOPK_TOTAL_SLOTS, 2 * d.I_MOE))
         if fuse_silu:
             # one row per (XCD, tile) of the w2 gang: max_experts_per_xcd x n_tiles tiles per XCD
@@ -317,7 +427,12 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
         # with the debug snapshots, the operator after a snapshot must read the copy (same values):
         # the runtime's chain rule, see OUTPUT_ARGS; the residual adds still read x_res
         x_in = f"dbg_x_res_{l - 1}" if debug and l > 0 else "x_res"
-        if fuse1:
+        if gemv:
+            g = linear_grid_for(d.Q_OUT + d.KVA_OUT, linear_grid, strict=False)
+            p.op("linear_gemv_layer", g, status="new", label=f"L{l}.qkva", input=x_in, w_norm=f"w_norm1_{l}",
+                 weight=f"W_qkva_{l}", residual=None, output="qkva", grid_dim=(g, 1, 1),
+                 block_dim=(256, 1, 1), norm=True, residual_add=False, eps=RMS_EPS)
+        elif fuse1:
             g = grid_for_linear(d.Q_OUT + d.KVA_OUT)
             p.op("linear_norm_layer", g, status="new", label=f"L{l}.qkva", input=x_in, w_norm=f"w_norm1_{l}",
                  weight=f"W_qkva_{l}", output="qkva", scratch="qkva_scratch", grid_dim=(g, 1, 1),
@@ -346,22 +461,41 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
              ql_nope="ql_nope", q_pe="q_pe", c_kv=f"c_kv_{l}", k_pe=f"k_pe_{l}",
              partials="partials", softmax_scale=SOFTMAX_SCALE, split=SPLIT, n_splits=n_splits,
              **({"scores": "scores"} if debug_scores else {}))
-        p.op("mla_merge_uv_layer", XCDS, d.NH // XCDS, status="new", label=f"L{l}.mla_merge_uv",
-             partials="partials", w_uv=f"W_uv_{l}", output="attn", split=SPLIT, n_splits=n_splits)
-        if tile_linears:
-            g = grid_for_linear(d.H)
-            p.op("linear_with_residual_layer", g, label=f"L{l}.o_proj", input="attn", weight=f"W_o_{l}",
-                 residual="x_res", output="x_res", grid_dim=(g, 1, 1), block_dim=(256, 1, 1))
+        if merge_oproj:
+            # N5: one operator for the merge and o_proj together, with o_proj's label, so
+            # --stop-after and the x_res boundary keep their key and attn's last writer is this
+            # operator, whose layer the dump's layer_of reads off the same label
+            p.op("mla_merge_oproj_layer", d.NH * OPROJ_HALVES, status="new", label=f"L{l}.o_proj",
+                 partials="partials", w_uv=f"W_uv_{l}", w_o=f"W_o_{l}", residual="x_res",
+                 counter="oproj_counter", output="x_res", attn="attn", workspace="oproj_ws",
+                 split=SPLIT, n_splits=n_splits, halves=OPROJ_HALVES)
+        elif merge_tasks:
+            p.op("mla_merge_uv_tile_layer", d.NH * merge_halves, status="new",
+                 label=f"L{l}.mla_merge_uv", partials="partials", w_uv=f"W_uv_{l}", output="attn",
+                 split=SPLIT, n_splits=n_splits, halves=merge_halves)
         else:
-            p.op("gang_linear_with_residual_layer", XCDS, gang_tiles(d.H, TILE_N_O), label=f"L{l}.o_proj",
-                 input="attn", weight=f"W_o_{l}", residual="x_res", output="x_res",
-                 tile_n=TILE_N_O, output_stride=d.H)
+            p.op("mla_merge_uv_layer", XCDS, d.NH // XCDS, status="new", label=f"L{l}.mla_merge_uv",
+                 partials="partials", w_uv=f"W_uv_{l}", output="attn", split=SPLIT, n_splits=n_splits)
+        if not merge_oproj:                            # N5 issued the layer's o_proj with its merge
+            if gemv:
+                g = linear_grid_for(d.H, linear_grid, strict=False)
+                p.op("linear_gemv_layer", g, status="new", label=f"L{l}.o_proj", input="attn", w_norm=None,
+                     weight=f"W_o_{l}", residual="x_res", output="x_res", grid_dim=(g, 1, 1),
+                     block_dim=(256, 1, 1), norm=False, residual_add=True, eps=0.0)
+            elif tile_linears:
+                g = grid_for_linear(d.H)
+                p.op("linear_with_residual_layer", g, label=f"L{l}.o_proj", input="attn", weight=f"W_o_{l}",
+                     residual="x_res", output="x_res", grid_dim=(g, 1, 1), block_dim=(256, 1, 1))
+            else:
+                p.op("gang_linear_with_residual_layer", XCDS, gang_tiles(d.H, TILE_N_O), label=f"L{l}.o_proj",
+                     input="attn", weight=f"W_o_{l}", residual="x_res", output="x_res",
+                     tile_n=TILE_N_O, output_stride=d.H)
         if prefetch and l + 1 < layers:
             g = grid_for_linear(d.Q_OUT + d.KVA_OUT)
             p.t(f"W_qkva_{l + 1}", (d.Q_OUT + d.KVA_OUT, d.H), kind="input", source=f"W_qkva_{l + 1}")
             p.op("prefetch_layer", g, status="new", side=True, label=f"L{l}.prefetch_W_qkva_next",
                  weight=f"W_qkva_{l + 1}", dummy="pf_dummy_qkva", grid_dim=(g, 1, 1), block_dim=(256, 1, 1))
-        if not (fuse_norm2 and l > 0):
+        if not ((fuse_norm2 or router4) and l > 0):
             p.op("rmsnorm_layer", 1, label=f"L{l}.norm2", input="x_res", weight=f"w_norm2_{l}", output="h",
                  grid_dim=(1, 1, 1), block_dim=(256, 1, 1))
         if l == 0:
@@ -372,7 +506,11 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
             p.op("gang_linear_silu_layer", XCDS, n_weight_tiles // 2, label=f"L{l}.gate_up",
                  input="h", weight="W_gu_shuffled", output="act", tile_n=TILE_N_SILU,
                  output_stride=d.I_DENSE_PAD)
-            if tile_linears:
+            # layer 0's dense down projection stays on the stock per-tile linear under
+            # --gemv-linears: its K is I_DENSE_PAD (11,264), and the GEMV keeps a lane's K slice
+            # in registers (K / 64 values: 176 here, against 32 at K 2,048), which does not fit
+            # (docs/gpu-experiments/04-kernels/05-local-preparation.md, S4: layer 0 is a later pass)
+            if tile_linears or gemv:
                 g = grid_for_linear(d.H)
                 p.op("linear_with_residual_layer", g, label=f"L{l}.down", input="act", weight="W_down_pad",
                      residual="x_res", output="x_res", grid_dim=(g, 1, 1), block_dim=(256, 1, 1))
@@ -384,16 +522,24 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
             p.t(f"W_gate_{l}", (d.E, d.H), kind="input", source=f"W_gate_{l}")
             p.t(f"W13_{l}", (d.E_TOTAL, 2 * d.I_MOE, d.H), kind="input", source=f"W13_{l}")
             p.t(f"W2_{l}", (d.E_TOTAL, d.H, d.I_MOE), kind="input", source=f"W2_{l}")
-            router_io = (dict(input="x_res", w_norm=f"w_norm2_{l}", h="h", eps=RMS_EPS) if fuse_norm2
-                         else dict(input="h"))
-            p.op("moe_router_layer", 1, status="new", label=f"L{l}.router",
+            router_io = (dict(input="x_res", w_norm=f"w_norm2_{l}", h="h", eps=RMS_EPS)
+                         if (fuse_norm2 or router4) else dict(input="h"))
+            if router4:
+                router_io["counter"] = "router_counter"
+            p.op("moe_router_norm4_layer" if router4 else "moe_router_layer",
+                 4 if router4 else 1, status="new", label=f"L{l}.router",
                  w_gate=f"W_gate_{l}", topk_w="topk_w", routing="routing", mask="mask",
                  logits="logits_router", route_log="route_log", layer_index=l - 1,
                  topk=d.TOPK, n_experts=d.E, n_forced=N_FORCED, scaling=ROUTED_SCALING,
                  block_dim=(256, 1, 1), **router_io)
-            p.op("gang_moe_w13_linear_layer", XCDS, (2 * d.I_MOE) // 64, label=f"L{l}.w13",
-                 input="h", weight=f"W13_{l}", moe_routing_indices="routing", moe_mask="mask",
-                 output="mid")
+            if gemv_w13:
+                p.op("gang_moe_w13_gemv_layer", XCDS, W13_GEMV_TILES, status="new", label=f"L{l}.w13",
+                     input="h", weight=f"W13_{l}", moe_routing_indices="routing", moe_mask="mask",
+                     output="mid", tiles_per_expert=W13_GEMV_TILES)
+            else:
+                p.op("gang_moe_w13_linear_layer", XCDS, (2 * d.I_MOE) // 64, label=f"L{l}.w13",
+                     input="h", weight=f"W13_{l}", moe_routing_indices="routing", moe_mask="mask",
+                     output="mid")
             if prefetch:
                 p.op("prefetch_moe_layer", TOPK_TOTAL_SLOTS * PREFETCH_PARTS, status="new", side=True,
                      label=f"L{l}.prefetch_W2", weight=f"W2_{l}", moe_mask="mask", dummy="pf_dummy_w2",
@@ -422,7 +568,12 @@ def build_plan(dims: Dims = REAL_DIMS, s_max: int = 1056, layers: int = 27, head
         p.t("amax_v", (1, ARGMAX_SLICES))
         p.t("amax_i", (1, ARGMAX_SLICES), "i64")
         p.t("tok_out", (1, 1), "i64", "input", "meta:output_tokens")
-        if fuse1:
+        if gemv:
+            g = linear_grid_for(d.V, head_grid)
+            p.op("linear_gemv_layer", g, status="new", label="head.lm_head", input="x_res", w_norm="w_final_norm",
+                 weight="W_lm", residual=None, output="logits", grid_dim=(g, 1, 1),
+                 block_dim=(256, 1, 1), norm=True, residual_add=False, eps=RMS_EPS)
+        elif fuse1:
             g = grid_for_linear(d.V)
             p.t("lm_scratch", (g, d.H))
             p.op("linear_norm_layer", g, status="new", label="head.lm_head", input="x_res", w_norm="w_final_norm",
@@ -465,6 +616,62 @@ def build_empty_plan(ops: int, tasks: int, spin: int = 0, dims: Dims = REAL_DIMS
         src, dst = ("empty_a", "empty_b") if k % 2 == 0 else ("empty_b", "empty_a")
         p.op("copy_layer", tasks, status="new", label=f"E{k}.copy", input=src, output=dst,
              grid_dim=(tasks, 1, 1), block_dim=(256, 1, 1), spin=spin, spin_print=1 if (spin and k == 0) else 0)
+    return p
+
+
+STREAM_K = 2048                              # the probe's row width: one BF16 row is exactly 4 KB
+STREAM_ROW_BYTES = STREAM_K * 2
+
+
+def stream_rows(kb: int) -> int:
+    """Rows of the probe's [*, STREAM_K] BF16 tensor a task or a tile reads for `kb` kilobytes.
+
+    A task reads whole rows (the GEMV's batch of eight rows is the load loop this probe
+    measures), so `kb` must be a multiple of the 4 KB row: a byte count that did not follow
+    from the rows would corrupt the one number the probe exists to produce. w13's tile, given
+    as 305 KB in docs/gpu-experiments/04-kernels, is run at 304 KB (76 rows), 0.3% below it."""
+    assert kb > 0, kb
+    assert (kb * 1024) % STREAM_ROW_BYTES == 0, (
+        f"--kb {kb}: a task reads whole {STREAM_ROW_BYTES // 1024} KB rows of the [*, {STREAM_K}] "
+        f"BF16 tensor, so --kb must be a multiple of {STREAM_ROW_BYTES // 1024} "
+        f"({kb // 4 * 4} or {(kb + 3) // 4 * 4} here)")
+    return kb * 1024 // STREAM_ROW_BYTES
+
+
+def build_stream_plan(ops: int, tasks: int, kb: int, gang: bool = False,
+                      dims: Dims = REAL_DIMS, s_max: int = 1056) -> Plan:
+    """L6 (M7 of docs/gpu-experiments/04-kernels/01-gemv-ideas.md): the stream probe, M operators
+    of N tasks (or of 8 tiles x N tiles_per_xcd, --gang) that read `kb` kilobytes each with the
+    GEMV's load loop and no multiply, on the empty ladder's machinery (I3).
+
+    Every operator reads its own weight tensor (stream_w_0, stream_w_1, ...): the G5 shapes are
+    74 to 90 MB per tensor, so two alternating tensors (the empty ladder's form) would keep
+    the whole working set inside the 256 MB memory-side cache and the second operator on would
+    read at a cache rate, not the streaming rate the model runs at (the double-check of
+    2026-09-18); ops x 90 MB is nothing on 192 GB. The weight is an input and never an output,
+    so it cannot be what makes an operator a consumer of its predecessor, which the runtime
+    requires of every operator (runtime.cc, register_mugraph: assert(num_shared_tensors >= 1)):
+    two dummies alternate, each operator writing one and reading the other, and that second
+    dummy is an input of the task the kernel never touches (fleet/patches/hunks/L6-stream.md,
+    the last note). Every tensor is `new` (a zeroed buffer): the probe measures the time the
+    bytes take to arrive, not their values."""
+    assert ops >= 1 and tasks >= 1
+    rows = stream_rows(kb)
+    p = Plan(dims, s_max, 0, False, False)
+    tiles = XCDS * tasks if gang else tasks          # the tasks, or the tiles over the 8 XCD slots
+    for s in ("a", "b"):
+        p.t(f"stream_dummy_{s}", (tiles, 4), "i32")
+    for k in range(ops):
+        p.t(f"stream_w_{k}", (tiles * rows, STREAM_K))
+        cur, prev = ("a", "b") if k % 2 == 0 else ("b", "a")
+        args = dict(weight=f"stream_w_{k}", prev=f"stream_dummy_{prev}", dummy=f"stream_dummy_{cur}",
+                    block_dim=(256, 1, 1))
+        if gang:
+            p.op("stream_gang_layer", XCDS, tasks, status="new", label=f"S{k}.stream",
+                 rows_per_tile=rows, tiles_per_xcd=tasks, **args)
+        else:
+            p.op("stream_layer", tasks, status="new", label=f"S{k}.stream",
+                 grid_dim=(tasks, 1, 1), **args)
     return p
 
 

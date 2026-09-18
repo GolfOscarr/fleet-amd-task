@@ -129,6 +129,39 @@ def test_queue_stops_on_fail_without_continue(tree):
     assert not (tmp / "fleet_out/L2_it1").exists()
 
 
+def test_queue_bitdiff_dry_run_prints_the_command(tree):
+    """DRY=1: no directories need to exist, the command is printed instead of run (L7)."""
+    tmp, env = tree
+    env["DRY"] = "1"
+    r = sh([str(SESSION / "queue.sh"), "bitdiff", "run_a", "run_b"], env)
+    assert r.returncode == 0, r.stdout + r.stderr
+    expect = (f"+ {PY} harness/bitdiff.py {tmp / 'fleet_out/run_a'} {tmp / 'fleet_out/run_b'} "
+             f"--out {tmp / 'record/bitdiff_run_a_run_b.md'}")
+    assert expect in r.stdout
+
+
+def test_queue_bitdiff_missing_args_usage(tree):
+    tmp, env = tree
+    r = sh([str(SESSION / "queue.sh"), "bitdiff", "run_a"], env)
+    assert r.returncode == 2 and "usage: queue.sh bitdiff" in r.stdout
+
+
+def test_queue_bitdiff_writes_the_record_and_prints_its_path(tree):
+    tmp, env = tree
+    env["BITDIFF"] = f"{PY} {tmp / 'bitdiff_fake.py'}"
+    (tmp / "bitdiff_fake.py").write_text(
+        "import sys\nfrom pathlib import Path\n"
+        "out = Path(sys.argv[sys.argv.index('--out') + 1])\n"
+        "out.parent.mkdir(parents=True, exist_ok=True)\n"
+        "out.write_text('# Bit-diff report\\n')\n"
+    )
+    r = sh([str(SESSION / "queue.sh"), "bitdiff", "run_a", "run_b"], env)
+    assert r.returncode == 0, r.stdout + r.stderr
+    report = tmp / "record/bitdiff_run_a_run_b.md"
+    assert r.stdout.strip().splitlines()[-1] == str(report)
+    assert report.exists() and report.read_text() == "# Bit-diff report\n"
+
+
 @pytest.mark.parametrize("fault_at,expect_runs", [("L7.w13", 5), ("L7.norm1", 5), ("head.argmax_reduce", 5)])
 def test_bisect_finds_the_first_faulting_label(tree, fault_at, expect_runs):
     tmp, env = tree
@@ -445,3 +478,27 @@ def test_vm_preflight_kill_gdb_and_laptop_wait_report_in_dry_mode(tree, tmp_path
     (tmp_path / "vm.started").write_text(str(int(__import__("time").time()) - 90 * 60))
     r = sh([str(SESSION / "laptop.sh"), "report"], env)
     assert "minute 90 since provisioning" in r.stdout and "about $4.49 billed" in r.stdout   # 1.5 h at 2.99
+
+
+def test_queue_guards_refuse_compare_on_a_synthetic_graph(tree):
+    """Round 4 (L8): --graph empty and --graph stream load no reference and have no boundaries, so a
+    compare word on such a row is a FAIL row without a run; without the word the row runs even when the
+    reference tensors are absent."""
+    tmp, env = tree
+    env["DRY"] = "1"
+    q = tmp / "queue.txt"
+    q.write_text("--graph stream --ops 10 --tasks 37 --kb 304 --gang --iters 32 --nt-streams table compare continue\n"
+                 "--graph stream --ops 10 --tasks 37 --kb 304 --gang --iters 32 --nt-streams table continue\n")
+    r = sh([str(SESSION / "queue.sh"), "run", str(q)], env)
+    assert r.returncode == 0, r.stdout + r.stderr
+    rows = (tmp / "logs/queue.status").read_text().rstrip().splitlines()
+    assert "FAIL guard: a synthetic graph" in rows[0] and "S10x37_304kb_gang_it32_nts" in rows[0]
+    assert rows[1].split()[1] == "S10x37_304kb_gang_it32_nts" and " PASS " in rows[1] and "table=PASS" in rows[1]
+    (tmp / "ref/ref_cache.safetensors").unlink()                       # no reference stage: the stream row still runs
+    env["DRY"] = "0"
+    q.write_text("--graph stream --ops 10 --tasks 96 --kb 152 --iters 32 --nt-streams continue\n"
+                 "--layers 2 --iters 32 continue\n")
+    r = sh([str(SESSION / "queue.sh"), "run", str(q)], env)
+    rows = (tmp / "logs/queue.status").read_text().rstrip().splitlines()
+    assert any(l.split()[1] == "S10x96_152kb_it32_nts" and " PASS " in l for l in rows), rows
+    assert any("L2_it32 FAIL guard: run_fleet.py loads" in l for l in rows), rows

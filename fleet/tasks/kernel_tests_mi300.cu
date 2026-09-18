@@ -26,10 +26,17 @@
  *
  * The debug-scores variant (mla_attend also writes the scaled scores, B5):
  * the same line with -DMLA_ATTEND_DEBUG_SCORES -o fleet/tasks/build/kernel_tests_debug.
- * The defines are the ones persistent_kernel.py passes on its ROCm path.
+ * The gang variant (the two MoE gang rows): the same line with -DKT_FAKE_XCD -o
+ * fleet/tasks/build/kernel_tests_xcd, in which the gang kernels take their XCD from
+ * blockIdx.y instead of the hardware register, so one (tiles, 8) launch covers every
+ * (XCD, tile) pair. The defines are the ones persistent_kernel.py passes on its ROCm path.
  *
  * Usage: kernel_tests <test> <dir> [<dir> ...]
- *   test  mla_prep | mla_attend | mla_merge_uv | moe_router | copy | prefetch | prefetch_moe
+ *   test  mla_prep | mla_attend | mla_merge_uv | mla_merge_uv_tile | mla_merge_oproj
+ *         | moe_router | moe_router4
+ *         | copy | prefetch | prefetch_moe | stream
+ *         | linear_gemv | linear_gemv_norm | linear_gemv_res
+ *         | gang_w13_gemv | gang_w2_gemv (the -DKT_FAKE_XCD build only)
  *   dir   params.txt ("name value" per line, integers; floats as IEEE-754
  *         bit patterns) and one raw little-endian file <name>.bin per tensor
  *         of the test (BF16 as uint16, FP32, int32) in the order of the
@@ -44,9 +51,14 @@
 #include "tasks/mi300/mla_prep_mi300.cuh"
 #include "tasks/mi300/mla_attend_mi300.cuh"
 #include "tasks/mi300/mla_merge_uv_mi300.cuh"
+#include "tasks/mi300/mla_merge_oproj_mi300.cuh"
 #include "tasks/mi300/moe_router_mi300.cuh"
 #include "tasks/mi300/copy_mi300.cuh"
 #include "tasks/mi300/prefetch_mi300.cuh"
+#include "tasks/mi300/stream_mi300.cuh"
+#include "tasks/mi300/linear_gemv_mi300.cuh"
+#include "tasks/mi300/gang_moe_w2_silu_mi300.cuh"
+#include "tasks/mi300/gang_moe_w13_gemv_mi300.cuh"
 
 #include <cstdint>
 #include <cstdio>
@@ -70,11 +82,31 @@ constexpr int QKVA = NH * (D_N + D_R) + D_C + D_R;
 constexpr int N_SLOTS = TOPK + N_FORCED;
 constexpr int N_TOTAL = N_EXPERTS + N_FORCED;
 constexpr int HEADS_PER_XCD = NH / XCDS;
+constexpr int OPROJ_HALVES = 2;                  // N5: the merge with o_proj folded in is one task per half head
 constexpr int P_ROW = ((D_C + 1 + 3) / 4) * 4;   // padded partials row (P2), matches the kernels
 // the prefetch suites (O8): a dense weight in PF_GRID stripes of PF_ROWS rows (a W_o-like [128, 2048]),
 // and an expert weight [N_TOTAL, PF_N, PF_K] whose active experts (mask) are streamed in PF_PARTS parts
 constexpr int PF_GRID = 4, PF_ROWS = 32;
 constexpr int PF_N = 32, PF_K = 256, PF_PARTS = 2;
+// the stream probe (L6): STREAM_GRID tasks of STREAM_ROWS rows of a [*, 2048] BF16 tensor; 38
+// rows is five batches of eight over four waves, so the round-robin and the clamped last batch
+// are both exercised
+constexpr int STREAM_GRID = 4, STREAM_ROWS = 38;
+// the GEMV linear (L1): the qkva grid of the model (3,648 rows of 2,048 in tasks of 38, the plain
+// and the norm form) and the o_proj grid (2,048 rows in tasks of 32, the residual form)
+constexpr int GEMV_ROWS = 38, GEMV_GRID = QKVA / GEMV_ROWS;              // 96 tasks
+constexpr int GEMV_RES_ROWS = 32, GEMV_RES_GRID = HIDDEN / GEMV_RES_ROWS; // 64 tasks
+// the two MoE gang GEMV rows (L3 and L4): the expert gate-up W13 [E, 2 I_MOE, H] in 37 tiles per
+// expert (one per worker of an XCD, S1) and the fused down projection W2 [E, H, I_MOE] in 32.
+// A trial file holds only the eight active experts' slabs (GANG_EXPERTS): the model's 66 would be
+// 761 MB of W13 per trial, so the mask names the ids 0 to 7 instead of the router's own eight
+// (which include the forced 64 and 65); the decode reads the mask, so the ids are all it sees.
+constexpr int I_MOE = 1408;
+constexpr int GANG_EXPERTS = 8;
+constexpr int W13_N = 2 * I_MOE, W13_K = HIDDEN, W13_TILES = 37;
+constexpr int W2_N = HIDDEN, W2_K = I_MOE, W2_TILES = W2_N / 64;         // 32 tiles per expert
+constexpr int MAX_E_PER_XCD = (N_TOTAL + 7) / 8;                         // 9, the registration's
+constexpr int W2_TOTAL_TILES = MAX_E_PER_XCD * W2_TILES;                 // 288
 // What the worker kernel is launched with (persistent_kernel.cuh); a task
 // may use up to this much dynamic LDS.
 constexpr int SMEM_BYTES = mirage::runtime::MAX_DYNAMIC_SHARED_MEMORY_SIZE;
@@ -148,6 +180,44 @@ __global__ __launch_bounds__(256, 1) void k_mla_merge_uv(void const *partials,
       0, 1, 1, tile_idx);
 }
 
+// N4: the regular form, grid (NH * halves): every tensor whole and the task index, which the
+// runtime passes through expert_offset, is blockIdx.x. `halves` is a kernel argument (the
+// launcher's Meta is not extended), so the two instantiations stand behind one launch.
+__global__ __launch_bounds__(256, 1) void k_mla_merge_uv_tile(void const *partials,
+                                                              void const *w_uv,
+                                                              void *attn,
+                                                              Meta meta,
+                                                              int split,
+                                                              int n_splits,
+                                                              int halves) {
+  if (halves == 2) {
+    kernel::mla_merge_uv_tile_mi300_task_impl<bf16, NH, D_V, D_C, 2>(
+        partials, w_uv, attn, meta.step[0], split, n_splits, (int)blockIdx.x);
+  } else {
+    kernel::mla_merge_uv_tile_mi300_task_impl<bf16, NH, D_V, D_C, 1>(
+        partials, w_uv, attn, meta.step[0], split, n_splits, (int)blockIdx.x);
+  }
+}
+
+// N5: the merge with o_proj folded in, grid (NH * OPROJ_HALVES): every tensor whole and the task
+// index, which the runtime passes through expert_offset, is blockIdx.x. x_res is an input and an
+// output of the operator (the same buffer either way), and the counter is a [1] int32 the driver
+// pre-fills with zero and reads back (the last task resets it).
+__global__ __launch_bounds__(256, 1) void k_mla_merge_oproj(void const *partials,
+                                                            void const *w_uv,
+                                                            void const *w_o,
+                                                            void *x_res,
+                                                            void *counter,
+                                                            void *attn,
+                                                            void *workspace,
+                                                            Meta meta,
+                                                            int split,
+                                                            int n_splits) {
+  kernel::mla_merge_oproj_mi300_task_impl<bf16, NH, D_V, D_C, HIDDEN, OPROJ_HALVES>(
+      partials, w_uv, w_o, x_res, counter, attn, workspace, meta.step[0], split, n_splits,
+      (int)blockIdx.x);
+}
+
 __global__ __launch_bounds__(256, 1) void k_moe_router(void const *x_res,
                                                        void const *w_norm,
                                                        void const *w_gate,
@@ -168,6 +238,28 @@ __global__ __launch_bounds__(256, 1) void k_moe_router(void const *x_res,
       meta.prompt_length[0], layer_index, scaling, eps);
 }
 
+// N2: the four-task form, grid (4): the part is blockIdx.x (the runtime passes it through
+// expert_offset) and the counter a [1] int32 tensor the driver pre-fills with zero.
+__global__ __launch_bounds__(256, 1) void k_moe_router4(void const *x_res,
+                                                        void const *w_norm,
+                                                        void const *w_gate,
+                                                        void *counter,
+                                                        void *h,
+                                                        void *topk_w,
+                                                        void *routing,
+                                                        void *mask,
+                                                        void *logits,
+                                                        void *route_log,
+                                                        Meta meta,
+                                                        int layer_index,
+                                                        float scaling,
+                                                        float eps) {
+  kernel::moe_router_mi300_task_impl<bf16, HIDDEN, N_EXPERTS, N_FORCED, TOPK, ROUTE_STEPS,
+                                     ROUTE_LAYERS, true, 4>(
+      x_res, w_norm, w_gate, h, topk_w, routing, mask, logits, route_log, meta.step[0],
+      meta.prompt_length[0], layer_index, scaling, eps, (int)blockIdx.x, counter);
+}
+
 // grid (PF_GRID): block b streams stripe b of w into row b of dummy [PF_GRID, 4] (one word per wave),
 // the pointers offset the way the runtime offsets them for a weight partitioned on dim 0
 __global__ __launch_bounds__(256, 1) void k_prefetch(void const *w, void *dummy) {
@@ -176,11 +268,72 @@ __global__ __launch_bounds__(256, 1) void k_prefetch(void const *w, void *dummy)
       static_cast<bf16 const *>(w) + (size_t)b * PF_ROWS * HIDDEN, static_cast<int *>(dummy) + b * 4);
 }
 
+// grid (STREAM_GRID): block b reads rows [b * STREAM_ROWS, ...) of w into row b of dummy
+// [STREAM_GRID, 4] (one XOR word per wave), the pointers offset the way the runtime offsets them
+// for a weight partitioned on dim 0
+__global__ __launch_bounds__(256, 1) void k_stream(void const *w, void *dummy) {
+  int b = blockIdx.x;
+  kernel::stream_mi300_task_impl<bf16, HIDDEN>(
+      static_cast<bf16 const *>(w) + (size_t)b * STREAM_ROWS * HIDDEN,
+      static_cast<int *>(dummy) + b * 4, STREAM_ROWS);
+}
+
 // grid (N_SLOTS x PF_PARTS): block b is (slot b / PF_PARTS, part b % PF_PARTS) of the active experts in mask,
 // the index the runtime passes through the expert_offset metadata
 __global__ __launch_bounds__(256, 1) void k_prefetch_moe(void const *w, void const *mask, void *dummy) {
   int b = blockIdx.x;
   kernel::prefetch_moe_mi300_task_impl<bf16, N_TOTAL, PF_N, PF_K, PF_PARTS>(w, mask, static_cast<int *>(dummy) + b * 4, b);
+}
+
+// The GEMV linear (L1), one block per task of the grid: the weight is partitioned on dim 0 and the
+// output on dim 1, so block b gets the weight pointer b * rows rows in and the output pointer b *
+// rows columns in, as the runtime's per-task pointer computation hands them to a task. `rows` and
+// `o_stride` reach the kernel as kernel arguments (the launcher's Meta is not extended).
+__global__ __launch_bounds__(256, 1) void k_linear_gemv(void const *x, void const *w, void *out,
+                                                        int rows, int o_stride) {
+  int b = blockIdx.x;
+  kernel::linear_gemv_mi300_task_impl<bf16, HIDDEN, false, false>(
+      x, nullptr, static_cast<bf16 const *>(w) + (size_t)b * rows * HIDDEN, nullptr,
+      static_cast<bf16 *>(out) + (size_t)b * rows, rows, o_stride, 0.0f);
+}
+
+__global__ __launch_bounds__(256, 1) void k_linear_gemv_norm(void const *x, void const *w_norm,
+                                                             void const *w, void *out,
+                                                             int rows, int o_stride, float eps) {
+  int b = blockIdx.x;
+  kernel::linear_gemv_mi300_task_impl<bf16, HIDDEN, true, false>(
+      x, w_norm, static_cast<bf16 const *>(w) + (size_t)b * rows * HIDDEN, nullptr,
+      static_cast<bf16 *>(out) + (size_t)b * rows, rows, o_stride, eps);
+}
+
+// the residual is [1, N] and partitioned like the output, so it is offset by the task's columns too
+__global__ __launch_bounds__(256, 1) void k_linear_gemv_res(void const *x, void const *w,
+                                                            void const *residual, void *out,
+                                                            int rows, int o_stride) {
+  int b = blockIdx.x;
+  kernel::linear_gemv_mi300_task_impl<bf16, HIDDEN, false, true>(
+      x, nullptr, static_cast<bf16 const *>(w) + (size_t)b * rows * HIDDEN,
+      static_cast<bf16 const *>(residual) + (size_t)b * rows,
+      static_cast<bf16 *>(out) + (size_t)b * rows, rows, o_stride, 0.0f);
+}
+
+// The two MoE gang kernels, grid (tiles, 8): tile_idx is blockIdx.x and the XCD blockIdx.y, which
+// -DKT_FAKE_XCD substitutes for the hardware register, so one launch covers every (XCD, tile) pair
+// deterministically. Every tensor is whole: a gang task reads the mask and the routing itself.
+__global__ __launch_bounds__(256, 1) void k_gang_w13_gemv(void const *h, void const *w13,
+                                                          void const *routing, void const *mask,
+                                                          void *mid) {
+  kernel::gang_moe_w13_gemv_kernel<bf16, W13_N, W13_K, N_TOTAL, N_SLOTS, W13_TILES>(
+      h, w13, routing, mask, mid, (int)blockIdx.x);
+}
+
+// the scratch output is the MPK_W2_CK_TILE path's alone; the default path never writes it
+__global__ __launch_bounds__(256, 1) void k_gang_w2_gemv(void const *mid, void const *w2,
+                                                         void const *routing, void const *mask,
+                                                         void *out8) {
+  kernel::gang_moe_w2_silu_linear_kernel<bf16, 1, W2_N, W2_N, W2_K, W13_N, N_TOTAL, N_SLOTS,
+                                         W2_TILES, W2_TILES, W2_TOTAL_TILES>(
+      mid, w2, routing, mask, out8, nullptr, (int)blockIdx.x);
 }
 
 __global__ __launch_bounds__(256, 1) void k_copy(void const *x, void *y, int spin) {
@@ -236,6 +389,26 @@ static const Spec SPEC_MLA_MERGE_UV[] = {
     {"attn", (size_t)NH * D_V * 2, true},
 };
 
+// N4: the regular launch reads the same three tensors; `halves` is a params.txt entry
+static const Spec SPEC_MLA_MERGE_UV_TILE[] = {
+    {"partials", 0, false},  // n_splits * NH * P_ROW * 4, from params
+    {"w_uv", (size_t)NH * D_V * D_C * 2, false},
+    {"attn", (size_t)NH * D_V * 2, true},
+};
+
+// N5: the merge's tensors plus W_o, x_res (read and written in place), the arrival counter (the
+// driver writes it as zero and reads it back, so its reset is checked) and the partial workspace,
+// which the kernel writes and only its own last task reads
+static const Spec SPEC_MLA_MERGE_OPROJ[] = {
+    {"partials", 0, false},  // n_splits * NH * P_ROW * 4, from params
+    {"w_uv", (size_t)NH * D_V * D_C * 2, false},
+    {"w_o", (size_t)HIDDEN * HIDDEN * 2, false},
+    {"x_res", (size_t)HIDDEN * 2, true},
+    {"counter", 4, true},
+    {"attn", (size_t)NH * D_V * 2, true},
+    {"workspace", (size_t)NH * OPROJ_HALVES * HIDDEN * 4, false},
+};
+
 static const Spec SPEC_MOE_ROUTER[] = {   // the fused form, NORM = true (O1)
     {"x_res", (size_t)HIDDEN * 2, false},
     {"w_norm", (size_t)HIDDEN * 2, false},
@@ -248,15 +421,69 @@ static const Spec SPEC_MOE_ROUTER[] = {   // the fused form, NORM = true (O1)
     {"route_log", (size_t)ROUTE_STEPS * ROUTE_LAYERS * N_SLOTS * 4, true},
 };
 
+// N2: the same tensors plus the arrival counter, which the driver writes as zero and reads
+// back (the last task resets it), so its round trip is checked too
+static const Spec SPEC_MOE_ROUTER4[] = {
+    {"x_res", (size_t)HIDDEN * 2, false},
+    {"w_norm", (size_t)HIDDEN * 2, false},
+    {"w_gate", (size_t)N_EXPERTS * HIDDEN * 2, false},
+    {"counter", 4, true},
+    {"h", (size_t)HIDDEN * 2, true},
+    {"topk_w", (size_t)N_SLOTS * 4, true},
+    {"routing", (size_t)N_TOTAL * 4, true},
+    {"mask", (size_t)(N_TOTAL + 1) * 4, true},
+    {"logits", (size_t)N_EXPERTS * 4, true},
+    {"route_log", (size_t)ROUTE_STEPS * ROUTE_LAYERS * N_SLOTS * 4, true},
+};
+
 static const Spec SPEC_PREFETCH[] = {
     {"w", (size_t)PF_GRID * PF_ROWS * HIDDEN * 2, false},
     {"dummy", (size_t)PF_GRID * 4 * 4, true},
+};
+static const Spec SPEC_STREAM[] = {
+    {"w", (size_t)STREAM_GRID * STREAM_ROWS * HIDDEN * 2, false},
+    {"dummy", (size_t)STREAM_GRID * 4 * 4, true},
 };
 static const Spec SPEC_PREFETCH_MOE[] = {
     {"w", (size_t)N_TOTAL * PF_N * PF_K * 2, false},
     {"mask", (size_t)(N_TOTAL + 1) * 4, false},
     {"dummy", (size_t)N_SLOTS * PF_PARTS * 4 * 4, true},
 };
+// the GEMV linear (L1): the three forms, at the model's dims
+static const Spec SPEC_LINEAR_GEMV[] = {
+    {"x", (size_t)HIDDEN * 2, false},
+    {"w", (size_t)QKVA * HIDDEN * 2, false},
+    {"out", (size_t)QKVA * 2, true},
+};
+static const Spec SPEC_LINEAR_GEMV_NORM[] = {
+    {"x", (size_t)HIDDEN * 2, false},
+    {"w_norm", (size_t)HIDDEN * 2, false},
+    {"w", (size_t)QKVA * HIDDEN * 2, false},
+    {"out", (size_t)QKVA * 2, true},
+};
+static const Spec SPEC_LINEAR_GEMV_RES[] = {
+    {"x", (size_t)HIDDEN * 2, false},
+    {"w", (size_t)HIDDEN * HIDDEN * 2, false},
+    {"residual", (size_t)HIDDEN * 2, false},
+    {"out", (size_t)HIDDEN * 2, true},
+};
+
+// the two MoE gang rows (L3, L4): the eight active experts' slabs, the router's routing and mask
+static const Spec SPEC_GANG_W13_GEMV[] = {
+    {"h", (size_t)W13_K * 2, false},
+    {"w13", (size_t)GANG_EXPERTS * W13_N * W13_K * 2, false},
+    {"routing", (size_t)N_TOTAL * 4, false},
+    {"mask", (size_t)(N_TOTAL + 1) * 4, false},
+    {"mid", (size_t)N_SLOTS * W13_N * 2, true},
+};
+static const Spec SPEC_GANG_W2_GEMV[] = {
+    {"mid", (size_t)N_SLOTS * W13_N * 2, false},
+    {"w2", (size_t)GANG_EXPERTS * W2_N * W2_K * 2, false},
+    {"routing", (size_t)N_TOTAL * 4, false},
+    {"mask", (size_t)(N_TOTAL + 1) * 4, false},
+    {"out8", (size_t)N_SLOTS * W2_N * 2, true},
+};
+
 static const Spec SPEC_COPY[] = {
     {"x", (size_t)HIDDEN * 2, false},
     {"y", (size_t)HIDDEN * 2, true},
@@ -503,6 +730,69 @@ void run_mla_merge_uv(std::string const &dir) {
   b.store_outputs();
 }
 
+// N4: the same tensors as mla_merge_uv, plus the params entry `halves`; the grid is NH * halves
+void run_mla_merge_uv_tile(std::string const &dir) {
+  Params p = read_params(dir);
+  int split = (int)param(p, "split");
+  int n_splits = (int)param(p, "n_splits");
+  int halves = (int)param_or(p, "halves", 1);
+  Buffers b{dir, specs_of(SPEC_MLA_MERGE_UV_TILE), {}};
+  b.specs[0].bytes = (size_t)n_splits * NH * P_ROW * 4;
+  b.load();
+  DeviceMeta m((int)param(p, "step"), (int)param_or(p, "prompt_length", 0));
+  allow_full_lds(k_mla_merge_uv_tile);
+  hipLaunchKernelGGL(k_mla_merge_uv_tile, dim3(NH * halves), dim3(256), SMEM_BYTES, 0,
+                     b.get("partials"), b.get("w_uv"), b.get("attn"), m.meta, split, n_splits, halves);
+  finish_launch();
+  if (char const *kt = std::getenv("KT_TIME")) {
+    int n = std::atoi(kt);
+    hipEvent_t t0, t1;
+    hipEventCreate(&t0); hipEventCreate(&t1);
+    hipEventRecord(t0, 0);
+    for (int i = 0; i < n; i++) {
+      hipLaunchKernelGGL(k_mla_merge_uv_tile, dim3(NH * halves), dim3(256), SMEM_BYTES, 0,
+                         b.get("partials"), b.get("w_uv"), b.get("attn"), m.meta, split, n_splits, halves);
+    }
+    hipEventRecord(t1, 0); hipEventSynchronize(t1);
+    float ms = 0; hipEventElapsedTime(&ms, t0, t1);
+    std::fprintf(stderr, "TIME mla_merge_uv_tile launches=%d halves=%d mean_us=%.2f\n", n, halves,
+                 ms * 1000.0f / n);
+  }
+  b.store_outputs();
+}
+
+// N5: the same params as the tile row (halves is the kernel's template constant, 2); the grid is
+// NH * OPROJ_HALVES and the counter starts at zero
+void run_mla_merge_oproj(std::string const &dir) {
+  Params p = read_params(dir);
+  int split = (int)param(p, "split");
+  int n_splits = (int)param(p, "n_splits");
+  Buffers b{dir, specs_of(SPEC_MLA_MERGE_OPROJ), {}};
+  b.specs[0].bytes = (size_t)n_splits * NH * P_ROW * 4;
+  b.load();
+  DeviceMeta m((int)param(p, "step"), (int)param_or(p, "prompt_length", 0));
+  allow_full_lds(k_mla_merge_oproj);
+  hipLaunchKernelGGL(k_mla_merge_oproj, dim3(NH * OPROJ_HALVES), dim3(256), SMEM_BYTES, 0,
+                     b.get("partials"), b.get("w_uv"), b.get("w_o"), b.get("x_res"),
+                     b.get("counter"), b.get("attn"), b.get("workspace"), m.meta, split, n_splits);
+  finish_launch();
+  if (char const *kt = std::getenv("KT_TIME")) {
+    int n = std::atoi(kt);
+    hipEvent_t t0, t1;
+    hipEventCreate(&t0); hipEventCreate(&t1);
+    hipEventRecord(t0, 0);
+    for (int i = 0; i < n; i++) {
+      hipLaunchKernelGGL(k_mla_merge_oproj, dim3(NH * OPROJ_HALVES), dim3(256), SMEM_BYTES, 0,
+                         b.get("partials"), b.get("w_uv"), b.get("w_o"), b.get("x_res"),
+                         b.get("counter"), b.get("attn"), b.get("workspace"), m.meta, split, n_splits);
+    }
+    hipEventRecord(t1, 0); hipEventSynchronize(t1);
+    float ms = 0; hipEventElapsedTime(&ms, t0, t1);
+    std::fprintf(stderr, "TIME mla_merge_oproj launches=%d mean_us=%.2f\n", n, ms * 1000.0f / n);
+  }
+  b.store_outputs();
+}
+
 void run_moe_router(std::string const &dir) {
   Params p = read_params(dir);
   Buffers b{dir, specs_of(SPEC_MOE_ROUTER), {}};
@@ -512,6 +802,54 @@ void run_moe_router(std::string const &dir) {
   hipLaunchKernelGGL(k_moe_router, dim3(1), dim3(256), SMEM_BYTES, 0,
                      b.get("x_res"), b.get("w_norm"), b.get("w_gate"), b.get("h"), b.get("topk_w"),
                      b.get("routing"), b.get("mask"), b.get("logits"), b.get("route_log"), m.meta,
+                     (int)param(p, "layer_index"), float_from_bits(param(p, "scaling_bits")),
+                     float_from_bits(param(p, "eps_bits")));
+  finish_launch();
+  // KT_TIME=N: N more launches of the one-task router under hipEvents (H0 of
+  // docs/gpu-experiments/04-kernels/04-router-merge-split.md: the standalone time at each
+  // ROUTER_BATCH, with and without ROUTER_STRIDED). KT_COLD=K rotates over K
+  // copies of the 256 KB gate weight (K >= 17 exceeds an XCD's 4 MB L2), as the GEMV row does
+  // over its weight, so the time is the L2-cold one. The route log's row is rewritten with the
+  // same values by every launch, so the stored outputs stay the first launch's.
+  if (char const *kt = std::getenv("KT_TIME")) {
+    int n = std::atoi(kt);
+    int cold = std::getenv("KT_COLD") ? std::atoi(std::getenv("KT_COLD")) : 1;
+    size_t w_bytes = (size_t)N_EXPERTS * HIDDEN * 2;
+    std::vector<void *> w(cold);
+    for (int k = 0; k < cold; k++) {
+      HIP_CHECK(hipMalloc(&w[k], w_bytes));
+      HIP_CHECK(hipMemcpy(w[k], b.get("w_gate"), w_bytes, hipMemcpyDeviceToDevice));
+    }
+    HIP_CHECK(hipDeviceSynchronize());
+    hipEvent_t t0, t1;
+    hipEventCreate(&t0); hipEventCreate(&t1);
+    hipEventRecord(t0, 0);
+    for (int i = 0; i < n; i++) {
+      hipLaunchKernelGGL(k_moe_router, dim3(1), dim3(256), SMEM_BYTES, 0,
+                         b.get("x_res"), b.get("w_norm"), w[i % cold], b.get("h"), b.get("topk_w"),
+                         b.get("routing"), b.get("mask"), b.get("logits"), b.get("route_log"), m.meta,
+                         (int)param(p, "layer_index"), float_from_bits(param(p, "scaling_bits")),
+                         float_from_bits(param(p, "eps_bits")));
+    }
+    hipEventRecord(t1, 0); hipEventSynchronize(t1);
+    float ms = 0; hipEventElapsedTime(&ms, t0, t1);
+    std::fprintf(stderr, "TIME moe_router launches=%d batch=%d weight_copies=%d mean_us=%.2f\n",
+                 n, ROUTER_BATCH, cold, ms * 1000.0f / n);
+    for (int k = 0; k < cold; k++) { hipFree(w[k]); }
+  }
+  b.store_outputs();
+}
+
+void run_moe_router4(std::string const &dir) {
+  Params p = read_params(dir);
+  Buffers b{dir, specs_of(SPEC_MOE_ROUTER4), {}};
+  b.load();
+  DeviceMeta m((int)param(p, "step"), (int)param(p, "prompt_length"));
+  allow_full_lds(k_moe_router4);
+  hipLaunchKernelGGL(k_moe_router4, dim3(4), dim3(256), SMEM_BYTES, 0,
+                     b.get("x_res"), b.get("w_norm"), b.get("w_gate"), b.get("counter"), b.get("h"),
+                     b.get("topk_w"), b.get("routing"), b.get("mask"), b.get("logits"),
+                     b.get("route_log"), m.meta,
                      (int)param(p, "layer_index"), float_from_bits(param(p, "scaling_bits")),
                      float_from_bits(param(p, "eps_bits")));
   finish_launch();
@@ -528,6 +866,16 @@ void run_prefetch(std::string const &dir) {
   b.store_outputs();
 }
 
+void run_stream(std::string const &dir) {
+  (void)read_params(dir);
+  Buffers b{dir, specs_of(SPEC_STREAM), {}};
+  b.load();
+  allow_full_lds(k_stream);
+  hipLaunchKernelGGL(k_stream, dim3(STREAM_GRID), dim3(256), SMEM_BYTES, 0, b.get("w"), b.get("dummy"));
+  finish_launch();
+  b.store_outputs();
+}
+
 void run_prefetch_moe(std::string const &dir) {
   (void)read_params(dir);
   Buffers b{dir, specs_of(SPEC_PREFETCH_MOE), {}};
@@ -537,6 +885,152 @@ void run_prefetch_moe(std::string const &dir) {
                      b.get("w"), b.get("mask"), b.get("dummy"));
   finish_launch();
   b.store_outputs();
+}
+
+// KT_TIME=N: N more launches of a GEMV grid under hipEvents (the 96 tasks of qkva or the 64 of
+// o_proj, which the graph runs as one operator), the standalone time the ktime stage compares
+// with the per-operator cost inside the megakernel. KT_COLD=K rotates the launches over K copies
+// of the weight, as the attention's rotation does over copies of its 1.2 MB cache: one 15 MB
+// copy already exceeds an XCD's 4 MB L2, and K >= 18 the 256 MB memory-side cache, so the number
+// is L2-cold (the 2x rule of 09-lessons.md, lesson 6). The three forms share this; the TIME line
+// names the form (the ktime stage of vm.sh reads them in sequence from one file).
+template <typename Launch>
+void time_gemv_grid(char const *form, void const *w0, size_t w_bytes, int grid, int rows, Launch launch) {
+  char const *kt = std::getenv("KT_TIME");
+  if (!kt) return;
+  int n = std::atoi(kt);
+  int cold = std::getenv("KT_COLD") ? std::atoi(std::getenv("KT_COLD")) : 1;
+  std::vector<void *> w(cold);
+  for (int k = 0; k < cold; k++) {
+    HIP_CHECK(hipMalloc(&w[k], w_bytes));
+    HIP_CHECK(hipMemcpy(w[k], w0, w_bytes, hipMemcpyDeviceToDevice));
+  }
+  HIP_CHECK(hipDeviceSynchronize());
+  hipEvent_t t0, t1;
+  hipEventCreate(&t0); hipEventCreate(&t1);
+  hipEventRecord(t0, 0);
+  for (int i = 0; i < n; i++) {
+    launch(w[i % cold]);
+  }
+  hipEventRecord(t1, 0); hipEventSynchronize(t1);
+  float ms = 0; hipEventElapsedTime(&ms, t0, t1);
+  std::fprintf(stderr, "TIME %s launches=%d grid=%d rows=%d weight_copies=%d mean_us=%.2f\n",
+               form, n, grid, rows, cold, ms * 1000.0f / n);
+  for (int k = 0; k < cold; k++) { hipFree(w[k]); }
+}
+
+void run_linear_gemv(std::string const &dir) {
+  (void)read_params(dir);
+  Buffers b{dir, specs_of(SPEC_LINEAR_GEMV), {}};
+  b.load();
+  allow_full_lds(k_linear_gemv);
+  hipLaunchKernelGGL(k_linear_gemv, dim3(GEMV_GRID), dim3(256), SMEM_BYTES, 0,
+                     b.get("x"), b.get("w"), b.get("out"), GEMV_ROWS, QKVA);
+  finish_launch();
+  time_gemv_grid("linear_gemv", b.get("w"), (size_t)QKVA * HIDDEN * 2, GEMV_GRID, GEMV_ROWS, [&](void const *w) {
+    hipLaunchKernelGGL(k_linear_gemv, dim3(GEMV_GRID), dim3(256), SMEM_BYTES, 0,
+                       b.get("x"), w, b.get("out"), GEMV_ROWS, QKVA);
+  });
+  b.store_outputs();
+}
+
+void run_linear_gemv_norm(std::string const &dir) {
+  Params p = read_params(dir);
+  float eps = float_from_bits(param(p, "eps_bits"));
+  Buffers b{dir, specs_of(SPEC_LINEAR_GEMV_NORM), {}};
+  b.load();
+  allow_full_lds(k_linear_gemv_norm);
+  hipLaunchKernelGGL(k_linear_gemv_norm, dim3(GEMV_GRID), dim3(256), SMEM_BYTES, 0,
+                     b.get("x"), b.get("w_norm"), b.get("w"), b.get("out"), GEMV_ROWS, QKVA, eps);
+  finish_launch();
+  time_gemv_grid("linear_gemv_norm", b.get("w"), (size_t)QKVA * HIDDEN * 2, GEMV_GRID, GEMV_ROWS, [&](void const *w) {
+    hipLaunchKernelGGL(k_linear_gemv_norm, dim3(GEMV_GRID), dim3(256), SMEM_BYTES, 0,
+                       b.get("x"), b.get("w_norm"), w, b.get("out"), GEMV_ROWS, QKVA, eps);
+  });
+  b.store_outputs();
+}
+
+void run_linear_gemv_res(std::string const &dir) {
+  (void)read_params(dir);
+  Buffers b{dir, specs_of(SPEC_LINEAR_GEMV_RES), {}};
+  b.load();
+  allow_full_lds(k_linear_gemv_res);
+  hipLaunchKernelGGL(k_linear_gemv_res, dim3(GEMV_RES_GRID), dim3(256), SMEM_BYTES, 0,
+                     b.get("x"), b.get("w"), b.get("residual"), b.get("out"), GEMV_RES_ROWS, HIDDEN);
+  finish_launch();
+  // the timed launches rewrite out from x, w and the residual (the residual is an input, out a
+  // separate tensor), so the stored outputs stay the first launch's
+  time_gemv_grid("linear_gemv_res", b.get("w"), (size_t)HIDDEN * HIDDEN * 2, GEMV_RES_GRID, GEMV_RES_ROWS, [&](void const *w) {
+    hipLaunchKernelGGL(k_linear_gemv_res, dim3(GEMV_RES_GRID), dim3(256), SMEM_BYTES, 0,
+                       b.get("x"), w, b.get("residual"), b.get("out"), GEMV_RES_ROWS, HIDDEN);
+  });
+  b.store_outputs();
+}
+
+// Both gang rows need the -DKT_FAKE_XCD build: without it the kernel takes its XCD from the
+// hardware register and the (tile, XCD) pairs a launch covers are whatever the scheduler chose.
+void run_gang_w13_gemv(std::string const &dir) {
+#ifndef KT_FAKE_XCD
+  (void)dir;
+  std::fprintf(stderr, "gang_w13_gemv needs the -DKT_FAKE_XCD build\n");
+  std::exit(2);
+#else
+  (void)read_params(dir);
+  Buffers b{dir, specs_of(SPEC_GANG_W13_GEMV), {}};
+  b.load();
+  allow_full_lds(k_gang_w13_gemv);
+  hipLaunchKernelGGL(k_gang_w13_gemv, dim3(W13_TILES, XCDS), dim3(256), SMEM_BYTES, 0,
+                     b.get("h"), b.get("w13"), b.get("routing"), b.get("mask"), b.get("mid"));
+  finish_launch();
+  // KT_TIME=N: N more launches of the whole (37, 8) grid under hipEvents, the standalone time
+  // of one layer's expert gate-up the ktime stage compares with its per-operator cost
+  if (char const *kt = std::getenv("KT_TIME")) {
+    int n = std::atoi(kt);
+    hipEvent_t t0, t1;
+    hipEventCreate(&t0); hipEventCreate(&t1);
+    hipEventRecord(t0, 0);
+    for (int i = 0; i < n; i++) {
+      hipLaunchKernelGGL(k_gang_w13_gemv, dim3(W13_TILES, XCDS), dim3(256), SMEM_BYTES, 0,
+                         b.get("h"), b.get("w13"), b.get("routing"), b.get("mask"), b.get("mid"));
+    }
+    hipEventRecord(t1, 0); hipEventSynchronize(t1);
+    float ms = 0; hipEventElapsedTime(&ms, t0, t1);
+    std::fprintf(stderr, "TIME gang_w13_gemv launches=%d grid=%dx%d mean_us=%.2f\n",
+                 n, W13_TILES, XCDS, ms * 1000.0f / n);
+  }
+  b.store_outputs();
+#endif
+}
+
+void run_gang_w2_gemv(std::string const &dir) {
+#ifndef KT_FAKE_XCD
+  (void)dir;
+  std::fprintf(stderr, "gang_w2_gemv needs the -DKT_FAKE_XCD build\n");
+  std::exit(2);
+#else
+  (void)read_params(dir);
+  Buffers b{dir, specs_of(SPEC_GANG_W2_GEMV), {}};
+  b.load();
+  allow_full_lds(k_gang_w2_gemv);
+  hipLaunchKernelGGL(k_gang_w2_gemv, dim3(W2_TILES, XCDS), dim3(256), SMEM_BYTES, 0,
+                     b.get("mid"), b.get("w2"), b.get("routing"), b.get("mask"), b.get("out8"));
+  finish_launch();
+  if (char const *kt = std::getenv("KT_TIME")) {
+    int n = std::atoi(kt);
+    hipEvent_t t0, t1;
+    hipEventCreate(&t0); hipEventCreate(&t1);
+    hipEventRecord(t0, 0);
+    for (int i = 0; i < n; i++) {
+      hipLaunchKernelGGL(k_gang_w2_gemv, dim3(W2_TILES, XCDS), dim3(256), SMEM_BYTES, 0,
+                         b.get("mid"), b.get("w2"), b.get("routing"), b.get("mask"), b.get("out8"));
+    }
+    hipEventRecord(t1, 0); hipEventSynchronize(t1);
+    float ms = 0; hipEventElapsedTime(&ms, t0, t1);
+    std::fprintf(stderr, "TIME gang_w2_gemv launches=%d grid=%dx%d mean_us=%.2f\n",
+                 n, W2_TILES, XCDS, ms * 1000.0f / n);
+  }
+  b.store_outputs();
+#endif
 }
 
 void run_copy(std::string const &dir) {
@@ -558,7 +1052,9 @@ void run_copy(std::string const &dir) {
 
 int main(int argc, char **argv) {
   if (argc < 3) {
-    std::fprintf(stderr, "usage: %s <mla_prep|mla_attend|mla_merge_uv|moe_router|copy|prefetch|prefetch_moe> <dir>...\n",
+    std::fprintf(stderr,
+                 "usage: %s <mla_prep|mla_attend|mla_merge_uv|mla_merge_uv_tile|mla_merge_oproj|moe_router|moe_router4|copy|prefetch"
+                 "|prefetch_moe|stream|linear_gemv|linear_gemv_norm|linear_gemv_res|gang_w13_gemv|gang_w2_gemv> <dir>...\n",
                  argv[0]);
     return 1;
   }
@@ -570,14 +1066,32 @@ int main(int argc, char **argv) {
     run = run_mla_attend;
   } else if (test == "mla_merge_uv") {
     run = run_mla_merge_uv;
+  } else if (test == "mla_merge_uv_tile") {
+    run = run_mla_merge_uv_tile;
+  } else if (test == "mla_merge_oproj") {
+    run = run_mla_merge_oproj;
   } else if (test == "moe_router") {
     run = run_moe_router;
+  } else if (test == "moe_router4") {
+    run = run_moe_router4;
   } else if (test == "copy") {
     run = run_copy;
   } else if (test == "prefetch") {
     run = run_prefetch;
   } else if (test == "prefetch_moe") {
     run = run_prefetch_moe;
+  } else if (test == "stream") {
+    run = run_stream;
+  } else if (test == "linear_gemv") {
+    run = run_linear_gemv;
+  } else if (test == "linear_gemv_norm") {
+    run = run_linear_gemv_norm;
+  } else if (test == "linear_gemv_res") {
+    run = run_linear_gemv_res;
+  } else if (test == "gang_w13_gemv") {
+    run = run_gang_w13_gemv;
+  } else if (test == "gang_w2_gemv") {
+    run = run_gang_w2_gemv;
   } else {
     std::fprintf(stderr, "unknown test %s\n", test.c_str());
     return 1;

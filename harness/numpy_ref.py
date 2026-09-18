@@ -8,6 +8,8 @@ BF16 rounding at the points where the design stores BF16 or feeds an MFMA:
   mla_attend    split-KV online softmax over the latent cache -> partials
   mla_merge_uv  merge the partials, then attn[h] = o[h] @ W_uv[h]^T
   moe_router    FP32 GEMV, softmax, top-k, forced experts -> topk_w, routing, mask
+  moe_w13       the expert gate-up of every routed slot -> mid (L4)
+  moe_w2        silu(gate) * up, then the expert down projection -> out8 (O2, L3)
 
 Rounding follows the reference model where the design says "match the
 reference" (docs/design-doc/01-execution-flow.md, constants table):
@@ -172,6 +174,16 @@ def mla_merge_uv(partials, W_uv, step, *, split=32, d_c=None):
     return bf16(attn.reshape(-1))
 
 
+def mla_merge_oproj(partials, W_uv, W_o, x_res, step, *, split=32, d_c=None):
+    """N5: the merge with o_proj folded in. Returns (attn, x_res).
+
+    attn is mla_merge_uv's, unchanged (the kernel still writes it, so the boundary keeps its
+    row); the output row is bf16(x_res + attn @ W_o^T) with FP32 accumulation and the residual
+    added before the one rounding, the arithmetic of linear_residual at W_o [H, H] row-major."""
+    attn = mla_merge_uv(partials, W_uv, step, split=split, d_c=d_c)
+    return attn, linear_residual(attn, W_o, x_res)
+
+
 def attention_reference_decompressed(q_nope, q_pe, c_kv, k_pe, W_uk, W_uv, step, softmax_scale):
     """The reference's arithmetic (decompressed keys and values) for the same
     token, used to bound the reassociation error: k_nope = W_uk @ c, v = W_uv @ c
@@ -233,6 +245,53 @@ def moe_router_norm(x_res, w_norm, W_gate, *, eps=1e-6, topk=6, n_experts=64, fo
     return h, logits, topk_w, routing, mask
 
 
+def silu(x):
+    """SiLU in FP32, the exact form of the kernels' fast_silu (silu_mul_mi300.cuh computes
+    x * rcpf(1 + __expf(-x)) with the fast reciprocal and exp, a few FP32 ulp away, which the
+    BF16 rounding of the product absorbs): x / (1 + exp(-x)), no BF16 rounding of its own."""
+    x = np.asarray(x, F32)
+    return (x / (F32(1.0) + np.exp(-x, dtype=F32))).astype(F32)
+
+
+def moe_w13(h, W13, mask, n_slots=8):
+    """The expert gate-up at batch 1 (the gang_moe_w13 task, L4 of
+    docs/gpu-experiments/04-kernels): slot s takes expert mask[s] and computes
+    mid[s] = bf16(W13[e] @ h), the gate rows then the up rows of the expert as the packing
+    lays them out (pack_weights.pack_moe: rows [0, I) gate, [I, 2I) up).
+
+    h [K] BF16, W13 [E, N, K] BF16, mask [E + 1] int32 (the active expert ids in slot order,
+    then the count, as the router writes them). Returns mid [n_slots, N] float32 of BF16
+    values; a slot past the active count is NaN, the sentinel an untouched row keeps.
+    """
+    h = np.asarray(h, F32)
+    W13 = np.asarray(W13, F32)
+    n_active = int(mask[-1])
+    mid = np.full((n_slots, W13.shape[1]), np.nan, F32)
+    for s in range(n_active):
+        mid[s] = bf16(W13[int(mask[s])] @ h)
+    return mid
+
+
+def moe_w2(mid, W2, mask, n_slots=8):
+    """The expert down projection with the silu-mul in its prologue (the
+    gang_moe_w2_silu task, O2 and L3): per slot, act = bf16(silu(gate) * up) element by
+    element as silu_mul_task_impl rounds it, then out[s] = bf16(W2[e] @ act).
+
+    mid [n_slots, 2K] BF16 (gate in columns [0, K), up in [K, 2K)), W2 [E, N, K] BF16,
+    mask as in moe_w13. Returns out8 [n_slots, N] float32 of BF16 values, NaN past the
+    active count.
+    """
+    mid = np.asarray(mid, F32)
+    W2 = np.asarray(W2, F32)
+    k = W2.shape[2]
+    n_active = int(mask[-1])
+    out = np.full((n_slots, W2.shape[1]), np.nan, F32)
+    for s in range(n_active):
+        act = bf16(silu(mid[s, :k]) * mid[s, k:2 * k])
+        out[s] = bf16(W2[int(mask[s])] @ act)
+    return out
+
+
 def linear_norm(x, w_norm, W, eps=1e-6):
     """The per-tile linear with the input norm in its prologue (docs/gpu-experiments/03-acceleration,
     O3; the linear_norm_mi300 task): rmsnorm(x, w_norm) rounded to BF16, then W @ h with FP32
@@ -240,6 +299,18 @@ def linear_norm(x, w_norm, W, eps=1e-6):
     h = rmsnorm(x, w_norm, eps)
     out = bf16(np.asarray(W, F32) @ h.astype(F32))
     return h, out
+
+
+def linear(x, W):
+    """The plain per-tile linear at batch 1 (the linear_gemv_mi300 task without a prologue):
+    FP32 accumulation of exact BF16 products, one BF16 rounding of the result."""
+    return bf16(np.asarray(W, F32) @ np.asarray(x, F32))
+
+
+def linear_residual(x, W, res):
+    """The same linear with the residual added in FP32 before the rounding (the task's
+    RESIDUAL flag; o_proj and layer 0's down projection)."""
+    return bf16(np.asarray(W, F32) @ np.asarray(x, F32) + np.asarray(res, F32))
 
 
 def moe_combine(out8, topk_w, x_res):

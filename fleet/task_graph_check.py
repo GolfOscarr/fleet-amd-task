@@ -67,8 +67,15 @@ def check_side_tasks(tg, side_types=SIDE_TYPES):
         e = events[event_index(dep)]
         if not (e["first_task_id"] <= i < e["last_task_id"]):
             problems.append(f"task {i}: outside the range [{e['first_task_id']}, {e['last_task_id']}) of its event")
+    # round 4 (docs/gpu-experiments/04-kernels/07-session-plan.md, the tgcheck rows): the task count
+    # per type, read against the plan's (195 the GEMV linear, 196 the gang w13 GEMV, 204 the
+    # four-task router, 205 the regular merge, 207 the merge with o_proj folded in)
+    types = {}
+    for t in tasks:
+        types[t["task_type"]] = types.get(t["task_type"], 0) + 1
     summary = {"tasks": len(tasks), "events": len(events), "side_tasks": len(side),
-               "end_event": end, "end_num_triggers": events[end]["num_triggers"]}
+               "end_event": end, "end_num_triggers": events[end]["num_triggers"],
+               "task_types": {str(k): v for k, v in sorted(types.items())}}
     return problems, summary
 
 
