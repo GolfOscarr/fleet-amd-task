@@ -297,6 +297,7 @@ The suite binary times a kernel's grid on request (round 2, 2026-09-16):
     KT_TIME=50 KT_COLD=27 fleet/tasks/build/kernel_tests mla_attend <dir>  # the launches rotate over 27 copies of the cache (cold L2)
 
     KT_TIME=50 KT_COLD=4 fleet/tasks/build/kernel_tests linear_gemv <dir>   # the 96-task qkva grid over 4 copies of the 15 MB weight
+    KT_TIME=50 KT_COLD=27 fleet/tasks/build/kernel_tests_nt linear_gemv_norm <dir>   # the same for the norm form (qkva's) and, with linear_gemv_res, the residual form (o_proj's 64 tasks); the TIME line names the form
 
 A trial directory comes from `python fleet/tasks/kernel_tests.py --n 1 --kernel mla_attend --work-dir <dir> --keep`.
 `KT_SPIN=1000 fleet/tasks/build/kernel_tests copy <dir>` adds a launch whose thread 0 spins 1,000 iterations and prints the

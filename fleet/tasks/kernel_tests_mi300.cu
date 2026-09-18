@@ -887,6 +887,38 @@ void run_prefetch_moe(std::string const &dir) {
   b.store_outputs();
 }
 
+// KT_TIME=N: N more launches of a GEMV grid under hipEvents (the 96 tasks of qkva or the 64 of
+// o_proj, which the graph runs as one operator), the standalone time the ktime stage compares
+// with the per-operator cost inside the megakernel. KT_COLD=K rotates the launches over K copies
+// of the weight, as the attention's rotation does over copies of its 1.2 MB cache: one 15 MB
+// copy already exceeds an XCD's 4 MB L2, and K >= 18 the 256 MB memory-side cache, so the number
+// is L2-cold (the 2x rule of 09-lessons.md, lesson 6). The three forms share this; the TIME line
+// names the form (the ktime stage of vm.sh reads them in sequence from one file).
+template <typename Launch>
+void time_gemv_grid(char const *form, void const *w0, size_t w_bytes, int grid, int rows, Launch launch) {
+  char const *kt = std::getenv("KT_TIME");
+  if (!kt) return;
+  int n = std::atoi(kt);
+  int cold = std::getenv("KT_COLD") ? std::atoi(std::getenv("KT_COLD")) : 1;
+  std::vector<void *> w(cold);
+  for (int k = 0; k < cold; k++) {
+    HIP_CHECK(hipMalloc(&w[k], w_bytes));
+    HIP_CHECK(hipMemcpy(w[k], w0, w_bytes, hipMemcpyDeviceToDevice));
+  }
+  HIP_CHECK(hipDeviceSynchronize());
+  hipEvent_t t0, t1;
+  hipEventCreate(&t0); hipEventCreate(&t1);
+  hipEventRecord(t0, 0);
+  for (int i = 0; i < n; i++) {
+    launch(w[i % cold]);
+  }
+  hipEventRecord(t1, 0); hipEventSynchronize(t1);
+  float ms = 0; hipEventElapsedTime(&ms, t0, t1);
+  std::fprintf(stderr, "TIME %s launches=%d grid=%d rows=%d weight_copies=%d mean_us=%.2f\n",
+               form, n, grid, rows, cold, ms * 1000.0f / n);
+  for (int k = 0; k < cold; k++) { hipFree(w[k]); }
+}
+
 void run_linear_gemv(std::string const &dir) {
   (void)read_params(dir);
   Buffers b{dir, specs_of(SPEC_LINEAR_GEMV), {}};
@@ -895,47 +927,26 @@ void run_linear_gemv(std::string const &dir) {
   hipLaunchKernelGGL(k_linear_gemv, dim3(GEMV_GRID), dim3(256), SMEM_BYTES, 0,
                      b.get("x"), b.get("w"), b.get("out"), GEMV_ROWS, QKVA);
   finish_launch();
-  // KT_TIME=N: N more launches of the whole grid under hipEvents (the 96 tasks of qkva, which
-  // the graph runs as one operator), the standalone time the ktime stage compares with the
-  // per-operator cost inside the megakernel
-  if (char const *kt = std::getenv("KT_TIME")) {
-    int n = std::atoi(kt);
-    // KT_COLD=K: rotate over K copies of the 15 MB weight, as the attention's rotation does over
-    // copies of its 1.2 MB cache; one copy already exceeds an XCD's 4 MB L2, and K >= 18 the
-    // 256 MB memory-side cache, so the number is L2-cold (the 2x rule of 09-lessons.md, lesson 6)
-    int cold = std::getenv("KT_COLD") ? std::atoi(std::getenv("KT_COLD")) : 1;
-    size_t w_bytes = (size_t)QKVA * HIDDEN * 2;
-    std::vector<void *> w(cold);
-    for (int k = 0; k < cold; k++) {
-      HIP_CHECK(hipMalloc(&w[k], w_bytes));
-      HIP_CHECK(hipMemcpy(w[k], b.get("w"), w_bytes, hipMemcpyDeviceToDevice));
-    }
-    HIP_CHECK(hipDeviceSynchronize());
-    hipEvent_t t0, t1;
-    hipEventCreate(&t0); hipEventCreate(&t1);
-    hipEventRecord(t0, 0);
-    for (int i = 0; i < n; i++) {
-      hipLaunchKernelGGL(k_linear_gemv, dim3(GEMV_GRID), dim3(256), SMEM_BYTES, 0,
-                         b.get("x"), w[i % cold], b.get("out"), GEMV_ROWS, QKVA);
-    }
-    hipEventRecord(t1, 0); hipEventSynchronize(t1);
-    float ms = 0; hipEventElapsedTime(&ms, t0, t1);
-    std::fprintf(stderr, "TIME linear_gemv launches=%d grid=%d rows=%d weight_copies=%d mean_us=%.2f\n",
-                 n, GEMV_GRID, GEMV_ROWS, cold, ms * 1000.0f / n);
-    for (int k = 0; k < cold; k++) { hipFree(w[k]); }
-  }
+  time_gemv_grid("linear_gemv", b.get("w"), (size_t)QKVA * HIDDEN * 2, GEMV_GRID, GEMV_ROWS, [&](void const *w) {
+    hipLaunchKernelGGL(k_linear_gemv, dim3(GEMV_GRID), dim3(256), SMEM_BYTES, 0,
+                       b.get("x"), w, b.get("out"), GEMV_ROWS, QKVA);
+  });
   b.store_outputs();
 }
 
 void run_linear_gemv_norm(std::string const &dir) {
   Params p = read_params(dir);
+  float eps = float_from_bits(param(p, "eps_bits"));
   Buffers b{dir, specs_of(SPEC_LINEAR_GEMV_NORM), {}};
   b.load();
   allow_full_lds(k_linear_gemv_norm);
   hipLaunchKernelGGL(k_linear_gemv_norm, dim3(GEMV_GRID), dim3(256), SMEM_BYTES, 0,
-                     b.get("x"), b.get("w_norm"), b.get("w"), b.get("out"), GEMV_ROWS, QKVA,
-                     float_from_bits(param(p, "eps_bits")));
+                     b.get("x"), b.get("w_norm"), b.get("w"), b.get("out"), GEMV_ROWS, QKVA, eps);
   finish_launch();
+  time_gemv_grid("linear_gemv_norm", b.get("w"), (size_t)QKVA * HIDDEN * 2, GEMV_GRID, GEMV_ROWS, [&](void const *w) {
+    hipLaunchKernelGGL(k_linear_gemv_norm, dim3(GEMV_GRID), dim3(256), SMEM_BYTES, 0,
+                       b.get("x"), b.get("w_norm"), w, b.get("out"), GEMV_ROWS, QKVA, eps);
+  });
   b.store_outputs();
 }
 
@@ -947,6 +958,12 @@ void run_linear_gemv_res(std::string const &dir) {
   hipLaunchKernelGGL(k_linear_gemv_res, dim3(GEMV_RES_GRID), dim3(256), SMEM_BYTES, 0,
                      b.get("x"), b.get("w"), b.get("residual"), b.get("out"), GEMV_RES_ROWS, HIDDEN);
   finish_launch();
+  // the timed launches rewrite out from x, w and the residual (the residual is an input, out a
+  // separate tensor), so the stored outputs stay the first launch's
+  time_gemv_grid("linear_gemv_res", b.get("w"), (size_t)HIDDEN * HIDDEN * 2, GEMV_RES_GRID, GEMV_RES_ROWS, [&](void const *w) {
+    hipLaunchKernelGGL(k_linear_gemv_res, dim3(GEMV_RES_GRID), dim3(256), SMEM_BYTES, 0,
+                       b.get("x"), w, b.get("residual"), b.get("out"), GEMV_RES_ROWS, HIDDEN);
+  });
   b.store_outputs();
 }
 
