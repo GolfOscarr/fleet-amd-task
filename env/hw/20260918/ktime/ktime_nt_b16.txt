@@ -1,0 +1,16 @@
+### 2026-09-18T04:38:38Z fleet/tasks/build/kernel_tests_nt_b16 launches=50 cache_copies=27
+TIME mla_attend launches=50 grid=8x5 cache_copies=27 mean_us=33.88
+ok mla_attend /home/hotaisle/metalOps/env/logs/ktime_trial/mla_attend/000
+TIME mla_merge_uv launches=50 mean_us=16.30
+ok mla_merge_uv /home/hotaisle/metalOps/env/logs/ktime_trial/mla_merge_uv/000
+[SPIN] block=0 iters=1000 cycles=51988 ticks=2484 x=350778849
+ok copy /home/hotaisle/metalOps/env/logs/ktime_trial/copy/000
+TIME linear_gemv_norm launches=50 grid=96 rows=38 weight_copies=27 mean_us=16.28
+ok linear_gemv_norm /home/hotaisle/metalOps/env/logs/ktime_trial/linear_gemv_norm/000
+TIME linear_gemv_res launches=50 grid=64 rows=32 weight_copies=27 mean_us=12.50
+ok linear_gemv_res /home/hotaisle/metalOps/env/logs/ktime_trial/linear_gemv_res/000
+TIME moe_router launches=50 batch=16 weight_copies=27 mean_us=11.29
+ok moe_router /home/hotaisle/metalOps/env/logs/ktime_trial/moe_router/000
+no fleet/tasks/build/kernel_tests_nt_b16_xcd: the gang rows are timed by the plain and nt variants only
+TIME mla_merge_oproj launches=50 mean_us=39.19
+ok mla_merge_oproj env/logs/ktime_trial/mla_merge_oproj/000/oproj

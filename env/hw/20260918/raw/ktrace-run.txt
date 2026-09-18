@@ -1,0 +1,9 @@
+W20260918 04:15:30.601662 140102420185856 simple_timer.cpp:55] [rocprofv3] tool initialization ::     0.001283 sec
+W20260918 04:15:30.601878 140102420185856 simple_timer.cpp:55] [rocprofv3] '/home/hotaisle/metalOps/env/hw/build/copy_bytes' ::     0.000000 sec
+W20260918 04:15:30.632623 140102420185856 tool.cpp:2422] HSA version 8.20.4 initialized (instance=0)
+W20260918 04:15:30.817577 140102420185856 simple_timer.cpp:55] [rocprofv3] '/home/hotaisle/metalOps/env/hw/build/copy_bytes' ::     0.215699 sec
+E20260918 04:15:30.828551 140102420185856 output_stream.cpp:111] Opened result file: /home/hotaisle/metalOps/env/hw/20260918/raw/ktrace/enc1-gpuvm016/23581_kernel_trace.csv
+E20260918 04:15:30.836121 140102420185856 output_stream.cpp:111] Opened result file: /home/hotaisle/metalOps/env/hw/20260918/raw/ktrace/enc1-gpuvm016/23581_agent_info.csv
+W20260918 04:15:30.838100 140102420185856 simple_timer.cpp:55] [rocprofv3] output generation ::     0.018063 sec
+W20260918 04:15:30.838129 140102420185856 simple_timer.cpp:55] [rocprofv3] tool finalization ::     0.018195 sec
+copy_bytes bytes=1073741824 ms=0.770481 gbps=2787.199

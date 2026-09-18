@@ -1,0 +1,742 @@
+{
+  "n": 100,
+  "seed": 0,
+  "dry_run": false,
+  "binary": "fleet/tasks/build/kernel_tests_nt",
+  "binary_debug": "fleet/tasks/build/kernel_tests_debug",
+  "binary_xcd": "fleet/tasks/build/kernel_tests_nt_xcd",
+  "tolerances": {
+    "f32_rel": 0.0001,
+    "bf16_rel": 0.002,
+    "bf16_ulp": 0.0078125,
+    "bf16_abs_floor": 0.0078125,
+    "partials_o_rel": 0.0005,
+    "lse_abs": 0.0001,
+    "splits_rel": 0.01
+  },
+  "tests": {
+    "mla_prep": {
+      "result": "PASS",
+      "trials": 100,
+      "failed_trials": 0,
+      "outputs": {
+        "c_kv[step]": {
+          "kind": "bf16",
+          "threshold": 0.002,
+          "max_abs_err": 0.0,
+          "rel_err": 0.0,
+          "cos_sim": 0.9999999999999998,
+          "fails": 0,
+          "notes": []
+        },
+        "c_kv[other rows]": {
+          "kind": "exact",
+          "threshold": 0.0,
+          "max_abs_err": 0.0,
+          "rel_err": 0.0,
+          "cos_sim": 0.9999999999999998,
+          "fails": 0,
+          "notes": []
+        },
+        "k_pe": {
+          "kind": "exact",
+          "threshold": 0.0,
+          "max_abs_err": 0.0,
+          "rel_err": 0.0,
+          "cos_sim": 0.9999999999999998,
+          "fails": 0,
+          "notes": []
+        },
+        "ql_nope": {
+          "kind": "bf16",
+          "threshold": 0.002,
+          "max_abs_err": 0.0078125,
+          "rel_err": 8.926246851544652e-05,
+          "cos_sim": 0.9999999960172952,
+          "fails": 0,
+          "notes": []
+        },
+        "q_pe": {
+          "kind": "exact",
+          "threshold": 0.0,
+          "max_abs_err": 0.0,
+          "rel_err": 0.0,
+          "cos_sim": 0.9999999999999998,
+          "fails": 0,
+          "notes": []
+        }
+      },
+      "failures": []
+    },
+    "mla_attend": {
+      "result": "PASS",
+      "trials": 100,
+      "failed_trials": 0,
+      "outputs": {
+        "partials.o": {
+          "kind": "rel",
+          "threshold": 0.0005,
+          "max_abs_err": 0.0032607316970825195,
+          "rel_err": 6.341229311268133e-05,
+          "cos_sim": 0.9999999979899691,
+          "fails": 0,
+          "notes": []
+        },
+        "partials.lse[empty splits]": {
+          "kind": "exact",
+          "threshold": 0.0,
+          "max_abs_err": 0.0,
+          "rel_err": 0.0,
+          "cos_sim": 1.0,
+          "fails": 0,
+          "notes": []
+        },
+        "partials.lse": {
+          "kind": "abs",
+          "threshold": 0.0001,
+          "max_abs_err": 7.62939453125e-06,
+          "rel_err": 1.3813004232978e-07,
+          "cos_sim": 0.9999999999999905,
+          "fails": 0,
+          "notes": []
+        }
+      },
+      "failures": []
+    },
+    "mla_merge_uv": {
+      "result": "PASS",
+      "trials": 100,
+      "failed_trials": 0,
+      "outputs": {
+        "attn": {
+          "kind": "bf16",
+          "threshold": 0.002,
+          "max_abs_err": 0.0078125,
+          "rel_err": 0.0005158695067364686,
+          "cos_sim": 0.999999867206014,
+          "fails": 0,
+          "notes": []
+        }
+      },
+      "failures": []
+    },
+    "mla_merge_uv_tile": {
+      "result": "PASS",
+      "trials": 100,
+      "failed_trials": 0,
+      "outputs": {
+        "attn": {
+          "kind": "bf16",
+          "threshold": 0.002,
+          "max_abs_err": 0.00390625,
+          "rel_err": 0.0003194383502875636,
+          "cos_sim": 0.9999999489975593,
+          "fails": 0,
+          "notes": []
+        },
+        "attn: 16 tasks vs the gang": {
+          "kind": "exact",
+          "threshold": 0.0,
+          "max_abs_err": 0.0,
+          "rel_err": 0.0,
+          "cos_sim": 0.9999999999999998,
+          "fails": 0,
+          "notes": []
+        }
+      },
+      "failures": []
+    },
+    "mla_merge_uv_tile2": {
+      "result": "PASS",
+      "trials": 100,
+      "failed_trials": 0,
+      "outputs": {
+        "attn": {
+          "kind": "bf16",
+          "threshold": 0.002,
+          "max_abs_err": 0.00390625,
+          "rel_err": 0.0003475461129880073,
+          "cos_sim": 0.9999999396109149,
+          "fails": 0,
+          "notes": []
+        },
+        "attn: 32 tasks vs the gang": {
+          "kind": "exact",
+          "threshold": 0.0,
+          "max_abs_err": 0.0,
+          "rel_err": 0.0,
+          "cos_sim": 0.9999999999999998,
+          "fails": 0,
+          "notes": []
+        }
+      },
+      "failures": []
+    },
+    "mla_merge_oproj": {
+      "result": "PASS",
+      "trials": 100,
+      "failed_trials": 0,
+      "outputs": {
+        "attn": {
+          "kind": "bf16",
+          "threshold": 0.002,
+          "max_abs_err": 0.00390625,
+          "rel_err": 0.00026036872945194673,
+          "cos_sim": 0.9999999661237361,
+          "fails": 0,
+          "notes": []
+        },
+        "x_res": {
+          "kind": "bf16",
+          "threshold": 0.002,
+          "max_abs_err": 0.015625,
+          "rel_err": 0.0007085959320225255,
+          "cos_sim": 0.9999997489474737,
+          "fails": 0,
+          "notes": []
+        },
+        "counter": {
+          "kind": "exact",
+          "threshold": 0.0,
+          "max_abs_err": 0.0,
+          "rel_err": 0.0,
+          "cos_sim": 1.0,
+          "fails": 0,
+          "notes": [
+            "trial 0: the last task resets it",
+            "trial 1: the last task resets it",
+            "trial 2: the last task resets it",
+            "trial 3: the last task resets it",
+            "trial 4: the last task resets it"
+          ]
+        },
+        "attn: the folded operator vs the 32-task merge": {
+          "kind": "exact",
+          "threshold": 0.0,
+          "max_abs_err": 0.0,
+          "rel_err": 0.0,
+          "cos_sim": 0.9999999999999998,
+          "fails": 0,
+          "notes": []
+        }
+      },
+      "failures": []
+    },
+    "moe_router": {
+      "result": "PASS",
+      "trials": 100,
+      "failed_trials": 0,
+      "outputs": {
+        "h": {
+          "kind": "rel",
+          "threshold": 0.002,
+          "max_abs_err": 0.0,
+          "rel_err": 0.0,
+          "cos_sim": 0.9999999999999998,
+          "fails": 0,
+          "notes": []
+        },
+        "logits": {
+          "kind": "rel",
+          "threshold": 0.0001,
+          "max_abs_err": 8.046627044677734e-07,
+          "rel_err": 2.166527483881899e-07,
+          "cos_sim": 0.9999999999999768,
+          "fails": 0,
+          "notes": []
+        },
+        "topk_w": {
+          "kind": "rel",
+          "threshold": 0.0001,
+          "max_abs_err": 2.9802322387695312e-08,
+          "rel_err": 2.2925132548810548e-08,
+          "cos_sim": 0.9999999999999996,
+          "fails": 0,
+          "notes": []
+        },
+        "routing": {
+          "kind": "exact",
+          "threshold": 0.0,
+          "max_abs_err": 0.0,
+          "rel_err": 0.0,
+          "cos_sim": 0.9999999999999999,
+          "fails": 0,
+          "notes": []
+        },
+        "mask": {
+          "kind": "exact",
+          "threshold": 0.0,
+          "max_abs_err": 0.0,
+          "rel_err": 0.0,
+          "cos_sim": 0.9999999999999998,
+          "fails": 0,
+          "notes": []
+        },
+        "route_log": {
+          "kind": "exact",
+          "threshold": 0.0,
+          "max_abs_err": 0.0,
+          "rel_err": 0.0,
+          "cos_sim": 0.9999999999999998,
+          "fails": 0,
+          "notes": []
+        },
+        "topk ids vs reference logits": {
+          "kind": "exact",
+          "threshold": 0.0,
+          "max_abs_err": 0.0,
+          "rel_err": 0.0,
+          "cos_sim": 0.9999999999999998,
+          "fails": 0,
+          "notes": []
+        }
+      },
+      "failures": []
+    },
+    "moe_router4": {
+      "result": "PASS",
+      "trials": 100,
+      "failed_trials": 0,
+      "outputs": {
+        "h": {
+          "kind": "rel",
+          "threshold": 0.002,
+          "max_abs_err": 0.0,
+          "rel_err": 0.0,
+          "cos_sim": 0.9999999999999998,
+          "fails": 0,
+          "notes": []
+        },
+        "logits": {
+          "kind": "rel",
+          "threshold": 0.0001,
+          "max_abs_err": 8.344650268554688e-07,
+          "rel_err": 2.3244419956838928e-07,
+          "cos_sim": 0.9999999999999748,
+          "fails": 0,
+          "notes": []
+        },
+        "topk_w": {
+          "kind": "rel",
+          "threshold": 0.0001,
+          "max_abs_err": 8.940696716308594e-08,
+          "rel_err": 6.190597266573549e-08,
+          "cos_sim": 0.9999999999999983,
+          "fails": 0,
+          "notes": []
+        },
+        "routing": {
+          "kind": "exact",
+          "threshold": 0.0,
+          "max_abs_err": 0.0,
+          "rel_err": 0.0,
+          "cos_sim": 0.9999999999999999,
+          "fails": 0,
+          "notes": []
+        },
+        "mask": {
+          "kind": "exact",
+          "threshold": 0.0,
+          "max_abs_err": 0.0,
+          "rel_err": 0.0,
+          "cos_sim": 0.9999999999999998,
+          "fails": 0,
+          "notes": []
+        },
+        "route_log": {
+          "kind": "exact",
+          "threshold": 0.0,
+          "max_abs_err": 0.0,
+          "rel_err": 0.0,
+          "cos_sim": 0.9999999999999998,
+          "fails": 0,
+          "notes": []
+        },
+        "topk ids vs reference logits": {
+          "kind": "exact",
+          "threshold": 0.0,
+          "max_abs_err": 0.0,
+          "rel_err": 0.0,
+          "cos_sim": 0.9999999999999998,
+          "fails": 0,
+          "notes": []
+        },
+        "counter": {
+          "kind": "exact",
+          "threshold": 0.0,
+          "max_abs_err": 0.0,
+          "rel_err": 0.0,
+          "cos_sim": 1.0,
+          "fails": 0,
+          "notes": [
+            "trial 0: reset by the last task",
+            "trial 1: reset by the last task",
+            "trial 2: reset by the last task",
+            "trial 3: reset by the last task",
+            "trial 4: reset by the last task"
+          ]
+        },
+        "h: four tasks vs one": {
+          "kind": "exact",
+          "threshold": 0.0,
+          "max_abs_err": 0.0,
+          "rel_err": 0.0,
+          "cos_sim": 0.9999999999999998,
+          "fails": 0,
+          "notes": []
+        },
+        "topk_w: four tasks vs one": {
+          "kind": "exact",
+          "threshold": 0.0,
+          "max_abs_err": 0.0,
+          "rel_err": 0.0,
+          "cos_sim": 0.9999999999999998,
+          "fails": 0,
+          "notes": []
+        },
+        "routing: four tasks vs one": {
+          "kind": "exact",
+          "threshold": 0.0,
+          "max_abs_err": 0.0,
+          "rel_err": 0.0,
+          "cos_sim": 0.9999999999999999,
+          "fails": 0,
+          "notes": []
+        },
+        "mask: four tasks vs one": {
+          "kind": "exact",
+          "threshold": 0.0,
+          "max_abs_err": 0.0,
+          "rel_err": 0.0,
+          "cos_sim": 0.9999999999999998,
+          "fails": 0,
+          "notes": []
+        },
+        "logits: four tasks vs one": {
+          "kind": "exact",
+          "threshold": 0.0,
+          "max_abs_err": 0.0,
+          "rel_err": 0.0,
+          "cos_sim": 0.9999999999999998,
+          "fails": 0,
+          "notes": []
+        },
+        "route_log: four tasks vs one": {
+          "kind": "exact",
+          "threshold": 0.0,
+          "max_abs_err": 0.0,
+          "rel_err": 0.0,
+          "cos_sim": 0.9999999999999998,
+          "fails": 0,
+          "notes": []
+        }
+      },
+      "failures": []
+    },
+    "copy": {
+      "result": "PASS",
+      "trials": 100,
+      "failed_trials": 0,
+      "outputs": {
+        "y": {
+          "kind": "exact",
+          "threshold": 0.0,
+          "max_abs_err": 0.0,
+          "rel_err": 0.0,
+          "cos_sim": 0.9999999999999998,
+          "fails": 0,
+          "notes": []
+        }
+      },
+      "failures": []
+    },
+    "prefetch": {
+      "result": "PASS",
+      "trials": 100,
+      "failed_trials": 0,
+      "outputs": {
+        "dummy": {
+          "kind": "exact",
+          "threshold": 0.0,
+          "max_abs_err": 0.0,
+          "rel_err": 0.0,
+          "cos_sim": 0.9999999999999998,
+          "fails": 0,
+          "notes": [
+            "trial 0: the XOR of every word of the stripe, per wave",
+            "trial 1: the XOR of every word of the stripe, per wave",
+            "trial 2: the XOR of every word of the stripe, per wave",
+            "trial 3: the XOR of every word of the stripe, per wave",
+            "trial 4: the XOR of every word of the stripe, per wave"
+          ]
+        }
+      },
+      "failures": []
+    },
+    "prefetch_moe": {
+      "result": "PASS",
+      "trials": 100,
+      "failed_trials": 0,
+      "outputs": {
+        "dummy": {
+          "kind": "exact",
+          "threshold": 0.0,
+          "max_abs_err": 0.0,
+          "rel_err": 0.0,
+          "cos_sim": 0.9999999999999998,
+          "fails": 0,
+          "notes": [
+            "trial 0: per (slot, part): the active expert's rows; sentinel past the count",
+            "trial 1: per (slot, part): the active expert's rows; sentinel past the count",
+            "trial 2: per (slot, part): the active expert's rows; sentinel past the count",
+            "trial 3: per (slot, part): the active expert's rows; sentinel past the count",
+            "trial 4: per (slot, part): the active expert's rows; sentinel past the count"
+          ]
+        }
+      },
+      "failures": []
+    },
+    "stream": {
+      "result": "PASS",
+      "trials": 100,
+      "failed_trials": 0,
+      "outputs": {
+        "dummy": {
+          "kind": "exact",
+          "threshold": 0.0,
+          "max_abs_err": 0.0,
+          "rel_err": 0.0,
+          "cos_sim": 0.9999999999999998,
+          "fails": 0,
+          "notes": [
+            "trial 0: the XOR of every word the task loaded, per wave",
+            "trial 1: the XOR of every word the task loaded, per wave",
+            "trial 2: the XOR of every word the task loaded, per wave",
+            "trial 3: the XOR of every word the task loaded, per wave",
+            "trial 4: the XOR of every word the task loaded, per wave"
+          ]
+        }
+      },
+      "failures": []
+    },
+    "linear_gemv": {
+      "result": "PASS",
+      "trials": 100,
+      "failed_trials": 0,
+      "outputs": {
+        "out": {
+          "kind": "bf16",
+          "threshold": 0.002,
+          "max_abs_err": 0.0078125,
+          "rel_err": 0.00013162755116653179,
+          "cos_sim": 0.9999999913440961,
+          "fails": 0,
+          "notes": []
+        }
+      },
+      "failures": []
+    },
+    "linear_gemv_norm": {
+      "result": "PASS",
+      "trials": 100,
+      "failed_trials": 0,
+      "outputs": {
+        "out": {
+          "kind": "bf16",
+          "threshold": 0.002,
+          "max_abs_err": 0.0078125,
+          "rel_err": 0.00012723658490671976,
+          "cos_sim": 0.9999999919127864,
+          "fails": 0,
+          "notes": []
+        }
+      },
+      "failures": []
+    },
+    "linear_gemv_res": {
+      "result": "PASS",
+      "trials": 100,
+      "failed_trials": 0,
+      "outputs": {
+        "out": {
+          "kind": "bf16",
+          "threshold": 0.002,
+          "max_abs_err": 0.015625,
+          "rel_err": 0.0002357213852740831,
+          "cos_sim": 0.9999999722434031,
+          "fails": 0,
+          "notes": []
+        }
+      },
+      "failures": []
+    },
+    "gang_w13_gemv": {
+      "result": "PASS",
+      "trials": 100,
+      "failed_trials": 0,
+      "outputs": {
+        "mid": {
+          "kind": "bf16",
+          "threshold": 0.002,
+          "max_abs_err": 0.015625,
+          "rel_err": 0.00010541628914560223,
+          "cos_sim": 0.9999999944459791,
+          "fails": 0,
+          "notes": []
+        }
+      },
+      "failures": []
+    },
+    "gang_w2_gemv": {
+      "result": "PASS",
+      "trials": 100,
+      "failed_trials": 0,
+      "outputs": {
+        "out8": {
+          "kind": "bf16",
+          "threshold": 0.002,
+          "max_abs_err": 0.015625,
+          "rel_err": 0.0002762019395173348,
+          "cos_sim": 0.9999999618564334,
+          "fails": 0,
+          "notes": []
+        }
+      },
+      "failures": []
+    },
+    "mla_attend_scores": {
+      "result": "PASS",
+      "trials": 100,
+      "failed_trials": 0,
+      "outputs": {
+        "partials.o": {
+          "kind": "rel",
+          "threshold": 0.0005,
+          "max_abs_err": 0.004870414733886719,
+          "rel_err": 0.00012798732052364016,
+          "cos_sim": 0.9999999918129354,
+          "fails": 0,
+          "notes": []
+        },
+        "partials.lse[empty splits]": {
+          "kind": "exact",
+          "threshold": 0.0,
+          "max_abs_err": 0.0,
+          "rel_err": 0.0,
+          "cos_sim": 1.0,
+          "fails": 0,
+          "notes": []
+        },
+        "partials.lse": {
+          "kind": "abs",
+          "threshold": 0.0001,
+          "max_abs_err": 5.7220458984375e-06,
+          "rel_err": 1.2989450015165532e-07,
+          "cos_sim": 0.9999999999999917,
+          "fails": 0,
+          "notes": []
+        },
+        "scores[:, :step+1]": {
+          "kind": "rel",
+          "threshold": 0.0001,
+          "max_abs_err": 9.5367431640625e-06,
+          "rel_err": 1.9426245444132434e-07,
+          "cos_sim": 0.9999999999999811,
+          "fails": 0,
+          "notes": []
+        },
+        "scores[:, step+1:]": {
+          "kind": "exact",
+          "threshold": 0.0,
+          "max_abs_err": 0.0,
+          "rel_err": 0.0,
+          "cos_sim": 1.0,
+          "fails": 0,
+          "notes": []
+        }
+      },
+      "failures": []
+    },
+    "mla_attend_splits": {
+      "result": "PASS",
+      "trials": 100,
+      "failed_trials": 0,
+      "outputs": {
+        "o: 33 splits merged vs 1 split": {
+          "kind": "rel",
+          "threshold": 0.01,
+          "max_abs_err": 0.0022478103637695312,
+          "rel_err": 0.0009194125963519254,
+          "cos_sim": 0.9999995773520118,
+          "fails": 0,
+          "notes": []
+        },
+        "lse: 33 splits merged vs 1 split": {
+          "kind": "abs",
+          "threshold": 0.0001,
+          "max_abs_err": 9.5367431640625e-07,
+          "rel_err": 6.380535404252507e-08,
+          "cos_sim": 0.999999999999998,
+          "fails": 0,
+          "notes": []
+        },
+        "1 split vs numpy_ref.o": {
+          "kind": "rel",
+          "threshold": 0.01,
+          "max_abs_err": 0.0025212764739990234,
+          "rel_err": 0.0009548357040732334,
+          "cos_sim": 0.9999995442114149,
+          "fails": 0,
+          "notes": []
+        },
+        "1 split vs numpy_ref.lse[empty splits]": {
+          "kind": "exact",
+          "threshold": 0.0,
+          "max_abs_err": 0.0,
+          "rel_err": 0.0,
+          "cos_sim": 1.0,
+          "fails": 0,
+          "notes": []
+        },
+        "1 split vs numpy_ref.lse": {
+          "kind": "abs",
+          "threshold": 0.0001,
+          "max_abs_err": 5.7220458984375e-06,
+          "rel_err": 1.3823108383033433e-07,
+          "cos_sim": 0.9999999999999921,
+          "fails": 0,
+          "notes": []
+        },
+        "attn(33 splits) vs numpy_ref merge of the kernel's partials": {
+          "kind": "bf16",
+          "threshold": 0.002,
+          "max_abs_err": 0.00390625,
+          "rel_err": 0.0003722111724252989,
+          "cos_sim": 0.9999999308918638,
+          "fails": 0,
+          "notes": []
+        },
+        "attn(1 split) vs numpy_ref merge of the kernel's partials": {
+          "kind": "bf16",
+          "threshold": 0.002,
+          "max_abs_err": 0.001953125,
+          "rel_err": 0.00011611340250978232,
+          "cos_sim": 0.9999999932617185,
+          "fails": 0,
+          "notes": []
+        },
+        "attn: 33 splits vs 1 split": {
+          "kind": "rel",
+          "threshold": 0.01,
+          "max_abs_err": 0.015625,
+          "rel_err": 0.002826874886579171,
+          "cos_sim": 0.9999960095094033,
+          "fails": 0,
+          "notes": []
+        }
+      },
+      "failures": []
+    }
+  },
+  "overall": "PASS"
+}
