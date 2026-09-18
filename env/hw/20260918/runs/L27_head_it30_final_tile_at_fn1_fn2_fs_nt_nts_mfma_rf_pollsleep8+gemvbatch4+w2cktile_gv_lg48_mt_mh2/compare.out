@@ -1,0 +1,73 @@
+PASS         L0.B3.c_kv                   rel_err 0.000 thr 0.181
+PASS         L0.B3.k_pe                   rel_err 0.000 thr 0.021
+PASS         L1.B3.c_kv                   rel_err 6.172e-03 thr 0.181
+PASS         L1.B3.k_pe                   rel_err 5.517e-03 thr 0.021
+NOT_CAPTURED L2.B3.c_kv                   the reference captures layers 0, 1
+NOT_CAPTURED L2.B3.k_pe                   the reference captures layers 0, 1
+NOT_CAPTURED L3.B3.c_kv                   the reference captures layers 0, 1
+NOT_CAPTURED L3.B3.k_pe                   the reference captures layers 0, 1
+NOT_CAPTURED L4.B3.c_kv                   the reference captures layers 0, 1
+NOT_CAPTURED L4.B3.k_pe                   the reference captures layers 0, 1
+NOT_CAPTURED L5.B3.c_kv                   the reference captures layers 0, 1
+NOT_CAPTURED L5.B3.k_pe                   the reference captures layers 0, 1
+NOT_CAPTURED L6.B3.c_kv                   the reference captures layers 0, 1
+NOT_CAPTURED L6.B3.k_pe                   the reference captures layers 0, 1
+NOT_CAPTURED L7.B3.c_kv                   the reference captures layers 0, 1
+NOT_CAPTURED L7.B3.k_pe                   the reference captures layers 0, 1
+NOT_CAPTURED L8.B3.c_kv                   the reference captures layers 0, 1
+NOT_CAPTURED L8.B3.k_pe                   the reference captures layers 0, 1
+NOT_CAPTURED L9.B3.c_kv                   the reference captures layers 0, 1
+NOT_CAPTURED L9.B3.k_pe                   the reference captures layers 0, 1
+NOT_CAPTURED L10.B3.c_kv                  the reference captures layers 0, 1
+NOT_CAPTURED L10.B3.k_pe                  the reference captures layers 0, 1
+NOT_CAPTURED L11.B3.c_kv                  the reference captures layers 0, 1
+NOT_CAPTURED L11.B3.k_pe                  the reference captures layers 0, 1
+NOT_CAPTURED L12.B3.c_kv                  the reference captures layers 0, 1
+NOT_CAPTURED L12.B3.k_pe                  the reference captures layers 0, 1
+NOT_CAPTURED L13.B3.c_kv                  the reference captures layers 0, 1
+NOT_CAPTURED L13.B3.k_pe                  the reference captures layers 0, 1
+NOT_CAPTURED L14.B3.c_kv                  the reference captures layers 0, 1
+NOT_CAPTURED L14.B3.k_pe                  the reference captures layers 0, 1
+NOT_CAPTURED L15.B3.c_kv                  the reference captures layers 0, 1
+NOT_CAPTURED L15.B3.k_pe                  the reference captures layers 0, 1
+NOT_CAPTURED L16.B3.c_kv                  the reference captures layers 0, 1
+NOT_CAPTURED L16.B3.k_pe                  the reference captures layers 0, 1
+NOT_CAPTURED L17.B3.c_kv                  the reference captures layers 0, 1
+NOT_CAPTURED L17.B3.k_pe                  the reference captures layers 0, 1
+NOT_CAPTURED L18.B3.c_kv                  the reference captures layers 0, 1
+NOT_CAPTURED L18.B3.k_pe                  the reference captures layers 0, 1
+NOT_CAPTURED L19.B3.c_kv                  the reference captures layers 0, 1
+NOT_CAPTURED L19.B3.k_pe                  the reference captures layers 0, 1
+NOT_CAPTURED L20.B3.c_kv                  the reference captures layers 0, 1
+NOT_CAPTURED L20.B3.k_pe                  the reference captures layers 0, 1
+NOT_CAPTURED L21.B3.c_kv                  the reference captures layers 0, 1
+NOT_CAPTURED L21.B3.k_pe                  the reference captures layers 0, 1
+NOT_CAPTURED L22.B3.c_kv                  the reference captures layers 0, 1
+NOT_CAPTURED L22.B3.k_pe                  the reference captures layers 0, 1
+NOT_CAPTURED L23.B3.c_kv                  the reference captures layers 0, 1
+NOT_CAPTURED L23.B3.k_pe                  the reference captures layers 0, 1
+NOT_CAPTURED L24.B3.c_kv                  the reference captures layers 0, 1
+NOT_CAPTURED L24.B3.k_pe                  the reference captures layers 0, 1
+NOT_CAPTURED L25.B3.c_kv                  the reference captures layers 0, 1
+NOT_CAPTURED L25.B3.k_pe                  the reference captures layers 0, 1
+NOT_CAPTURED L26.B2.q                     the reference captures layers 0, 1
+NOT_CAPTURED L26.B3.c_kv                  the reference captures layers 0, 1
+NOT_CAPTURED L26.B3.k_pe                  the reference captures layers 0, 1
+NOT_CAPTURED L26.B4.q_pe                  the reference captures layers 0, 1
+NOT_CAPTURED L26.B6.attn                  the reference captures layers 0, 1
+NOT_CAPTURED L26.B8.router_logits         the reference captures layers 0, 1
+NOT_CAPTURED L26.B9.topk_idx              the reference captures layers 0, 1
+NOT_CAPTURED L26.B10.topk_w               the reference captures layers 0, 1
+NOT_CAPTURED L26.B11.expert_10            the reference captures layers 0, 1
+NOT_CAPTURED L26.B11.expert_14            the reference captures layers 0, 1
+NOT_CAPTURED L26.B11.expert_19            the reference captures layers 0, 1
+NOT_CAPTURED L26.B11.expert_2             the reference captures layers 0, 1
+NOT_CAPTURED L26.B11.expert_23            the reference captures layers 0, 1
+NOT_CAPTURED L26.B11.expert_50            the reference captures layers 0, 1
+NOT_CAPTURED L26.B12.shared               the reference captures layers 0, 1
+NOT_CAPTURED L26.B13.layer_out            the reference captures layers 0, 1
+NOT_COMPARABLE head.B15.logits              dumped from iteration 29; the reference has no ref_boundaries_step29
+PASS         head.B16.token               fleet 25 ref 25
+PARTIAL      output_ids
+PASS         route_log
+overall: PASS  -> /home/hotaisle/metalOps/harness/fleet_out/L27_head_it30_final_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_pollsleep8+gemvbatch4+w2cktile_gv_lg48_mt_mh2/correctness_report.md

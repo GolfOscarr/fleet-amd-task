@@ -31,3 +31,9 @@
 2026-09-18T12:06:50Z L27_head_it32_final_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_gemvbatch4+w2cktile_gv_lg48_mt_mh2 PASS rc=0 mpk=1 fault=0 fwd=31 wall=68s compare=PASS table=PASS
 2026-09-18T12:07:58Z L27_head_it29_final_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_gemvbatch4+w2cktile_gv_lg48_mt_mh2 PASS rc=0 mpk=1 fault=0 fwd=28 wall=68s table=PASS
 2026-09-18T12:07:58Z DONE env/session/queue-h6.txt
+2026-09-18T12:18:42Z L27_head_it30_final_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_pollsleep8+gemvbatch4+w2cktile_gv_lg48_mt_mh2 PASS rc=0 mpk=1 fault=0 fwd=29 wall=68s compare=PASS table=PASS
+2026-09-18T12:19:50Z L27_head_it29_final_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_pollsleep8+gemvbatch4+w2cktile_gv_lg48_mt_mh2 PASS rc=0 mpk=1 fault=0 fwd=28 wall=68s table=PASS
+2026-09-18T12:21:00Z L27_head_it30_final_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_pollsleep16+w2cktile_gv_lg48_mt_mh2 PASS rc=0 mpk=1 fault=0 fwd=29 wall=68s compare=PASS table=PASS
+2026-09-18T12:22:11Z L27_head_it30_final_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_pollsleep4+w2cktile_gv_lg48_mt_mh2 PASS rc=0 mpk=1 fault=0 fwd=29 wall=68s compare=PASS table=PASS
+2026-09-18T12:23:19Z L27_head_it29_final_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_pollsleep16+w2cktile_gv_lg48_mt_mh2 PASS rc=0 mpk=1 fault=0 fwd=28 wall=68s table=PASS
+2026-09-18T12:23:19Z DONE env/session/queue-h0.txt
