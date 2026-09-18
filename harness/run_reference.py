@@ -133,7 +133,9 @@ def moe_layers(model):
 
 def register_route_hooks(model, cap):
     for l in moe_layers(model):
-        cap.out_tuple(model.model.layers[l].mlp.gate, f"route.L{l}")
+        gate = model.model.layers[l].mlp.gate
+        cap.out_tuple(gate, f"route.L{l}")
+        cap.inp(gate, f"gate_in.L{l}")     # F1 of docs/gpu-experiments/05-final: the 64 weights (route_weights)
 
 
 def register_kva_hooks(model, cap):
@@ -252,12 +254,30 @@ def ordered_topk(idx, w):
     return [p[0] for p in pairs], [p[1] for p in pairs]
 
 
+def route_weights(model, l, cap, n_rows=1):
+    """The gate's softmax weights over every routed expert for the captured token, computed as the
+    model's own gate does (modeling_deepseek.MoEGate.forward: F.linear in float32, softmax in
+    float32; this checkpoint routes greedily, norm_topk_prob false, routed_scaling_factor 1.0, so
+    the top-k weights the gate returns are these values at the chosen ids, which route_entry
+    checks). F1 of docs/gpu-experiments/05-final: the compare's tie rule reads them."""
+    gate = model.model.layers[l].mlp.gate
+    h = first_row(cap.store[f"gate_in.L{l}"], n_rows)
+    h = h.reshape(-1, h.shape[-1])[0:1]                       # the same token as route.L{l}[...][0]
+    logits = F.linear(h.to(torch.float32), gate.weight.to(torch.float32))
+    return logits.softmax(dim=-1, dtype=torch.float32)[0]
+
+
 def route_entry(model, cap, n_rows=1):
     out = []
     for l in moe_layers(model):
         idx, w = ordered_topk(first_row(cap.store[f"route.L{l}"][0], n_rows)[0],
                               first_row(cap.store[f"route.L{l}"][1], n_rows)[0])
-        out.append({"idx": idx, "w": w})
+        w_all = route_weights(model, l, cap, n_rows)
+        at_ids = [float(w_all[i]) for i in idx]
+        if not torch.allclose(torch.tensor(at_ids), torch.tensor(w, dtype=torch.float32), rtol=1e-5, atol=1e-6):
+            raise RuntimeError(f"route.L{l}: the gate's top-k weights {w} are not the softmax weights at their ids "
+                               f"{at_ids}; route_weights must follow the gate's scoring (F1, docs/gpu-experiments/05-final)")
+        out.append({"idx": idx, "w": w, "w_all": [round(float(x), 7) for x in w_all.tolist()]})
     return out
 
 

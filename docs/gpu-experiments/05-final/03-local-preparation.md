@@ -39,9 +39,9 @@ Approach.
    boundaries (`L{l}.B8.router_logits`, `F.linear(h_in, w_gate)` at line
    297, layer 1 only): the same expression for every MoE layer at every
    step, its softmax as the weights. `route_entry` gains a third field per
-   layer, `"w_all"`: the 64 softmax weights (float32, rounded to 6 digits;
-   64 x 26 x 32 values, about 250 KB in `ref_route_log.json`, or a second
-   file `ref_route_weights.json` if the log's readers should not change).
+   layer, `"w_all"`: the 64 softmax weights (rounded to 7 decimals; 64 x
+   26 x 32 values, about 0.6 MB in `ref_route_log.json`; the log's readers
+   (`route_analysis.py`, the compare) take the extra key without change).
    The hidden state the logits need is the layer's post-attention normed
    input, which the capture has for layer 1 at step 0; for every layer and
    step it is one more hook on the gate's input (`cap.inp(gate, key)`, the

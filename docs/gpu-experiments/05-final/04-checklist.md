@@ -26,13 +26,13 @@ Status: done 2026-09-18. `FINAL_STACK` and `FINAL_DEFINE` in `run_fleet.py`; `ap
 
 ## F1. The route log's tie rule
 
-- [ ] `run_reference.py`: `w_all` per (step, MoE layer), the 64 softmax weights from the gate's input and weight
-- [ ] `compare_route_log`: tie, cascade, disagreement; the counts in the report; FAIL on a disagreement only; the old format keeps the exact rule
-- [ ] `test_compare.py`: the four cases (tie, disagreement, cascade, old format)
-- [ ] the replay on the fifteen round-4 finals: zero disagreements
-- [ ] `harness/README.md`
+- [x] `run_reference.py`: `w_all` per (step, MoE layer), the 64 softmax weights from the gate's input and weight
+- [x] `compare_route_log`: tie, cascade, disagreement; the counts in the report; FAIL on a disagreement only; the old format keeps the exact rule
+- [x] `test_compare.py`: the four cases (tie, disagreement, cascade, old format)
+- [x] the replay on the fifteen round-4 finals: zero disagreements
+- [x] `harness/README.md`
 
-Status: open.
+Status: done 2026-09-18. `register_route_hooks` adds a pre-hook on each gate's input; `route_weights` computes the softmax over the 64 routed experts exactly as the model's gate does (`F.linear` and the softmax in float32; the checkpoint's config: `scoring_func` softmax, `topk_method` greedy, `norm_topk_prob` false, `routed_scaling_factor` 1.0), and `route_entry` raises if the gate's own top-k weights are not those values at their ids (the formula guard), then stores `w_all` rounded to 7 decimals beside `idx` and `w`. `compare_route_log(ref, fleet, router_floor)`: with `w_all` in every entry the tie rule (`tol_rel` = 4 x the calibrated router floor, `ROUTE_TOL_FALLBACK` 0.015 without a calibration; a single swap within the tolerance is a tie, any mismatch after a tie or cascade a cascade, the rest disagreements; only ties seed cascades), otherwise the exact rule with the result's `rule` field saying which; the report line carries the counts and the tolerance. Checks: 243 tests (three new: the tie, cascade and disagreement classes with a calibration file and with the fallback; the exact rule on a reference without weights; the replay over the fifteen 48-task finals of the record, every mismatch a single swap or a multi-expert difference after one); the smoke reference run writes `w_all` of length 8 whose values at the top-k ids equal the gate's weights, and the self-check ran on every step. The tolerance's fit to the real reference is read on the VM (R1: one tie expected at step 0, MoE layer 4).
 
 ## F2. Iteration-aware boundaries
 
