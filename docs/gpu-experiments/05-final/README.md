@@ -20,9 +20,11 @@ produces the final numbers with every check green.
 | [`04-checklist.md`](04-checklist.md) | the progress record: one box per deliverable, ticked only when its check has run; the boxes before the VM |
 | [`05-session-plan.md`](05-session-plan.md) | the session: one command per row with its PASS text, the DECIDE rows (the balance, A1, A2, R1, R4, R5), the queue files, the protocol, the playbook with round 4's additions, the budget against the $4.69 balance and the decision it forces |
 | [`06-rehearsal.md`](06-rehearsal.md) | every command of the session expanded in DRY mode by `ROUND=5 env/session/rehearse.sh`: the stages and the queue rows as `run_fleet.py` lines |
+| [`07-final-numbers.md`](07-final-numbers.md) | the results page, drafted before the session with round 4's and round 3's numbers in place and the round-5 rows empty: the number, the compare made green, the head's events, the fault's location, the timing build, the decisions |
 
 ## Status
 
 | Date | State |
 |---|---|
 | 2026-09-18 | branch `local/round-5` made from round 4's head and rebased onto `main` after PR #11 merged (51724a0); the ideas and the split written, then the preparation (`03`) and the checklist (`04`) with the double-check that revised the ideas (A1 settled by reading, L2's first suspect out, N3 a plan constant); no VM |
+| 2026-09-18 | the laptop items done in the order of `03` Part 3: F3 the `--final` preset (13b3cc6), F1 the tie rule (the commit after it), F2 the iteration-aware boundaries (02b2ec3), F7 the head's event count (0d2b3fb), F8 the tooling and the session plan (e509fdc), F5 the fault read with R4 redesigned as a 2-layer locator (37ff3e0), F4 the timing hang fixed by the buffer form (e3c418c), F6 the merge's 5 us read (bb59318); F9 the gate: 251 tests, the syntax check, 22 offline units, the preflight at 9 PASS, the fork pristine; `07` drafted. The VM waits on the balance decision and the go |

@@ -115,13 +115,13 @@ So the round trips are not it: the deeper form makes one trip fewer. The cost is
 
 ## F9. The checklist and the gate
 
-- [ ] every box above ticked or explicitly deferred with its reason
-- [ ] the suite, `check_syntax.sh`, the offline compile of every variant (`unionT` included), `preflight.sh` 9 PASS with shellcheck
-- [ ] the fork at zero dirty tracked lines after the patch check
-- [ ] `07-final-numbers.md` drafted with the round-4 numbers and the round-5 rows empty
-- [ ] the memory note
+- [x] every box above ticked or explicitly deferred with its reason (one deferral: F2's right form, the reference's later-step dump, with its reason in F2)
+- [x] the suite, `check_syntax.sh`, the offline compile of every variant (`unionT` included), `preflight.sh` 9 PASS with shellcheck
+- [x] the fork at zero dirty tracked lines after the patch check
+- [x] `07-final-numbers.md` drafted with the round-4 numbers and the round-5 rows empty
+- [x] the memory note
 
-Status: open.
+Status: done 2026-09-18. The gate on the final tree (head bb59318 plus this commit): 251 tests; `check_syntax.sh` 15 PASS, 0 FAIL; the offline pass of F4 on the current patch, 22 of 22 units exit 0 (`unionT` the 18th megakernel variant, the host syntax check, the four launcher builds), no kernel or patch changed since; `SHELLCHECK=1 env/preflight.sh` 9 PASS (the three patches apply in order on a clean worktree); the fork at 51dce4f with zero dirty tracked lines (the untracked kernel copies of the day-1 setup stay). `07-final-numbers.md` drafted: the number's table with round 3's and round 4's rows filled and A, B and the optional sets empty; the compare rows with round 4's reading and the expected counts; the head's events against round 4's 49 events and 111 us; the fault's locator rows; the timing build and the merge's `ktime` line; the DECIDE table with the round-4 column filled. The set's README (the `07` row, the status row of the day), `PROGRESS.md`, the root README's pointer row and the memory note updated. The counts of the checklist's header (237 tests, 15 PASS) are the round-4 figures the page was drafted with; the current ones are 251 and 15.
 
 ## Before the VM
 
