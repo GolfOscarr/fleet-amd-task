@@ -88,6 +88,31 @@ def test_tiles_and_params():
     assert len(by_type["mla_prep_mi300"]) == 27 and len(by_type["moe_router_mi300"]) == 26
 
 
+def test_argmax_slices_sets_the_heads_event_count():
+    """F7 of docs/gpu-experiments/05-final: the runtime makes the head's event count gcd(head tasks,
+    argmax slices); at the design's 50 that is 50 events of 8 tasks (the record's 49 gaps of 2.3 us),
+    at 8 it is 8. The plan's argmax operator, its outputs and the reduce's chunk follow the argument."""
+    base, calls = B.dry_run(layers=27, head=True, gemv_linears=True)
+    by = {c.label: c for c in base.calls}
+    assert by["head.argmax_partial"].tasks == 50 and base.tensors["amax_v"].shape == (1, 50)
+    p8, calls8 = B.dry_run(layers=27, head=True, gemv_linears=True, argmax_slices=8)
+    by8 = {c.label: c for c in p8.calls}
+    assert by8["head.argmax_partial"].tasks == 8 and by8["head.argmax_partial"].args["grid_dim"] == (8, 1, 1)
+    assert p8.tensors["amax_v"].shape == (1, 8) and p8.tensors["amax_i"].shape == (1, 8)
+    assert by8["head.lm_head"].tasks == 400                        # the head itself is untouched
+    assert p8.n_ops == base.n_ops and p8.n_tasks == base.n_tasks - 42
+    import math
+    assert math.gcd(400, 50) == 50 and math.gcd(400, 8) == 8 and math.gcd(320, 8) == 8 and math.gcd(320, 50) == 10
+    by_type = {}
+    for c in calls8:
+        by_type.setdefault(c["task_type"], []).append(c)
+    assert by_type["argmax_partial"][0]["params"] == [8]
+    assert by_type["argmax_reduce"][0]["params"] == [REAL_DIMS.V // 8, 1]     # 12,800 logits per task
+    assert not p8.chain_violations()
+    with pytest.raises(AssertionError):
+        B.dry_run(layers=1, head=True, argmax_slices=7)                   # 102,400 is not a multiple of 7
+
+
 def test_float_bits_round_trips():
     import struct
     for x in (0.1147213867929261, 1.0, -2.5):

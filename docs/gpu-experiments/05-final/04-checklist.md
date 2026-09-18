@@ -46,11 +46,11 @@ Status: done 2026-09-18 (the right form deferred with its reason). `common.bound
 
 ## F7. The head's event count
 
-- [ ] `graph_plan.py`: `argmax_slices` (default 50); `run_fleet.py --argmax-slices N`
-- [ ] `test_graph_plan.py`: the counts at 50 and 8; the dry run
-- [ ] `fleet/tasks/README.md`
+- [x] `graph_plan.py`: `argmax_slices` (default 50); `run_fleet.py --argmax-slices N`
+- [x] `test_graph_plan.py`: the counts at 50 and 8; the dry run
+- [x] `fleet/tasks/README.md`
 
-Status: open.
+Status: done 2026-09-18. `build_plan(..., argmax_slices=ARGMAX_SLICES)` threads the count through `dry_run` and `build` to the head's `argmax_partial` operator and the two `amax_*` shapes (the reduce's chunk parameter follows from the grid, 12,800 at 8); `run_fleet.py --argmax-slices N` passes it to both plan call sites and names the run `_as{N}` (no slug at the default). The stock kernels loop over their slice with a stride (`argmax_mi300.cuh`), so any divisor of the vocabulary is legal; a non-divisor fails the plan's assert. Checks: 249 tests (two new: at 8 the argmax has 8 tasks, `(1, 8)` outputs, the reduce's chunk 12,800, the operator count unchanged and the task count 42 lower, the gcd arithmetic 50 and 8 at 400 tasks and 10 and 8 at 320, a non-divisor raising; the flag's run name and its reach into the plan); the suite's dry runs. The event count itself is the runtime's and is read on the VM (R5: the head's events from 50 to 8 in the report table).
 
 ## F8. The session tooling
 

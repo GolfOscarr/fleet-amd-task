@@ -372,6 +372,20 @@ def test_final_preset_keeps_every_flag_named_on_the_command_line():
     assert not a.gemv_linears and a.runtime_flags == [] and run_fleet.run_name(a) == "S10x96_152kb_it32"
 
 
+def test_argmax_slices_flag_names_the_run_and_reaches_the_plan():
+    """F7 of docs/gpu-experiments/05-final."""
+    a = run_fleet.parse_args(["--layers", "2", "--head", "--iters", "32", "--final", "--argmax-slices", "8",
+                              "--model-dir", "x"])
+    assert a.argmax_slices == 8 and run_fleet.run_name(a).endswith("_gv_lg48_mt_mh2_as8")
+    a = run_fleet.parse_args(["--layers", "27", "--head", "--iters", "30", "--final", "--model-dir", "x"])
+    assert a.argmax_slices is None and not run_fleet.run_name(a).endswith("_as50")     # the default has no slug
+    sys.path.insert(0, str(ROOT))
+    from fleet import build_graph as B
+    plan, _ = B.dry_run(layers=2, head=True, gemv_linears=True, linear_grid=48, merge_tasks=True, merge_halves=2,
+                        argmax_slices=8)
+    assert {c.label: c for c in plan.calls}["head.argmax_partial"].tasks == 8
+
+
 def test_final_preset_builds_the_finals_plan():
     """The round-4 finals' plan.json in the record: 246 operators and 6,386 tasks."""
     sys.path.insert(0, str(ROOT))
