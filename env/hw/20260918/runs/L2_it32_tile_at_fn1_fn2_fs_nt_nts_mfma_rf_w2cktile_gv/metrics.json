@@ -1,0 +1,222 @@
+{
+  "run_dir": "/home/hotaisle/metalOps/harness/fleet_out/L2_it32_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_w2cktile_gv",
+  "predicted": {
+    "bytes_per_iteration_MiB": {
+      "weights_and_cache": 4709.9,
+      "with_activations_and_partials": 4772.0
+    },
+    "time_per_iteration_us": {
+      "bandwidth_floor_at_5.3TBs": 931.8,
+      "band_at_4.3TBs": 1148.5,
+      "band_at_3.66TBs": 1349.4,
+      "boundaries": 326,
+      "t_b_us": "unknown"
+    },
+    "layer1_MiB": 159.63,
+    "layer1_us_band": [
+      38.9,
+      45.7
+    ],
+    "layer1_boundaries": 12,
+    "launches_per_generation": 3,
+    "release_flushes_per_iteration": 1838
+  },
+  "kernel_filter": "prepare_kernel,worker_kernel,scheduler_kernel,persistent_kernel",
+  "wall": {
+    "mpk_wall_s": 0.03367805480957031,
+    "iters": 32,
+    "pack_s": 0.5637478828430176,
+    "build_s": 40.7339141368866,
+    "per_iteration_us_from_wall": 1052.4392127990723
+  },
+  "fwd_pass": {
+    "iterations_logged": 0,
+    "per_iteration_us": {
+      "p50": null,
+      "p95": null
+    },
+    "first_five_us": []
+  },
+  "clock": {
+    "samples": 35,
+    "gfx_mhz_median": 2107.0,
+    "gfx_mhz_max": 2107.0,
+    "gfx_mhz_min": 132.0,
+    "mem_mhz_median": 900.0,
+    "mem_mhz_max": 1214.0
+  },
+  "run_meta": {
+    "graph": null,
+    "ops": 18,
+    "tasks_per_op": null,
+    "kb": null,
+    "gang": null,
+    "iters": 32
+  },
+  "event_timing": {
+    "num_events": 498,
+    "firings": 608,
+    "per_iteration_us": {
+      "p50": 495.44,
+      "p95": 509.07,
+      "mean": 460.3025806451613,
+      "min": 325.57,
+      "max": 511.32,
+      "n": 31
+    },
+    "per_op": [
+      {
+        "event": 1,
+        "op": "iteration_start",
+        "mean_us": 138.54399999999998,
+        "min_us": 7.36,
+        "max_us": 191.72,
+        "n": 30
+      },
+      {
+        "event": 2,
+        "op": "embed_layer",
+        "mean_us": 12.707096774193548,
+        "min_us": 11.28,
+        "max_us": 14.16,
+        "n": 31
+      },
+      {
+        "event": 3,
+        "op": "linear_gemv_layer",
+        "mean_us": 23.84741935483871,
+        "min_us": 22.490000000000002,
+        "max_us": 26.92,
+        "n": 31
+      },
+      {
+        "event": 4,
+        "op": "mla_prep_layer",
+        "mean_us": 9.881935483870969,
+        "min_us": 9.35,
+        "max_us": 10.27,
+        "n": 31
+      },
+      {
+        "event": 5,
+        "op": "mla_attend_layer",
+        "mean_us": 11.41225806451613,
+        "min_us": 11.06,
+        "max_us": 11.85,
+        "n": 31
+      },
+      {
+        "event": 6,
+        "op": "mla_merge_uv_layer",
+        "mean_us": 22.156129032258065,
+        "min_us": 20.97,
+        "max_us": 23.88,
+        "n": 31
+      },
+      {
+        "event": 7,
+        "op": "linear_gemv_layer",
+        "mean_us": 8.20774193548387,
+        "min_us": 7.4,
+        "max_us": 10.08,
+        "n": 31
+      },
+      {
+        "event": 8,
+        "op": "rmsnorm_layer",
+        "mean_us": 4.574193548387097,
+        "min_us": 3.29,
+        "max_us": 5.25,
+        "n": 31
+      },
+      {
+        "event": 9,
+        "op": "gang_linear_silu_layer",
+        "mean_us": 33.017741935483876,
+        "min_us": 31.95,
+        "max_us": 35.910000000000004,
+        "n": 31
+      },
+      {
+        "event": 10,
+        "op": "linear_with_residual_layer",
+        "mean_us": 50.73451612903226,
+        "min_us": 49.52,
+        "max_us": 52.08,
+        "n": 31
+      },
+      {
+        "event": 11,
+        "op": "linear_gemv_layer",
+        "mean_us": 11.205806451612903,
+        "min_us": 10.67,
+        "max_us": 11.9,
+        "n": 31
+      },
+      {
+        "event": 12,
+        "op": "mla_prep_layer",
+        "mean_us": 9.576451612903226,
+        "min_us": 9.040000000000001,
+        "max_us": 11.44,
+        "n": 31
+      },
+      {
+        "event": 13,
+        "op": "mla_attend_layer",
+        "mean_us": 11.300967741935484,
+        "min_us": 10.78,
+        "max_us": 11.67,
+        "n": 31
+      },
+      {
+        "event": 14,
+        "op": "mla_merge_uv_layer",
+        "mean_us": 22.15806451612903,
+        "min_us": 21.080000000000002,
+        "max_us": 24.560000000000002,
+        "n": 31
+      },
+      {
+        "event": 15,
+        "op": "linear_gemv_layer",
+        "mean_us": 8.05258064516129,
+        "min_us": 6.53,
+        "max_us": 10.08,
+        "n": 31
+      },
+      {
+        "event": 16,
+        "op": "moe_router_layer",
+        "mean_us": 16.178709677419356,
+        "min_us": 14.13,
+        "max_us": 17.28,
+        "n": 31
+      },
+      {
+        "event": 17,
+        "op": "gang_moe_w13_linear_layer",
+        "mean_us": 40.697741935483876,
+        "min_us": 38.25,
+        "max_us": 43.53,
+        "n": 31
+      },
+      {
+        "event": 18,
+        "op": "gang_moe_w2_silu_linear_layer",
+        "mean_us": 21.401612903225807,
+        "min_us": 20.47,
+        "max_us": 23.07,
+        "n": 31
+      },
+      {
+        "event": 19,
+        "op": "moe_mul_sum_add_layer",
+        "mean_us": 3.101290322580645,
+        "min_us": 2.91,
+        "max_us": 4.24,
+        "n": 31
+      }
+    ]
+  }
+}

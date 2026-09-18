@@ -1,0 +1,7 @@
+# Round 4, the finals' compare bisect (2026-09-18, on the VM): the finals passed output_ids but failed
+# head.B15.logits (rel_err 0.8 to 1.2 against 0.16) and route_log. Two levers of the finals were never
+# compared on the laptop's rows: the GEMV head (the 2-layer head rows are timing-only) and the 48-task
+# grid. R1 is the finals' stack at grid 96; R2 the finals' stack without the GEMV linears. One iteration,
+# 27 layers and the head, the step-0 boundaries and the route log.
+--layers 27 --head --iters 1 --tile-linears --nt-weights --event-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend --attend-tasks --nt-streams --gemv-linears --runtime-flags=-DMPK_W2_CK_TILE --merge-tasks --merge-halves 2 compare continue
+--layers 27 --head --iters 1 --tile-linears --nt-weights --event-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend --attend-tasks --nt-streams --runtime-flags=-DMPK_W2_CK_TILE --merge-tasks --merge-halves 2 compare continue

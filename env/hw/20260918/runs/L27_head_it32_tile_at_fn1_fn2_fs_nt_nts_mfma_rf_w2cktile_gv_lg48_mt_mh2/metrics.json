@@ -1,0 +1,2438 @@
+{
+  "run_dir": "/home/hotaisle/metalOps/harness/fleet_out/L27_head_it32_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_w2cktile_gv_lg48_mt_mh2",
+  "predicted": {
+    "bytes_per_iteration_MiB": {
+      "weights_and_cache": 4709.9,
+      "with_activations_and_partials": 4772.0
+    },
+    "time_per_iteration_us": {
+      "bandwidth_floor_at_5.3TBs": 931.8,
+      "band_at_4.3TBs": 1148.5,
+      "band_at_3.66TBs": 1349.4,
+      "boundaries": 326,
+      "t_b_us": "unknown"
+    },
+    "layer1_MiB": 159.63,
+    "layer1_us_band": [
+      38.9,
+      45.7
+    ],
+    "layer1_boundaries": 12,
+    "launches_per_generation": 3,
+    "release_flushes_per_iteration": 1838
+  },
+  "kernel_filter": "prepare_kernel,worker_kernel,scheduler_kernel,persistent_kernel",
+  "wall": {
+    "mpk_wall_s": 0.23173809051513672,
+    "iters": 32,
+    "pack_s": 5.714290618896484,
+    "build_s": 59.99767327308655,
+    "per_iteration_us_from_wall": 7241.8153285980225
+  },
+  "fwd_pass": {
+    "iterations_logged": 0,
+    "per_iteration_us": {
+      "p50": null,
+      "p95": null
+    },
+    "first_five_us": []
+  },
+  "clock": {
+    "samples": 55,
+    "gfx_mhz_median": 2107.0,
+    "gfx_mhz_max": 2107.0,
+    "gfx_mhz_min": 132.0,
+    "mem_mhz_median": 900.0,
+    "mem_mhz_max": 1300.0
+  },
+  "run_meta": {
+    "graph": null,
+    "ops": 246,
+    "tasks_per_op": null,
+    "kb": null,
+    "gang": null,
+    "iters": 32
+  },
+  "event_timing": {
+    "num_events": 498,
+    "firings": 9472,
+    "per_iteration_us": {
+      "p50": 4307.88,
+      "p95": 4359.9,
+      "mean": 4311.731612903225,
+      "min": 4109.72,
+      "max": 4387.4400000000005,
+      "n": 31
+    },
+    "per_op": [
+      {
+        "event": 1,
+        "op": "iteration_start",
+        "mean_us": 222.54533333333336,
+        "min_us": 203.8,
+        "max_us": 286.68,
+        "n": 30
+      },
+      {
+        "event": 2,
+        "op": "embed_layer",
+        "mean_us": 14.285483870967743,
+        "min_us": 12.55,
+        "max_us": 15.91,
+        "n": 31
+      },
+      {
+        "event": 3,
+        "op": "linear_gemv_layer",
+        "mean_us": 16.753548387096775,
+        "min_us": 15.44,
+        "max_us": 18.2,
+        "n": 31
+      },
+      {
+        "event": 4,
+        "op": "mla_prep_layer",
+        "mean_us": 9.748064516129032,
+        "min_us": 9.53,
+        "max_us": 10.05,
+        "n": 31
+      },
+      {
+        "event": 5,
+        "op": "mla_attend_layer",
+        "mean_us": 12.494193548387097,
+        "min_us": 11.84,
+        "max_us": 13.1,
+        "n": 31
+      },
+      {
+        "event": 6,
+        "op": "mla_merge_uv_tile_layer",
+        "mean_us": 15.127096774193548,
+        "min_us": 14.61,
+        "max_us": 15.780000000000001,
+        "n": 31
+      },
+      {
+        "event": 7,
+        "op": "linear_gemv_layer",
+        "mean_us": 7.765483870967741,
+        "min_us": 7.13,
+        "max_us": 8.21,
+        "n": 31
+      },
+      {
+        "event": 8,
+        "op": "rmsnorm_layer",
+        "mean_us": 4.130967741935484,
+        "min_us": 3.5100000000000002,
+        "max_us": 5.08,
+        "n": 31
+      },
+      {
+        "event": 9,
+        "op": "gang_linear_silu_layer",
+        "mean_us": 35.83774193548387,
+        "min_us": 34.37,
+        "max_us": 37.57,
+        "n": 31
+      },
+      {
+        "event": 10,
+        "op": "linear_with_residual_layer",
+        "mean_us": 50.49677419354839,
+        "min_us": 49.67,
+        "max_us": 51.800000000000004,
+        "n": 31
+      },
+      {
+        "event": 11,
+        "op": "linear_gemv_layer",
+        "mean_us": 13.574193548387097,
+        "min_us": 12.88,
+        "max_us": 14.14,
+        "n": 31
+      },
+      {
+        "event": 12,
+        "op": "mla_prep_layer",
+        "mean_us": 9.811290322580644,
+        "min_us": 9.53,
+        "max_us": 10.200000000000001,
+        "n": 31
+      },
+      {
+        "event": 13,
+        "op": "mla_attend_layer",
+        "mean_us": 11.997741935483871,
+        "min_us": 11.41,
+        "max_us": 12.65,
+        "n": 31
+      },
+      {
+        "event": 14,
+        "op": "mla_merge_uv_tile_layer",
+        "mean_us": 15.051935483870968,
+        "min_us": 14.32,
+        "max_us": 15.68,
+        "n": 31
+      },
+      {
+        "event": 15,
+        "op": "linear_gemv_layer",
+        "mean_us": 6.976451612903226,
+        "min_us": 6.67,
+        "max_us": 7.51,
+        "n": 31
+      },
+      {
+        "event": 16,
+        "op": "moe_router_layer",
+        "mean_us": 16.96483870967742,
+        "min_us": 15.6,
+        "max_us": 18.28,
+        "n": 31
+      },
+      {
+        "event": 17,
+        "op": "gang_moe_w13_linear_layer",
+        "mean_us": 42.61838709677419,
+        "min_us": 39.88,
+        "max_us": 46.96,
+        "n": 31
+      },
+      {
+        "event": 18,
+        "op": "gang_moe_w2_silu_linear_layer",
+        "mean_us": 23.963548387096775,
+        "min_us": 22.05,
+        "max_us": 26.44,
+        "n": 31
+      },
+      {
+        "event": 19,
+        "op": "moe_mul_sum_add_layer",
+        "mean_us": 4.693225806451613,
+        "min_us": 4.1,
+        "max_us": 5.11,
+        "n": 31
+      },
+      {
+        "event": 20,
+        "op": "linear_gemv_layer",
+        "mean_us": 13.58,
+        "min_us": 13.06,
+        "max_us": 14.0,
+        "n": 31
+      },
+      {
+        "event": 21,
+        "op": "mla_prep_layer",
+        "mean_us": 9.960645161290323,
+        "min_us": 9.52,
+        "max_us": 11.28,
+        "n": 31
+      },
+      {
+        "event": 22,
+        "op": "mla_attend_layer",
+        "mean_us": 12.441612903225806,
+        "min_us": 11.450000000000001,
+        "max_us": 13.09,
+        "n": 31
+      },
+      {
+        "event": 23,
+        "op": "mla_merge_uv_tile_layer",
+        "mean_us": 15.310967741935483,
+        "min_us": 14.700000000000001,
+        "max_us": 16.01,
+        "n": 31
+      },
+      {
+        "event": 24,
+        "op": "linear_gemv_layer",
+        "mean_us": 8.041290322580645,
+        "min_us": 7.47,
+        "max_us": 8.36,
+        "n": 31
+      },
+      {
+        "event": 25,
+        "op": "moe_router_layer",
+        "mean_us": 17.128064516129033,
+        "min_us": 15.5,
+        "max_us": 18.740000000000002,
+        "n": 31
+      },
+      {
+        "event": 26,
+        "op": "gang_moe_w13_linear_layer",
+        "mean_us": 42.29064516129032,
+        "min_us": 39.39,
+        "max_us": 47.480000000000004,
+        "n": 31
+      },
+      {
+        "event": 27,
+        "op": "gang_moe_w2_silu_linear_layer",
+        "mean_us": 24.23709677419355,
+        "min_us": 21.92,
+        "max_us": 26.96,
+        "n": 31
+      },
+      {
+        "event": 28,
+        "op": "moe_mul_sum_add_layer",
+        "mean_us": 4.668709677419355,
+        "min_us": 4.03,
+        "max_us": 5.39,
+        "n": 31
+      },
+      {
+        "event": 29,
+        "op": "linear_gemv_layer",
+        "mean_us": 13.605161290322581,
+        "min_us": 13.22,
+        "max_us": 14.23,
+        "n": 31
+      },
+      {
+        "event": 30,
+        "op": "mla_prep_layer",
+        "mean_us": 9.546774193548387,
+        "min_us": 9.18,
+        "max_us": 10.120000000000001,
+        "n": 31
+      },
+      {
+        "event": 31,
+        "op": "mla_attend_layer",
+        "mean_us": 12.186129032258064,
+        "min_us": 11.42,
+        "max_us": 13.06,
+        "n": 31
+      },
+      {
+        "event": 32,
+        "op": "mla_merge_uv_tile_layer",
+        "mean_us": 15.080322580645161,
+        "min_us": 14.620000000000001,
+        "max_us": 15.59,
+        "n": 31
+      },
+      {
+        "event": 33,
+        "op": "linear_gemv_layer",
+        "mean_us": 8.038387096774194,
+        "min_us": 7.5200000000000005,
+        "max_us": 8.5,
+        "n": 31
+      },
+      {
+        "event": 34,
+        "op": "moe_router_layer",
+        "mean_us": 16.63741935483871,
+        "min_us": 15.05,
+        "max_us": 17.92,
+        "n": 31
+      },
+      {
+        "event": 35,
+        "op": "gang_moe_w13_linear_layer",
+        "mean_us": 43.81516129032258,
+        "min_us": 38.97,
+        "max_us": 48.01,
+        "n": 31
+      },
+      {
+        "event": 36,
+        "op": "gang_moe_w2_silu_linear_layer",
+        "mean_us": 24.20483870967742,
+        "min_us": 22.31,
+        "max_us": 26.12,
+        "n": 31
+      },
+      {
+        "event": 37,
+        "op": "moe_mul_sum_add_layer",
+        "mean_us": 4.608387096774194,
+        "min_us": 4.24,
+        "max_us": 5.2,
+        "n": 31
+      },
+      {
+        "event": 38,
+        "op": "linear_gemv_layer",
+        "mean_us": 13.758709677419354,
+        "min_us": 13.35,
+        "max_us": 14.36,
+        "n": 31
+      },
+      {
+        "event": 39,
+        "op": "mla_prep_layer",
+        "mean_us": 9.73258064516129,
+        "min_us": 9.5,
+        "max_us": 10.41,
+        "n": 31
+      },
+      {
+        "event": 40,
+        "op": "mla_attend_layer",
+        "mean_us": 12.125806451612904,
+        "min_us": 11.32,
+        "max_us": 13.08,
+        "n": 31
+      },
+      {
+        "event": 41,
+        "op": "mla_merge_uv_tile_layer",
+        "mean_us": 15.148387096774194,
+        "min_us": 14.8,
+        "max_us": 15.55,
+        "n": 31
+      },
+      {
+        "event": 42,
+        "op": "linear_gemv_layer",
+        "mean_us": 8.031935483870969,
+        "min_us": 7.2,
+        "max_us": 8.540000000000001,
+        "n": 31
+      },
+      {
+        "event": 43,
+        "op": "moe_router_layer",
+        "mean_us": 16.348387096774193,
+        "min_us": 14.81,
+        "max_us": 17.87,
+        "n": 31
+      },
+      {
+        "event": 44,
+        "op": "gang_moe_w13_linear_layer",
+        "mean_us": 44.571290322580644,
+        "min_us": 40.96,
+        "max_us": 46.69,
+        "n": 31
+      },
+      {
+        "event": 45,
+        "op": "gang_moe_w2_silu_linear_layer",
+        "mean_us": 23.006774193548388,
+        "min_us": 21.400000000000002,
+        "max_us": 26.16,
+        "n": 31
+      },
+      {
+        "event": 46,
+        "op": "moe_mul_sum_add_layer",
+        "mean_us": 4.743870967741936,
+        "min_us": 4.21,
+        "max_us": 5.58,
+        "n": 31
+      },
+      {
+        "event": 47,
+        "op": "linear_gemv_layer",
+        "mean_us": 13.536774193548387,
+        "min_us": 12.92,
+        "max_us": 14.06,
+        "n": 31
+      },
+      {
+        "event": 48,
+        "op": "mla_prep_layer",
+        "mean_us": 9.871612903225806,
+        "min_us": 9.47,
+        "max_us": 10.290000000000001,
+        "n": 31
+      },
+      {
+        "event": 49,
+        "op": "mla_attend_layer",
+        "mean_us": 11.95741935483871,
+        "min_us": 11.49,
+        "max_us": 12.56,
+        "n": 31
+      },
+      {
+        "event": 50,
+        "op": "mla_merge_uv_tile_layer",
+        "mean_us": 15.031935483870969,
+        "min_us": 14.34,
+        "max_us": 15.63,
+        "n": 31
+      },
+      {
+        "event": 51,
+        "op": "linear_gemv_layer",
+        "mean_us": 8.126774193548387,
+        "min_us": 7.6000000000000005,
+        "max_us": 8.84,
+        "n": 31
+      },
+      {
+        "event": 52,
+        "op": "moe_router_layer",
+        "mean_us": 16.931612903225805,
+        "min_us": 14.85,
+        "max_us": 17.92,
+        "n": 31
+      },
+      {
+        "event": 53,
+        "op": "gang_moe_w13_linear_layer",
+        "mean_us": 42.4883870967742,
+        "min_us": 39.92,
+        "max_us": 45.13,
+        "n": 31
+      },
+      {
+        "event": 54,
+        "op": "gang_moe_w2_silu_linear_layer",
+        "mean_us": 23.79774193548387,
+        "min_us": 21.88,
+        "max_us": 27.04,
+        "n": 31
+      },
+      {
+        "event": 55,
+        "op": "moe_mul_sum_add_layer",
+        "mean_us": 4.739032258064516,
+        "min_us": 4.36,
+        "max_us": 5.2,
+        "n": 31
+      },
+      {
+        "event": 56,
+        "op": "linear_gemv_layer",
+        "mean_us": 13.665161290322581,
+        "min_us": 13.02,
+        "max_us": 14.040000000000001,
+        "n": 31
+      },
+      {
+        "event": 57,
+        "op": "mla_prep_layer",
+        "mean_us": 9.579677419354839,
+        "min_us": 9.22,
+        "max_us": 10.700000000000001,
+        "n": 31
+      },
+      {
+        "event": 58,
+        "op": "mla_attend_layer",
+        "mean_us": 12.480645161290324,
+        "min_us": 11.700000000000001,
+        "max_us": 13.3,
+        "n": 31
+      },
+      {
+        "event": 59,
+        "op": "mla_merge_uv_tile_layer",
+        "mean_us": 15.130967741935484,
+        "min_us": 14.59,
+        "max_us": 15.75,
+        "n": 31
+      },
+      {
+        "event": 60,
+        "op": "linear_gemv_layer",
+        "mean_us": 8.177096774193549,
+        "min_us": 7.8,
+        "max_us": 8.63,
+        "n": 31
+      },
+      {
+        "event": 61,
+        "op": "moe_router_layer",
+        "mean_us": 16.88290322580645,
+        "min_us": 14.97,
+        "max_us": 18.01,
+        "n": 31
+      },
+      {
+        "event": 62,
+        "op": "gang_moe_w13_linear_layer",
+        "mean_us": 41.10548387096774,
+        "min_us": 38.78,
+        "max_us": 44.0,
+        "n": 31
+      },
+      {
+        "event": 63,
+        "op": "gang_moe_w2_silu_linear_layer",
+        "mean_us": 24.148709677419355,
+        "min_us": 21.8,
+        "max_us": 26.2,
+        "n": 31
+      },
+      {
+        "event": 64,
+        "op": "moe_mul_sum_add_layer",
+        "mean_us": 4.75741935483871,
+        "min_us": 4.19,
+        "max_us": 6.3100000000000005,
+        "n": 31
+      },
+      {
+        "event": 65,
+        "op": "linear_gemv_layer",
+        "mean_us": 13.708709677419355,
+        "min_us": 13.35,
+        "max_us": 14.14,
+        "n": 31
+      },
+      {
+        "event": 66,
+        "op": "mla_prep_layer",
+        "mean_us": 9.581612903225807,
+        "min_us": 9.200000000000001,
+        "max_us": 10.13,
+        "n": 31
+      },
+      {
+        "event": 67,
+        "op": "mla_attend_layer",
+        "mean_us": 12.393548387096773,
+        "min_us": 11.34,
+        "max_us": 13.24,
+        "n": 31
+      },
+      {
+        "event": 68,
+        "op": "mla_merge_uv_tile_layer",
+        "mean_us": 15.09741935483871,
+        "min_us": 14.41,
+        "max_us": 15.44,
+        "n": 31
+      },
+      {
+        "event": 69,
+        "op": "linear_gemv_layer",
+        "mean_us": 8.012580645161291,
+        "min_us": 7.38,
+        "max_us": 8.72,
+        "n": 31
+      },
+      {
+        "event": 70,
+        "op": "moe_router_layer",
+        "mean_us": 16.61935483870968,
+        "min_us": 15.27,
+        "max_us": 18.080000000000002,
+        "n": 31
+      },
+      {
+        "event": 71,
+        "op": "gang_moe_w13_linear_layer",
+        "mean_us": 42.192903225806454,
+        "min_us": 40.09,
+        "max_us": 44.61,
+        "n": 31
+      },
+      {
+        "event": 72,
+        "op": "gang_moe_w2_silu_linear_layer",
+        "mean_us": 24.009354838709676,
+        "min_us": 22.080000000000002,
+        "max_us": 26.88,
+        "n": 31
+      },
+      {
+        "event": 73,
+        "op": "moe_mul_sum_add_layer",
+        "mean_us": 4.909032258064516,
+        "min_us": 4.4,
+        "max_us": 6.8,
+        "n": 31
+      },
+      {
+        "event": 74,
+        "op": "linear_gemv_layer",
+        "mean_us": 13.715483870967741,
+        "min_us": 13.1,
+        "max_us": 14.120000000000001,
+        "n": 31
+      },
+      {
+        "event": 75,
+        "op": "mla_prep_layer",
+        "mean_us": 9.598709677419356,
+        "min_us": 9.36,
+        "max_us": 10.18,
+        "n": 31
+      },
+      {
+        "event": 76,
+        "op": "mla_attend_layer",
+        "mean_us": 12.643548387096773,
+        "min_us": 11.84,
+        "max_us": 13.46,
+        "n": 31
+      },
+      {
+        "event": 77,
+        "op": "mla_merge_uv_tile_layer",
+        "mean_us": 15.134516129032258,
+        "min_us": 14.61,
+        "max_us": 15.700000000000001,
+        "n": 31
+      },
+      {
+        "event": 78,
+        "op": "linear_gemv_layer",
+        "mean_us": 8.06,
+        "min_us": 7.26,
+        "max_us": 8.620000000000001,
+        "n": 31
+      },
+      {
+        "event": 79,
+        "op": "moe_router_layer",
+        "mean_us": 16.54548387096774,
+        "min_us": 15.200000000000001,
+        "max_us": 17.75,
+        "n": 31
+      },
+      {
+        "event": 80,
+        "op": "gang_moe_w13_linear_layer",
+        "mean_us": 42.45677419354839,
+        "min_us": 39.59,
+        "max_us": 46.53,
+        "n": 31
+      },
+      {
+        "event": 81,
+        "op": "gang_moe_w2_silu_linear_layer",
+        "mean_us": 23.519032258064517,
+        "min_us": 21.38,
+        "max_us": 25.72,
+        "n": 31
+      },
+      {
+        "event": 82,
+        "op": "moe_mul_sum_add_layer",
+        "mean_us": 5.242903225806452,
+        "min_us": 4.34,
+        "max_us": 7.5600000000000005,
+        "n": 31
+      },
+      {
+        "event": 83,
+        "op": "linear_gemv_layer",
+        "mean_us": 13.713548387096774,
+        "min_us": 13.27,
+        "max_us": 14.16,
+        "n": 31
+      },
+      {
+        "event": 84,
+        "op": "mla_prep_layer",
+        "mean_us": 9.830322580645161,
+        "min_us": 9.450000000000001,
+        "max_us": 10.120000000000001,
+        "n": 31
+      },
+      {
+        "event": 85,
+        "op": "mla_attend_layer",
+        "mean_us": 12.33290322580645,
+        "min_us": 11.53,
+        "max_us": 12.950000000000001,
+        "n": 31
+      },
+      {
+        "event": 86,
+        "op": "mla_merge_uv_tile_layer",
+        "mean_us": 15.238709677419356,
+        "min_us": 14.58,
+        "max_us": 15.860000000000001,
+        "n": 31
+      },
+      {
+        "event": 87,
+        "op": "linear_gemv_layer",
+        "mean_us": 7.877741935483871,
+        "min_us": 7.53,
+        "max_us": 8.39,
+        "n": 31
+      },
+      {
+        "event": 88,
+        "op": "moe_router_layer",
+        "mean_us": 16.988064516129032,
+        "min_us": 15.030000000000001,
+        "max_us": 18.2,
+        "n": 31
+      },
+      {
+        "event": 89,
+        "op": "gang_moe_w13_linear_layer",
+        "mean_us": 44.178709677419356,
+        "min_us": 40.84,
+        "max_us": 47.730000000000004,
+        "n": 31
+      },
+      {
+        "event": 90,
+        "op": "gang_moe_w2_silu_linear_layer",
+        "mean_us": 23.671612903225807,
+        "min_us": 21.89,
+        "max_us": 26.240000000000002,
+        "n": 31
+      },
+      {
+        "event": 91,
+        "op": "moe_mul_sum_add_layer",
+        "mean_us": 5.01516129032258,
+        "min_us": 4.4,
+        "max_us": 6.07,
+        "n": 31
+      },
+      {
+        "event": 92,
+        "op": "linear_gemv_layer",
+        "mean_us": 13.59483870967742,
+        "min_us": 13.24,
+        "max_us": 14.08,
+        "n": 31
+      },
+      {
+        "event": 93,
+        "op": "mla_prep_layer",
+        "mean_us": 9.719354838709679,
+        "min_us": 9.3,
+        "max_us": 11.31,
+        "n": 31
+      },
+      {
+        "event": 94,
+        "op": "mla_attend_layer",
+        "mean_us": 12.575806451612904,
+        "min_us": 11.49,
+        "max_us": 13.25,
+        "n": 31
+      },
+      {
+        "event": 95,
+        "op": "mla_merge_uv_tile_layer",
+        "mean_us": 15.210967741935484,
+        "min_us": 14.32,
+        "max_us": 15.72,
+        "n": 31
+      },
+      {
+        "event": 96,
+        "op": "linear_gemv_layer",
+        "mean_us": 7.820322580645161,
+        "min_us": 7.1000000000000005,
+        "max_us": 8.44,
+        "n": 31
+      },
+      {
+        "event": 97,
+        "op": "moe_router_layer",
+        "mean_us": 16.745806451612903,
+        "min_us": 15.120000000000001,
+        "max_us": 18.36,
+        "n": 31
+      },
+      {
+        "event": 98,
+        "op": "gang_moe_w13_linear_layer",
+        "mean_us": 41.83419354838709,
+        "min_us": 38.63,
+        "max_us": 43.99,
+        "n": 31
+      },
+      {
+        "event": 99,
+        "op": "gang_moe_w2_silu_linear_layer",
+        "mean_us": 23.48774193548387,
+        "min_us": 21.92,
+        "max_us": 27.2,
+        "n": 31
+      },
+      {
+        "event": 100,
+        "op": "moe_mul_sum_add_layer",
+        "mean_us": 4.925161290322581,
+        "min_us": 4.34,
+        "max_us": 6.0200000000000005,
+        "n": 31
+      },
+      {
+        "event": 101,
+        "op": "linear_gemv_layer",
+        "mean_us": 13.61967741935484,
+        "min_us": 12.93,
+        "max_us": 14.1,
+        "n": 31
+      },
+      {
+        "event": 102,
+        "op": "mla_prep_layer",
+        "mean_us": 9.473870967741936,
+        "min_us": 9.200000000000001,
+        "max_us": 10.08,
+        "n": 31
+      },
+      {
+        "event": 103,
+        "op": "mla_attend_layer",
+        "mean_us": 12.150645161290322,
+        "min_us": 11.68,
+        "max_us": 12.76,
+        "n": 31
+      },
+      {
+        "event": 104,
+        "op": "mla_merge_uv_tile_layer",
+        "mean_us": 15.153225806451612,
+        "min_us": 14.64,
+        "max_us": 15.63,
+        "n": 31
+      },
+      {
+        "event": 105,
+        "op": "linear_gemv_layer",
+        "mean_us": 7.864516129032259,
+        "min_us": 7.2700000000000005,
+        "max_us": 8.36,
+        "n": 31
+      },
+      {
+        "event": 106,
+        "op": "moe_router_layer",
+        "mean_us": 17.01516129032258,
+        "min_us": 15.16,
+        "max_us": 18.64,
+        "n": 31
+      },
+      {
+        "event": 107,
+        "op": "gang_moe_w13_linear_layer",
+        "mean_us": 43.73548387096774,
+        "min_us": 41.160000000000004,
+        "max_us": 47.84,
+        "n": 31
+      },
+      {
+        "event": 108,
+        "op": "gang_moe_w2_silu_linear_layer",
+        "mean_us": 24.08483870967742,
+        "min_us": 21.68,
+        "max_us": 27.28,
+        "n": 31
+      },
+      {
+        "event": 109,
+        "op": "moe_mul_sum_add_layer",
+        "mean_us": 4.782903225806452,
+        "min_us": 4.43,
+        "max_us": 6.1000000000000005,
+        "n": 31
+      },
+      {
+        "event": 110,
+        "op": "linear_gemv_layer",
+        "mean_us": 13.450322580645162,
+        "min_us": 12.91,
+        "max_us": 13.8,
+        "n": 31
+      },
+      {
+        "event": 111,
+        "op": "mla_prep_layer",
+        "mean_us": 9.557741935483872,
+        "min_us": 9.26,
+        "max_us": 10.05,
+        "n": 31
+      },
+      {
+        "event": 112,
+        "op": "mla_attend_layer",
+        "mean_us": 12.640645161290323,
+        "min_us": 11.870000000000001,
+        "max_us": 13.36,
+        "n": 31
+      },
+      {
+        "event": 113,
+        "op": "mla_merge_uv_tile_layer",
+        "mean_us": 15.230645161290324,
+        "min_us": 14.91,
+        "max_us": 15.6,
+        "n": 31
+      },
+      {
+        "event": 114,
+        "op": "linear_gemv_layer",
+        "mean_us": 7.9719354838709675,
+        "min_us": 7.45,
+        "max_us": 8.8,
+        "n": 31
+      },
+      {
+        "event": 115,
+        "op": "moe_router_layer",
+        "mean_us": 16.293870967741935,
+        "min_us": 14.83,
+        "max_us": 17.44,
+        "n": 31
+      },
+      {
+        "event": 116,
+        "op": "gang_moe_w13_linear_layer",
+        "mean_us": 41.92290322580645,
+        "min_us": 39.37,
+        "max_us": 43.96,
+        "n": 31
+      },
+      {
+        "event": 117,
+        "op": "gang_moe_w2_silu_linear_layer",
+        "mean_us": 23.351612903225806,
+        "min_us": 21.84,
+        "max_us": 26.36,
+        "n": 31
+      },
+      {
+        "event": 118,
+        "op": "moe_mul_sum_add_layer",
+        "mean_us": 4.968064516129032,
+        "min_us": 4.41,
+        "max_us": 6.41,
+        "n": 31
+      },
+      {
+        "event": 119,
+        "op": "linear_gemv_layer",
+        "mean_us": 13.631935483870969,
+        "min_us": 13.02,
+        "max_us": 14.1,
+        "n": 31
+      },
+      {
+        "event": 120,
+        "op": "mla_prep_layer",
+        "mean_us": 9.84935483870968,
+        "min_us": 9.47,
+        "max_us": 10.200000000000001,
+        "n": 31
+      },
+      {
+        "event": 121,
+        "op": "mla_attend_layer",
+        "mean_us": 12.338064516129032,
+        "min_us": 11.61,
+        "max_us": 12.99,
+        "n": 31
+      },
+      {
+        "event": 122,
+        "op": "mla_merge_uv_tile_layer",
+        "mean_us": 15.289354838709679,
+        "min_us": 14.86,
+        "max_us": 15.8,
+        "n": 31
+      },
+      {
+        "event": 123,
+        "op": "linear_gemv_layer",
+        "mean_us": 7.894516129032258,
+        "min_us": 7.2,
+        "max_us": 8.61,
+        "n": 31
+      },
+      {
+        "event": 124,
+        "op": "moe_router_layer",
+        "mean_us": 16.595483870967744,
+        "min_us": 14.71,
+        "max_us": 17.53,
+        "n": 31
+      },
+      {
+        "event": 125,
+        "op": "gang_moe_w13_linear_layer",
+        "mean_us": 42.44225806451613,
+        "min_us": 39.49,
+        "max_us": 45.230000000000004,
+        "n": 31
+      },
+      {
+        "event": 126,
+        "op": "gang_moe_w2_silu_linear_layer",
+        "mean_us": 23.47225806451613,
+        "min_us": 22.01,
+        "max_us": 25.88,
+        "n": 31
+      },
+      {
+        "event": 127,
+        "op": "moe_mul_sum_add_layer",
+        "mean_us": 4.924193548387097,
+        "min_us": 4.3,
+        "max_us": 5.8500000000000005,
+        "n": 31
+      },
+      {
+        "event": 128,
+        "op": "linear_gemv_layer",
+        "mean_us": 13.618709677419355,
+        "min_us": 13.23,
+        "max_us": 13.96,
+        "n": 31
+      },
+      {
+        "event": 129,
+        "op": "mla_prep_layer",
+        "mean_us": 9.824193548387097,
+        "min_us": 9.5,
+        "max_us": 10.48,
+        "n": 31
+      },
+      {
+        "event": 130,
+        "op": "mla_attend_layer",
+        "mean_us": 12.592258064516129,
+        "min_us": 11.3,
+        "max_us": 13.33,
+        "n": 31
+      },
+      {
+        "event": 131,
+        "op": "mla_merge_uv_tile_layer",
+        "mean_us": 15.126129032258065,
+        "min_us": 14.57,
+        "max_us": 15.540000000000001,
+        "n": 31
+      },
+      {
+        "event": 132,
+        "op": "linear_gemv_layer",
+        "mean_us": 8.266129032258064,
+        "min_us": 7.76,
+        "max_us": 8.84,
+        "n": 31
+      },
+      {
+        "event": 133,
+        "op": "moe_router_layer",
+        "mean_us": 17.093548387096774,
+        "min_us": 15.4,
+        "max_us": 18.490000000000002,
+        "n": 31
+      },
+      {
+        "event": 134,
+        "op": "gang_moe_w13_linear_layer",
+        "mean_us": 41.861612903225804,
+        "min_us": 39.03,
+        "max_us": 44.87,
+        "n": 31
+      },
+      {
+        "event": 135,
+        "op": "gang_moe_w2_silu_linear_layer",
+        "mean_us": 23.531290322580645,
+        "min_us": 21.64,
+        "max_us": 27.61,
+        "n": 31
+      },
+      {
+        "event": 136,
+        "op": "moe_mul_sum_add_layer",
+        "mean_us": 5.057741935483871,
+        "min_us": 4.3,
+        "max_us": 6.86,
+        "n": 31
+      },
+      {
+        "event": 137,
+        "op": "linear_gemv_layer",
+        "mean_us": 13.59451612903226,
+        "min_us": 13.34,
+        "max_us": 13.94,
+        "n": 31
+      },
+      {
+        "event": 138,
+        "op": "mla_prep_layer",
+        "mean_us": 9.534193548387098,
+        "min_us": 9.22,
+        "max_us": 10.42,
+        "n": 31
+      },
+      {
+        "event": 139,
+        "op": "mla_attend_layer",
+        "mean_us": 12.138064516129031,
+        "min_us": 11.42,
+        "max_us": 12.84,
+        "n": 31
+      },
+      {
+        "event": 140,
+        "op": "mla_merge_uv_tile_layer",
+        "mean_us": 15.12741935483871,
+        "min_us": 14.61,
+        "max_us": 15.57,
+        "n": 31
+      },
+      {
+        "event": 141,
+        "op": "linear_gemv_layer",
+        "mean_us": 8.141935483870968,
+        "min_us": 7.6000000000000005,
+        "max_us": 8.66,
+        "n": 31
+      },
+      {
+        "event": 142,
+        "op": "moe_router_layer",
+        "mean_us": 16.72967741935484,
+        "min_us": 15.31,
+        "max_us": 18.43,
+        "n": 31
+      },
+      {
+        "event": 143,
+        "op": "gang_moe_w13_linear_layer",
+        "mean_us": 42.534193548387094,
+        "min_us": 40.65,
+        "max_us": 44.53,
+        "n": 31
+      },
+      {
+        "event": 144,
+        "op": "gang_moe_w2_silu_linear_layer",
+        "mean_us": 23.19129032258065,
+        "min_us": 21.67,
+        "max_us": 26.04,
+        "n": 31
+      },
+      {
+        "event": 145,
+        "op": "moe_mul_sum_add_layer",
+        "mean_us": 4.982258064516129,
+        "min_us": 4.26,
+        "max_us": 6.3500000000000005,
+        "n": 31
+      },
+      {
+        "event": 146,
+        "op": "linear_gemv_layer",
+        "mean_us": 13.71483870967742,
+        "min_us": 13.36,
+        "max_us": 14.32,
+        "n": 31
+      },
+      {
+        "event": 147,
+        "op": "mla_prep_layer",
+        "mean_us": 9.597741935483871,
+        "min_us": 9.28,
+        "max_us": 9.85,
+        "n": 31
+      },
+      {
+        "event": 148,
+        "op": "mla_attend_layer",
+        "mean_us": 12.593225806451612,
+        "min_us": 11.82,
+        "max_us": 13.56,
+        "n": 31
+      },
+      {
+        "event": 149,
+        "op": "mla_merge_uv_tile_layer",
+        "mean_us": 15.035483870967743,
+        "min_us": 14.73,
+        "max_us": 15.42,
+        "n": 31
+      },
+      {
+        "event": 150,
+        "op": "linear_gemv_layer",
+        "mean_us": 8.170645161290322,
+        "min_us": 7.38,
+        "max_us": 8.620000000000001,
+        "n": 31
+      },
+      {
+        "event": 151,
+        "op": "moe_router_layer",
+        "mean_us": 16.835806451612903,
+        "min_us": 15.67,
+        "max_us": 18.080000000000002,
+        "n": 31
+      },
+      {
+        "event": 152,
+        "op": "gang_moe_w13_linear_layer",
+        "mean_us": 41.7383870967742,
+        "min_us": 39.61,
+        "max_us": 44.28,
+        "n": 31
+      },
+      {
+        "event": 153,
+        "op": "gang_moe_w2_silu_linear_layer",
+        "mean_us": 23.3441935483871,
+        "min_us": 21.85,
+        "max_us": 26.8,
+        "n": 31
+      },
+      {
+        "event": 154,
+        "op": "moe_mul_sum_add_layer",
+        "mean_us": 5.020645161290323,
+        "min_us": 4.42,
+        "max_us": 6.23,
+        "n": 31
+      },
+      {
+        "event": 155,
+        "op": "linear_gemv_layer",
+        "mean_us": 13.406129032258066,
+        "min_us": 13.030000000000001,
+        "max_us": 13.76,
+        "n": 31
+      },
+      {
+        "event": 156,
+        "op": "mla_prep_layer",
+        "mean_us": 9.654516129032258,
+        "min_us": 9.33,
+        "max_us": 10.0,
+        "n": 31
+      },
+      {
+        "event": 157,
+        "op": "mla_attend_layer",
+        "mean_us": 12.207096774193548,
+        "min_us": 11.51,
+        "max_us": 12.870000000000001,
+        "n": 31
+      },
+      {
+        "event": 158,
+        "op": "mla_merge_uv_tile_layer",
+        "mean_us": 15.04483870967742,
+        "min_us": 14.48,
+        "max_us": 15.370000000000001,
+        "n": 31
+      },
+      {
+        "event": 159,
+        "op": "linear_gemv_layer",
+        "mean_us": 7.224516129032258,
+        "min_us": 6.84,
+        "max_us": 7.76,
+        "n": 31
+      },
+      {
+        "event": 160,
+        "op": "moe_router_layer",
+        "mean_us": 17.00741935483871,
+        "min_us": 15.120000000000001,
+        "max_us": 18.0,
+        "n": 31
+      },
+      {
+        "event": 161,
+        "op": "gang_moe_w13_linear_layer",
+        "mean_us": 41.77903225806452,
+        "min_us": 38.800000000000004,
+        "max_us": 45.76,
+        "n": 31
+      },
+      {
+        "event": 162,
+        "op": "gang_moe_w2_silu_linear_layer",
+        "mean_us": 23.50709677419355,
+        "min_us": 21.57,
+        "max_us": 27.0,
+        "n": 31
+      },
+      {
+        "event": 163,
+        "op": "moe_mul_sum_add_layer",
+        "mean_us": 4.998064516129032,
+        "min_us": 4.29,
+        "max_us": 6.09,
+        "n": 31
+      },
+      {
+        "event": 164,
+        "op": "linear_gemv_layer",
+        "mean_us": 13.640645161290323,
+        "min_us": 13.16,
+        "max_us": 14.08,
+        "n": 31
+      },
+      {
+        "event": 165,
+        "op": "mla_prep_layer",
+        "mean_us": 9.716774193548387,
+        "min_us": 9.5,
+        "max_us": 10.3,
+        "n": 31
+      },
+      {
+        "event": 166,
+        "op": "mla_attend_layer",
+        "mean_us": 12.506129032258064,
+        "min_us": 11.58,
+        "max_us": 13.22,
+        "n": 31
+      },
+      {
+        "event": 167,
+        "op": "mla_merge_uv_tile_layer",
+        "mean_us": 15.124516129032259,
+        "min_us": 14.55,
+        "max_us": 15.56,
+        "n": 31
+      },
+      {
+        "event": 168,
+        "op": "linear_gemv_layer",
+        "mean_us": 8.156774193548388,
+        "min_us": 7.72,
+        "max_us": 8.6,
+        "n": 31
+      },
+      {
+        "event": 169,
+        "op": "moe_router_layer",
+        "mean_us": 16.593870967741935,
+        "min_us": 15.13,
+        "max_us": 18.14,
+        "n": 31
+      },
+      {
+        "event": 170,
+        "op": "gang_moe_w13_linear_layer",
+        "mean_us": 42.04096774193548,
+        "min_us": 39.47,
+        "max_us": 43.910000000000004,
+        "n": 31
+      },
+      {
+        "event": 171,
+        "op": "gang_moe_w2_silu_linear_layer",
+        "mean_us": 23.452903225806452,
+        "min_us": 21.92,
+        "max_us": 25.0,
+        "n": 31
+      },
+      {
+        "event": 172,
+        "op": "moe_mul_sum_add_layer",
+        "mean_us": 5.031935483870968,
+        "min_us": 4.3100000000000005,
+        "max_us": 6.3500000000000005,
+        "n": 31
+      },
+      {
+        "event": 173,
+        "op": "linear_gemv_layer",
+        "mean_us": 13.591612903225807,
+        "min_us": 13.13,
+        "max_us": 14.05,
+        "n": 31
+      },
+      {
+        "event": 174,
+        "op": "mla_prep_layer",
+        "mean_us": 9.669677419354839,
+        "min_us": 9.28,
+        "max_us": 10.49,
+        "n": 31
+      },
+      {
+        "event": 175,
+        "op": "mla_attend_layer",
+        "mean_us": 12.173870967741935,
+        "min_us": 11.35,
+        "max_us": 13.08,
+        "n": 31
+      },
+      {
+        "event": 176,
+        "op": "mla_merge_uv_tile_layer",
+        "mean_us": 15.016774193548386,
+        "min_us": 14.34,
+        "max_us": 15.57,
+        "n": 31
+      },
+      {
+        "event": 177,
+        "op": "linear_gemv_layer",
+        "mean_us": 7.991612903225807,
+        "min_us": 7.55,
+        "max_us": 8.58,
+        "n": 31
+      },
+      {
+        "event": 178,
+        "op": "moe_router_layer",
+        "mean_us": 16.460645161290323,
+        "min_us": 14.81,
+        "max_us": 17.830000000000002,
+        "n": 31
+      },
+      {
+        "event": 179,
+        "op": "gang_moe_w13_linear_layer",
+        "mean_us": 42.11258064516129,
+        "min_us": 39.410000000000004,
+        "max_us": 44.160000000000004,
+        "n": 31
+      },
+      {
+        "event": 180,
+        "op": "gang_moe_w2_silu_linear_layer",
+        "mean_us": 23.23,
+        "min_us": 22.150000000000002,
+        "max_us": 26.0,
+        "n": 31
+      },
+      {
+        "event": 181,
+        "op": "moe_mul_sum_add_layer",
+        "mean_us": 4.892258064516129,
+        "min_us": 3.89,
+        "max_us": 6.03,
+        "n": 31
+      },
+      {
+        "event": 182,
+        "op": "linear_gemv_layer",
+        "mean_us": 13.523548387096774,
+        "min_us": 13.14,
+        "max_us": 14.02,
+        "n": 31
+      },
+      {
+        "event": 183,
+        "op": "mla_prep_layer",
+        "mean_us": 9.761290322580646,
+        "min_us": 9.52,
+        "max_us": 10.22,
+        "n": 31
+      },
+      {
+        "event": 184,
+        "op": "mla_attend_layer",
+        "mean_us": 12.492258064516129,
+        "min_us": 11.91,
+        "max_us": 13.200000000000001,
+        "n": 31
+      },
+      {
+        "event": 185,
+        "op": "mla_merge_uv_tile_layer",
+        "mean_us": 15.048709677419355,
+        "min_us": 14.64,
+        "max_us": 15.51,
+        "n": 31
+      },
+      {
+        "event": 186,
+        "op": "linear_gemv_layer",
+        "mean_us": 8.03032258064516,
+        "min_us": 7.33,
+        "max_us": 8.51,
+        "n": 31
+      },
+      {
+        "event": 187,
+        "op": "moe_router_layer",
+        "mean_us": 15.674193548387096,
+        "min_us": 14.52,
+        "max_us": 17.12,
+        "n": 31
+      },
+      {
+        "event": 188,
+        "op": "gang_moe_w13_linear_layer",
+        "mean_us": 42.260322580645166,
+        "min_us": 40.49,
+        "max_us": 44.77,
+        "n": 31
+      },
+      {
+        "event": 189,
+        "op": "gang_moe_w2_silu_linear_layer",
+        "mean_us": 23.41032258064516,
+        "min_us": 22.12,
+        "max_us": 24.92,
+        "n": 31
+      },
+      {
+        "event": 190,
+        "op": "moe_mul_sum_add_layer",
+        "mean_us": 4.8267741935483865,
+        "min_us": 4.08,
+        "max_us": 6.32,
+        "n": 31
+      },
+      {
+        "event": 191,
+        "op": "linear_gemv_layer",
+        "mean_us": 13.48709677419355,
+        "min_us": 13.16,
+        "max_us": 13.93,
+        "n": 31
+      },
+      {
+        "event": 192,
+        "op": "mla_prep_layer",
+        "mean_us": 9.838709677419354,
+        "min_us": 9.55,
+        "max_us": 10.120000000000001,
+        "n": 31
+      },
+      {
+        "event": 193,
+        "op": "mla_attend_layer",
+        "mean_us": 12.35741935483871,
+        "min_us": 11.81,
+        "max_us": 12.950000000000001,
+        "n": 31
+      },
+      {
+        "event": 194,
+        "op": "mla_merge_uv_tile_layer",
+        "mean_us": 15.11967741935484,
+        "min_us": 14.71,
+        "max_us": 15.6,
+        "n": 31
+      },
+      {
+        "event": 195,
+        "op": "linear_gemv_layer",
+        "mean_us": 7.951612903225806,
+        "min_us": 6.86,
+        "max_us": 8.38,
+        "n": 31
+      },
+      {
+        "event": 196,
+        "op": "moe_router_layer",
+        "mean_us": 17.00483870967742,
+        "min_us": 15.030000000000001,
+        "max_us": 17.8,
+        "n": 31
+      },
+      {
+        "event": 197,
+        "op": "gang_moe_w13_linear_layer",
+        "mean_us": 41.03645161290323,
+        "min_us": 38.69,
+        "max_us": 43.6,
+        "n": 31
+      },
+      {
+        "event": 198,
+        "op": "gang_moe_w2_silu_linear_layer",
+        "mean_us": 23.713870967741936,
+        "min_us": 21.61,
+        "max_us": 26.560000000000002,
+        "n": 31
+      },
+      {
+        "event": 199,
+        "op": "moe_mul_sum_add_layer",
+        "mean_us": 4.863548387096775,
+        "min_us": 4.42,
+        "max_us": 6.13,
+        "n": 31
+      },
+      {
+        "event": 200,
+        "op": "linear_gemv_layer",
+        "mean_us": 13.79967741935484,
+        "min_us": 13.26,
+        "max_us": 14.280000000000001,
+        "n": 31
+      },
+      {
+        "event": 201,
+        "op": "mla_prep_layer",
+        "mean_us": 9.65516129032258,
+        "min_us": 9.26,
+        "max_us": 10.64,
+        "n": 31
+      },
+      {
+        "event": 202,
+        "op": "mla_attend_layer",
+        "mean_us": 12.461935483870967,
+        "min_us": 11.18,
+        "max_us": 13.280000000000001,
+        "n": 31
+      },
+      {
+        "event": 203,
+        "op": "mla_merge_uv_tile_layer",
+        "mean_us": 15.25483870967742,
+        "min_us": 14.75,
+        "max_us": 15.63,
+        "n": 31
+      },
+      {
+        "event": 204,
+        "op": "linear_gemv_layer",
+        "mean_us": 7.9877419354838715,
+        "min_us": 7.3100000000000005,
+        "max_us": 8.48,
+        "n": 31
+      },
+      {
+        "event": 205,
+        "op": "moe_router_layer",
+        "mean_us": 16.700000000000003,
+        "min_us": 15.36,
+        "max_us": 17.84,
+        "n": 31
+      },
+      {
+        "event": 206,
+        "op": "gang_moe_w13_linear_layer",
+        "mean_us": 43.740967741935485,
+        "min_us": 39.78,
+        "max_us": 47.52,
+        "n": 31
+      },
+      {
+        "event": 207,
+        "op": "gang_moe_w2_silu_linear_layer",
+        "mean_us": 23.52032258064516,
+        "min_us": 21.92,
+        "max_us": 25.2,
+        "n": 31
+      },
+      {
+        "event": 208,
+        "op": "moe_mul_sum_add_layer",
+        "mean_us": 5.110967741935484,
+        "min_us": 4.41,
+        "max_us": 7.0,
+        "n": 31
+      },
+      {
+        "event": 209,
+        "op": "linear_gemv_layer",
+        "mean_us": 13.73225806451613,
+        "min_us": 13.16,
+        "max_us": 14.13,
+        "n": 31
+      },
+      {
+        "event": 210,
+        "op": "mla_prep_layer",
+        "mean_us": 9.550967741935484,
+        "min_us": 9.3,
+        "max_us": 10.28,
+        "n": 31
+      },
+      {
+        "event": 211,
+        "op": "mla_attend_layer",
+        "mean_us": 12.223225806451614,
+        "min_us": 11.4,
+        "max_us": 12.94,
+        "n": 31
+      },
+      {
+        "event": 212,
+        "op": "mla_merge_uv_tile_layer",
+        "mean_us": 15.131935483870969,
+        "min_us": 14.68,
+        "max_us": 15.56,
+        "n": 31
+      },
+      {
+        "event": 213,
+        "op": "linear_gemv_layer",
+        "mean_us": 8.16483870967742,
+        "min_us": 7.640000000000001,
+        "max_us": 8.59,
+        "n": 31
+      },
+      {
+        "event": 214,
+        "op": "moe_router_layer",
+        "mean_us": 16.330645161290324,
+        "min_us": 15.280000000000001,
+        "max_us": 17.85,
+        "n": 31
+      },
+      {
+        "event": 215,
+        "op": "gang_moe_w13_linear_layer",
+        "mean_us": 42.00838709677419,
+        "min_us": 38.68,
+        "max_us": 46.85,
+        "n": 31
+      },
+      {
+        "event": 216,
+        "op": "gang_moe_w2_silu_linear_layer",
+        "mean_us": 23.48741935483871,
+        "min_us": 21.89,
+        "max_us": 26.240000000000002,
+        "n": 31
+      },
+      {
+        "event": 217,
+        "op": "moe_mul_sum_add_layer",
+        "mean_us": 4.909032258064516,
+        "min_us": 4.3100000000000005,
+        "max_us": 6.01,
+        "n": 31
+      },
+      {
+        "event": 218,
+        "op": "linear_gemv_layer",
+        "mean_us": 13.725483870967743,
+        "min_us": 13.16,
+        "max_us": 14.24,
+        "n": 31
+      },
+      {
+        "event": 219,
+        "op": "mla_prep_layer",
+        "mean_us": 9.643548387096773,
+        "min_us": 9.34,
+        "max_us": 9.93,
+        "n": 31
+      },
+      {
+        "event": 220,
+        "op": "mla_attend_layer",
+        "mean_us": 12.432903225806452,
+        "min_us": 11.84,
+        "max_us": 13.44,
+        "n": 31
+      },
+      {
+        "event": 221,
+        "op": "mla_merge_uv_tile_layer",
+        "mean_us": 15.065483870967741,
+        "min_us": 14.67,
+        "max_us": 15.52,
+        "n": 31
+      },
+      {
+        "event": 222,
+        "op": "linear_gemv_layer",
+        "mean_us": 8.083225806451614,
+        "min_us": 7.58,
+        "max_us": 8.75,
+        "n": 31
+      },
+      {
+        "event": 223,
+        "op": "moe_router_layer",
+        "mean_us": 16.17225806451613,
+        "min_us": 14.72,
+        "max_us": 17.56,
+        "n": 31
+      },
+      {
+        "event": 224,
+        "op": "gang_moe_w13_linear_layer",
+        "mean_us": 41.748064516129034,
+        "min_us": 39.13,
+        "max_us": 43.85,
+        "n": 31
+      },
+      {
+        "event": 225,
+        "op": "gang_moe_w2_silu_linear_layer",
+        "mean_us": 23.154516129032256,
+        "min_us": 21.72,
+        "max_us": 25.76,
+        "n": 31
+      },
+      {
+        "event": 226,
+        "op": "moe_mul_sum_add_layer",
+        "mean_us": 4.936129032258065,
+        "min_us": 4.38,
+        "max_us": 5.63,
+        "n": 31
+      },
+      {
+        "event": 227,
+        "op": "linear_gemv_layer",
+        "mean_us": 13.744516129032258,
+        "min_us": 13.27,
+        "max_us": 14.18,
+        "n": 31
+      },
+      {
+        "event": 228,
+        "op": "mla_prep_layer",
+        "mean_us": 9.898064516129033,
+        "min_us": 9.53,
+        "max_us": 10.19,
+        "n": 31
+      },
+      {
+        "event": 229,
+        "op": "mla_attend_layer",
+        "mean_us": 12.250967741935485,
+        "min_us": 11.57,
+        "max_us": 12.81,
+        "n": 31
+      },
+      {
+        "event": 230,
+        "op": "mla_merge_uv_tile_layer",
+        "mean_us": 15.172580645161291,
+        "min_us": 14.76,
+        "max_us": 15.6,
+        "n": 31
+      },
+      {
+        "event": 231,
+        "op": "linear_gemv_layer",
+        "mean_us": 8.216451612903226,
+        "min_us": 7.63,
+        "max_us": 8.76,
+        "n": 31
+      },
+      {
+        "event": 232,
+        "op": "moe_router_layer",
+        "mean_us": 16.42451612903226,
+        "min_us": 14.99,
+        "max_us": 17.72,
+        "n": 31
+      },
+      {
+        "event": 233,
+        "op": "gang_moe_w13_linear_layer",
+        "mean_us": 41.185806451612905,
+        "min_us": 38.89,
+        "max_us": 43.53,
+        "n": 31
+      },
+      {
+        "event": 234,
+        "op": "gang_moe_w2_silu_linear_layer",
+        "mean_us": 23.687419354838713,
+        "min_us": 21.97,
+        "max_us": 25.19,
+        "n": 31
+      },
+      {
+        "event": 235,
+        "op": "moe_mul_sum_add_layer",
+        "mean_us": 4.7458064516129035,
+        "min_us": 4.34,
+        "max_us": 5.5600000000000005,
+        "n": 31
+      },
+      {
+        "event": 236,
+        "op": "linear_gemv_layer",
+        "mean_us": 13.685483870967742,
+        "min_us": 13.32,
+        "max_us": 14.120000000000001,
+        "n": 31
+      },
+      {
+        "event": 237,
+        "op": "mla_prep_layer",
+        "mean_us": 9.644193548387097,
+        "min_us": 9.38,
+        "max_us": 9.92,
+        "n": 31
+      },
+      {
+        "event": 238,
+        "op": "mla_attend_layer",
+        "mean_us": 12.709354838709677,
+        "min_us": 12.06,
+        "max_us": 13.540000000000001,
+        "n": 31
+      },
+      {
+        "event": 239,
+        "op": "mla_merge_uv_tile_layer",
+        "mean_us": 15.139032258064516,
+        "min_us": 14.47,
+        "max_us": 15.73,
+        "n": 31
+      },
+      {
+        "event": 240,
+        "op": "linear_gemv_layer",
+        "mean_us": 7.96,
+        "min_us": 7.44,
+        "max_us": 8.51,
+        "n": 31
+      },
+      {
+        "event": 241,
+        "op": "moe_router_layer",
+        "mean_us": 16.295483870967743,
+        "min_us": 14.97,
+        "max_us": 18.16,
+        "n": 31
+      },
+      {
+        "event": 242,
+        "op": "gang_moe_w13_linear_layer",
+        "mean_us": 41.52451612903226,
+        "min_us": 38.15,
+        "max_us": 44.28,
+        "n": 31
+      },
+      {
+        "event": 243,
+        "op": "gang_moe_w2_silu_linear_layer",
+        "mean_us": 23.370967741935484,
+        "min_us": 21.96,
+        "max_us": 24.78,
+        "n": 31
+      },
+      {
+        "event": 244,
+        "op": "moe_mul_sum_add_layer",
+        "mean_us": 5.906451612903226,
+        "min_us": 4.11,
+        "max_us": 7.25,
+        "n": 31
+      },
+      {
+        "event": 245,
+        "op": "linear_gemv_layer",
+        "mean_us": 0.3022580645161291,
+        "min_us": 0.0,
+        "max_us": 1.07,
+        "n": 31
+      },
+      {
+        "event": 246,
+        "op": "argmax_partial_layer",
+        "mean_us": 0.1874193548387097,
+        "min_us": 0.0,
+        "max_us": 1.1300000000000001,
+        "n": 31
+      },
+      {
+        "event": 247,
+        "op": "argmax_reduce_layer",
+        "mean_us": 0.17935483870967744,
+        "min_us": 0.0,
+        "max_us": 0.76,
+        "n": 31
+      },
+      {
+        "event": 248,
+        "op": "event_248",
+        "mean_us": 2.590967741935484,
+        "min_us": 0.0,
+        "max_us": 74.32000000000001,
+        "n": 31
+      },
+      {
+        "event": 249,
+        "op": "event_249",
+        "mean_us": 0.23161290322580647,
+        "min_us": 0.0,
+        "max_us": 0.96,
+        "n": 31
+      },
+      {
+        "event": 250,
+        "op": "event_250",
+        "mean_us": 4.872580645161291,
+        "min_us": 0.0,
+        "max_us": 74.14,
+        "n": 31
+      },
+      {
+        "event": 251,
+        "op": "event_251",
+        "mean_us": 0.15064516129032257,
+        "min_us": 0.0,
+        "max_us": 0.6,
+        "n": 31
+      },
+      {
+        "event": 252,
+        "op": "event_252",
+        "mean_us": 11.946129032258064,
+        "min_us": 0.0,
+        "max_us": 75.10000000000001,
+        "n": 31
+      },
+      {
+        "event": 253,
+        "op": "event_253",
+        "mean_us": 0.26999999999999996,
+        "min_us": 0.0,
+        "max_us": 3.48,
+        "n": 31
+      },
+      {
+        "event": 254,
+        "op": "event_254",
+        "mean_us": 2.446451612903226,
+        "min_us": 0.0,
+        "max_us": 72.0,
+        "n": 31
+      },
+      {
+        "event": 255,
+        "op": "event_255",
+        "mean_us": 2.608709677419355,
+        "min_us": 0.0,
+        "max_us": 73.28,
+        "n": 31
+      },
+      {
+        "event": 256,
+        "op": "event_256",
+        "mean_us": 2.565161290322581,
+        "min_us": 0.0,
+        "max_us": 72.35000000000001,
+        "n": 31
+      },
+      {
+        "event": 257,
+        "op": "event_257",
+        "mean_us": 4.973870967741936,
+        "min_us": 0.0,
+        "max_us": 74.46000000000001,
+        "n": 31
+      },
+      {
+        "event": 258,
+        "op": "event_258",
+        "mean_us": 0.2235483870967742,
+        "min_us": 0.0,
+        "max_us": 1.48,
+        "n": 31
+      },
+      {
+        "event": 259,
+        "op": "event_259",
+        "mean_us": 7.260322580645162,
+        "min_us": 0.0,
+        "max_us": 73.4,
+        "n": 31
+      },
+      {
+        "event": 260,
+        "op": "event_260",
+        "mean_us": 2.5925806451612905,
+        "min_us": 0.0,
+        "max_us": 74.21000000000001,
+        "n": 31
+      },
+      {
+        "event": 261,
+        "op": "event_261",
+        "mean_us": 0.1638709677419355,
+        "min_us": 0.0,
+        "max_us": 0.76,
+        "n": 31
+      },
+      {
+        "event": 262,
+        "op": "event_262",
+        "mean_us": 2.5919354838709676,
+        "min_us": 0.0,
+        "max_us": 71.72,
+        "n": 31
+      },
+      {
+        "event": 263,
+        "op": "event_263",
+        "mean_us": 4.84,
+        "min_us": 0.0,
+        "max_us": 72.53,
+        "n": 31
+      },
+      {
+        "event": 264,
+        "op": "event_264",
+        "mean_us": 2.5154838709677416,
+        "min_us": 0.0,
+        "max_us": 73.63,
+        "n": 31
+      },
+      {
+        "event": 265,
+        "op": "event_265",
+        "mean_us": 0.2783870967741936,
+        "min_us": 0.0,
+        "max_us": 2.16,
+        "n": 31
+      },
+      {
+        "event": 266,
+        "op": "event_266",
+        "mean_us": 0.20516129032258065,
+        "min_us": 0.0,
+        "max_us": 1.08,
+        "n": 31
+      },
+      {
+        "event": 267,
+        "op": "event_267",
+        "mean_us": 2.529677419354839,
+        "min_us": 0.0,
+        "max_us": 71.96000000000001,
+        "n": 31
+      },
+      {
+        "event": 268,
+        "op": "event_268",
+        "mean_us": 0.3854838709677419,
+        "min_us": 0.0,
+        "max_us": 1.96,
+        "n": 31
+      },
+      {
+        "event": 269,
+        "op": "event_269",
+        "mean_us": 0.2838709677419355,
+        "min_us": 0.0,
+        "max_us": 0.92,
+        "n": 31
+      },
+      {
+        "event": 270,
+        "op": "event_270",
+        "mean_us": 0.15096774193548387,
+        "min_us": 0.0,
+        "max_us": 0.64,
+        "n": 31
+      },
+      {
+        "event": 271,
+        "op": "event_271",
+        "mean_us": 0.2738709677419355,
+        "min_us": 0.0,
+        "max_us": 1.24,
+        "n": 31
+      },
+      {
+        "event": 272,
+        "op": "event_272",
+        "mean_us": 2.49741935483871,
+        "min_us": 0.0,
+        "max_us": 70.47,
+        "n": 31
+      },
+      {
+        "event": 273,
+        "op": "event_273",
+        "mean_us": 2.5393548387096776,
+        "min_us": 0.0,
+        "max_us": 72.47,
+        "n": 31
+      },
+      {
+        "event": 274,
+        "op": "event_274",
+        "mean_us": 0.2241935483870968,
+        "min_us": 0.0,
+        "max_us": 0.76,
+        "n": 31
+      },
+      {
+        "event": 275,
+        "op": "event_275",
+        "mean_us": 0.24161290322580645,
+        "min_us": 0.0,
+        "max_us": 0.76,
+        "n": 31
+      },
+      {
+        "event": 276,
+        "op": "event_276",
+        "mean_us": 0.20870967741935484,
+        "min_us": 0.0,
+        "max_us": 0.8,
+        "n": 31
+      },
+      {
+        "event": 277,
+        "op": "event_277",
+        "mean_us": 0.2461290322580645,
+        "min_us": 0.0,
+        "max_us": 1.04,
+        "n": 31
+      },
+      {
+        "event": 278,
+        "op": "event_278",
+        "mean_us": 0.22064516129032258,
+        "min_us": 0.0,
+        "max_us": 0.7000000000000001,
+        "n": 31
+      },
+      {
+        "event": 279,
+        "op": "event_279",
+        "mean_us": 11.862580645161291,
+        "min_us": 0.0,
+        "max_us": 74.31,
+        "n": 31
+      },
+      {
+        "event": 280,
+        "op": "event_280",
+        "mean_us": 4.862903225806452,
+        "min_us": 0.0,
+        "max_us": 73.73,
+        "n": 31
+      },
+      {
+        "event": 281,
+        "op": "event_281",
+        "mean_us": 0.21548387096774194,
+        "min_us": 0.0,
+        "max_us": 0.88,
+        "n": 31
+      },
+      {
+        "event": 282,
+        "op": "event_282",
+        "mean_us": 1.4296774193548387,
+        "min_us": 0.0,
+        "max_us": 29.44,
+        "n": 31
+      },
+      {
+        "event": 283,
+        "op": "event_283",
+        "mean_us": 2.1903225806451614,
+        "min_us": 0.0,
+        "max_us": 28.41,
+        "n": 31
+      },
+      {
+        "event": 284,
+        "op": "event_284",
+        "mean_us": 5.003225806451613,
+        "min_us": 0.0,
+        "max_us": 30.44,
+        "n": 31
+      },
+      {
+        "event": 285,
+        "op": "event_285",
+        "mean_us": 2.1816129032258065,
+        "min_us": 0.0,
+        "max_us": 29.61,
+        "n": 31
+      },
+      {
+        "event": 286,
+        "op": "event_286",
+        "mean_us": 0.42516129032258065,
+        "min_us": 0.0,
+        "max_us": 1.92,
+        "n": 31
+      },
+      {
+        "event": 287,
+        "op": "event_287",
+        "mean_us": 3.184516129032258,
+        "min_us": 0.0,
+        "max_us": 31.16,
+        "n": 31
+      },
+      {
+        "event": 288,
+        "op": "event_288",
+        "mean_us": 5.731290322580645,
+        "min_us": 0.0,
+        "max_us": 29.28,
+        "n": 31
+      },
+      {
+        "event": 289,
+        "op": "event_289",
+        "mean_us": 2.16,
+        "min_us": 0.0,
+        "max_us": 29.1,
+        "n": 31
+      },
+      {
+        "event": 290,
+        "op": "event_290",
+        "mean_us": 0.5064516129032258,
+        "min_us": 0.0,
+        "max_us": 3.08,
+        "n": 31
+      },
+      {
+        "event": 291,
+        "op": "event_291",
+        "mean_us": 1.3554838709677421,
+        "min_us": 0.0,
+        "max_us": 30.39,
+        "n": 31
+      },
+      {
+        "event": 292,
+        "op": "event_292",
+        "mean_us": 1.9403225806451612,
+        "min_us": 0.0,
+        "max_us": 26.88,
+        "n": 31
+      },
+      {
+        "event": 293,
+        "op": "event_293",
+        "mean_us": 6.202903225806451,
+        "min_us": 0.0,
+        "max_us": 30.85,
+        "n": 31
+      },
+      {
+        "event": 294,
+        "op": "event_294",
+        "mean_us": 1.2729032258064517,
+        "min_us": 0.0,
+        "max_us": 28.52,
+        "n": 31
+      },
+      {
+        "event": 295,
+        "op": "event_295",
+        "mean_us": 5.309677419354839,
+        "min_us": 4.82,
+        "max_us": 5.6000000000000005,
+        "n": 31
+      },
+      {
+        "event": 296,
+        "op": "event_296",
+        "mean_us": 5.098064516129032,
+        "min_us": 4.9,
+        "max_us": 5.25,
+        "n": 31
+      }
+    ]
+  }
+}

@@ -101,7 +101,7 @@ run_graph() {
     clock_pid=$!
   fi
   # shellcheck disable=SC2086
-  $RUN_FLEET "${args[@]}" --model-dir "$snap" > "$log" 2>&1; RC=$?
+  timeout "${ROW_TIMEOUT:-600}" $RUN_FLEET "${args[@]}" --model-dir "$snap" > "$log" 2>&1; RC=$?   # a hung row ends as FAIL (rc 124) after ROW_TIMEOUT seconds (2026-09-18: a row hung 20 minutes)
   if [ -n "$clock_pid" ]; then kill "$clock_pid" 2>/dev/null; wait "$clock_pid" 2>/dev/null || true; fi
   [ -f "$clock_log" ] && [ -d "$FLEET_OUT/$NAME" ] && cp "$clock_log" "$FLEET_OUT/$NAME/clock.log" 2>/dev/null || true
   WALL=$(( $(date +%s) - t0 ))

@@ -1,0 +1,20 @@
+### 2026-09-18T04:40:25Z fleet/tasks/build/kernel_tests launches=50 cache_copies=27
+TIME mla_attend launches=50 grid=8x5 cache_copies=27 mean_us=34.05
+ok mla_attend /home/hotaisle/metalOps/env/logs/ktime_trial/mla_attend/000
+TIME mla_merge_uv launches=50 mean_us=16.47
+ok mla_merge_uv /home/hotaisle/metalOps/env/logs/ktime_trial/mla_merge_uv/000
+[SPIN] block=0 iters=1000 cycles=51988 ticks=2484 x=350778849
+ok copy /home/hotaisle/metalOps/env/logs/ktime_trial/copy/000
+TIME linear_gemv_norm launches=50 grid=96 rows=38 weight_copies=27 mean_us=10.76
+ok linear_gemv_norm /home/hotaisle/metalOps/env/logs/ktime_trial/linear_gemv_norm/000
+TIME linear_gemv_res launches=50 grid=64 rows=32 weight_copies=27 mean_us=6.17
+ok linear_gemv_res /home/hotaisle/metalOps/env/logs/ktime_trial/linear_gemv_res/000
+TIME moe_router launches=50 batch=8 weight_copies=27 mean_us=11.53
+ok moe_router /home/hotaisle/metalOps/env/logs/ktime_trial/moe_router/000
+TIME mla_merge_oproj launches=50 mean_us=39.05
+ok mla_merge_oproj /home/hotaisle/metalOps/env/logs/ktime_trial/mla_merge_oproj/000/oproj
+TIME gang_w13_gemv launches=50 grid=37x8 mean_us=24.53
+ok gang_w13_gemv /home/hotaisle/metalOps/env/logs/ktime_trial/gang_w13_gemv/000
+TIME gang_w2_gemv launches=50 grid=32x8 mean_us=21.67
+ok gang_w2_gemv /home/hotaisle/metalOps/env/logs/ktime_trial/gang_w2_gemv/000
+2026-09-18T04:40:27Z PASS ktime 2s

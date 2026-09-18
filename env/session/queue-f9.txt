@@ -1,0 +1,6 @@
+# Round 4, the route-log controls (2026-09-18, on the VM): queue-f8's R1 (the GEMV linears at grid 96
+# with the half merge) passes the head's logits but fails the route log; R2 (no GEMV linears, the half
+# merge) faulted. R3 is the GEMV linears with the stock merge; R4 the round-3 stack on today's header
+# (the deeper router and merge, the CK w2). One iteration, 27 layers and the head, the compare.
+--layers 27 --head --iters 1 --tile-linears --nt-weights --event-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend --attend-tasks --nt-streams --gemv-linears --runtime-flags=-DMPK_W2_CK_TILE compare continue
+--layers 27 --head --iters 1 --tile-linears --nt-weights --event-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend --attend-tasks --runtime-flags=-DMPK_W2_CK_TILE compare continue

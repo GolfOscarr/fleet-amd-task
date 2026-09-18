@@ -161,6 +161,10 @@ Status: passed 2026-09-18 after L8. `preflight.sh` 8 PASS (the suite 234 passed,
 
 ## Before the VM
 
-- [ ] the user's go for the VM (a fresh host: about 12 minutes of setup; the balance $13.01)
-- [ ] `FULL=1 L push` (the pristine fork, the changed patch), `L start setup`, `V preflight`, `V checks`, `V reference`, `V kernels`, `V ktime` (G0, H0)
-- [ ] the first report at G0's DECIDE row (the batch constant), before any graph row
+- [x] the user's go for the VM (given 2026-09-18 04:11 UTC; the balance read $12.91, the 13-core host chosen)
+- [x] `FULL=1 L push`, setup 453 s, preflight, checks 7 PASS, reference, the 19 suites 100 of 100 on both builds, `ktime` on five builds (G0, H0)
+- [x] the first report at G0's DECIDE row (the batch constant 8), before any graph row
+
+The session's log is `09-session-log.md`, its numbers `10-results.md`
+(the round's number 4,262 to 4,341 us per token against round 3's 4,571 to
+4,600).

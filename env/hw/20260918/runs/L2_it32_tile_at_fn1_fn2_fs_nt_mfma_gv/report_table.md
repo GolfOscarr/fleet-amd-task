@@ -1,0 +1,40 @@
+# Measurement report
+
+| Quantity | Predicted | Measured |
+|---|---|---|
+| bytes per iteration (read, MiB) | 4709.9 weights + cache; about 4772.0 with activations | - |
+| time per iteration, median (us) | 1148.5-1349.4 + 326 t_b + T_serial | - |
+| time per iteration, P95 (us) |  | - |
+| time per iteration from event timing, median (us) |  | 525.5 |
+| time per iteration from host wall clock (us) |  | 1094.8 |
+| time per iteration from the kernel trace (us) |  | - |
+| achieved read bandwidth (TB/s) | 3.66-4.3 over T_bw | - |
+| launches per generation | 3 | - |
+| L2 hit rate | 16-17% (Fleet's batch-1 figure) | - |
+| tokens per second |  | - |
+| GFX clock from amd-smi during the run, median / max (MHz) | 2100 max (D2 of round 1) | 2107 / 2108 over 33 samples |
+| memory clock from amd-smi, median (MHz) |  | 900 |
+
+## Per-operator time (event gaps, mean over iterations after the first)
+
+| Event | Operator | mean us | min us | max us | n |
+|---|---|---|---|---|---|
+| 1 | iteration_start | 166.65 | 8.36 | 228.40 | 30 |
+| 2 | embed_layer | 13.03 | 12.13 | 14.49 | 31 |
+| 3 | linear_gemv_layer | 24.40 | 23.34 | 25.64 | 31 |
+| 4 | mla_prep_layer | 9.86 | 9.48 | 11.04 | 31 |
+| 5 | mla_attend_layer | 11.71 | 11.32 | 11.96 | 31 |
+| 6 | mla_merge_uv_layer | 24.84 | 23.65 | 26.85 | 31 |
+| 7 | linear_gemv_layer | 8.05 | 6.98 | 10.04 | 31 |
+| 8 | rmsnorm_layer | 3.99 | 3.28 | 5.10 | 31 |
+| 9 | gang_linear_silu_layer | 35.33 | 33.72 | 36.60 | 31 |
+| 10 | linear_with_residual_layer | 50.89 | 49.45 | 52.28 | 31 |
+| 11 | linear_gemv_layer | 10.99 | 10.18 | 11.96 | 31 |
+| 12 | mla_prep_layer | 9.66 | 9.00 | 10.39 | 31 |
+| 13 | mla_attend_layer | 11.71 | 11.33 | 11.97 | 31 |
+| 14 | mla_merge_uv_layer | 24.19 | 23.20 | 26.48 | 31 |
+| 15 | linear_gemv_layer | 7.57 | 6.30 | 10.32 | 31 |
+| 16 | moe_router_layer | 17.77 | 16.35 | 18.57 | 31 |
+| 17 | gang_moe_w13_linear_layer | 39.72 | 37.79 | 42.64 | 31 |
+| 18 | gang_moe_w2_silu_linear_layer | 34.09 | 31.61 | 36.38 | 31 |
+| 19 | moe_mul_sum_add_layer | 3.14 | 3.00 | 3.43 | 31 |

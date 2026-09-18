@@ -1,0 +1,6 @@
+# Round 4, G3 restored (2026-09-18, on the VM): the w2 CK multiply through -DMPK_W2_CK_TILE, which now
+# includes round 3's file verbatim (gang_moe_w2_silu_ck_mi300.cuh), against queue-f2.txt's G1.2 row
+# (the header's w2 GEMV form, 34.4 us in the 2-layer graph against round 3's 23.3). T4 reads the pair:
+# the CK form joins the later files as the define if its compare passes and its w2 gap is lower.
+--layers 2 --iters 1 --tile-linears --nt-weights --event-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend --attend-tasks --nt-streams --gemv-linears --runtime-flags=-DMPK_W2_CK_TILE compare
+--layers 2 --iters 32 --tile-linears --nt-weights --event-timing --fuse-norm2 --fuse-silu --fuse-norm1 --mfma-attend --attend-tasks --nt-streams --gemv-linears --runtime-flags=-DMPK_W2_CK_TILE table

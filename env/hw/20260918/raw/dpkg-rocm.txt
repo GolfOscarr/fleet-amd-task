@@ -1,0 +1,50 @@
+ii  comgr                                 3.0.0.70204-93~24.04                             amd64        Library to provide support functions for ROCm code objects.
+ii  hipblas                               3.2.0.70204-93~24.04                             amd64        ROCm BLAS marshalling library
+ii  hipblas-dev                           3.2.0.70204-93~24.04                             amd64        ROCm BLAS marshalling library
+ii  hipfft                                1.0.22.70204-93~24.04                            amd64        ROCm FFT marshalling library
+ii  hipfft-dev                            1.0.22.70204-93~24.04                            amd64        ROCm FFT marshalling library
+ii  hipsolver                             3.2.0.70204-93~24.04                             amd64        ROCm LAPACK marshalling library
+ii  hipsolver-dev                         3.2.0.70204-93~24.04                             amd64        ROCm LAPACK marshalling library
+ii  hipsparse                             4.2.0.70204-93~24.04                             amd64        ROCm SPARSE library
+ii  hipsparse-dev                         4.2.0.70204-93~24.04                             amd64        ROCm SPARSE library
+ii  hipsparselt                           0.2.6.70204-93~24.04                             amd64        ROCm structured sparsity matrix multiplication marshalling library
+ii  hipsparselt-dev                       0.2.6.70204-93~24.04                             amd64        ROCm structured sparsity matrix multiplication marshalling library
+ii  hsa-rocr                              1.18.0.70204-93~24.04                            amd64        AMD Heterogeneous System Architecture HSA - Linux HSA Runtime for Boltzmann (ROCm) platforms
+ii  libamd-comgr2:amd64                   6.0+git20231212.4510c28+dfsg-3build2             amd64        ROCm code object manager
+ii  libhsa-runtime64-1                    5.7.1-2build1                                    amd64        HSA Runtime API and runtime for ROCm
+ii  rccl                                  2.27.7.70204-93~24.04                            amd64        ROCm Communication Collectives Library
+ii  rccl-dev                              2.27.7.70204-93~24.04                            amd64        ROCm Communication Collectives Library
+ii  rocalution                            4.1.0.70204-93~24.04                             amd64        ROCm library for sparse linear systems
+ii  rocalution-dev                        4.1.0.70204-93~24.04                             amd64        ROCm library for sparse linear systems
+ii  rocblas                               5.2.0.70204-93~24.04                             amd64        AMD library for BLAS in ROCm. Implemented in HIP and optimized for AMD GPUs
+ii  rocblas-dev                           5.2.0.70204-93~24.04                             amd64        AMD library for BLAS in ROCm. Implemented in HIP and optimized for AMD GPUs
+ii  rocfft                                1.0.36.70204-93~24.04                            amd64        ROCm FFT library
+ii  rocfft-dev                            1.0.36.70204-93~24.04                            amd64        ROCm FFT library
+ii  rocm                                  7.2.4.70204-93~24.04                             amd64        Radeon Open Compute (ROCm) software stack meta package
+ii  rocm-cmake                            0.14.0.70204-93~24.04                            amd64        rocm-cmake built using CMake
+ii  rocm-core                             7.2.4.70204-93~24.04                             amd64        ROCm Runtime software stack
+ii  rocm-dbgapi                           0.77.4.70204-93~24.04                            amd64        Library to provide AMD GPU debugger API
+ii  rocm-debug-agent                      2.1.0.70204-93~24.04                             amd64        Radeon Open Compute Debug Agent (ROCdebug-agent)
+ii  rocm-developer-tools                  7.2.4.70204-93~24.04                             amd64        Radeon Open Compute (ROCm) Runtime software stack
+ii  rocm-device-libs                      1.0.0.70204-93~24.04                             amd64        Radeon Open Compute - device libraries
+ii  rocm-gdb                              16.3.70204-93~24.04                              amd64        ROCgdb
+ii  rocm-hip                              7.2.4.70204-93~24.04                             amd64        Radeon Open Compute (ROCm) Runtime software stack
+ii  rocm-llvm                             22.0.0.26084.70204-93~24.04                      amd64        ROCm core compiler
+ii  rocm-opencl                           2.0.0.70204-93~24.04                             amd64        clr built using CMake
+ii  rocm-opencl-dev                       2.0.0.70204-93~24.04                             amd64        clr built using CMake
+ii  rocm-opencl-sdk                       7.2.4.70204-93~24.04                             amd64        Radeon Open Compute (ROCm) Runtime software stack
+ii  rocm-openmp                           7.2.4.70204-93~24.04                             amd64        Radeon Open Compute (ROCm) OpenMP Software development Kit.
+ii  rocm-smi-lib                          7.8.0.70204-93~24.04                             amd64        AMD System Management libraries
+ii  rocm-validation-suite                 1.3.0.70204-93~24.04                             amd64        Tool for validating AMD GPU functionality, performance, reliability in ROCm.
+ii  rocminfo                              1.0.0.70204-93~24.04                             amd64        Radeon Open Compute (ROCm) Runtime rocminfo tool
+ii  rocprofiler-compute                   3.4.0.70204-93~24.04                             amd64        ROCm Compute Profiler: tool for GPU performance profiling
+ii  rocprofiler-sdk                       1.1.0-93~24.04                                   amd64        ROCm GPU performance analysis SDK
+ii  rocprofiler-sdk-rocpd                 1.1.0-93~24.04                                   amd64        ROCm GPU performance analysis SDK
+ii  rocprofiler-sdk-roctx                 1.1.0-93~24.04                                   amd64        ROCm GPU performance analysis SDK
+ii  rocrand                               4.2.0.70204-93~24.04                             amd64        rocRAND is a ROCm random number generation library
+ii  rocrand-dev                           4.2.0.70204-93~24.04                             amd64        rocRAND is a ROCm random number generation library
+ii  rocsolver                             3.32.0.70204-93~24.04                            amd64        AMD ROCm SOLVER library
+ii  rocsolver-dev                         3.32.0.70204-93~24.04                            amd64        AMD ROCm SOLVER library
+ii  rocsparse                             4.2.0.70204-93~24.04                             amd64        ROCm SPARSE library
+ii  rocsparse-dev                         4.2.0.70204-93~24.04                             amd64        ROCm SPARSE library
+ii  rocthrust-dev                         4.2.0.70204-93~24.04                             amd64        rocThrust is a ROCm port of the Thrust library, written in HIP

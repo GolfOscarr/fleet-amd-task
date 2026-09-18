@@ -1,0 +1,40 @@
+# Measurement report
+
+| Quantity | Predicted | Measured |
+|---|---|---|
+| bytes per iteration (read, MiB) | 4709.9 weights + cache; about 4772.0 with activations | - |
+| time per iteration, median (us) | 1148.5-1349.4 + 326 t_b + T_serial | - |
+| time per iteration, P95 (us) |  | - |
+| time per iteration from event timing, median (us) |  | 536.1 |
+| time per iteration from host wall clock (us) |  | 1083.1 |
+| time per iteration from the kernel trace (us) |  | - |
+| achieved read bandwidth (TB/s) | 3.66-4.3 over T_bw | - |
+| launches per generation | 3 | - |
+| L2 hit rate | 16-17% (Fleet's batch-1 figure) | - |
+| tokens per second |  | - |
+| GFX clock from amd-smi during the run, median / max (MHz) | 2100 max (D2 of round 1) | 2107 / 2107 over 34 samples |
+| memory clock from amd-smi, median (MHz) |  | 900 |
+
+## Per-operator time (event gaps, mean over iterations after the first)
+
+| Event | Operator | mean us | min us | max us | n |
+|---|---|---|---|---|---|
+| 1 | iteration_start | 148.06 | 7.80 | 195.52 | 30 |
+| 2 | embed_layer | 13.34 | 11.80 | 14.32 | 31 |
+| 3 | linear_norm_layer | 28.03 | 26.60 | 29.91 | 31 |
+| 4 | mla_prep_layer | 10.35 | 10.07 | 10.55 | 31 |
+| 5 | mla_attend_layer | 11.75 | 11.39 | 12.00 | 31 |
+| 6 | mla_merge_uv_layer | 24.42 | 23.33 | 26.29 | 31 |
+| 7 | linear_with_residual_layer | 13.07 | 11.98 | 15.00 | 31 |
+| 8 | rmsnorm_layer | 3.98 | 3.07 | 4.94 | 31 |
+| 9 | gang_linear_silu_layer | 33.36 | 32.39 | 35.38 | 31 |
+| 10 | linear_with_residual_layer | 50.55 | 49.40 | 51.92 | 31 |
+| 11 | linear_norm_layer | 14.06 | 13.46 | 14.98 | 31 |
+| 12 | mla_prep_layer | 10.59 | 10.09 | 12.55 | 31 |
+| 13 | mla_attend_layer | 11.93 | 11.51 | 12.35 | 31 |
+| 14 | mla_merge_uv_layer | 23.81 | 22.99 | 25.96 | 31 |
+| 15 | linear_with_residual_layer | 13.03 | 11.60 | 14.96 | 31 |
+| 16 | moe_router_layer | 17.65 | 15.56 | 18.48 | 31 |
+| 17 | gang_moe_w13_linear_layer | 40.54 | 38.53 | 43.53 | 31 |
+| 18 | gang_moe_w2_silu_linear_layer | 34.28 | 31.82 | 36.75 | 31 |
+| 19 | moe_mul_sum_add_layer | 3.08 | 2.92 | 3.46 | 31 |

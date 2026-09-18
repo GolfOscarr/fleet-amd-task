@@ -1,0 +1,62 @@
+2026-09-18T04:14:00Z START download 
+2026-09-18T04:14:03Z START setup 
+2026-09-18T04:14:06Z START hw 
+2026-09-18T04:14:10Z START preflight 
+2026-09-18T04:14:10Z PASS preflight 0s
+2026-09-18T04:15:26Z PASS download 86s
+2026-09-18T04:16:16Z PASS hw 130s
+2026-09-18T04:21:36Z PASS setup 453s
+2026-09-18T04:21:59Z START checks 
+2026-09-18T04:23:20Z PASS checks 81s
+2026-09-18T04:23:55Z START reference 
+2026-09-18T04:25:06Z PASS reference 71s
+2026-09-18T04:25:51Z START kernels 
+2026-09-18T04:31:28Z PASS kernels 337s
+2026-09-18T04:31:40Z START kernels nt
+2026-09-18T04:36:48Z PASS kernels 308s
+2026-09-18T04:37:15Z START ktime nt
+2026-09-18T04:37:23Z PASS ktime 8s
+2026-09-18T04:37:29Z START ktime nt_b4
+2026-09-18T04:37:35Z PASS ktime 6s
+2026-09-18T04:38:33Z START ktime nt_b16
+2026-09-18T04:38:39Z PASS ktime 6s
+2026-09-18T04:39:45Z START ktime nt_strided
+2026-09-18T04:39:51Z PASS ktime 6s
+2026-09-18T04:40:25Z START ktime 
+2026-09-18T04:40:27Z PASS ktime 2s
+2026-09-18T04:41:12Z START queue env/session/queue-f2.txt
+2026-09-18T05:01:56Z FAIL queue 1244s: see /home/hotaisle/metalOps/env/logs/queue.out
+2026-09-18T05:06:48Z START queue env/session/queue-f2.txt
+2026-09-18T05:17:34Z FAIL queue 646s: see /home/hotaisle/metalOps/env/logs/queue.out
+2026-09-18T05:23:56Z START queue env/session/queue-f2.txt
+2026-09-18T05:29:31Z PASS queue 335s
+2026-09-18T05:31:22Z START queue env/session/queue-f7.txt
+2026-09-18T05:32:51Z PASS queue 89s
+2026-09-18T05:33:49Z START queue env/session/queue-f3.txt
+2026-09-18T05:35:17Z PASS queue 88s
+2026-09-18T05:35:48Z START queue env/session/queue-g1.txt
+2026-09-18T05:40:12Z PASS queue 264s
+2026-09-18T05:40:51Z START queue env/session/queue-g2.txt
+2026-09-18T05:42:19Z PASS queue 88s
+2026-09-18T05:42:50Z START tgcheck L2_it1_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_w2cktile_gv_mo
+2026-09-18T05:42:51Z PASS tgcheck 1s
+2026-09-18T05:49:46Z START queue env/session/queue-f4.txt
+2026-09-18T05:53:13Z PASS queue 207s
+2026-09-18T05:53:38Z START queue env/session/queue-f5.txt
+2026-09-18T05:58:16Z PASS queue 278s
+2026-09-18T05:59:42Z START queue env/session/queue-f8.txt
+2026-09-18T06:02:05Z PASS queue 143s
+2026-09-18T06:03:01Z START queue env/session/queue-f9.txt
+2026-09-18T06:05:25Z PASS queue 144s
+2026-09-18T06:07:25Z START queue env/session/queue-f5.txt
+2026-09-18T06:12:02Z PASS queue 277s
+2026-09-18T06:12:55Z START queue env/session/queue-f5.txt
+2026-09-18T06:17:32Z PASS queue 277s
+2026-09-18T06:18:44Z START queue env/session/queue-f6.txt
+2026-09-18T06:26:55Z PASS queue 491s
+2026-09-18T06:27:23Z START queue env/session/queue-f5.txt
+2026-09-18T06:32:00Z PASS queue 277s
+2026-09-18T06:46:15Z START queue env/session/queue-g3.txt
+2026-09-18T06:52:21Z PASS queue 366s
+2026-09-18T06:52:52Z START queue env/session/queue-g4.txt
+2026-09-18T06:57:30Z PASS queue 278s
