@@ -8,7 +8,7 @@ The `seen_tokens` attribute is deprecated and will be removed in v4.41. Use the 
 wrote 38 boundary tensors, 32 ids -> /home/hotaisle/metalOps/harness/ref
 generate agrees with loop: True
 B5 -> B6 self-check, max abs err per layer: {'L0': 0.0, 'L1': 0.0}
-Loading checkpoint shards:   0%|          | 0/4 [00:00<?, ?it/s]Loading checkpoint shards:  25%|██▌       | 1/4 [00:00<00:02,  1.09it/s]Loading checkpoint shards:  50%|█████     | 2/4 [00:01<00:01,  1.04it/s]Loading checkpoint shards:  75%|███████▌  | 3/4 [00:02<00:00,  1.03it/s]Loading checkpoint shards: 100%|██████████| 4/4 [00:03<00:00,  1.19it/s]Loading checkpoint shards: 100%|██████████| 4/4 [00:03<00:00,  1.13it/s]
+Loading checkpoint shards:   0%|          | 0/4 [00:00<?, ?it/s]Loading checkpoint shards:  25%|██▌       | 1/4 [00:00<00:02,  1.10it/s]Loading checkpoint shards:  50%|█████     | 2/4 [00:01<00:01,  1.05it/s]Loading checkpoint shards:  75%|███████▌  | 3/4 [00:02<00:00,  1.04it/s]Loading checkpoint shards: 100%|██████████| 4/4 [00:03<00:00,  1.20it/s]Loading checkpoint shards: 100%|██████████| 4/4 [00:03<00:00,  1.14it/s]
 attention  floor 1.001e-02  threshold 4.004e-02  (starting 3e-02)
 expert     floor 1.099e-02  threshold 4.396e-02  (starting 3e-02)
 gemv       floor 3.235e-03  threshold 1.294e-02  (starting 2e-02)
@@ -26,4 +26,4 @@ layers with overlap above one half: 0 of 26
 mean distinct experts per layer over the run: 50.76923076923077
 consecutive steps reuse fewer than half of their experts on average: cross-step affinity would rarely pay; placement by slot order stands
 -> /home/hotaisle/metalOps/harness/results/route_analysis.json
-2026-09-18T04:25:06Z PASS reference 71s
+2026-09-18T11:23:22Z PASS reference 70s

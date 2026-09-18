@@ -1,4 +1,4 @@
-== check_day1.sh 2026-09-18T04:21:59+00:00 on enc1-gpuvm016; log /home/hotaisle/metalOps/env/logs/check_day1.20260918-042159.log
+== check_day1.sh 2026-09-18T11:20:08+00:00 on enc1-gpuvm016; log /home/hotaisle/metalOps/env/logs/check_day1.20260918-112008.log
 
 ---- 1. partition mode: expect SPX + NPS1 (docs/mi300x/02-chiplet-dispatch.md)
 [partition] worked: amd-smi static --partition
@@ -379,79 +379,79 @@ Number of all tasks: 548
 Number of triggered events: 251
 Number of executed tasks: 546
 [WORKER_XCD] worker_id=5 block=5 xcd=2
-[WORKER_XCD] worker_id=6 block=6 xcd=3
 [WORKER_XCD] worker_id=2 block=2 xcd=7
-[WORKER_XCD] worker_id=4 block=4 xcd=1
-[WORKER_XCD] worker_id=1 block=1 xcd=6
+[WORKER_XCD] worker_id=6 block=6 xcd=3
 [WORKER_XCD] worker_id=0 block=0 xcd=5
-[WORKER_XCD] worker_id=3 block=3 xcd=0
+[WORKER_XCD] worker_id=1 block=1 xcd=6
+[WORKER_XCD] worker_id=4 block=4 xcd=1
 [WORKER_XCD] worker_id=7 block=7 xcd=4
+[WORKER_XCD] worker_id=3 block=3 xcd=0
+[SCHED_XCD] sched_id=1 xcd=1 workers_on_xcd=37 block=3
+[SCHED_XCD] sched_id=2 xcd=2 workers_on_xcd=37 block=4
+[SCHED_XCD] sched_id=7 xcd=7 workers_on_xcd=37 block=1
 [SCHED_XCD] sched_id=0 xcd=0 workers_on_xcd=37 block=2
-[SCHED_XCD] sched_id=6 xcd=6 workers_on_xcd=37 block=0
 [SCHED_XCD] sched_id=3 xcd=3 workers_on_xcd=37 block=5
 [SCHED_XCD] sched_id=5 xcd=5 workers_on_xcd=37 block=7
-[SCHED_XCD] sched_id=2 xcd=2 workers_on_xcd=37 block=4
-[SCHED_XCD] sched_id=1 xcd=1 workers_on_xcd=37 block=3
+[SCHED_XCD] sched_id=6 xcd=6 workers_on_xcd=37 block=0
 [SCHED_XCD] sched_id=4 xcd=4 workers_on_xcd=37 block=6
-[SCHED_XCD] sched_id=7 xcd=7 workers_on_xcd=37 block=1
-[FWD_PASS] iter=1 time_ms=0.255 num_active_tokens=1
-[FWD_PASS] iter=2 time_ms=0.454 num_active_tokens=1
-[FWD_PASS] iter=3 time_ms=0.447 num_active_tokens=1
-[FWD_PASS] iter=4 time_ms=0.437 num_active_tokens=1
-[FWD_PASS] iter=5 time_ms=0.435 num_active_tokens=1
-[FWD_PASS] iter=6 time_ms=0.444 num_active_tokens=1
-[FWD_PASS] iter=7 time_ms=0.437 num_active_tokens=1
-[FWD_PASS] iter=8 time_ms=0.428 num_active_tokens=1
-[FWD_PASS] iter=9 time_ms=0.427 num_active_tokens=1
-[FWD_PASS] iter=10 time_ms=0.432 num_active_tokens=1
-[FWD_PASS] iter=11 time_ms=0.423 num_active_tokens=1
-[FWD_PASS] iter=12 time_ms=0.433 num_active_tokens=1
-[FWD_PASS] iter=13 time_ms=0.424 num_active_tokens=1
-[FWD_PASS] iter=14 time_ms=0.431 num_active_tokens=1
-[FWD_PASS] iter=15 time_ms=0.427 num_active_tokens=1
-[FWD_PASS] iter=16 time_ms=0.421 num_active_tokens=1
-[FWD_PASS] iter=17 time_ms=0.433 num_active_tokens=1
-[FWD_PASS] iter=18 time_ms=0.427 num_active_tokens=1
-[FWD_PASS] iter=19 time_ms=0.429 num_active_tokens=1
-[FWD_PASS] iter=20 time_ms=0.429 num_active_tokens=1
-[FWD_PASS] iter=21 time_ms=0.437 num_active_tokens=1
-[FWD_PASS] iter=22 time_ms=0.425 num_active_tokens=1
-[FWD_PASS] iter=23 time_ms=0.429 num_active_tokens=1
-[FWD_PASS] iter=24 time_ms=0.444 num_active_tokens=1
-[FWD_PASS] iter=25 time_ms=0.425 num_active_tokens=1
-[FWD_PASS] iter=26 time_ms=0.428 num_active_tokens=1
-[FWD_PASS] iter=27 time_ms=0.421 num_active_tokens=1
-[FWD_PASS] iter=28 time_ms=0.432 num_active_tokens=1
-[FWD_PASS] iter=29 time_ms=0.426 num_active_tokens=1
-[FWD_PASS] iter=30 time_ms=0.424 num_active_tokens=1
-[FWD_PASS] iter=31 time_ms=0.452 num_active_tokens=1
-[FWD_PASS] iter=32 time_ms=0.421 num_active_tokens=1
-[FWD_PASS] iter=33 time_ms=0.430 num_active_tokens=1
-[FWD_PASS] iter=34 time_ms=0.423 num_active_tokens=1
-[FWD_PASS] iter=35 time_ms=0.434 num_active_tokens=1
-[FWD_PASS] iter=36 time_ms=0.414 num_active_tokens=1
-[FWD_PASS] iter=37 time_ms=0.425 num_active_tokens=1
-[FWD_PASS] iter=38 time_ms=0.443 num_active_tokens=1
-[FWD_PASS] iter=39 time_ms=0.420 num_active_tokens=1
-[FWD_PASS] iter=40 time_ms=0.432 num_active_tokens=1
-[FWD_PASS] iter=41 time_ms=0.425 num_active_tokens=1
-[FWD_PASS] iter=42 time_ms=0.435 num_active_tokens=1
-[FWD_PASS] iter=43 time_ms=0.428 num_active_tokens=1
-[FWD_PASS] iter=44 time_ms=0.426 num_active_tokens=1
-[FWD_PASS] iter=45 time_ms=0.431 num_active_tokens=1
-[FWD_PASS] iter=46 time_ms=0.430 num_active_tokens=1
-[FWD_PASS] iter=47 time_ms=0.428 num_active_tokens=1
-[FWD_PASS] iter=48 time_ms=0.428 num_active_tokens=1
-[FWD_PASS] iter=49 time_ms=0.435 num_active_tokens=1
-[FWD_PASS] iter=50 time_ms=0.420 num_active_tokens=1
-[FWD_PASS] iter=51 time_ms=0.424 num_active_tokens=1
-[FWD_PASS] iter=52 time_ms=0.442 num_active_tokens=1
-[FWD_PASS] iter=53 time_ms=0.424 num_active_tokens=1
-[FWD_PASS] iter=54 time_ms=0.435 num_active_tokens=1
-[FWD_PASS] iter=55 time_ms=0.425 num_active_tokens=1
-[FWD_PASS] iter=56 time_ms=0.427 num_active_tokens=1
-[FWD_PASS] iter=57 time_ms=0.429 num_active_tokens=1
-[FWD_PASS] iter=58 time_ms=0.427 num_active_tokens=1
+[FWD_PASS] iter=1 time_ms=0.246 num_active_tokens=1
+[FWD_PASS] iter=2 time_ms=0.445 num_active_tokens=1
+[FWD_PASS] iter=3 time_ms=0.422 num_active_tokens=1
+[FWD_PASS] iter=4 time_ms=0.413 num_active_tokens=1
+[FWD_PASS] iter=5 time_ms=0.423 num_active_tokens=1
+[FWD_PASS] iter=6 time_ms=0.418 num_active_tokens=1
+[FWD_PASS] iter=7 time_ms=0.422 num_active_tokens=1
+[FWD_PASS] iter=8 time_ms=0.412 num_active_tokens=1
+[FWD_PASS] iter=9 time_ms=0.409 num_active_tokens=1
+[FWD_PASS] iter=10 time_ms=0.417 num_active_tokens=1
+[FWD_PASS] iter=11 time_ms=0.401 num_active_tokens=1
+[FWD_PASS] iter=12 time_ms=0.405 num_active_tokens=1
+[FWD_PASS] iter=13 time_ms=0.404 num_active_tokens=1
+[FWD_PASS] iter=14 time_ms=0.421 num_active_tokens=1
+[FWD_PASS] iter=15 time_ms=0.408 num_active_tokens=1
+[FWD_PASS] iter=16 time_ms=0.402 num_active_tokens=1
+[FWD_PASS] iter=17 time_ms=0.403 num_active_tokens=1
+[FWD_PASS] iter=18 time_ms=0.400 num_active_tokens=1
+[FWD_PASS] iter=19 time_ms=0.413 num_active_tokens=1
+[FWD_PASS] iter=20 time_ms=0.399 num_active_tokens=1
+[FWD_PASS] iter=21 time_ms=0.402 num_active_tokens=1
+[FWD_PASS] iter=22 time_ms=0.402 num_active_tokens=1
+[FWD_PASS] iter=23 time_ms=0.404 num_active_tokens=1
+[FWD_PASS] iter=24 time_ms=0.398 num_active_tokens=1
+[FWD_PASS] iter=25 time_ms=0.405 num_active_tokens=1
+[FWD_PASS] iter=26 time_ms=0.399 num_active_tokens=1
+[FWD_PASS] iter=27 time_ms=0.400 num_active_tokens=1
+[FWD_PASS] iter=28 time_ms=0.405 num_active_tokens=1
+[FWD_PASS] iter=29 time_ms=0.403 num_active_tokens=1
+[FWD_PASS] iter=30 time_ms=0.405 num_active_tokens=1
+[FWD_PASS] iter=31 time_ms=0.406 num_active_tokens=1
+[FWD_PASS] iter=32 time_ms=0.412 num_active_tokens=1
+[FWD_PASS] iter=33 time_ms=0.405 num_active_tokens=1
+[FWD_PASS] iter=34 time_ms=0.406 num_active_tokens=1
+[FWD_PASS] iter=35 time_ms=0.400 num_active_tokens=1
+[FWD_PASS] iter=36 time_ms=0.400 num_active_tokens=1
+[FWD_PASS] iter=37 time_ms=0.400 num_active_tokens=1
+[FWD_PASS] iter=38 time_ms=0.406 num_active_tokens=1
+[FWD_PASS] iter=39 time_ms=0.399 num_active_tokens=1
+[FWD_PASS] iter=40 time_ms=0.404 num_active_tokens=1
+[FWD_PASS] iter=41 time_ms=0.420 num_active_tokens=1
+[FWD_PASS] iter=42 time_ms=0.396 num_active_tokens=1
+[FWD_PASS] iter=43 time_ms=0.403 num_active_tokens=1
+[FWD_PASS] iter=44 time_ms=0.399 num_active_tokens=1
+[FWD_PASS] iter=45 time_ms=0.401 num_active_tokens=1
+[FWD_PASS] iter=46 time_ms=0.416 num_active_tokens=1
+[FWD_PASS] iter=47 time_ms=0.413 num_active_tokens=1
+[FWD_PASS] iter=48 time_ms=0.406 num_active_tokens=1
+[FWD_PASS] iter=49 time_ms=0.403 num_active_tokens=1
+[FWD_PASS] iter=50 time_ms=0.401 num_active_tokens=1
+[FWD_PASS] iter=51 time_ms=0.408 num_active_tokens=1
+[FWD_PASS] iter=52 time_ms=0.414 num_active_tokens=1
+[FWD_PASS] iter=53 time_ms=0.404 num_active_tokens=1
+[FWD_PASS] iter=54 time_ms=0.402 num_active_tokens=1
+[FWD_PASS] iter=55 time_ms=0.403 num_active_tokens=1
+[FWD_PASS] iter=56 time_ms=0.420 num_active_tokens=1
+[FWD_PASS] iter=57 time_ms=0.401 num_active_tokens=1
+[FWD_PASS] iter=58 time_ms=0.403 num_active_tokens=1
 [FWD_PASS] iter=59 timeInput arguments: Namespace(use_mirage=True, max_num_batched_tokens=1, max_num_batched_requests=1, page_size=4096, max_num_pages=16, output_dir=None, trace_name='', profiling=False, num_layers=1, spec_decode=None, ngram_size=3, max_seq_length=128, spec_length=3, model_path=None, model='Qwen/Qwen3-0.6B', use_cutlass_kernel=False, ignore_eos=True, max_new_tokens=4, temperature=0.0, top_p=1.0, do_sample=False, save_tokens=None, prompt='def add(a, b):', linear_only=False, split_kv_cache=True)
 world_size(1) rank(0)
 sm_cnt:  304
@@ -469,78 +469,78 @@ def add(a, b):
 assistant
 [nodeelehandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandlinghandling
 ================================================================================
-Prefill: 35 tokens in 35 iterations ≈ 19.4ms total (0.554ms/token)
-Decode: 93 tokens in 93 iterations ≈ 51.5ms total (0.554ms/token)
-Combined: 128 tokens, per-token latency: 0.554 ms
+Prefill: 35 tokens in 35 iterations ≈ 19.0ms total (0.544ms/token)
+Decode: 93 tokens in 93 iterations ≈ 50.6ms total (0.544ms/token)
+Combined: 128 tokens, per-token latency: 0.544 ms
 ================================================================================
-_ms=0.426 num_active_tokens=1
-[FWD_PASS] iter=60 time_ms=0.440 num_active_tokens=1
-[FWD_PASS] iter=61 time_ms=0.435 num_active_tokens=1
-[FWD_PASS] iter=62 time_ms=0.426 num_active_tokens=1
-[FWD_PASS] iter=63 time_ms=0.435 num_active_tokens=1
-[FWD_PASS] iter=64 time_ms=0.428 num_active_tokens=1
-[FWD_PASS] iter=65 time_ms=0.437 num_active_tokens=1
-[FWD_PASS] iter=66 time_ms=0.441 num_active_tokens=1
-[FWD_PASS] iter=67 time_ms=0.425 num_active_tokens=1
-[FWD_PASS] iter=68 time_ms=0.432 num_active_tokens=1
-[FWD_PASS] iter=69 time_ms=0.429 num_active_tokens=1
-[FWD_PASS] iter=70 time_ms=0.434 num_active_tokens=1
-[FWD_PASS] iter=71 time_ms=0.424 num_active_tokens=1
-[FWD_PASS] iter=72 time_ms=0.430 num_active_tokens=1
-[FWD_PASS] iter=73 time_ms=0.446 num_active_tokens=1
-[FWD_PASS] iter=74 time_ms=0.427 num_active_tokens=1
-[FWD_PASS] iter=75 time_ms=0.438 num_active_tokens=1
-[FWD_PASS] iter=76 time_ms=0.430 num_active_tokens=1
-[FWD_PASS] iter=77 time_ms=0.438 num_active_tokens=1
-[FWD_PASS] iter=78 time_ms=0.426 num_active_tokens=1
-[FWD_PASS] iter=79 time_ms=0.436 num_active_tokens=1
-[FWD_PASS] iter=80 time_ms=0.424 num_active_tokens=1
-[FWD_PASS] iter=81 time_ms=0.426 num_active_tokens=1
-[FWD_PASS] iter=82 time_ms=0.443 num_active_tokens=1
-[FWD_PASS] iter=83 time_ms=0.424 num_active_tokens=1
-[FWD_PASS] iter=84 time_ms=0.429 num_active_tokens=1
-[FWD_PASS] iter=85 time_ms=0.421 num_active_tokens=1
-[FWD_PASS] iter=86 time_ms=0.435 num_active_tokens=1
-[FWD_PASS] iter=87 time_ms=0.427 num_active_tokens=1
-[FWD_PASS] iter=88 time_ms=0.426 num_active_tokens=1
-[FWD_PASS] iter=89 time_ms=0.434 num_active_tokens=1
-[FWD_PASS] iter=90 time_ms=0.419 num_active_tokens=1
-[FWD_PASS] iter=91 time_ms=0.430 num_active_tokens=1
-[FWD_PASS] iter=92 time_ms=0.425 num_active_tokens=1
-[FWD_PASS] iter=93 time_ms=0.434 num_active_tokens=1
-[FWD_PASS] iter=94 time_ms=0.422 num_active_tokens=1
-[FWD_PASS] iter=95 time_ms=0.421 num_active_tokens=1
-[FWD_PASS] iter=96 time_ms=0.432 num_active_tokens=1
-[FWD_PASS] iter=97 time_ms=0.426 num_active_tokens=1
-[FWD_PASS] iter=98 time_ms=0.429 num_active_tokens=1
-[FWD_PASS] iter=99 time_ms=0.424 num_active_tokens=1
-[FWD_PASS] iter=100 time_ms=0.427 num_active_tokens=1
-[FWD_PASS] iter=101 time_ms=0.421 num_active_tokens=1
-[FWD_PASS] iter=102 time_ms=0.424 num_active_tokens=1
-[FWD_PASS] iter=103 time_ms=0.442 num_active_tokens=1
-[FWD_PASS] iter=104 time_ms=0.424 num_active_tokens=1
-[FWD_PASS] iter=105 time_ms=0.426 num_active_tokens=1
-[FWD_PASS] iter=106 time_ms=0.421 num_active_tokens=1
-[FWD_PASS] iter=107 time_ms=0.414 num_active_tokens=1
-[FWD_PASS] iter=108 time_ms=0.421 num_active_tokens=1
-[FWD_PASS] iter=109 time_ms=0.416 num_active_tokens=1
-[FWD_PASS] iter=110 time_ms=0.427 num_active_tokens=1
-[FWD_PASS] iter=111 time_ms=0.420 num_active_tokens=1
-[FWD_PASS] iter=112 time_ms=0.417 num_active_tokens=1
-[FWD_PASS] iter=113 time_ms=0.419 num_active_tokens=1
-[FWD_PASS] iter=114 time_ms=0.422 num_active_tokens=1
-[FWD_PASS] iter=115 time_ms=0.415 num_active_tokens=1
-[FWD_PASS] iter=116 time_ms=0.416 num_active_tokens=1
-[FWD_PASS] iter=117 time_ms=0.424 num_active_tokens=1
-[FWD_PASS] iter=118 time_ms=0.417 num_active_tokens=1
-[FWD_PASS] iter=119 time_ms=0.433 num_active_tokens=1
-[FWD_PASS] iter=120 time_ms=0.418 num_active_tokens=1
-[FWD_PASS] iter=121 time_ms=0.414 num_active_tokens=1
-[FWD_PASS] iter=122 time_ms=0.422 num_active_tokens=1
-[FWD_PASS] iter=123 time_ms=0.418 num_active_tokens=1
-[FWD_PASS] iter=124 time_ms=0.425 num_active_tokens=1
-[FWD_PASS] iter=125 time_ms=0.411 num_active_tokens=1
-[FWD_PASS] iter=126 time_ms=0.413 num_active_tokens=1
+_ms=0.406 num_active_tokens=1
+[FWD_PASS] iter=60 time_ms=0.425 num_active_tokens=1
+[FWD_PASS] iter=61 time_ms=0.405 num_active_tokens=1
+[FWD_PASS] iter=62 time_ms=0.400 num_active_tokens=1
+[FWD_PASS] iter=63 time_ms=0.399 num_active_tokens=1
+[FWD_PASS] iter=64 time_ms=0.408 num_active_tokens=1
+[FWD_PASS] iter=65 time_ms=0.405 num_active_tokens=1
+[FWD_PASS] iter=66 time_ms=0.400 num_active_tokens=1
+[FWD_PASS] iter=67 time_ms=0.406 num_active_tokens=1
+[FWD_PASS] iter=68 time_ms=0.404 num_active_tokens=1
+[FWD_PASS] iter=69 time_ms=0.410 num_active_tokens=1
+[FWD_PASS] iter=70 time_ms=0.402 num_active_tokens=1
+[FWD_PASS] iter=71 time_ms=0.408 num_active_tokens=1
+[FWD_PASS] iter=72 time_ms=0.410 num_active_tokens=1
+[FWD_PASS] iter=73 time_ms=0.417 num_active_tokens=1
+[FWD_PASS] iter=74 time_ms=0.421 num_active_tokens=1
+[FWD_PASS] iter=75 time_ms=0.400 num_active_tokens=1
+[FWD_PASS] iter=76 time_ms=0.402 num_active_tokens=1
+[FWD_PASS] iter=77 time_ms=0.406 num_active_tokens=1
+[FWD_PASS] iter=78 time_ms=0.425 num_active_tokens=1
+[FWD_PASS] iter=79 time_ms=0.404 num_active_tokens=1
+[FWD_PASS] iter=80 time_ms=0.405 num_active_tokens=1
+[FWD_PASS] iter=81 time_ms=0.405 num_active_tokens=1
+[FWD_PASS] iter=82 time_ms=0.400 num_active_tokens=1
+[FWD_PASS] iter=83 time_ms=0.402 num_active_tokens=1
+[FWD_PASS] iter=84 time_ms=0.401 num_active_tokens=1
+[FWD_PASS] iter=85 time_ms=0.400 num_active_tokens=1
+[FWD_PASS] iter=86 time_ms=0.402 num_active_tokens=1
+[FWD_PASS] iter=87 time_ms=0.405 num_active_tokens=1
+[FWD_PASS] iter=88 time_ms=0.400 num_active_tokens=1
+[FWD_PASS] iter=89 time_ms=0.402 num_active_tokens=1
+[FWD_PASS] iter=90 time_ms=0.401 num_active_tokens=1
+[FWD_PASS] iter=91 time_ms=0.399 num_active_tokens=1
+[FWD_PASS] iter=92 time_ms=0.400 num_active_tokens=1
+[FWD_PASS] iter=93 time_ms=0.399 num_active_tokens=1
+[FWD_PASS] iter=94 time_ms=0.402 num_active_tokens=1
+[FWD_PASS] iter=95 time_ms=0.401 num_active_tokens=1
+[FWD_PASS] iter=96 time_ms=0.400 num_active_tokens=1
+[FWD_PASS] iter=97 time_ms=0.405 num_active_tokens=1
+[FWD_PASS] iter=98 time_ms=0.403 num_active_tokens=1
+[FWD_PASS] iter=99 time_ms=0.400 num_active_tokens=1
+[FWD_PASS] iter=100 time_ms=0.401 num_active_tokens=1
+[FWD_PASS] iter=101 time_ms=0.413 num_active_tokens=1
+[FWD_PASS] iter=102 time_ms=0.398 num_active_tokens=1
+[FWD_PASS] iter=103 time_ms=0.402 num_active_tokens=1
+[FWD_PASS] iter=104 time_ms=0.398 num_active_tokens=1
+[FWD_PASS] iter=105 time_ms=0.399 num_active_tokens=1
+[FWD_PASS] iter=106 time_ms=0.398 num_active_tokens=1
+[FWD_PASS] iter=107 time_ms=0.396 num_active_tokens=1
+[FWD_PASS] iter=108 time_ms=0.399 num_active_tokens=1
+[FWD_PASS] iter=109 time_ms=0.401 num_active_tokens=1
+[FWD_PASS] iter=110 time_ms=0.395 num_active_tokens=1
+[FWD_PASS] iter=111 time_ms=0.406 num_active_tokens=1
+[FWD_PASS] iter=112 time_ms=0.399 num_active_tokens=1
+[FWD_PASS] iter=113 time_ms=0.397 num_active_tokens=1
+[FWD_PASS] iter=114 time_ms=0.400 num_active_tokens=1
+[FWD_PASS] iter=115 time_ms=0.399 num_active_tokens=1
+[FWD_PASS] iter=116 time_ms=0.397 num_active_tokens=1
+[FWD_PASS] iter=117 time_ms=0.395 num_active_tokens=1
+[FWD_PASS] iter=118 time_ms=0.394 num_active_tokens=1
+[FWD_PASS] iter=119 time_ms=0.395 num_active_tokens=1
+[FWD_PASS] iter=120 time_ms=0.395 num_active_tokens=1
+[FWD_PASS] iter=121 time_ms=0.396 num_active_tokens=1
+[FWD_PASS] iter=122 time_ms=0.391 num_active_tokens=1
+[FWD_PASS] iter=123 time_ms=0.395 num_active_tokens=1
+[FWD_PASS] iter=124 time_ms=0.394 num_active_tokens=1
+[FWD_PASS] iter=125 time_ms=0.402 num_active_tokens=1
+[FWD_PASS] iter=126 time_ms=0.396 num_active_tokens=1
 graph run succeeded with Qwen/Qwen3-0.6B
 [SCHED_XCD] sched_id=0 xcd=0 workers_on_xcd=37 block=2
 [SCHED_XCD] sched_id=1 xcd=1 workers_on_xcd=37 block=3
@@ -560,14 +560,14 @@ graph run succeeded with Qwen/Qwen3-0.6B
 [WORKER_XCD] worker_id=7 block=7 xcd=4
 schedulers printed: 8, sched_id!=xcd: 0, workers summed over schedulers: 296, worker offset c=5, worker (w+c) mod 8 != xcd: 0
 >>> PASS  3 XCD placement: 8 schedulers on their XCDs, 296 workers, xcd == (worker + 5) mod 8
-[FWD_PASS] iter=1 time_ms=0.255 num_active_tokens=1
-[FWD_PASS] iter=2 time_ms=0.454 num_active_tokens=1
-[FWD_PASS] iter=3 time_ms=0.447 num_active_tokens=1
-[FWD_PASS] iter=4 time_ms=0.437 num_active_tokens=1
-[FWD_PASS] iter=5 time_ms=0.435 num_active_tokens=1
-[FWD_PASS] iter=6 time_ms=0.444 num_active_tokens=1
-[FWD_PASS] iter=7 time_ms=0.437 num_active_tokens=1
-[FWD_PASS] iter=8 time_ms=0.428 num_active_tokens=1
+[FWD_PASS] iter=1 time_ms=0.246 num_active_tokens=1
+[FWD_PASS] iter=2 time_ms=0.445 num_active_tokens=1
+[FWD_PASS] iter=3 time_ms=0.422 num_active_tokens=1
+[FWD_PASS] iter=4 time_ms=0.413 num_active_tokens=1
+[FWD_PASS] iter=5 time_ms=0.423 num_active_tokens=1
+[FWD_PASS] iter=6 time_ms=0.418 num_active_tokens=1
+[FWD_PASS] iter=7 time_ms=0.422 num_active_tokens=1
+[FWD_PASS] iter=8 time_ms=0.412 num_active_tokens=1
 
 ---- 4. disassembly: buffer_wbl2 sc1 / buffer_inv sc1 / sc1 on the counter poll (MAJ-3, docs/mi300x/03-memory-model.md)
 [disasm] roc-obj-ls/roc-obj-extract + llvm-objdump
@@ -600,7 +600,7 @@ failed with /opt/rocm/include; first errors:
 /home/hotaisle/metalOps/env/probe_ck_fmha_576_512.cpp:67:23: error: use of undeclared identifier 'PipelineMla'
 /home/hotaisle/metalOps/env/probe_ck_fmha_576_512.cpp:68:15: error: static assertion expression is not an integral constant expression
 /home/hotaisle/metalOps/env/probe_ck_fmha_576_512.cpp:69:15: error: static assertion expression is not an integral constant expression
->>> PASS  5 CK FMHA 576/512 does not instantiate, as its source says (DQ3 resolved negative 2026-09-14): mla_attend is the spec kernel (docs/mla-decode/04-our-kernel-spec.md); log /home/hotaisle/metalOps/env/logs/probe_ck.20260918-042313.log
+>>> PASS  5 CK FMHA 576/512 does not instantiate, as its source says (DQ3 resolved negative 2026-09-14): mla_attend is the spec kernel (docs/mla-decode/04-our-kernel-spec.md); log /home/hotaisle/metalOps/env/logs/probe_ck.20260918-112122.log
 
 ---- 6. rocprofv3 counters (docs/mi300x/06-profiling.md)
 [rocprofv3] worked: rocprofv3 --list-avail
@@ -627,7 +627,7 @@ PASS  1 partition: SPX + NPS1
 PASS  2 import mirage
 PASS  3 XCD placement: 8 schedulers on their XCDs, 296 workers, xcd == (worker + 5) mod 8
 PASS  4 fences: buffer_wbl2 sc1 x14, buffer_inv sc1 x4 present (loads sc1 x408: the counter poll must be one of them)
-PASS  5 CK FMHA 576/512 does not instantiate, as its source says (DQ3 resolved negative 2026-09-14): mla_attend is the spec kernel (docs/mla-decode/04-our-kernel-spec.md); log /home/hotaisle/metalOps/env/logs/probe_ck.20260918-042313.log
+PASS  5 CK FMHA 576/512 does not instantiate, as its source says (DQ3 resolved negative 2026-09-14): mla_attend is the spec kernel (docs/mla-decode/04-our-kernel-spec.md); log /home/hotaisle/metalOps/env/logs/probe_ck.20260918-112122.log
 PASS  6 rocprofv3 counters: all design names present
 PASS  7 CU count: 304 CUs (8 x 38); workers, schedulers from the runtime: (296, 8)
-written: /home/hotaisle/metalOps/env/check_day1.log and /home/hotaisle/metalOps/env/logs/check_day1.20260918-042159.log
+written: /home/hotaisle/metalOps/env/check_day1.log and /home/hotaisle/metalOps/env/logs/check_day1.20260918-112008.log
