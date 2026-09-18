@@ -241,23 +241,67 @@ python3 docs/acceleration/sources/fp8_roofline.py     # precision scenarios
 python3 docs/mi300x/sources/bandwidth_analysis.py     # bandwidth + prefetch depth
 ```
 
-## Setup
+## Setup and reproducing the result
+
+The number of record (4,284 to 4,291 us per token, `docs/gpu-experiments/05-final/07-final-numbers.md`)
+was produced by the commands below on one Hot Aisle 1x MI300X (ROCm 7.2.4, hipcc on the path,
+python3 with `venv`, about 50 GB of disk for the checkpoint, the wheels and the builds). Everything the task
+built is in this repository: our kernels in `fleet/tasks/mi300/`, the runtime changes as the three
+patches in `fleet/patches/`, the upstream megakernel as a submodule pinned at `51dce4f`. The setup
+script applies the patches and copies the kernels into the fork; nothing is fetched from anywhere
+but the upstream repository and the Hugging Face checkpoint.
 
 ```bash
 git clone --recursive https://github.com/GolfOscarr/fleet-amd-task.git
+cd fleet-amd-task
+
+bash env/session/vm.sh download        # the checkpoint (31 GB, BF16) into the Hugging Face cache, about 2 min
+bash env/setup.sh                      # two venvs, the fork patched and built for gfx942 with our kernels, about 8 min
+bash env/session/vm.sh preflight       # the toolchain, the venvs, the model and ROCm are in place
+bash env/session/vm.sh checks          # 7 machine checks (partition, XCD placement, fences, CU count), about 1.5 min
+bash env/session/vm.sh reference       # the PyTorch reference: the boundaries, the 32 ids, the route log with the
+                                       # gate's weights, the tolerance calibration; about 1 min
+bash env/session/vm.sh kernels nt      # 19 kernel suites at 100 trials each on the streaming build, about 6 min
+bash env/session/vm.sh queue env/session/queue-h2.txt   # the finals: the stack at 30, 31 and 32 iterations with the
+                                       # compare and the per-operator table, then the FWD_PASS rows; 70 s a row
+bash env/session/vm.sh status          # every stage's PASS or FAIL line; the queue's per-row verdicts
 ```
 
-The submodule pins `ROCm/fleet-chiplet-megakernel` at `51dce4f`. It targets
-`gfx950` (MI350) by default; building for MI300X needs `AMDGPU_TARGETS=gfx942`,
-which is untested and is the day-1 blocking question. Model weights (31 GB BF16)
-are not tracked here — download them on the target machine.
+Each stage runs detached and writes `env/logs/<stage>.out`; `vm.sh check <stage>` prints its status
+line. On a fresh machine the first final is about 25 minutes in. One final by hand, without the
+queue:
+
+```bash
+SNAP=$(ls -d ~/.cache/huggingface/hub/models--deepseek-ai--DeepSeek-Coder-V2-Lite-Base/snapshots/*)
+.venv-fleet/bin/python harness/run_fleet.py --layers 27 --head --iters 32 --final --model-dir $SNAP
+RUN=harness/fleet_out/L27_head_it32_final_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_w2cktile_gv_lg48_mt_mh2
+.venv-fleet/bin/python harness/compare.py --fleet $RUN      # correctness_report.md: the ids, the route log, the boundaries
+.venv-fleet/bin/python harness/measure.py --run $RUN        # report_table.md: the per-operator gaps and the median
+```
+
+`--final` is the whole stack of round 4 as one flag (the thirteen graph and kernel flags and the
+`-DMPK_W2_CK_TILE` define; `harness/run_fleet.py --help` lists them). What to read and what to expect:
+
+| Where | Line | Expected |
+|---|---|---|
+| `$RUN/report_table.md` | `time per iteration from event timing, median (us)` | 4,284 to 4,291 on the round-4 host; the band of the three iteration counts |
+| `$RUN/correctness_report.md` | `Output ids` | `PASS, 32 of 32 matched` at 32 iterations (N of 32 at N iterations) |
+| `$RUN/correctness_report.md` | `Route log` | `PASS` by the tie rule with zero disagreements |
+| `$RUN/correctness_report.md` | `Overall` | `PASS (7 pass, 0 fail, 0 missing, 1 not comparable, 64 of layers the reference did not capture)` |
+| the megakernel's own clock | `[FWD_PASS] iter=N time_ms=...` on stdout of a run with `--iters 29 --no-event-timing` | the median over the 28 lines about 4,265 us |
+
+The event clock and the `FWD_PASS` clock are two readings of the same run shape; the event clock is
+the one every number in this repository is quoted on unless marked. The full session that produced
+the record, row by row with its minute marks, is `docs/gpu-experiments/05-final/08-session-log.md`;
+the laptop-side driver that ran it from a Mac (`env/session/laptop.sh`: push, start, wait, pull) is
+described in `docs/gpu-experiments/01-bringup/06-agent-guide.md`.
 
 ## Deliverables
 
 | Required by the task | Where |
 |---|---|
 | Technical design | [`docs/design-doc/`](docs/design-doc/README.md) |
-| Source, build and run instructions | `env/setup.sh`, `env/check_day1.sh`, `env/preflight.sh`, [`harness/README.md`](harness/README.md), [`fleet/tasks/README.md`](fleet/tasks/README.md), [`fleet/patches/README.md`](fleet/patches/README.md); results pending GPU access |
+| Source, build and run instructions | `env/setup.sh`, `env/check_day1.sh`, `env/preflight.sh`, [`harness/README.md`](harness/README.md), [`fleet/tasks/README.md`](fleet/tasks/README.md), [`fleet/patches/README.md`](fleet/patches/README.md); the reproduction guide above; the result of record in [`docs/gpu-experiments/05-final/07-final-numbers.md`](docs/gpu-experiments/05-final/07-final-numbers.md) |
 | Correctness evidence at every boundary | method in [`docs/deepseek-v2-lite/08-correctness.md`](docs/deepseek-v2-lite/08-correctness.md); the evidence in [`docs/gpu-experiments/02-validation/04-results.md`](docs/gpu-experiments/02-validation/04-results.md) and the reports under `env/hw/20260916/runs/` |
 | Profiling commands and results | plan in [`docs/mi300x/06-profiling.md`](docs/mi300x/06-profiling.md); the commands in `env/session/` and the results in [`docs/gpu-experiments/02-validation/04-results.md`](docs/gpu-experiments/02-validation/04-results.md) |
 | Milestone reached, remaining fallbacks | [`PROGRESS.md`](PROGRESS.md), [`docs/gpu-experiments/02-validation/07-summary.md`](docs/gpu-experiments/02-validation/07-summary.md) |
