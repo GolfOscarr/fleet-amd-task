@@ -35,7 +35,7 @@ def test_round4_queue_files_exist():
 
 def test_round5_queue_files_exist():
     names = {p.name for p in ROUND5}
-    assert {"queue-h1.txt", "queue-h2.txt", "queue-h3.txt", "queue-h4.txt", "queue-h5.txt", "queue-h6.txt"} == names
+    assert {"queue-h1.txt", "queue-h2.txt", "queue-h3.txt", "queue-h4.txt", "queue-h5.txt", "queue-h6.txt", "queue-h7.txt"} == names
     for q in ROUND5:                       # every round-5 row runs the finals' stack (F3)
         for toks in rows(q):
             assert "--final" in toks, (q.name, toks)
@@ -84,7 +84,7 @@ def test_round4_and_round5_rows_build_their_plans_and_obey_the_rules():
                 continue
             key = (a.layers, a.head, a.gemv_linears, a.linear_grid, a.head_grid, a.gemv_w13, a.merge_tasks,
                    a.merge_halves, a.router_tasks, a.merge_oproj, a.fuse_norm1, a.fuse_norm2, a.fuse_silu,
-                   a.tile_linears, a.attend_tasks, a.probe_before, a.argmax_slices)
+                   a.tile_linears, a.attend_tasks, a.probe_before, a.argmax_slices, a.stop_after)
             if key in seen:
                 continue
             seen.add(key)

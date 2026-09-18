@@ -1,11 +1,13 @@
 # Round 5, R4 (docs/gpu-experiments/05-final/02-local-gpu-split.md): the fault of MIN-36, the half merge
-# without the GEMV linears on 27 layers with the head (round 4: hipErrorIllegalAddress before any forward
-# pass; at 2 layers and with the GEMV linears it runs). The first row is the faulting configuration with
-# F5's fix if one was found (a fix that passes closes MIN-36); the rest is the layer bisect for the record
-# when the readings found nothing (3, 5, 9, 14 layers at one iteration), and the halves control at 3 layers.
---layers 27 --head --iters 1 --final --no-gemv-linears compare continue    # R4: the faulting configuration
---layers 3 --iters 1 --final --no-gemv-linears compare continue    # R4: the bisect
---layers 5 --iters 1 --final --no-gemv-linears compare continue
---layers 9 --iters 1 --final --no-gemv-linears compare continue
---layers 14 --iters 1 --final --no-gemv-linears compare continue
---layers 3 --iters 1 --final --no-gemv-linears --merge-halves 1 compare continue    # R4: the halves control
+# without the GEMV linears (round 4: L27_head_it1_..._rf_w2cktile_mt_mh2, hipErrorIllegalAddress in the
+# first launch; with the GEMV linears the same merge runs every final). F5's readings (04-checklist.md)
+# found the maps and the event structure, the task types, the store and the memory layout identical to
+# the builds that run, and found that no row of the faulting configuration ever ran at 2 layers, so the
+# layer count is not known to matter. This file locates the fault at 2 layers (45 s a row): the
+# configuration itself, then the graph cut after the first stock o_proj and after the first merge
+# (--stop-after: the row's verdict is the run's rc and fault count, no compare), then the halves control.
+# queue-h7.txt (the layer bisect) runs only if the first row here passes.
+--layers 2 --iters 1 --final --no-gemv-linears compare continue    # R4: the faulting configuration at 2 layers
+--layers 2 --iters 1 --final --no-gemv-linears --stop-after L0.o_proj continue    # R4: the graph cut after the first stock o_proj
+--layers 2 --iters 1 --final --no-gemv-linears --stop-after L0.mla_merge_uv continue    # R4: the graph cut after the first merge
+--layers 2 --iters 1 --final --no-gemv-linears --merge-halves 1 compare continue    # R4: the halves control

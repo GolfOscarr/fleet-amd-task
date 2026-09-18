@@ -104,7 +104,7 @@ Minute marks from the provision, with round 4's measured durations
 | 21 | R2 | `L start queue env/session/queue-h2.txt`; `L wait queue 10` | ids PASS on every row; `compare=PASS` on the six it30 to it32 rows (the head `NOT_COMPARABLE`, the route log by the rule); six per-token medians (three A, three B) and the two `FWD_PASS` medians | DECIDE A1 (below); the round's number is the default's three with its `FWD_PASS` | a spread above 2% within A or B: the set is rerun at the end if the minutes allow |
 | 30 | | `L pull` (the checkpoint; the record committed right after, before any other commit) | the commit hash | AUTO | |
 | 31 | R5 | `L start queue env/session/queue-h5.txt`; `L wait queue 5` | `table=PASS` on the three 2-layer head rows; the head's events 50, 8 and 10 in their `report_table.md`; the model row ids PASS and `compare=PASS` | DECIDE R5 (below) | a FAIL on the model row: the slices stay 50 |
-| 35 | R4 | `L start queue env/session/queue-h4.txt`; `L wait queue 8` | the first row runs and `compare=PASS` (with F5's fix); or the bisect: the first faulting layer count and the halves control's verdict | RULE: a passing fix closes MIN-36; a bisect only records | every row FAIL: the readings stay attached to MIN-36 |
+| 35 | R4 | `L start queue env/session/queue-h4.txt`; `L wait queue 4`; then, only if its first row passed, `L start queue env/session/queue-h7.txt`; `L wait queue 5` | four rows at 2 layers: the configuration (`fault=0` or `fault=1`), the cut after `L0.o_proj`, the cut after `L0.mla_merge_uv`, the halves control; the pattern names the operator (the cut after the merge runs and the cut after o_proj faults: the stock o_proj after the tile merge); `queue-h7` gives the first faulting layer count when 2 layers pass | RULE: the rows only record; the located operator goes into MIN-36 | every row faults: the fault is before the first merge, and `--stop-after L0.qkva` is the next cut if a minute remains |
 | 40 | R3 | only if F4 fixed the hang: `L start queue env/session/queue-h3.txt`; `L wait queue 4`; then `L start ktime nt`; `L wait ktime 3` | the `[TASK_TIME2]` lines in `fwd_pass.log`, the exec per class in `report_table.md`; `ktime_nt.txt` with the merge's line | RULE: a hang ends the row at the watchdog and MIN-35 stays open | |
 | 42 | | if the minutes allow (the hard stop at minute 60 under the waived rule): `L start queue env/session/queue-h6.txt`; `L wait queue 10` | ids PASS; the batch-4 set's three medians and `FWD_PASS` against A's; the 8-event set's the same | DECIDE A2 and R5's confirmation (below) | |
 | end | end | `L pull` and its commit; `git push`; then, after the user's yes, `L delete --yes`; `L balance` shows `Hourly Rate: $0.00/hour` | | DECIDE (user: the deletion) | if the rate is not $0.00, check the TUI by hand |
@@ -121,7 +121,7 @@ whatever the state); with credits added, round 4's rule (below $3).
 | A1 | R2 | B's medians (event clock and `FWD_PASS`) against A's | `POLL_SLEEP=8` -1.3% at 2 layers, within the spread on the model | into the default if B is not above A on either clock; otherwise the stack stays A |
 | A2 | `queue-h6` | the batch-4 set against A on both clocks | -7% at 2 layers, equal on the model | into the default only if it wins both clocks |
 | R5 | the head's events | the 2-layer head median at 8 and 10 slices against 50; the model row's ids | 50 events, 111 us per token | `--argmax-slices 8` (or 10, if better) into the default if the 2-layer median falls by more than 2% and the model row passes; its finals set in `queue-h6` if the minutes allow |
-| R4 | the fault | the faulting configuration with the fix, or the bisect | `hipErrorIllegalAddress` at 27 layers, runs at 2 | a passing fix closes MIN-36; the bisect's first faulting layer count and the halves control go into the record |
+| R4 | the fault | the four 2-layer rows' `fault` counts; the bisect's first faulting layer count if the 2-layer row passed | `hipErrorIllegalAddress` at 27 layers; no 2-layer row of the configuration has run | the located operator (or the layer count) and the halves' role go into MIN-36; nothing in the stack changes |
 | G | the number | A's three finals and their `FWD_PASS` (or B's, if A1 chose it) | 4,262 to 4,341 us; `FWD_PASS` 4,267 to 4,310 | the round's number, against round 4's and the 4,500 target, with the compare rows green |
 
 ### How the numbers are read
@@ -145,7 +145,8 @@ whatever the state); with credits added, round 4's rule (below $3).
 | `env/session/queue-h1.txt` | R1: two model compares at one iteration (the stack, the stack with the knob), one 2-layer compare | minute 18 |
 | `env/session/queue-h2.txt` | R2: A30 B30 A31 B31 A32 B32 with compare and table, then A29 and B29 (`FWD_PASS`) | minute 21 |
 | `env/session/queue-h5.txt` | R5: the 2-layer head at 50, 8 and 10 slices; the model row at 8 | minute 31 |
-| `env/session/queue-h4.txt` | R4: the faulting configuration; the bisect at 3, 5, 9, 14 layers; the halves control | minute 35 |
+| `env/session/queue-h4.txt` | R4: the faulting configuration at 2 layers; the graph cut after `L0.o_proj` and after `L0.mla_merge_uv`; the halves control | minute 35 |
+| `env/session/queue-h7.txt` | R4: the layer bisect at 3, 5, 9, 14 layers, only if `queue-h4`'s first row passed | minute 38 |
 | `env/session/queue-h3.txt` | R3: the timing build's two 2-layer rows (only if F4 fixed the hang) | minute 40 |
 | `env/session/queue-h6.txt` | the optional sets: the finals with batch 4, the finals with 8 head events | minute 42 |
 
@@ -185,6 +186,6 @@ logs; the record is committed right after the pull.
   tie's gap against the tolerance.
 - The head's events at 50, 8 and 10 and the 2-layer medians; the finals
   with 8 if they ran.
-- R4's verdict on MIN-36; R3's exec table if it ran; the merge's `ktime`
-  line.
+- R4's located operator (or the first faulting layer count) for MIN-36;
+  R3's exec table if it ran; the merge's `ktime` line.
 - The decisions: every DECIDE row's measured value and choice.

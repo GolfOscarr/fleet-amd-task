@@ -235,10 +235,11 @@ Time box: 3 hours. Feeds R3 (only if fixed).
 ### F5. The half-merge fault (L2, MIN-36)
 
 Direction. `--merge-tasks --merge-halves 2` without `--gemv-linears`
-faults on 27 layers with the head (`hipErrorIllegalAddress` before any
-forward pass) and runs at 2 layers and with the GEMV linears. The finals
-do not use the configuration; the round closes the hole or records where
-it is.
+faults on 27 layers with the head (`hipErrorIllegalAddress` in the first
+launch) and runs with the GEMV linears; no row of the configuration has
+run at 2 layers (the double-check below found every 2-layer merge row of
+round 4 carrying the GEMV linears). The finals do not use the
+configuration; the round closes the hole or records where it is.
 
 Approach. The first suspect of `01` (the merge's `attn` output lacking the
 16-row backing the stock CK tile over-reads, MIN-33) is out: `attn` is a
@@ -276,9 +277,12 @@ single-row activation is backed by `ROW_SLACK` rows in
    Read the tile form's store in `mla_merge_uv_mi300.cuh` against the
    registration's output map; a `--layers 3` row with `--merge-halves 1`
    on the VM (R4) separates the halves from the layers.
-4. If the readings find nothing: R4's layer bisect (3, 5, 9, 14 layers at
-   one iteration, 45 s each) locates the first faulting layer count and
-   the record says so; MIN-36 stays open with the readings attached.
+4. If the readings find nothing: R4 locates the fault at 2 layers first
+   (the configuration; the graph cut after the first stock o_proj and
+   after the first merge with `--stop-after`; the halves control), 45 s a
+   row, and bisects the layer count (3, 5, 9, 14) only if the 2-layer row
+   passes; MIN-36 stays open with the readings and the located operator
+   attached.
 
 Files. Reading only, unless 1 or 3 finds the defect: then
 `fleet/tasks/mi300/mla_merge_uv_mi300.cuh` or `new_tasks.patch`, the suite

@@ -188,8 +188,12 @@ without it, as round 4 did.
 
 The facts: `L27_head_it1_..._rf_w2cktile_mt_mh2` (the round-3 CK linears
 with `--merge-tasks --merge-halves 2`) faults with `hipErrorIllegalAddress`
-before any forward pass; the same at 2 layers passes its compare; the same
-with `--gemv-linears` runs every final. The plan builds all three on the
+in the first launch (the schedulers had printed their placement lines; no
+timing entry was recorded); the same with `--gemv-linears` runs every
+final. No row of the faulting configuration ever ran at 2 layers (every
+2-layer merge row of round 4 carried the GEMV linears), so whether the
+layer count matters is not known; an earlier draft of this page said the
+2-layer graph passes, which the record does not support. The plan builds all three on the
 laptop without an assert (`build_graph.py --dry-run --layers 27
 --tile-linears --merge-tasks --merge-halves 2`: 326 operators, 7,269
 tasks; with `--gemv-linears` 298 and 7,241), so the plan's shapes are
@@ -203,14 +207,18 @@ linear in the running one. The readings left (`03`, F5): the stock
 linear's input map against the merge tile registration's whole-tensor
 maps (the event structure both consumers get), the two graphs' task
 types side by side, and the tile form's store offset at `halves = 2`
-against the registration's output map; a `--layers 3 --merge-halves 1`
-row on the VM separates the halves from the layer count.
+against the registration's output map; a `--merge-halves 1` row on the
+VM separates the halves from the rest.
 
 Worth: nothing for the number (the finals do not use the configuration);
-a correctness hole closed. Cost: two hours of reading, one VM row (45 s)
-to confirm. If the readings find nothing, a layer bisect on the VM (3, 5,
-9 and 14 layers at one iteration, 4 minutes) locates the first faulting
-layer count for the record.
+a correctness hole closed. Cost: two hours of reading, four VM rows (45 s
+each) to locate. F5's outcome (`04-checklist.md`): the three readings and
+two more from the record (the memory layout from the run's recorded
+addresses, the plan's task counts) found nothing that differs from a
+build that runs, so the locator runs on the VM at 2 layers (`queue-h4`:
+the configuration, the graph cut after the first stock o_proj and after
+the first merge, the halves control) and the layer bisect (`queue-h7`)
+only if the 2-layer row passes.
 
 ### L3. The merge's standalone regression
 
