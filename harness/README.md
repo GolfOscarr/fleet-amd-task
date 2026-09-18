@@ -60,7 +60,7 @@ python harness/run_fleet.py --layers 2 --model-dir $SNAP --stop-after L1.mla_att
 python harness/compare.py --fleet harness/fleet_out/L2_it1_L1.mla_attend_scores
 # M4: the full graph, 32 iterations
 python harness/run_fleet.py --layers 27 --head --iters 32 --model-dir $SNAP --event-timing
-python harness/run_fleet.py --layers 27 --head --iters 32 --model-dir $SNAP --final   # round 4's finals' stack (F3 of docs/gpu-experiments/05-final): the thirteen flags and -DMPK_W2_CK_TILE for every flag not named; --no-event-timing, --no-nt-streams, --no-gemv-linears turn one off; the run name gains _final
+python harness/run_fleet.py --layers 27 --head --iters 32 --model-dir $SNAP --final   # the stack of the final numbers (docs/gpu-experiments/05-final/07-final-numbers.md; F3 of that set): the thirteen flags and -DMPK_W2_CK_TILE for every flag not named; --no-event-timing, --no-nt-streams, --no-gemv-linears turn one off; the run name gains _final
 python harness/compare.py --fleet harness/fleet_out/L27_head_it32
 python harness/measure.py --run harness/fleet_out/L27_head_it32
 ```

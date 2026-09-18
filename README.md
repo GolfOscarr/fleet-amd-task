@@ -69,7 +69,7 @@ XCDs ([`docs/design-doc/00-decisions.md`](docs/design-doc/00-decisions.md), D6).
 
 ## Status
 
-**Four GPU rounds are done.** Round 1 (2026-09-15) brought the stack up
+**Five GPU rounds are done; the task is at its final numbers.** Round 1 (2026-09-15) brought the stack up
 on the MI300X; round 2 (2026-09-16) reached the required milestone and
 the end-to-end decode at 9.6 ms per token; round 3 (2026-09-17,
 `docs/gpu-experiments/03-acceleration/`, branch `gpu/round-3`) took the
@@ -114,7 +114,7 @@ open). The balance stands at $0.85 and no session is planned.
 | Session image | pushed 2026-09-16 as `ghcr.io/golfoscarr/fleet-amd-task:20260916` (25 GB, private) by the `image` stage of round 2; the Dockerfile in [`env/docker/README.md`](env/docker/README.md); the runs of round 2 in [`docs/gpu-experiments/02-validation/03-session-log.md`](docs/gpu-experiments/02-validation/03-session-log.md) and their numbers in [`04-results.md`](docs/gpu-experiments/02-validation/04-results.md) |
 | Hardware record | the first hour on the MI300X: 62 checks, the placement offset, the bandwidth band confirmed, the latencies ([`env/hw/20260915/`](env/hw/20260915/summary.md), [`docs/gpu-experiments/01-bringup/`](docs/gpu-experiments/01-bringup/README.md)) |
 | Open problems | 5 major open (MAJ-8: the runtime's per-task completion cost, not what bounds the GEMV linears by round 4's grid sweep; MAJ-7 resolved in round 3 as a measurement defect), 18 minor (MIN-35 open: the timing build hangs in the buffer form too; MIN-36 located by halves on the VM, its next cut named), 34 resolved ([`OPEN-PROBLEMS.md`](OPEN-PROBLEMS.md)) |
-| Milestone | **M4 reached 2026-09-16**: the 27-layer graph with the head runs 32 iterations and the 32 ids equal the reference's; M2 (layer 1 validated end to end, all 16 boundaries, top-k exact) since 2026-09-15; the fault of round 1 named and fixed in the plan; 12.3 ms per token steady state with the gang linears, 9.6 ms with E2 and per-tile linears (the runtime's event clock; 15.0 and 10.3 ms as host means over 32 iterations) against a 1.15 to 1.35 ms design band ([`PROGRESS.md`](PROGRESS.md), [`docs/gpu-experiments/02-validation/04-results.md`](docs/gpu-experiments/02-validation/04-results.md)) |
+| Milestone | **the final numbers 2026-09-18** (4,284 to 4,291 us per token, every check green, [`05-final/07-final-numbers.md`](docs/gpu-experiments/05-final/07-final-numbers.md)); **M4 reached 2026-09-16**: the 27-layer graph with the head runs 32 iterations and the 32 ids equal the reference's; M2 (layer 1 validated end to end, all 16 boundaries, top-k exact) since 2026-09-15; the fault of round 1 named and fixed in the plan; 12.3 ms per token steady state with the gang linears, 9.6 ms with E2 and per-tile linears (the runtime's event clock; 15.0 and 10.3 ms as host means over 32 iterations) against a 1.15 to 1.35 ms design band ([`PROGRESS.md`](PROGRESS.md), [`docs/gpu-experiments/02-validation/04-results.md`](docs/gpu-experiments/02-validation/04-results.md)) |
 | Day-1 question | answered: Fleet builds and runs graphs on this machine (gate 1 PASS, [`env/check_day1.log`](env/check_day1.log)) |
 
 ## Key numbers
@@ -124,9 +124,9 @@ open). The balance stands at $0.85 and no session is planned.
 | Traffic per token | **4,705.9 MiB** — routed experts 55%, shared experts 18%, `lm_head` 8.5% |
 | Roofline | **931 µs** floor at 5.3 TB/s theoretical · **1.15–1.35 ms** at 3.66–4.3 TB/s achievable |
 | Rate | 1,074 tok/s floor · **742–871 tok/s** realistic |
-| Measured (round 4, 2026-09-18) | **4.26 to 4.34 ms per token, 230 to 235 tok/s** on the runtime's event clock, ids equal ([`docs/gpu-experiments/04-kernels/10-results.md`](docs/gpu-experiments/04-kernels/10-results.md)); round 3: 4.57 to 4.60 ms ([`03-acceleration/08-results.md`](docs/gpu-experiments/03-acceleration/08-results.md)); round 2: 9.6 ms with E2 and per-tile linears ([`02-validation/04-results.md`](docs/gpu-experiments/02-validation/04-results.md)) |
+| **Measured, the result of record (round 5, 2026-09-18)** | **4.28 to 4.29 ms per token (4,284 to 4,291 us), 233 tok/s** on the runtime's event clock, `FWD_PASS` 4,265 us, the 32 ids equal and every compare row green, 4.6 to 4.8% below the 4.5 ms production baseline ([`docs/gpu-experiments/05-final/07-final-numbers.md`](docs/gpu-experiments/05-final/07-final-numbers.md)); round 4: 4.26 to 4.34 ms on the same stack ([`04-kernels/10-results.md`](docs/gpu-experiments/04-kernels/10-results.md)); round 3: 4.57 to 4.60 ms ([`03-acceleration/08-results.md`](docs/gpu-experiments/03-acceleration/08-results.md)); round 2: 9.6 ms with E2 and per-tile linears ([`02-validation/04-results.md`](docs/gpu-experiments/02-validation/04-results.md)) |
 | Layer-1 milestone | 159.6 MiB → 31.6 µs floor / 38.9–45.7 µs realistic |
-| Task graph | 12 ops / 68 tasks per MoE layer; 326 ops / 1,880 tasks per token; **3 kernel dispatches per 32-token generation** |
+| Task graph | the design: 12 ops / 68 tasks per MoE layer, 326 ops / 1,880 tasks per token; the final stack as run: 246 operators / 6,386 tasks per token (the fusions, the GEMV linears and the regular merge tasks); **one persistent-kernel launch per 32-token generation** |
 | FP8 (stretch) | 2,571 MiB → 509 µs floor / 627–737 µs realistic — **1.83×** |
 
 ## Layout
@@ -160,11 +160,16 @@ docs/
                      the rehearsal, the session log, the results (4.57 to
                      4.60 ms per token) and the lessons with the next round
                      ranked
-    04-kernels/      the fourth round (prepared 2026-09-18): the ideas for a
-                     batch-1 GEMV linear in place of the CK tile and for the
-                     router and the merge, the two splits, the local
-                     preparation and its checklist, the session plan and
-                     the rehearsal; the VM session pending
+    04-kernels/      the fourth round (2026-09-18): the ideas for a batch-1
+                     GEMV linear in place of the CK tile and for the router
+                     and the merge, the two splits, the local preparation
+                     and its checklist, the session plan and the rehearsal,
+                     the session log, the results (4.26 to 4.34 ms per
+                     token) and the lessons
+    05-final/        the final stage (2026-09-18): the ideas, the split, the
+                     local preparation and its checklist, the session plan
+                     and the rehearsal, the final numbers (4,284 to 4,291 us
+                     per token, every check green) and the session log
   paper/             the Fleet paper
 repos/
   fleet-chiplet-megakernel/   ROCm/fleet-chiplet-megakernel (submodule)
@@ -178,6 +183,9 @@ and scripts its claims derive from.
 
 | If you want | Read |
 |---|---|
+| The result | [`docs/gpu-experiments/05-final/07-final-numbers.md`](docs/gpu-experiments/05-final/07-final-numbers.md): the number, the compare made green, the decisions |
+| To reproduce it | the section "Setup and reproducing the result" below |
+| How the number was reached, round by round | [`docs/gpu-experiments/`](docs/gpu-experiments/01-bringup/README.md): 9.6 ms (round 2), 4.57 to 4.60 (round 3, [`08-results.md`](docs/gpu-experiments/03-acceleration/08-results.md)), 4.26 to 4.34 (round 4, [`10-results.md`](docs/gpu-experiments/04-kernels/10-results.md)), the final (round 5) |
 | The design | [`docs/design-doc/README.md`](docs/design-doc/README.md) |
 | The plan and its state | [`PROGRESS.md`](PROGRESS.md) |
 | What is still unknown | [`OPEN-PROBLEMS.md`](OPEN-PROBLEMS.md) |
@@ -219,7 +227,31 @@ than doing nothing at 1,024 tokens. Runtime reassociation gets the cache
 reduction for free, which is also what vLLM does.
 
 **FP8 is worth more than everything else combined** — 1.83×, and a quantized
-checkpoint exists for this exact model. A stretch goal, since BF16 comes first.
+checkpoint exists for this exact model. A stretch goal, since BF16 comes first;
+not taken, the five rounds went to BF16.
+
+## What the GPU rounds established
+
+**The number is 4,284 to 4,291 us per token**, on the runtime's event clock,
+with the 32 ids equal to the reference's and every compare row green: 4.6 to
+4.8% below the 4.5 ms production baseline, 2.2 times the design band's upper
+edge. The round-by-round path: 12.3 ms with the stock gang linears, 9.6 with
+per-tile linears and the boundary fixes (round 2); 4.57 to 4.60 with the MFMA
+attention, the prep split over the heads, the batched router, merge and norm
+loads and the boundary fusions (round 3); 4.26 to 4.34 with the batch-1 GEMV
+linear for qkva, o_proj and the head, the deeper router and the merge as
+regular tasks (round 4); the same stack re-measured with the compare made
+green by construction (round 5).
+
+**Where the time is.** The megakernel's task-shaped reads reach 2.25 TB/s
+(round 4's stream probe), against 4.3 TB/s achievable by the roofline; the
+runtime's per-task completion cost is 0.19 us per regular task (MAJ-8). A
+further round starts there, not at the kernels.
+
+**What did not pay.** The runtime knobs (`POLL_SLEEP`, `NO_LOCAL_CAS`), the
+GEMV batch constant, fewer head events, the w2 and w13 GEMV forms, the router
+in four tasks and the merge with o_proj folded in: each measured, each lost on
+at least one clock or its own suite, each left behind an off-by-default flag.
 
 ## Method
 
@@ -302,8 +334,8 @@ described in `docs/gpu-experiments/01-bringup/06-agent-guide.md`.
 |---|---|
 | Technical design | [`docs/design-doc/`](docs/design-doc/README.md) |
 | Source, build and run instructions | `env/setup.sh`, `env/check_day1.sh`, `env/preflight.sh`, [`harness/README.md`](harness/README.md), [`fleet/tasks/README.md`](fleet/tasks/README.md), [`fleet/patches/README.md`](fleet/patches/README.md); the reproduction guide above; the result of record in [`docs/gpu-experiments/05-final/07-final-numbers.md`](docs/gpu-experiments/05-final/07-final-numbers.md) |
-| Correctness evidence at every boundary | method in [`docs/deepseek-v2-lite/08-correctness.md`](docs/deepseek-v2-lite/08-correctness.md); the evidence in [`docs/gpu-experiments/02-validation/04-results.md`](docs/gpu-experiments/02-validation/04-results.md) and the reports under `env/hw/20260916/runs/` |
-| Profiling commands and results | plan in [`docs/mi300x/06-profiling.md`](docs/mi300x/06-profiling.md); the commands in `env/session/` and the results in [`docs/gpu-experiments/02-validation/04-results.md`](docs/gpu-experiments/02-validation/04-results.md) |
-| Milestone reached, remaining fallbacks | [`PROGRESS.md`](PROGRESS.md), [`docs/gpu-experiments/02-validation/07-summary.md`](docs/gpu-experiments/02-validation/07-summary.md) |
-| Known failures | [`OPEN-PROBLEMS.md`](OPEN-PROBLEMS.md), [`docs/gpu-experiments/02-validation/06-lessons.md`](docs/gpu-experiments/02-validation/06-lessons.md) |
-| Recommended next steps | [`docs/gpu-experiments/02-validation/06-lessons.md`](docs/gpu-experiments/02-validation/06-lessons.md) (measured, in the order of the gain), [`docs/acceleration/04-technique-ledger.md`](docs/acceleration/04-technique-ledger.md) |
+| Correctness evidence at every boundary | method in [`docs/deepseek-v2-lite/08-correctness.md`](docs/deepseek-v2-lite/08-correctness.md); the final evidence in [`docs/gpu-experiments/05-final/07-final-numbers.md`](docs/gpu-experiments/05-final/07-final-numbers.md) (the ids, the route log by the tie rule, every captured boundary, on every final) with the reports under `env/hw/20260918/runs/*_final_*/correctness_report.md`; the first full validation of layer 1 and the 27-layer graph in [`02-validation/04-results.md`](docs/gpu-experiments/02-validation/04-results.md) |
+| Profiling commands and results | the per-operator event clock (`harness/measure.py`, `report_table.md` in every run), the kernel timing (`vm.sh ktime`), the stream probe and the counters' plan in [`docs/mi300x/06-profiling.md`](docs/mi300x/06-profiling.md); the results in [`05-final/07-final-numbers.md`](docs/gpu-experiments/05-final/07-final-numbers.md), [`04-kernels/10-results.md`](docs/gpu-experiments/04-kernels/10-results.md) and [`03-acceleration/08-results.md`](docs/gpu-experiments/03-acceleration/08-results.md); the hardware counters were not taken (rocprofv3 aborts on the torch wheel's runtime, [`02-validation/06-lessons.md`](docs/gpu-experiments/02-validation/06-lessons.md), item 7) |
+| Milestone reached, remaining fallbacks | [`PROGRESS.md`](PROGRESS.md) (M4 reached 2026-09-16, the stages through the final numbers); the stock tasks still in the graph and our kernels in [`fleet/tasks/README.md`](fleet/tasks/README.md) |
+| Known failures | [`OPEN-PROBLEMS.md`](OPEN-PROBLEMS.md) (MIN-35 the timing build's hang, MIN-36 the half-merge fault, MAJ-8 the per-task completion cost); the lessons of each round: [`05-final/08-session-log.md`](docs/gpu-experiments/05-final/08-session-log.md), [`04-kernels/11-lessons.md`](docs/gpu-experiments/04-kernels/11-lessons.md), [`03-acceleration/09-lessons.md`](docs/gpu-experiments/03-acceleration/09-lessons.md), [`02-validation/06-lessons.md`](docs/gpu-experiments/02-validation/06-lessons.md) |
+| Recommended next steps | [`docs/gpu-experiments/04-kernels/11-lessons.md`](docs/gpu-experiments/04-kernels/11-lessons.md) (the next round ranked from the stream ceiling and MAJ-8), [`OPEN-PROBLEMS.md`](OPEN-PROBLEMS.md) (the next cut of each open problem), [`docs/acceleration/04-technique-ledger.md`](docs/acceleration/04-technique-ledger.md) (FP8 at 1.83x, the stretch not taken) |
