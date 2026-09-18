@@ -244,12 +244,13 @@ def test_route_log_without_weights_keeps_the_exact_rule(dirs):
 
 def test_round4_finals_route_mismatches_are_single_swaps_and_cascades():
     """The replay on the record (docs/gpu-experiments/05-final/03-local-preparation.md, F1): every
-    mismatch of the fifteen 48-task finals of 2026-09-18 is a single swap, or a multi-expert difference
-    after a single swap of the same run; the round-4 reference has no weights, so the tolerance itself
-    is first read on the VM (R1)."""
+    mismatch of the fifteen 48-task finals of round 4 (2026-09-18) is a single swap, or a multi-expert
+    difference after a single swap of the same run. The reference on disk carries the weights since
+    the round-5 session (the tie rule); this replay strips them to read the exact rule of round 4."""
     ROOT = HARNESS.parent
     ref_log = json.loads((ROOT / "harness/ref/ref_route_log.json").read_text())
-    runs = sorted((ROOT / "env/hw/20260918/runs").glob("L27_head_it3[012]*lg48*"))
+    ref_log = [[{k: v for k, v in e.items() if k != "w_all"} for e in step] for step in ref_log]
+    runs = sorted((ROOT / "env/hw/20260918/runs").glob("L27_head_it3[012]_tile*lg48*"))
     runs = [r for r in runs if (r / "fleet_route_log.json").exists()]
     assert len(runs) >= 15, [r.name for r in runs]
     total = singles = 0
@@ -266,6 +267,23 @@ def test_round4_finals_route_mismatches_are_single_swaps_and_cascades():
             else:
                 assert first_single is not None and m["step"] > first_single, (run.name, m)
     assert total >= 300 and singles >= 280, (total, singles)
+
+
+def test_round5_finals_route_log_passes_by_the_tie_rule():
+    """The round-5 record (docs/gpu-experiments/05-final/07-final-numbers.md): with the reference's
+    weights (w_all) and the calibrated router floor, every final of the session reads by the tie rule
+    with ties and cascades and zero disagreements, so the route log is PASS."""
+    ROOT = HARNESS.parent
+    ref_log = json.loads((ROOT / "harness/ref/ref_route_log.json").read_text())
+    assert all("w_all" in e for step in ref_log for e in step)
+    floor = json.loads((ROOT / "harness/ref/calibration.json").read_text())["floor"]["router"]
+    runs = sorted((ROOT / "env/hw/20260918/runs").glob("L27_head_it3[012]_final_*"))
+    runs = [r for r in runs if (r / "fleet_route_log.json").exists()]
+    assert len(runs) >= 9, [r.name for r in runs]
+    for run in runs:
+        r = compare.compare_route_log(ref_log, json.loads((run / "fleet_route_log.json").read_text()), floor)
+        assert r["rule"] == "tie" and r["result"] == "PASS", (run.name, r["rule"], r["result"])
+        assert len(r["disagreements"]) == 0 and len(r["ties"]) >= 1, (run.name, len(r["disagreements"]), len(r["ties"]))
 
 
 # ---- F2 of docs/gpu-experiments/05-final: iteration-aware boundaries ------------------------------
