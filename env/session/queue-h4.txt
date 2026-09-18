@@ -1,0 +1,11 @@
+# Round 5, R4 (docs/gpu-experiments/05-final/02-local-gpu-split.md): the fault of MIN-36, the half merge
+# without the GEMV linears on 27 layers with the head (round 4: hipErrorIllegalAddress before any forward
+# pass; at 2 layers and with the GEMV linears it runs). The first row is the faulting configuration with
+# F5's fix if one was found (a fix that passes closes MIN-36); the rest is the layer bisect for the record
+# when the readings found nothing (3, 5, 9, 14 layers at one iteration), and the halves control at 3 layers.
+--layers 27 --head --iters 1 --final --no-gemv-linears compare continue    # R4: the faulting configuration
+--layers 3 --iters 1 --final --no-gemv-linears compare continue    # R4: the bisect
+--layers 5 --iters 1 --final --no-gemv-linears compare continue
+--layers 9 --iters 1 --final --no-gemv-linears compare continue
+--layers 14 --iters 1 --final --no-gemv-linears compare continue
+--layers 3 --iters 1 --final --no-gemv-linears --merge-halves 1 compare continue    # R4: the halves control

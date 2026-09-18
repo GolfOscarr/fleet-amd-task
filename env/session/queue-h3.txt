@@ -1,0 +1,6 @@
+# Round 5, R3 (docs/gpu-experiments/05-final/02-local-gpu-split.md): the timing build on the 2-layer graph
+# with the finals' stack, only if F4 fixed the hang of MIN-35 (otherwise the file is not run): the
+# [TASK_TIME2] lines and the exec per class in report_table.md (the GEMV linear's exec against the CK
+# tile's 18 us of round 3). Each row ends at the queue's watchdog if the hang is still there.
+--layers 2 --iters 1 --final --worker-timing compare continue    # R3: the timing build's step-0 compare
+--layers 2 --iters 32 --final --worker-timing table continue    # R3: the exec per class

@@ -80,13 +80,12 @@ Files. `harness/run_reference.py` (`route_entry`, the capture hook),
 Checks. `test_compare.py`: a synthetic log with (a) one swap within `tol`
 gives `tie`, (b) one swap outside gives `disagreement` and FAIL, (c) a
 two-expert difference two steps after (a) gives `cascade`, (d) the old
-format runs the exact rule. The replay on the record: a script
-(`harness/route_replay.py`, 40 lines, or a test fixture) builds `w_all`
-from the reference's top-6 for the experts it knows and marks the others
-unknown; over the fifteen finals' `fleet_route_log.json` every
-single-expert mismatch whose incoming expert is unknown is at most a
-`tie` candidate, the multi-expert ones are cascades, and the count of
-disagreements is zero. `test_run_reference_smoke.py` with the new field.
+format runs the exact rule. The replay on the record is a test over the
+fifteen finals' `fleet_route_log.json` against the round-4 reference (no
+weights, so the exact rule and its mismatch list): every mismatch is a
+single swap or a multi-expert difference after a single swap of the same
+run, which is the structure the tie rule expects; the tolerance itself is
+first read on the VM (R1). `test_run_reference_smoke.py` with the new field.
 
 Time box: 2 hours (3 with the capture hook). Feeds R1, R2.
 

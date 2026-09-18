@@ -308,6 +308,8 @@ def apply_final(args, argv):
         if opt in named or ("--no-" + dest.replace("_", "-")) in named:
             continue
         setattr(args, dest, value)
+    if not args.gemv_linears and "--linear-grid" not in named:
+        args.linear_grid = None            # the grid applies to the GEMV linears (graph_plan's assert)
     if not any("MPK_W2_CK_TILE" in f for f in args.runtime_flags):
         args.runtime_flags = list(args.runtime_flags) + [FINAL_DEFINE]
     return args

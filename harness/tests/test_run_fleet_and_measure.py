@@ -356,7 +356,9 @@ def test_final_preset_keeps_every_flag_named_on_the_command_line():
     a = run_fleet.parse_args(base + ["--no-event-timing"])            # the FWD_PASS rows
     assert a.event_timing is False and a.nt_streams and a.gemv_linears
     a = run_fleet.parse_args(base + ["--no-nt-streams", "--no-gemv-linears"])
-    assert a.nt_streams is False and a.gemv_linears is False and a.linear_grid == 48 and a.tile_linears
+    assert a.nt_streams is False and a.gemv_linears is False and a.tile_linears
+    assert a.linear_grid is None                                        # the grid needs the GEMV linears (R4's row)
+    assert run_fleet.run_name(a) == "L27_head_it29_final_tile_at_fn1_fn2_fs_nt_mfma_rf_w2cktile_mt_mh2"
     a = run_fleet.parse_args(base + ["--linear-grid", "96", "--merge-halves", "1"])
     assert a.linear_grid == 96 and a.merge_halves == 1 and a.merge_tasks
     assert run_fleet.run_name(a).startswith("L27_head_it29_final_") and "_lg96_mt" in run_fleet.run_name(a)

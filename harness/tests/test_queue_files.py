@@ -9,7 +9,8 @@ import run_fleet  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 ROUND4 = sorted((ROOT / "env/session").glob("queue-[fg][0-9].txt"))   # not the fixtures queue-fault*, queue-fix*
-QUEUES = sorted((ROOT / "env/session").glob("queue-[cd]*.txt")) + ROUND4
+ROUND5 = sorted((ROOT / "env/session").glob("queue-h[0-9].txt"))      # docs/gpu-experiments/05-final, F8
+QUEUES = sorted((ROOT / "env/session").glob("queue-[cd]*.txt")) + ROUND4 + ROUND5
 WORDS = {"compare", "table", "measure", "continue"}
 
 
@@ -30,6 +31,14 @@ def test_round4_queue_files_exist():
     names = {p.name for p in ROUND4}
     assert {"queue-f2.txt", "queue-f3.txt", "queue-f4.txt", "queue-f5.txt", "queue-f6.txt",
             "queue-g1.txt", "queue-g2.txt", "queue-f7.txt", "queue-f8.txt", "queue-f9.txt", "queue-g3.txt", "queue-g4.txt"} == names
+
+
+def test_round5_queue_files_exist():
+    names = {p.name for p in ROUND5}
+    assert {"queue-h1.txt", "queue-h2.txt", "queue-h3.txt", "queue-h4.txt", "queue-h5.txt", "queue-h6.txt"} == names
+    for q in ROUND5:                       # every round-5 row runs the finals' stack (F3)
+        for toks in rows(q):
+            assert "--final" in toks, (q.name, toks)
 
 
 def test_every_row_parses_and_names_a_run():
@@ -57,15 +66,15 @@ def test_knob_rows_use_the_equals_form():
                 assert not t.startswith("--runtime-flags ") and (not t.startswith("--runtime-flags") or "=" in t), toks
 
 
-def test_round4_rows_build_their_plans_and_obey_the_rules():
-    """Every model row of the round-4 files builds its plan (the flag asserts fire here, not on the VM),
+def test_round4_and_round5_rows_build_their_plans_and_obey_the_rules():
+    """Every model row of the round-4 and round-5 files builds its plan (the flag asserts fire here, not on the VM),
     never pairs a fence knob with a counter form, and never probes the o_proj label under the fold; the
     stream rows read whole 4 KB rows. (The load policy is not asserted: G1.3 and the stream rows A/B it.)"""
     sys.path.insert(0, str(ROOT))
     from fleet import build_graph as B
     p = run_fleet.build_parser()
     seen = set()
-    for q in ROUND4:
+    for q in ROUND4 + ROUND5:
         for toks in rows(q):
             a = run_fleet.parse_args([t for t in toks if t not in WORDS] + ["--model-dir", "x"])
             assert a.iters <= 32 and (a.iters == 1 or not a.debug), (q.name, toks)
@@ -75,7 +84,7 @@ def test_round4_rows_build_their_plans_and_obey_the_rules():
                 continue
             key = (a.layers, a.head, a.gemv_linears, a.linear_grid, a.head_grid, a.gemv_w13, a.merge_tasks,
                    a.merge_halves, a.router_tasks, a.merge_oproj, a.fuse_norm1, a.fuse_norm2, a.fuse_silu,
-                   a.tile_linears, a.attend_tasks, a.probe_before)
+                   a.tile_linears, a.attend_tasks, a.probe_before, a.argmax_slices)
             if key in seen:
                 continue
             seen.add(key)
@@ -85,7 +94,7 @@ def test_round4_rows_build_their_plans_and_obey_the_rules():
                       fuse_norm1=a.fuse_norm1, prefetch=a.prefetch, gemv_linears=a.gemv_linears,
                       linear_grid=a.linear_grid, head_grid=a.head_grid, gemv_w13=a.gemv_w13,
                       merge_tasks=a.merge_tasks, merge_halves=a.merge_halves, router_tasks=a.router_tasks,
-                      merge_oproj=a.merge_oproj)
+                      merge_oproj=a.merge_oproj, argmax_slices=a.argmax_slices or 50)
 
 
 def test_queue_flag_removes_a_failed_lever(tmp_path):

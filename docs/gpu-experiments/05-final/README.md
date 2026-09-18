@@ -18,6 +18,8 @@ produces the final numbers with every check green.
 | [`02-local-gpu-split.md`](02-local-gpu-split.md) | the laptop items F1 to F9 with deliverable, check, time box and the VM row each feeds; the VM rows R0 to R5 with PASS text and DECIDE rows; the budget against the balance left ($4.69); the dependency graph |
 | [`03-local-preparation.md`](03-local-preparation.md) | the laptop items in detail (F1 to F9): direction, approach at the level of files and rules, the files touched, the checks, the time box, the VM row; the order of work (17 hours, 11 for the session's minimum); the double-check of the ideas against the source (the knob unsafe by reading, the fault's first suspect out, the head's event count a plan constant) |
 | [`04-checklist.md`](04-checklist.md) | the progress record: one box per deliverable, ticked only when its check has run; the boxes before the VM |
+| [`05-session-plan.md`](05-session-plan.md) | the session: one command per row with its PASS text, the DECIDE rows (the balance, A1, A2, R1, R4, R5), the queue files, the protocol, the playbook with round 4's additions, the budget against the $4.69 balance and the decision it forces |
+| [`06-rehearsal.md`](06-rehearsal.md) | every command of the session expanded in DRY mode by `ROUND=5 env/session/rehearse.sh`: the stages and the queue rows as `run_fleet.py` lines |
 
 ## Status
 

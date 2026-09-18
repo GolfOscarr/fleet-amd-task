@@ -54,12 +54,12 @@ Status: done 2026-09-18. `build_plan(..., argmax_slices=ARGMAX_SLICES)` threads 
 
 ## F8. The session tooling
 
-- [ ] `queue-h1.txt` (R1), `queue-h2.txt` (R2), `queue-h3.txt` (R3, if F4), `queue-h4.txt` (R4), `queue-h5.txt` (R5)
-- [ ] `test_queue_files.py`: the round-5 set, the rows build their plans, no duplicate run names
-- [ ] `rehearse.sh`: the round-5 rows; `06-rehearsal.md` regenerated
-- [ ] `05-session-plan.md`: R0 to R5 with minute marks, the budget and the $3 rule's decision, the protocol, the playbook
+- [x] `queue-h1.txt` (R1), `queue-h2.txt` (R2), `queue-h3.txt` (R3, if F4), `queue-h4.txt` (R4), `queue-h5.txt` (R5); `queue-h6.txt` besides (the optional finals sets: batch 4, 8 head events)
+- [x] `test_queue_files.py`: the round-5 set, the rows build their plans, no duplicate run names
+- [x] `rehearse.sh`: the round-5 rows; `06-rehearsal.md` regenerated
+- [x] `05-session-plan.md`: R0 to R5 with minute marks, the budget and the $3 rule's decision, the protocol, the playbook
 
-Status: open.
+Status: done 2026-09-18. Six queue files, 31 rows, every one on `--final` (the round-5 existence test asserts it); the preset gained one rule on the way (`--no-gemv-linears` drops the grid, which the plan asserts needs the GEMV linears; R4's rows would have failed their plan). `test_queue_files.py`: `ROUND5` beside `ROUND4`, the existence test, the plan-building test over both rounds with `argmax_slices` in its key, the no-duplicate-name check over every file. `rehearse.sh`: `ROUND=5` writes the round-5 transcript (R0 to the end, the six queue files, the `ktime nt` line) and leaves round 4's path as it was; `06-rehearsal.md` generated: 31 `run_fleet.py` lines, no guard line. `05-session-plan.md`: the rows with minute marks from round 4's durations (R0 about 18 minutes with the `nt` suites only, R1 at 18, R2 at 21, the checkpoint pull at 30, R5, R4, R3, the optional sets at 42, the end), the budget against $4.69 with the balance decision as an open DECIDE row of S0, the DECIDE table (R1, A1, A2, R5, R4, the number), the playbook with round 4's additions (the watchdog, the anchored kill, the record's commit after the pull, the reading of a model compare). Checks: 250 tests, `bash -n`, the preflight 9 PASS with shellcheck, the rehearsal.
 
 ## F5. The half-merge fault (MIN-36)
 
