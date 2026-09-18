@@ -35,7 +35,7 @@ def test_round4_queue_files_exist():
 
 def test_round5_queue_files_exist():
     names = {p.name for p in ROUND5}
-    assert {"queue-h1.txt", "queue-h2.txt", "queue-h3.txt", "queue-h4.txt", "queue-h5.txt", "queue-h6.txt", "queue-h7.txt"} == names
+    assert {"queue-h1.txt", "queue-h2.txt", "queue-h3.txt", "queue-h4.txt", "queue-h5.txt", "queue-h6.txt", "queue-h7.txt", "queue-h8.txt", "queue-h9.txt"} == names
     for q in ROUND5:                       # every round-5 row runs the finals' stack (F3)
         for toks in rows(q):
             assert "--final" in toks, (q.name, toks)
@@ -54,8 +54,11 @@ def test_every_row_parses_and_names_a_run():
             assert name and " " not in name and '"' not in name, (q.name, name)
             assert a.iters <= 32, (q.name, toks)
             seen.setdefault(name, []).append(q.name)
-    # no two rows across the files produce the same run directory unless they are the repeats of G9
-    dup = {n: fs for n, fs in seen.items() if len(fs) > 1 and not all(f == "queue-d9.txt" for f in fs)}
+    # no two rows across the files produce the same run directory unless they are the repeats of G9 or
+    # round 5's conditional rerun of A's set (queue-h9 repeats queue-h2's three A rows; the queue moves
+    # the earlier record aside)
+    dup = {n: fs for n, fs in seen.items() if len(fs) > 1
+           and not all(f == "queue-d9.txt" for f in fs) and set(fs) != {"queue-h2.txt", "queue-h9.txt"}}
     assert not dup, dup
 
 

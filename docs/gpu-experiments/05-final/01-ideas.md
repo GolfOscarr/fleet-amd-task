@@ -20,7 +20,7 @@ against the source and changed A1, L2 and N3), the progress record
 | The two things tried at the end | the finals with `POLL_SLEEP=8` beside `NO_LOCAL_CAS` (`queue-g3.txt`), then with `-DGEMV_BATCH=4` (`queue-g4.txt`): both within the run-to-run spread on the model, both 1 to 7% better on the 2-layer graph |
 | The checks that are not green | the it32 compare rows fail `head.B15.logits` (the boundaries are dumped from the last iteration, `run_fleet.py`, `boundary_dump`: "boundaries are from iteration iters - 1, not decode step 0") and the route log (MIN-32: 309 mismatches over the fifteen finals, 287 of them a single expert, 251 of those the lowest-weighted slot); round 3's finals fail the same way |
 | The laptop items | MIN-35 (`--worker-timing` hangs the round-4 header), MIN-36 (the half merge without the GEMV linears faults on 27 layers), the merge's standalone 16.3 us against round 3's 11.4, MIN-32's tie rule |
-| The balance | $4.69 at $2.99 per hour: 94 minutes of VM time, of which the $3 stop rule leaves 34 |
+| The balance | $4.69 at $2.99 per hour: 94 minutes of VM time; the whole balance is used (decided 2026-09-18), the hard stop in `05-session-plan.md` |
 
 ## Group A: the two things tried at the end of round 4
 

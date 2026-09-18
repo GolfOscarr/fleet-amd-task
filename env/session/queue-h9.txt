@@ -1,0 +1,7 @@
+# Round 5, the conditional rerun of A's set (docs/gpu-experiments/05-final/05-session-plan.md, R2's rule):
+# only if A's three medians of queue-h2.txt spread by more than 2%, and only if the minutes allow (the
+# hard stop). The same three rows as A's in queue-h2; the queue moves the earlier record directories
+# aside (<name>.prev-<utc>), so both sets stay in the record.
+--layers 27 --head --iters 30 --final compare table continue    # A again
+--layers 27 --head --iters 31 --final compare table continue
+--layers 27 --head --iters 32 --final compare table continue

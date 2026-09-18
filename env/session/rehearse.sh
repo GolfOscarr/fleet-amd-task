@@ -151,8 +151,13 @@ h "Minute 39, R3: the timing build in F4's buffer form, its first row the check 
 queue env/session/queue-h3.txt
 show $V ktime nt
 
-h "Minute 41, the optional sets if the minutes allow: batch 4, then 8 head events in the finals' form (queue-h6.txt)"
+h "Minute 48, the optional sets as the minutes allow: the finals with batch 4 (queue-h6.txt), then the finals with 8 head events only if R5 chose it (queue-h8.txt)"
 queue env/session/queue-h6.txt
+queue env/session/queue-h8.txt
+
+h "Minute 58, the plain-build suites if the minutes allow (round 4's K1: every check on this header), then A's set again only if its medians spread by more than 2% (queue-h9.txt)"
+show $V kernels
+queue env/session/queue-h9.txt
 
 h "The end: pull and commit the record, push, then the deletion after the user's yes"
 show $L pull

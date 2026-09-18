@@ -90,7 +90,7 @@ fill from `report_table.md` if the rows ran.
 
 | Rule | Quantity | Round 4 | Measured | Choice |
 |---|---|---|---|---|
-| S0 | the balance | $4.69 after round 4 | | the rule waived with a hard stop at minute 60, or credits added |
+| S0 | the balance | $4.69 after round 4 | | taken 2026-09-18: the whole balance, no credits; the hard stop at minutes 70, 78 and 82 |
 | R1 | the route log's classes on the two model rows; every captured boundary | FAIL by the exact rule (309 mismatches) | | PASS with zero disagreements is the claim; else dropped with the gap |
 | A1 | B's medians against A's, both clocks | `POLL_SLEEP=8` within the spread on the model (-1.3% at 2 layers) | | into the default if B is not above A on either clock |
 | A2 | the batch-4 set against A, both clocks | -7% at 2 layers, equal on the model | | into the default only if it wins both clocks |

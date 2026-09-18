@@ -6,8 +6,8 @@ double-check of `03-local-preparation.md` (Part 4 there: the knob
 event count is a plan constant and gains an item, the fault's first
 suspect is out). The rule of rounds 2 to 4 holds: no minute of VM time
 goes to work that can be done on the laptop, and this round's VM time is
-short by the balance ($4.69, 94 minutes; the $3 stop rule of round 4's
-plan leaves 34 unless credits are added). Every item below has a
+short by the balance ($4.69, 94 minutes; decided 2026-09-18: the whole
+balance is used and no credits are added, `05-session-plan.md`). Every item below has a
 deliverable, a check that runs on the laptop, a time box and the VM row
 that consumes it; every VM row names the laptop items it needs, the PASS
 text and the decision it feeds. The items in detail are in
@@ -81,7 +81,7 @@ and R3 to R5 need credits.
 | R0 | about 15 minutes on a fresh host ($0.75) |
 | R1 and R2 | 3 rows of 68 s and 8 of 68 s: about 13 minutes ($0.65); the batch-4 eight 9 more |
 | R3 to R5 | about 7 minutes if all three run; R5's extra A set 4 more |
-| The session | 40 to 50 minutes, $2.00 to $2.50; the balance after about $2.20, below round 4's $3 stop rule, so the rule is waived for this last session or credits are added first (the user's decision, recorded in `05-session-plan.md`) |
+| The session | about 68 minutes with every optional block, $3.40; the whole balance is used (the user's decision of 2026-09-18) under the hard stop of `05-session-plan.md` (no new queue after minute 70, the deletion by 82) |
 
 ## The dependency graph
 
