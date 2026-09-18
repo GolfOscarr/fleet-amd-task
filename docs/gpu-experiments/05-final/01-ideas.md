@@ -253,6 +253,13 @@ sequences side by side in `dev_kt.s`) and one `ktime` row. Decision: done
 if the hour finds the cause; otherwise recorded as a known regression of
 the standalone form that the graph does not pay.
 
+F6's outcome (`04-checklist.md`): the cause is not the round trips (the
+deeper form makes three where round 3 made four) but the weights phase,
+computed per thread in serial loops over LDS with a dependent `expf` per
+step where round 3 computed one weight per lane with two wave
+reductions, plus the butterfly's shuffle chain per `W_uv` batch. Recorded
+in round 4's standalone table; no kernel change in the final stage.
+
 ## Group D: the defaults and the record
 
 ### D1. The final stack as the default

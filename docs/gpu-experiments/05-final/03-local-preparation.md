@@ -334,6 +334,11 @@ each other); `ktime nt` on the VM (R3's `ktime` line).
 
 Time box: 1 hour (2 with the fix). Feeds R3.
 
+Outcome (`04`): `env/offline_gfx942/kt_r3.sh` (round 3's launcher tree
+disassembled beside the head's) named the weights phase, not the store
+and not the round trips; no kernel change, the cause recorded in round
+4's standalone table.
+
 ### F7. The head's event count (N3, now a plan constant)
 
 Direction. The head's 400 tasks run as 50 events (49 gaps of 2.3 us in

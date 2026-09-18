@@ -87,7 +87,16 @@ The streaming loads beat the plain ones on every kernel standalone (the
 norm form by 13%, w2 by 13%). Batch 16 spills; the strided map loses by
 40%. The deeper merge is 5 us slower standalone than round 3's but equal
 in the graph (22.0 us gap both rounds); the fold's 39 us warm foretold its
-42.5 us gap.
+42.5 us gap. The 5 us was read offline in round 5 (F6 of
+`../05-final/04-checklist.md`, the two launchers' `k_mla_merge_uv`
+disassembled side by side): not the round trips (three dependent HBM
+trips against round 3's four) but the weights phase, where every thread
+walks the live splits through LDS twice with a dependent `expf` per step
+(the maximum and the total, 66 steps at 33 splits) and once more per row
+of the batch, against round 3's one weight per lane in a single wave with
+two wave reductions; with the halving butterfly's dependent shuffle chain
+per `W_uv` batch and 518 conditional selects against 14. A known
+regression of the standalone form that the graph does not pay.
 
 ## The ceiling (the stream probe, G5)
 

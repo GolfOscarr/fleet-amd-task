@@ -92,11 +92,26 @@ Status: done 2026-09-18, the buffer form written; the VM's first `queue-h3` row 
 
 ## F6. The merge's standalone 5 us
 
-- [ ] the `kt_r3` scratch variant from round 3's file; the wait sequences and the `attn_s` stores side by side
-- [ ] the `if constexpr` on the store if it is the cost; the suites' merge rows bit-exact
-- [ ] the cause, or the regression, written into `../04-kernels/10-results.md`'s standalone table
+- [x] the `kt_r3` scratch variant from round 3's file; the wait sequences and the `attn_s` stores side by side
+- [x] the `if constexpr` on the store if it is the cost; the suites' merge rows bit-exact (not the cost: no kernel change)
+- [x] the cause, or the regression, written into `../04-kernels/10-results.md`'s standalone table
 
-Status: open.
+Status: done 2026-09-18, the cause read, no kernel change. `env/offline_gfx942/kt_r3.sh` extracts round 3's launcher tree (`fleet/tasks` at 8946804, the launcher's `k_mla_merge_uv` and its timing loop unchanged since) and disassembles it with `run.sh`'s launcher line into `dev_kt_r3.s`, beside `dev_kt.s` of the head. The two `k_mla_merge_uv` bodies:
+
+| | round 3 | round 4 |
+|---|---|---|
+| instructions | 1,775 | 2,733 |
+| `vmcnt` waits (the sequence) | 15: `0 1 0 15 14 13 12 8 4 0 14 12 8 4 0` (the lse, the partials batch, two `W_uv` batches retiring load by load) | 11: `0 0 0 0 0 0 1 0 0 0 0` (the partials batch with the lse words, two `W_uv` batches, each a full drain) |
+| dependent HBM trips | 4 | 3 |
+| `global_load` | 57 | 36 |
+| `ds_read` / `ds_write` | 143 / 7 (the o values re-read per FMA) | 25 / 11 (the o values in registers) |
+| `ds_bpermute` (shuffles) | 13: one `wave_max`, one `wave_sum`, in wave 0, once | 17: the halving butterfly's four dependent stages per `W_uv` batch |
+| `v_exp_f32` sites | 1 (one weight per lane) | 18 (per thread: the maximum loop, the total loop, one per row of the batch) |
+| `v_cndmask` | 14 | 518 |
+| `s_cbranch` | 31 | 54 |
+| VGPRs, scratch | 114, 0 | 124, 0 |
+
+So the round trips are not it: the deeper form makes one trip fewer. The cost is the weights phase (c) of `mla_merge_uv_head`: every thread runs `for j < live` twice over `lse_s` with a dependent LDS read and `expf` per step (66 steps at the run's 33 splits, unrolled by eight) and once more per row of the FMA batch, where round 3 read one lse per lane of wave 0 and reduced with two 6-stage shuffles; the `attn_s` null test is a wave-uniform branch around the store, not a per-value select, and is not it. At the launcher's 16 workgroups (8 x 2, one wave per SIMD) those serial VALU and LDS chains are exposed, in the graph's 32 or 64 regular merge tasks they are hidden under the other tasks (22.0 us gap both rounds, 15.0 with the tile form). The fix would be round 3's weights phase under round 4's batch (one lse per lane, `wave_max`, one `expf`, `wave_sum`, the weights through LDS, about fifteen lines, the divisor's last bit back to round 3's tree order) and gains nothing in the graph, so it is not made in the final stage; recorded in `../04-kernels/10-results.md`'s standalone table. Checks: `kt_r3.sh` exits 0 (10 kernel headers of the round-3 tree); the summariser over both assemblies; no kernel file changed, so the suites and the offline pass stand as of F4.
 
 ## F9. The checklist and the gate
 

@@ -115,7 +115,9 @@ make), `w2ck` (the fused w2's CK path under `MPK_W2_CK_TILE`) and `union`
 the worker G1's row builds, the round-3 levers stacked on the round-4
 tasks) and `unionT` (`union` with `MPK_ENABLE_TIMING`: the timing build
 over the round-4 union, F4 of `docs/gpu-experiments/05-final`), disassembles
-`gemv`, `gemvnt`, `ckgang`, `union` and `unionT`, and writes
+`gemv`, `gemvnt`, `ckgang`, `union` and `unionT` (`kt_r3.sh` besides
+disassembles round 3's launcher tree at 8946804 into `dev_kt_r3.s`, F6 of
+`docs/gpu-experiments/05-final`: round 3's `k_mla_merge_uv` beside round 4's), and writes
 `dev_kt.s`, the standalone launcher's device code, where `k_linear_gemv`,
 `k_moe_router` and `k_mla_merge_uv` are named kernels whose `s_waitcnt vmcnt`
 sequences show the loads in flight per batch. The probes under `gemv_probe/`
