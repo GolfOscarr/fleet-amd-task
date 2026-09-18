@@ -60,15 +60,19 @@ Every line below is checked and reported before `grab.sh`:
 | the branch pushed | `git status` clean, `git log origin/local/round-4..local/round-4` empty | pushed |
 | no VM, no address | `L balance` shows `No virtual machines`; `env/session/vm.ip` absent; no `grab.sh` process | to check at S0 |
 | the queue files | `.venv/bin/python -m pytest harness/tests/test_queue_files.py -q` (every row parses and builds its plan); `08-rehearsal.md` regenerated | 6 passed; 41 rows |
-| the decisions below | confirmed by the user | open |
+| the decisions below | the four put to the user taken on 2026-09-18; the go for the VM | the go is open |
 
-## Decisions to confirm before the VM
+## Decisions taken by the user on 2026-09-18
 
-| Decision | Proposed |
+Four decisions were put to the user and taken; the rest of the table are
+the plan's own defaults, stated here so the session runs on written rules.
+
+| Decision | Choice |
 |---|---|
-| Sessions | one, up to 3.5 hours of VM time; the router and merge rows in the same session after the GEMV rows (`04`) |
-| Order | S3 and S4 (the suites, the standalone times, the batch constant), S5 (the linears and the grid, G1 and G2), S6 (w2, w13: G3, G4), S7 (the router in four tasks, the merge as regular tasks: H2, H4), S8 (the o_proj fold: H5), S9 (the stream probe, the head: G5, G6), S10 (the finals: G7 = H6), then G9 and G8 as time allows |
-| Autonomy | the agent applies every RULE and reports every DECIDE row as it goes; a lever that failed its compare is removed from the later queue files with `queue_flag.py` before they run; nothing waits for the user except the deletion |
+| Budget | up to 3.5 hours of VM time ($10.47 of the $13.01); hard stop at minute 210 or below $3; $2.50 kept for a second provisioning if the first host fails its setup |
+| Sessions and order | one session: S3 and S4 (the suites, the standalone times, the batch constant), S5 (the linears and the grid, G1 and G2), S6 (w2, w13: G3, G4), S7 (the router in four tasks, the merge as regular tasks: H2, H4), S8 (the o_proj fold: H5), S9 (the stream probe, the head: G5, G6), S10 (the finals: G7 = H6), then G9 and G8 as time allows |
+| Autonomy | the agent applies every RULE and DECIDE row by its written threshold and reports as it goes; a lever that failed is removed from the later queue files with `queue_flag.py` before they run; nothing waits for the user except the deletion |
+| A round-4 kernel fails its suite or its step-0 compare | the lever is dropped and the rest runs: its flag is removed from every later file, the round-3 build carries the other rows, the failing trial directory is recorded for the laptop afterwards; no debugging on the VM's clock |
 | Provisioning | `grab.sh` polls the list; the user is told when the polling starts; nothing is billed before the provision |
 | Deletion | asked every time; the record pulled and the branch pushed first |
 | The batch constant | G0's `ktime` decides 4, 8 or 16 rows per batch for the GEMV linear and the router (8 if within 5%); a constant other than 8 enters the later files as `--runtime-flags=-DGEMV_BATCH=N` (and `-DROUTER_BATCH=M`) through `queue_flag.py`, no push |
