@@ -23,18 +23,18 @@ task-model capability is required.
 
 | Component | Status | Evidence |
 |---|---|---|
-| Persistent-kernel runtime | ✓ exists, MI300 guards throughout | `persistent_kernel.cuh` |
-| Chiplet-task scheduling | ✓ exists, parameterized by X/W/C | paper §8, `gang.py` |
-| Hierarchical sync | ✓ exists, MI300-specific path | `mpk_atoms.cuh` |
-| gfx942 build target | ✓ via `AMDGPU_TARGETS=gfx942` | `CMakeLists.txt:50` |
-| RMSNorm, RoPE, SiLU, argmax | ✓ `*_mi300.cuh` | `tasks/mi300/` |
-| Dense linear (N-split, K-split) | ✓ `gang_linear`, `gang_splitk_linear` | `tasks/mi300/` |
-| MoE routing + expert GEMM + combine | ✓ four kernels + Python | `tasks/mi300/`, `persistent_kernel.py:1203+` |
-| KV-cache update | ✓ but GQA-shaped | `kv_cache_update_mi300.cuh` |
-| Attention | ✓ **paged/GQA only** | `*paged_attention*_mi300.cuh` |
-| **MLA attention** | ✗ **absent** | no match for `mla`/`kv_lora`/`latent` |
-| **DeepSeek-V2 model builder** | ✗ **absent** | `models/` contains only `qwen3` |
-| Latent KV-cache layout | ✗ absent | cache is K/V-shaped |
+| Persistent-kernel runtime | yes exists, MI300 guards throughout | `persistent_kernel.cuh` |
+| Chiplet-task scheduling | yes exists, parameterized by X/W/C | paper §8, `gang.py` |
+| Hierarchical sync | yes exists, MI300-specific path | `mpk_atoms.cuh` |
+| gfx942 build target | yes via `AMDGPU_TARGETS=gfx942` | `CMakeLists.txt:50` |
+| RMSNorm, RoPE, SiLU, argmax | yes `*_mi300.cuh` | `tasks/mi300/` |
+| Dense linear (N-split, K-split) | yes `gang_linear`, `gang_splitk_linear` | `tasks/mi300/` |
+| MoE routing + expert GEMM + combine | yes four kernels + Python | `tasks/mi300/`, `persistent_kernel.py:1203+` |
+| KV-cache update | yes but GQA-shaped | `kv_cache_update_mi300.cuh` |
+| Attention | yes **paged/GQA only** | `*paged_attention*_mi300.cuh` |
+| **MLA attention** | no **absent** | no match for `mla`/`kv_lora`/`latent` |
+| **DeepSeek-V2 model builder** | no **absent** | `models/` contains only `qwen3` |
+| Latent KV-cache layout | no absent | cache is K/V-shaped |
 
 ## What we must build
 

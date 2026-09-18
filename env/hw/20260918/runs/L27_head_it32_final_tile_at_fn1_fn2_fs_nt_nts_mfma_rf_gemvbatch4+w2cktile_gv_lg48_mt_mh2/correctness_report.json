@@ -1,0 +1,2748 @@
+{
+  "threshold_source": "4 x calibrated floor",
+  "thresholds": {
+    "norm": 0.1811951991236733,
+    "rope": 0.021174033604749967,
+    "gemv": 0.012940280246906176,
+    "scores": 0.01042574426733761,
+    "attention": 0.04004078653205929,
+    "router": 0.014370772811406368,
+    "expert": 0.04396453772147746,
+    "layer": 0.017334900438894192,
+    "logits": 0.16405109773780513,
+    "exact": 0.0
+  },
+  "iters": 32,
+  "later_reference": null,
+  "boundaries": [
+    {
+      "key": "L0.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "max_abs_err": 0.0,
+      "rel_err": 0.0,
+      "cos_sim": 1.0,
+      "n": 512,
+      "threshold": 0.1811951991236733,
+      "floor": 0.045298799780918324,
+      "result": "PASS"
+    },
+    {
+      "key": "L0.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "max_abs_err": 0.0,
+      "rel_err": 0.0,
+      "cos_sim": 1.0000000000000002,
+      "n": 64,
+      "threshold": 0.021174033604749967,
+      "floor": 0.005293508401187492,
+      "result": "PASS"
+    },
+    {
+      "key": "L1.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "max_abs_err": 0.00396728515625,
+      "rel_err": 0.006171794953931687,
+      "cos_sim": 0.9999809739163942,
+      "n": 512,
+      "threshold": 0.1811951991236733,
+      "floor": 0.045298799780918324,
+      "result": "PASS"
+    },
+    {
+      "key": "L1.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "max_abs_err": 0.125,
+      "rel_err": 0.005516858278520742,
+      "cos_sim": 0.9999948211982141,
+      "n": 64,
+      "threshold": 0.021174033604749967,
+      "floor": 0.005293508401187492,
+      "result": "PASS"
+    },
+    {
+      "key": "L2.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L2.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L3.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L3.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L4.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L4.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L5.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L5.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L6.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L6.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L7.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L7.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L8.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L8.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L9.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L9.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L10.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L10.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L11.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L11.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L12.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L12.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L13.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L13.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L14.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L14.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L15.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L15.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L16.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L16.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L17.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L17.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L18.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L18.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L19.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L19.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L20.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L20.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L21.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L21.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L22.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L22.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L23.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L23.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L24.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L24.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L25.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L25.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L26.B2.q",
+      "boundary": "B2",
+      "class": "gemv",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L26.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L26.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L26.B4.q_pe",
+      "boundary": "B4",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L26.B6.attn",
+      "boundary": "B6",
+      "class": "attention",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L26.B8.router_logits",
+      "boundary": "B8",
+      "class": "router",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L26.B9.topk_idx",
+      "boundary": "B9",
+      "class": "exact",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L26.B10.topk_w",
+      "boundary": "B10",
+      "class": "router",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L26.B11.expert_10",
+      "boundary": "B11",
+      "class": "expert",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L26.B11.expert_14",
+      "boundary": "B11",
+      "class": "expert",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L26.B11.expert_19",
+      "boundary": "B11",
+      "class": "expert",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L26.B11.expert_29",
+      "boundary": "B11",
+      "class": "expert",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L26.B11.expert_58",
+      "boundary": "B11",
+      "class": "expert",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L26.B11.expert_62",
+      "boundary": "B11",
+      "class": "expert",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L26.B12.shared",
+      "boundary": "B12",
+      "class": "expert",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L26.B13.layer_out",
+      "boundary": "B13",
+      "class": "layer",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "head.B15.logits",
+      "boundary": "B15",
+      "class": "logits",
+      "iteration": 31,
+      "result": "NOT_COMPARABLE",
+      "detail": "dumped from iteration 31; the reference has no ref_boundaries_step31"
+    },
+    {
+      "key": "head.B16.token",
+      "boundary": "B16",
+      "class": "exact",
+      "result": "PASS",
+      "detail": "fleet 25 ref 25"
+    }
+  ],
+  "output_ids": {
+    "n_ref": 32,
+    "n_fleet": 32,
+    "compared": 32,
+    "matched_prefix": 32,
+    "first_divergence": null,
+    "all_match": true,
+    "result": "PASS"
+  },
+  "route_log": {
+    "steps_compared": 32,
+    "rule": "tie",
+    "tol_rel": 0.014370772811406368,
+    "mismatches": [
+      {
+        "step": 0,
+        "moe_layer_index": 4,
+        "ref": [
+          4,
+          19,
+          30,
+          34,
+          46,
+          49
+        ],
+        "fleet": [
+          2,
+          4,
+          19,
+          30,
+          34,
+          46
+        ],
+        "left": 49,
+        "came": 2,
+        "w_left": 0.039638,
+        "w_came": 0.0396056,
+        "gap": 3.240000000000187e-05,
+        "tol": 0.0005696286926985256,
+        "class": "tie"
+      },
+      {
+        "step": 7,
+        "moe_layer_index": 7,
+        "ref": [
+          14,
+          15,
+          25,
+          31,
+          39,
+          63
+        ],
+        "fleet": [
+          14,
+          15,
+          25,
+          30,
+          39,
+          63
+        ],
+        "left": 31,
+        "came": 30,
+        "w_left": 0.0401559,
+        "w_came": 0.039619,
+        "gap": 0.0005368999999999999,
+        "tol": 0.000577071315937553,
+        "class": "tie"
+      },
+      {
+        "step": 7,
+        "moe_layer_index": 8,
+        "ref": [
+          0,
+          4,
+          13,
+          16,
+          47,
+          55
+        ],
+        "fleet": [
+          0,
+          4,
+          16,
+          19,
+          47,
+          55
+        ],
+        "left": 13,
+        "came": 19,
+        "w_left": 0.0368286,
+        "w_came": 0.0366861,
+        "gap": 0.00014250000000000373,
+        "tol": 0.0005292554435621606,
+        "class": "tie"
+      },
+      {
+        "step": 7,
+        "moe_layer_index": 11,
+        "ref": [
+          4,
+          5,
+          12,
+          19,
+          40,
+          45
+        ],
+        "fleet": [
+          4,
+          5,
+          12,
+          19,
+          45,
+          61
+        ],
+        "left": 40,
+        "came": 61,
+        "w_left": 0.0349439,
+        "w_came": 0.0319708,
+        "gap": 0.0029730999999999994,
+        "tol": 0.000502170848044503,
+        "class": "cascade"
+      },
+      {
+        "step": 7,
+        "moe_layer_index": 13,
+        "ref": [
+          0,
+          3,
+          17,
+          31,
+          45,
+          58
+        ],
+        "fleet": [
+          0,
+          3,
+          10,
+          17,
+          31,
+          45
+        ],
+        "left": 58,
+        "came": 10,
+        "w_left": 0.0371996,
+        "w_came": 0.0368043,
+        "gap": 0.0003953000000000012,
+        "tol": 0.0005345870002751923,
+        "class": "tie"
+      },
+      {
+        "step": 7,
+        "moe_layer_index": 18,
+        "ref": [
+          27,
+          35,
+          39,
+          43,
+          55,
+          63
+        ],
+        "fleet": [
+          2,
+          27,
+          35,
+          39,
+          43,
+          55
+        ],
+        "left": 63,
+        "came": 2,
+        "w_left": 0.0322724,
+        "w_came": 0.0305423,
+        "gap": 0.0017300999999999983,
+        "tol": 0.0004637793284788309,
+        "class": "cascade"
+      },
+      {
+        "step": 7,
+        "moe_layer_index": 22,
+        "ref": [
+          5,
+          24,
+          37,
+          39,
+          42,
+          53
+        ],
+        "fleet": [
+          5,
+          32,
+          37,
+          39,
+          42,
+          53
+        ],
+        "left": 24,
+        "came": 32,
+        "w_left": 0.0307747,
+        "w_came": 0.0304097,
+        "gap": 0.00036499999999999727,
+        "tol": 0.0004422562220391875,
+        "class": "tie"
+      },
+      {
+        "step": 9,
+        "moe_layer_index": 13,
+        "ref": [
+          0,
+          3,
+          10,
+          31,
+          45,
+          51
+        ],
+        "fleet": [
+          3,
+          10,
+          31,
+          45,
+          51,
+          58
+        ],
+        "left": 0,
+        "came": 58,
+        "w_left": 0.0441626,
+        "w_came": 0.0440716,
+        "gap": 9.10000000000008e-05,
+        "tol": 0.0006346506913610149,
+        "class": "tie"
+      },
+      {
+        "step": 9,
+        "moe_layer_index": 19,
+        "ref": [
+          7,
+          30,
+          36,
+          39,
+          43,
+          47
+        ],
+        "fleet": [
+          5,
+          7,
+          30,
+          36,
+          39,
+          43
+        ],
+        "left": 47,
+        "came": 5,
+        "w_left": 0.0281608,
+        "w_came": 0.0278286,
+        "gap": 0.00033220000000000124,
+        "tol": 0.00040469245898745244,
+        "class": "tie"
+      },
+      {
+        "step": 9,
+        "moe_layer_index": 23,
+        "ref": [
+          1,
+          14,
+          17,
+          37,
+          50,
+          63
+        ],
+        "fleet": [
+          1,
+          14,
+          19,
+          37,
+          50,
+          63
+        ],
+        "left": 17,
+        "came": 19,
+        "w_left": 0.0313418,
+        "w_came": 0.0312284,
+        "gap": 0.00011340000000000308,
+        "tol": 0.00045040588730053613,
+        "class": "tie"
+      },
+      {
+        "step": 12,
+        "moe_layer_index": 12,
+        "ref": [
+          5,
+          10,
+          18,
+          31,
+          44,
+          54
+        ],
+        "fleet": [
+          10,
+          18,
+          21,
+          31,
+          44,
+          54
+        ],
+        "left": 5,
+        "came": 21,
+        "w_left": 0.035984,
+        "w_came": 0.0359575,
+        "gap": 2.6499999999998747e-05,
+        "tol": 0.0005171178888456468,
+        "class": "tie"
+      },
+      {
+        "step": 12,
+        "moe_layer_index": 18,
+        "ref": [
+          19,
+          24,
+          30,
+          46,
+          50,
+          53
+        ],
+        "fleet": [
+          19,
+          30,
+          36,
+          46,
+          50,
+          53
+        ],
+        "left": 24,
+        "came": 36,
+        "w_left": 0.0286218,
+        "w_came": 0.02821,
+        "gap": 0.00041180000000000036,
+        "tol": 0.00041131738525351075,
+        "class": "cascade"
+      },
+      {
+        "step": 13,
+        "moe_layer_index": 14,
+        "ref": [
+          0,
+          29,
+          30,
+          33,
+          34,
+          61
+        ],
+        "fleet": [
+          29,
+          30,
+          31,
+          33,
+          34,
+          61
+        ],
+        "left": 0,
+        "came": 31,
+        "w_left": 0.0300705,
+        "w_came": 0.0300065,
+        "gap": 6.400000000000156e-05,
+        "tol": 0.00043213632382539517,
+        "class": "tie"
+      },
+      {
+        "step": 13,
+        "moe_layer_index": 17,
+        "ref": [
+          21,
+          23,
+          25,
+          29,
+          34,
+          37
+        ],
+        "fleet": [
+          21,
+          23,
+          25,
+          34,
+          37,
+          42
+        ],
+        "left": 29,
+        "came": 42,
+        "w_left": 0.0286751,
+        "w_came": 0.0286091,
+        "gap": 6.600000000000009e-05,
+        "tol": 0.0004120833474443587,
+        "class": "tie"
+      },
+      {
+        "step": 13,
+        "moe_layer_index": 19,
+        "ref": [
+          5,
+          9,
+          28,
+          39,
+          40,
+          49
+        ],
+        "fleet": [
+          5,
+          9,
+          28,
+          35,
+          39,
+          49
+        ],
+        "left": 40,
+        "came": 35,
+        "w_left": 0.0276706,
+        "w_came": 0.0266703,
+        "gap": 0.001000299999999999,
+        "tol": 0.000397647906155301,
+        "class": "cascade"
+      },
+      {
+        "step": 13,
+        "moe_layer_index": 22,
+        "ref": [
+          37,
+          38,
+          49,
+          53,
+          58,
+          61
+        ],
+        "fleet": [
+          23,
+          37,
+          38,
+          49,
+          58,
+          61
+        ],
+        "left": 53,
+        "came": 23,
+        "w_left": 0.0262756,
+        "w_came": 0.0261149,
+        "gap": 0.00016069999999999973,
+        "tol": 0.00037760067808338915,
+        "class": "tie"
+      },
+      {
+        "step": 14,
+        "moe_layer_index": 20,
+        "ref": [
+          8,
+          13,
+          32,
+          47,
+          49,
+          57
+        ],
+        "fleet": [
+          8,
+          13,
+          16,
+          32,
+          49,
+          57
+        ],
+        "left": 47,
+        "came": 16,
+        "w_left": 0.0299785,
+        "w_came": 0.0299322,
+        "gap": 4.630000000000259e-05,
+        "tol": 0.00043081421272674584,
+        "class": "tie"
+      },
+      {
+        "step": 14,
+        "moe_layer_index": 22,
+        "ref": [
+          4,
+          24,
+          30,
+          37,
+          49,
+          53
+        ],
+        "fleet": [
+          11,
+          24,
+          30,
+          37,
+          49,
+          53
+        ],
+        "left": 4,
+        "came": 11,
+        "w_left": 0.0343038,
+        "w_came": 0.0340769,
+        "gap": 0.0002269000000000021,
+        "tol": 0.0004929721163679218,
+        "class": "tie"
+      },
+      {
+        "step": 15,
+        "moe_layer_index": 10,
+        "ref": [
+          4,
+          8,
+          16,
+          25,
+          30,
+          62
+        ],
+        "fleet": [
+          4,
+          8,
+          16,
+          30,
+          39,
+          62
+        ],
+        "left": 25,
+        "came": 39,
+        "w_left": 0.0313064,
+        "w_came": 0.031039,
+        "gap": 0.0002673999999999975,
+        "tol": 0.00044989716194301227,
+        "class": "tie"
+      },
+      {
+        "step": 15,
+        "moe_layer_index": 18,
+        "ref": [
+          16,
+          34,
+          46,
+          52,
+          58,
+          63
+        ],
+        "fleet": [
+          16,
+          25,
+          34,
+          52,
+          58,
+          63
+        ],
+        "left": 46,
+        "came": 25,
+        "w_left": 0.0236766,
+        "w_came": 0.0236381,
+        "gap": 3.850000000000034e-05,
+        "tol": 0.000340251039546544,
+        "class": "tie"
+      },
+      {
+        "step": 15,
+        "moe_layer_index": 19,
+        "ref": [
+          28,
+          35,
+          43,
+          45,
+          46,
+          49
+        ],
+        "fleet": [
+          9,
+          28,
+          35,
+          43,
+          45,
+          46
+        ],
+        "left": 49,
+        "came": 9,
+        "w_left": 0.024675,
+        "w_came": 0.0242454,
+        "gap": 0.00042959999999999873,
+        "tol": 0.0003545988191214521,
+        "class": "cascade"
+      },
+      {
+        "step": 15,
+        "moe_layer_index": 22,
+        "ref": [
+          3,
+          22,
+          24,
+          29,
+          30,
+          44
+        ],
+        "fleet": [
+          3,
+          22,
+          24,
+          29,
+          44,
+          48
+        ],
+        "left": 30,
+        "came": 48,
+        "w_left": 0.0259557,
+        "w_came": 0.0249722,
+        "gap": 0.0009835000000000017,
+        "tol": 0.0003730034678610203,
+        "class": "cascade"
+      },
+      {
+        "step": 21,
+        "moe_layer_index": 20,
+        "ref": [
+          0,
+          22,
+          32,
+          41,
+          44,
+          57
+        ],
+        "fleet": [
+          0,
+          23,
+          32,
+          41,
+          44,
+          57
+        ],
+        "left": 22,
+        "came": 23,
+        "w_left": 0.0250884,
+        "w_came": 0.0244387,
+        "gap": 0.0006496999999999996,
+        "tol": 0.0003605396966016875,
+        "class": "cascade"
+      },
+      {
+        "step": 22,
+        "moe_layer_index": 25,
+        "ref": [
+          7,
+          13,
+          17,
+          39,
+          46,
+          54
+        ],
+        "fleet": [
+          7,
+          13,
+          39,
+          46,
+          53,
+          54
+        ],
+        "left": 17,
+        "came": 53,
+        "w_left": 0.0315129,
+        "w_came": 0.0305333,
+        "gap": 0.000979600000000004,
+        "tol": 0.00045286472652856776,
+        "class": "cascade"
+      },
+      {
+        "step": 23,
+        "moe_layer_index": 16,
+        "ref": [
+          9,
+          21,
+          44,
+          60,
+          62,
+          63
+        ],
+        "fleet": [
+          9,
+          16,
+          21,
+          44,
+          60,
+          62
+        ],
+        "left": 63,
+        "came": 16,
+        "w_left": 0.0293472,
+        "w_came": 0.0291634,
+        "gap": 0.00018380000000000132,
+        "tol": 0.000421741943850905,
+        "class": "tie"
+      },
+      {
+        "step": 25,
+        "moe_layer_index": 9,
+        "ref": [
+          1,
+          12,
+          19,
+          28,
+          36,
+          42
+        ],
+        "fleet": [
+          1,
+          5,
+          19,
+          28,
+          36,
+          42
+        ],
+        "left": 12,
+        "came": 5,
+        "w_left": 0.0387394,
+        "w_came": 0.0377232,
+        "gap": 0.0010162000000000018,
+        "tol": 0.0005567151162501958,
+        "class": "cascade"
+      },
+      {
+        "step": 25,
+        "moe_layer_index": 11,
+        "ref": [
+          14,
+          16,
+          17,
+          24,
+          36,
+          43
+        ],
+        "fleet": [
+          13,
+          16,
+          17,
+          24,
+          36,
+          43
+        ],
+        "left": 14,
+        "came": 13,
+        "w_left": 0.0305217,
+        "w_came": 0.0304376,
+        "gap": 8.410000000000015e-05,
+        "tol": 0.00043862041651790174,
+        "class": "tie"
+      },
+      {
+        "step": 25,
+        "moe_layer_index": 12,
+        "ref": [
+          1,
+          4,
+          10,
+          43,
+          51,
+          58
+        ],
+        "fleet": [
+          1,
+          4,
+          10,
+          41,
+          43,
+          58
+        ],
+        "left": 51,
+        "came": 41,
+        "w_left": 0.0324231,
+        "w_came": 0.0291855,
+        "gap": 0.0032376000000000037,
+        "tol": 0.0004659450039415099,
+        "class": "cascade"
+      },
+      {
+        "step": 25,
+        "moe_layer_index": 13,
+        "ref": [
+          3,
+          23,
+          32,
+          46,
+          51,
+          58
+        ],
+        "fleet": [
+          3,
+          7,
+          23,
+          31,
+          32,
+          51
+        ],
+        "class": "cascade"
+      },
+      {
+        "step": 25,
+        "moe_layer_index": 14,
+        "ref": [
+          5,
+          20,
+          30,
+          35,
+          38,
+          51
+        ],
+        "fleet": [
+          5,
+          20,
+          30,
+          38,
+          51,
+          63
+        ],
+        "left": 35,
+        "came": 63,
+        "w_left": 0.0332495,
+        "w_came": 0.025866,
+        "gap": 0.007383500000000001,
+        "tol": 0.00047782101059285604,
+        "class": "cascade"
+      },
+      {
+        "step": 25,
+        "moe_layer_index": 15,
+        "ref": [
+          11,
+          16,
+          27,
+          46,
+          51,
+          60
+        ],
+        "fleet": [
+          11,
+          27,
+          39,
+          46,
+          51,
+          60
+        ],
+        "left": 16,
+        "came": 39,
+        "w_left": 0.0345081,
+        "w_came": 0.0302909,
+        "gap": 0.004217200000000001,
+        "tol": 0.0004959080652532921,
+        "class": "cascade"
+      },
+      {
+        "step": 25,
+        "moe_layer_index": 16,
+        "ref": [
+          9,
+          21,
+          42,
+          49,
+          55,
+          59
+        ],
+        "fleet": [
+          5,
+          9,
+          21,
+          42,
+          55,
+          59
+        ],
+        "left": 49,
+        "came": 5,
+        "w_left": 0.0278021,
+        "w_came": 0.0238501,
+        "gap": 0.003952000000000001,
+        "tol": 0.00039953766278000096,
+        "class": "cascade"
+      },
+      {
+        "step": 25,
+        "moe_layer_index": 17,
+        "ref": [
+          12,
+          13,
+          17,
+          38,
+          59,
+          62
+        ],
+        "fleet": [
+          12,
+          13,
+          15,
+          57,
+          59,
+          62
+        ],
+        "class": "cascade"
+      },
+      {
+        "step": 25,
+        "moe_layer_index": 18,
+        "ref": [
+          13,
+          45,
+          53,
+          56,
+          58,
+          60
+        ],
+        "fleet": [
+          13,
+          45,
+          50,
+          53,
+          56,
+          58
+        ],
+        "left": 60,
+        "came": 50,
+        "w_left": 0.0330846,
+        "w_came": 0.0302319,
+        "gap": 0.0028526999999999997,
+        "tol": 0.0004754512701562551,
+        "class": "cascade"
+      },
+      {
+        "step": 25,
+        "moe_layer_index": 23,
+        "ref": [
+          19,
+          37,
+          44,
+          45,
+          50,
+          63
+        ],
+        "fleet": [
+          19,
+          33,
+          37,
+          44,
+          45,
+          50
+        ],
+        "left": 63,
+        "came": 33,
+        "w_left": 0.0300771,
+        "w_came": 0.0282467,
+        "gap": 0.0018303999999999994,
+        "tol": 0.00043223117092595047,
+        "class": "cascade"
+      },
+      {
+        "step": 25,
+        "moe_layer_index": 24,
+        "ref": [
+          1,
+          3,
+          25,
+          26,
+          42,
+          63
+        ],
+        "fleet": [
+          1,
+          25,
+          26,
+          42,
+          52,
+          63
+        ],
+        "left": 3,
+        "came": 52,
+        "w_left": 0.0239257,
+        "w_came": 0.0221591,
+        "gap": 0.0017666000000000001,
+        "tol": 0.00034383079905386533,
+        "class": "cascade"
+      },
+      {
+        "step": 29,
+        "moe_layer_index": 8,
+        "ref": [
+          20,
+          25,
+          38,
+          42,
+          49,
+          61
+        ],
+        "fleet": [
+          20,
+          33,
+          38,
+          42,
+          49,
+          61
+        ],
+        "left": 25,
+        "came": 33,
+        "w_left": 0.0411989,
+        "w_came": 0.0411404,
+        "gap": 5.8499999999996055e-05,
+        "tol": 0.0005920600319798498,
+        "class": "tie"
+      },
+      {
+        "step": 29,
+        "moe_layer_index": 9,
+        "ref": [
+          23,
+          24,
+          32,
+          37,
+          39,
+          63
+        ],
+        "fleet": [
+          24,
+          32,
+          37,
+          39,
+          48,
+          63
+        ],
+        "left": 23,
+        "came": 48,
+        "w_left": 0.0377839,
+        "w_came": 0.0370644,
+        "gap": 0.0007195000000000049,
+        "tol": 0.0005429838428288971,
+        "class": "cascade"
+      },
+      {
+        "step": 29,
+        "moe_layer_index": 10,
+        "ref": [
+          22,
+          32,
+          39,
+          46,
+          54,
+          56
+        ],
+        "fleet": [
+          22,
+          32,
+          39,
+          46,
+          53,
+          56
+        ],
+        "left": 54,
+        "came": 53,
+        "w_left": 0.0298307,
+        "w_came": 0.0279005,
+        "gap": 0.0019302,
+        "tol": 0.00042869021250522,
+        "class": "cascade"
+      },
+      {
+        "step": 30,
+        "moe_layer_index": 24,
+        "ref": [
+          1,
+          9,
+          19,
+          35,
+          45,
+          58
+        ],
+        "fleet": [
+          1,
+          9,
+          19,
+          35,
+          36,
+          58
+        ],
+        "left": 45,
+        "came": 36,
+        "w_left": 0.0387266,
+        "w_came": 0.0381397,
+        "gap": 0.0005869000000000013,
+        "tol": 0.0005565311703582098,
+        "class": "cascade"
+      },
+      {
+        "step": 31,
+        "moe_layer_index": 19,
+        "ref": [
+          4,
+          18,
+          21,
+          23,
+          27,
+          62
+        ],
+        "fleet": [
+          4,
+          18,
+          21,
+          23,
+          60,
+          62
+        ],
+        "left": 27,
+        "came": 60,
+        "w_left": 0.0371976,
+        "w_came": 0.0364735,
+        "gap": 0.0007240999999999984,
+        "tol": 0.0005345582587295694,
+        "class": "cascade"
+      }
+    ],
+    "ties": [
+      {
+        "step": 0,
+        "moe_layer_index": 4,
+        "ref": [
+          4,
+          19,
+          30,
+          34,
+          46,
+          49
+        ],
+        "fleet": [
+          2,
+          4,
+          19,
+          30,
+          34,
+          46
+        ],
+        "left": 49,
+        "came": 2,
+        "w_left": 0.039638,
+        "w_came": 0.0396056,
+        "gap": 3.240000000000187e-05,
+        "tol": 0.0005696286926985256,
+        "class": "tie"
+      },
+      {
+        "step": 7,
+        "moe_layer_index": 7,
+        "ref": [
+          14,
+          15,
+          25,
+          31,
+          39,
+          63
+        ],
+        "fleet": [
+          14,
+          15,
+          25,
+          30,
+          39,
+          63
+        ],
+        "left": 31,
+        "came": 30,
+        "w_left": 0.0401559,
+        "w_came": 0.039619,
+        "gap": 0.0005368999999999999,
+        "tol": 0.000577071315937553,
+        "class": "tie"
+      },
+      {
+        "step": 7,
+        "moe_layer_index": 8,
+        "ref": [
+          0,
+          4,
+          13,
+          16,
+          47,
+          55
+        ],
+        "fleet": [
+          0,
+          4,
+          16,
+          19,
+          47,
+          55
+        ],
+        "left": 13,
+        "came": 19,
+        "w_left": 0.0368286,
+        "w_came": 0.0366861,
+        "gap": 0.00014250000000000373,
+        "tol": 0.0005292554435621606,
+        "class": "tie"
+      },
+      {
+        "step": 7,
+        "moe_layer_index": 13,
+        "ref": [
+          0,
+          3,
+          17,
+          31,
+          45,
+          58
+        ],
+        "fleet": [
+          0,
+          3,
+          10,
+          17,
+          31,
+          45
+        ],
+        "left": 58,
+        "came": 10,
+        "w_left": 0.0371996,
+        "w_came": 0.0368043,
+        "gap": 0.0003953000000000012,
+        "tol": 0.0005345870002751923,
+        "class": "tie"
+      },
+      {
+        "step": 7,
+        "moe_layer_index": 22,
+        "ref": [
+          5,
+          24,
+          37,
+          39,
+          42,
+          53
+        ],
+        "fleet": [
+          5,
+          32,
+          37,
+          39,
+          42,
+          53
+        ],
+        "left": 24,
+        "came": 32,
+        "w_left": 0.0307747,
+        "w_came": 0.0304097,
+        "gap": 0.00036499999999999727,
+        "tol": 0.0004422562220391875,
+        "class": "tie"
+      },
+      {
+        "step": 9,
+        "moe_layer_index": 13,
+        "ref": [
+          0,
+          3,
+          10,
+          31,
+          45,
+          51
+        ],
+        "fleet": [
+          3,
+          10,
+          31,
+          45,
+          51,
+          58
+        ],
+        "left": 0,
+        "came": 58,
+        "w_left": 0.0441626,
+        "w_came": 0.0440716,
+        "gap": 9.10000000000008e-05,
+        "tol": 0.0006346506913610149,
+        "class": "tie"
+      },
+      {
+        "step": 9,
+        "moe_layer_index": 19,
+        "ref": [
+          7,
+          30,
+          36,
+          39,
+          43,
+          47
+        ],
+        "fleet": [
+          5,
+          7,
+          30,
+          36,
+          39,
+          43
+        ],
+        "left": 47,
+        "came": 5,
+        "w_left": 0.0281608,
+        "w_came": 0.0278286,
+        "gap": 0.00033220000000000124,
+        "tol": 0.00040469245898745244,
+        "class": "tie"
+      },
+      {
+        "step": 9,
+        "moe_layer_index": 23,
+        "ref": [
+          1,
+          14,
+          17,
+          37,
+          50,
+          63
+        ],
+        "fleet": [
+          1,
+          14,
+          19,
+          37,
+          50,
+          63
+        ],
+        "left": 17,
+        "came": 19,
+        "w_left": 0.0313418,
+        "w_came": 0.0312284,
+        "gap": 0.00011340000000000308,
+        "tol": 0.00045040588730053613,
+        "class": "tie"
+      },
+      {
+        "step": 12,
+        "moe_layer_index": 12,
+        "ref": [
+          5,
+          10,
+          18,
+          31,
+          44,
+          54
+        ],
+        "fleet": [
+          10,
+          18,
+          21,
+          31,
+          44,
+          54
+        ],
+        "left": 5,
+        "came": 21,
+        "w_left": 0.035984,
+        "w_came": 0.0359575,
+        "gap": 2.6499999999998747e-05,
+        "tol": 0.0005171178888456468,
+        "class": "tie"
+      },
+      {
+        "step": 13,
+        "moe_layer_index": 14,
+        "ref": [
+          0,
+          29,
+          30,
+          33,
+          34,
+          61
+        ],
+        "fleet": [
+          29,
+          30,
+          31,
+          33,
+          34,
+          61
+        ],
+        "left": 0,
+        "came": 31,
+        "w_left": 0.0300705,
+        "w_came": 0.0300065,
+        "gap": 6.400000000000156e-05,
+        "tol": 0.00043213632382539517,
+        "class": "tie"
+      },
+      {
+        "step": 13,
+        "moe_layer_index": 17,
+        "ref": [
+          21,
+          23,
+          25,
+          29,
+          34,
+          37
+        ],
+        "fleet": [
+          21,
+          23,
+          25,
+          34,
+          37,
+          42
+        ],
+        "left": 29,
+        "came": 42,
+        "w_left": 0.0286751,
+        "w_came": 0.0286091,
+        "gap": 6.600000000000009e-05,
+        "tol": 0.0004120833474443587,
+        "class": "tie"
+      },
+      {
+        "step": 13,
+        "moe_layer_index": 22,
+        "ref": [
+          37,
+          38,
+          49,
+          53,
+          58,
+          61
+        ],
+        "fleet": [
+          23,
+          37,
+          38,
+          49,
+          58,
+          61
+        ],
+        "left": 53,
+        "came": 23,
+        "w_left": 0.0262756,
+        "w_came": 0.0261149,
+        "gap": 0.00016069999999999973,
+        "tol": 0.00037760067808338915,
+        "class": "tie"
+      },
+      {
+        "step": 14,
+        "moe_layer_index": 20,
+        "ref": [
+          8,
+          13,
+          32,
+          47,
+          49,
+          57
+        ],
+        "fleet": [
+          8,
+          13,
+          16,
+          32,
+          49,
+          57
+        ],
+        "left": 47,
+        "came": 16,
+        "w_left": 0.0299785,
+        "w_came": 0.0299322,
+        "gap": 4.630000000000259e-05,
+        "tol": 0.00043081421272674584,
+        "class": "tie"
+      },
+      {
+        "step": 14,
+        "moe_layer_index": 22,
+        "ref": [
+          4,
+          24,
+          30,
+          37,
+          49,
+          53
+        ],
+        "fleet": [
+          11,
+          24,
+          30,
+          37,
+          49,
+          53
+        ],
+        "left": 4,
+        "came": 11,
+        "w_left": 0.0343038,
+        "w_came": 0.0340769,
+        "gap": 0.0002269000000000021,
+        "tol": 0.0004929721163679218,
+        "class": "tie"
+      },
+      {
+        "step": 15,
+        "moe_layer_index": 10,
+        "ref": [
+          4,
+          8,
+          16,
+          25,
+          30,
+          62
+        ],
+        "fleet": [
+          4,
+          8,
+          16,
+          30,
+          39,
+          62
+        ],
+        "left": 25,
+        "came": 39,
+        "w_left": 0.0313064,
+        "w_came": 0.031039,
+        "gap": 0.0002673999999999975,
+        "tol": 0.00044989716194301227,
+        "class": "tie"
+      },
+      {
+        "step": 15,
+        "moe_layer_index": 18,
+        "ref": [
+          16,
+          34,
+          46,
+          52,
+          58,
+          63
+        ],
+        "fleet": [
+          16,
+          25,
+          34,
+          52,
+          58,
+          63
+        ],
+        "left": 46,
+        "came": 25,
+        "w_left": 0.0236766,
+        "w_came": 0.0236381,
+        "gap": 3.850000000000034e-05,
+        "tol": 0.000340251039546544,
+        "class": "tie"
+      },
+      {
+        "step": 23,
+        "moe_layer_index": 16,
+        "ref": [
+          9,
+          21,
+          44,
+          60,
+          62,
+          63
+        ],
+        "fleet": [
+          9,
+          16,
+          21,
+          44,
+          60,
+          62
+        ],
+        "left": 63,
+        "came": 16,
+        "w_left": 0.0293472,
+        "w_came": 0.0291634,
+        "gap": 0.00018380000000000132,
+        "tol": 0.000421741943850905,
+        "class": "tie"
+      },
+      {
+        "step": 25,
+        "moe_layer_index": 11,
+        "ref": [
+          14,
+          16,
+          17,
+          24,
+          36,
+          43
+        ],
+        "fleet": [
+          13,
+          16,
+          17,
+          24,
+          36,
+          43
+        ],
+        "left": 14,
+        "came": 13,
+        "w_left": 0.0305217,
+        "w_came": 0.0304376,
+        "gap": 8.410000000000015e-05,
+        "tol": 0.00043862041651790174,
+        "class": "tie"
+      },
+      {
+        "step": 29,
+        "moe_layer_index": 8,
+        "ref": [
+          20,
+          25,
+          38,
+          42,
+          49,
+          61
+        ],
+        "fleet": [
+          20,
+          33,
+          38,
+          42,
+          49,
+          61
+        ],
+        "left": 25,
+        "came": 33,
+        "w_left": 0.0411989,
+        "w_came": 0.0411404,
+        "gap": 5.8499999999996055e-05,
+        "tol": 0.0005920600319798498,
+        "class": "tie"
+      }
+    ],
+    "cascades": [
+      {
+        "step": 7,
+        "moe_layer_index": 11,
+        "ref": [
+          4,
+          5,
+          12,
+          19,
+          40,
+          45
+        ],
+        "fleet": [
+          4,
+          5,
+          12,
+          19,
+          45,
+          61
+        ],
+        "left": 40,
+        "came": 61,
+        "w_left": 0.0349439,
+        "w_came": 0.0319708,
+        "gap": 0.0029730999999999994,
+        "tol": 0.000502170848044503,
+        "class": "cascade"
+      },
+      {
+        "step": 7,
+        "moe_layer_index": 18,
+        "ref": [
+          27,
+          35,
+          39,
+          43,
+          55,
+          63
+        ],
+        "fleet": [
+          2,
+          27,
+          35,
+          39,
+          43,
+          55
+        ],
+        "left": 63,
+        "came": 2,
+        "w_left": 0.0322724,
+        "w_came": 0.0305423,
+        "gap": 0.0017300999999999983,
+        "tol": 0.0004637793284788309,
+        "class": "cascade"
+      },
+      {
+        "step": 12,
+        "moe_layer_index": 18,
+        "ref": [
+          19,
+          24,
+          30,
+          46,
+          50,
+          53
+        ],
+        "fleet": [
+          19,
+          30,
+          36,
+          46,
+          50,
+          53
+        ],
+        "left": 24,
+        "came": 36,
+        "w_left": 0.0286218,
+        "w_came": 0.02821,
+        "gap": 0.00041180000000000036,
+        "tol": 0.00041131738525351075,
+        "class": "cascade"
+      },
+      {
+        "step": 13,
+        "moe_layer_index": 19,
+        "ref": [
+          5,
+          9,
+          28,
+          39,
+          40,
+          49
+        ],
+        "fleet": [
+          5,
+          9,
+          28,
+          35,
+          39,
+          49
+        ],
+        "left": 40,
+        "came": 35,
+        "w_left": 0.0276706,
+        "w_came": 0.0266703,
+        "gap": 0.001000299999999999,
+        "tol": 0.000397647906155301,
+        "class": "cascade"
+      },
+      {
+        "step": 15,
+        "moe_layer_index": 19,
+        "ref": [
+          28,
+          35,
+          43,
+          45,
+          46,
+          49
+        ],
+        "fleet": [
+          9,
+          28,
+          35,
+          43,
+          45,
+          46
+        ],
+        "left": 49,
+        "came": 9,
+        "w_left": 0.024675,
+        "w_came": 0.0242454,
+        "gap": 0.00042959999999999873,
+        "tol": 0.0003545988191214521,
+        "class": "cascade"
+      },
+      {
+        "step": 15,
+        "moe_layer_index": 22,
+        "ref": [
+          3,
+          22,
+          24,
+          29,
+          30,
+          44
+        ],
+        "fleet": [
+          3,
+          22,
+          24,
+          29,
+          44,
+          48
+        ],
+        "left": 30,
+        "came": 48,
+        "w_left": 0.0259557,
+        "w_came": 0.0249722,
+        "gap": 0.0009835000000000017,
+        "tol": 0.0003730034678610203,
+        "class": "cascade"
+      },
+      {
+        "step": 21,
+        "moe_layer_index": 20,
+        "ref": [
+          0,
+          22,
+          32,
+          41,
+          44,
+          57
+        ],
+        "fleet": [
+          0,
+          23,
+          32,
+          41,
+          44,
+          57
+        ],
+        "left": 22,
+        "came": 23,
+        "w_left": 0.0250884,
+        "w_came": 0.0244387,
+        "gap": 0.0006496999999999996,
+        "tol": 0.0003605396966016875,
+        "class": "cascade"
+      },
+      {
+        "step": 22,
+        "moe_layer_index": 25,
+        "ref": [
+          7,
+          13,
+          17,
+          39,
+          46,
+          54
+        ],
+        "fleet": [
+          7,
+          13,
+          39,
+          46,
+          53,
+          54
+        ],
+        "left": 17,
+        "came": 53,
+        "w_left": 0.0315129,
+        "w_came": 0.0305333,
+        "gap": 0.000979600000000004,
+        "tol": 0.00045286472652856776,
+        "class": "cascade"
+      },
+      {
+        "step": 25,
+        "moe_layer_index": 9,
+        "ref": [
+          1,
+          12,
+          19,
+          28,
+          36,
+          42
+        ],
+        "fleet": [
+          1,
+          5,
+          19,
+          28,
+          36,
+          42
+        ],
+        "left": 12,
+        "came": 5,
+        "w_left": 0.0387394,
+        "w_came": 0.0377232,
+        "gap": 0.0010162000000000018,
+        "tol": 0.0005567151162501958,
+        "class": "cascade"
+      },
+      {
+        "step": 25,
+        "moe_layer_index": 12,
+        "ref": [
+          1,
+          4,
+          10,
+          43,
+          51,
+          58
+        ],
+        "fleet": [
+          1,
+          4,
+          10,
+          41,
+          43,
+          58
+        ],
+        "left": 51,
+        "came": 41,
+        "w_left": 0.0324231,
+        "w_came": 0.0291855,
+        "gap": 0.0032376000000000037,
+        "tol": 0.0004659450039415099,
+        "class": "cascade"
+      },
+      {
+        "step": 25,
+        "moe_layer_index": 13,
+        "ref": [
+          3,
+          23,
+          32,
+          46,
+          51,
+          58
+        ],
+        "fleet": [
+          3,
+          7,
+          23,
+          31,
+          32,
+          51
+        ],
+        "class": "cascade"
+      },
+      {
+        "step": 25,
+        "moe_layer_index": 14,
+        "ref": [
+          5,
+          20,
+          30,
+          35,
+          38,
+          51
+        ],
+        "fleet": [
+          5,
+          20,
+          30,
+          38,
+          51,
+          63
+        ],
+        "left": 35,
+        "came": 63,
+        "w_left": 0.0332495,
+        "w_came": 0.025866,
+        "gap": 0.007383500000000001,
+        "tol": 0.00047782101059285604,
+        "class": "cascade"
+      },
+      {
+        "step": 25,
+        "moe_layer_index": 15,
+        "ref": [
+          11,
+          16,
+          27,
+          46,
+          51,
+          60
+        ],
+        "fleet": [
+          11,
+          27,
+          39,
+          46,
+          51,
+          60
+        ],
+        "left": 16,
+        "came": 39,
+        "w_left": 0.0345081,
+        "w_came": 0.0302909,
+        "gap": 0.004217200000000001,
+        "tol": 0.0004959080652532921,
+        "class": "cascade"
+      },
+      {
+        "step": 25,
+        "moe_layer_index": 16,
+        "ref": [
+          9,
+          21,
+          42,
+          49,
+          55,
+          59
+        ],
+        "fleet": [
+          5,
+          9,
+          21,
+          42,
+          55,
+          59
+        ],
+        "left": 49,
+        "came": 5,
+        "w_left": 0.0278021,
+        "w_came": 0.0238501,
+        "gap": 0.003952000000000001,
+        "tol": 0.00039953766278000096,
+        "class": "cascade"
+      },
+      {
+        "step": 25,
+        "moe_layer_index": 17,
+        "ref": [
+          12,
+          13,
+          17,
+          38,
+          59,
+          62
+        ],
+        "fleet": [
+          12,
+          13,
+          15,
+          57,
+          59,
+          62
+        ],
+        "class": "cascade"
+      },
+      {
+        "step": 25,
+        "moe_layer_index": 18,
+        "ref": [
+          13,
+          45,
+          53,
+          56,
+          58,
+          60
+        ],
+        "fleet": [
+          13,
+          45,
+          50,
+          53,
+          56,
+          58
+        ],
+        "left": 60,
+        "came": 50,
+        "w_left": 0.0330846,
+        "w_came": 0.0302319,
+        "gap": 0.0028526999999999997,
+        "tol": 0.0004754512701562551,
+        "class": "cascade"
+      },
+      {
+        "step": 25,
+        "moe_layer_index": 23,
+        "ref": [
+          19,
+          37,
+          44,
+          45,
+          50,
+          63
+        ],
+        "fleet": [
+          19,
+          33,
+          37,
+          44,
+          45,
+          50
+        ],
+        "left": 63,
+        "came": 33,
+        "w_left": 0.0300771,
+        "w_came": 0.0282467,
+        "gap": 0.0018303999999999994,
+        "tol": 0.00043223117092595047,
+        "class": "cascade"
+      },
+      {
+        "step": 25,
+        "moe_layer_index": 24,
+        "ref": [
+          1,
+          3,
+          25,
+          26,
+          42,
+          63
+        ],
+        "fleet": [
+          1,
+          25,
+          26,
+          42,
+          52,
+          63
+        ],
+        "left": 3,
+        "came": 52,
+        "w_left": 0.0239257,
+        "w_came": 0.0221591,
+        "gap": 0.0017666000000000001,
+        "tol": 0.00034383079905386533,
+        "class": "cascade"
+      },
+      {
+        "step": 29,
+        "moe_layer_index": 9,
+        "ref": [
+          23,
+          24,
+          32,
+          37,
+          39,
+          63
+        ],
+        "fleet": [
+          24,
+          32,
+          37,
+          39,
+          48,
+          63
+        ],
+        "left": 23,
+        "came": 48,
+        "w_left": 0.0377839,
+        "w_came": 0.0370644,
+        "gap": 0.0007195000000000049,
+        "tol": 0.0005429838428288971,
+        "class": "cascade"
+      },
+      {
+        "step": 29,
+        "moe_layer_index": 10,
+        "ref": [
+          22,
+          32,
+          39,
+          46,
+          54,
+          56
+        ],
+        "fleet": [
+          22,
+          32,
+          39,
+          46,
+          53,
+          56
+        ],
+        "left": 54,
+        "came": 53,
+        "w_left": 0.0298307,
+        "w_came": 0.0279005,
+        "gap": 0.0019302,
+        "tol": 0.00042869021250522,
+        "class": "cascade"
+      },
+      {
+        "step": 30,
+        "moe_layer_index": 24,
+        "ref": [
+          1,
+          9,
+          19,
+          35,
+          45,
+          58
+        ],
+        "fleet": [
+          1,
+          9,
+          19,
+          35,
+          36,
+          58
+        ],
+        "left": 45,
+        "came": 36,
+        "w_left": 0.0387266,
+        "w_came": 0.0381397,
+        "gap": 0.0005869000000000013,
+        "tol": 0.0005565311703582098,
+        "class": "cascade"
+      },
+      {
+        "step": 31,
+        "moe_layer_index": 19,
+        "ref": [
+          4,
+          18,
+          21,
+          23,
+          27,
+          62
+        ],
+        "fleet": [
+          4,
+          18,
+          21,
+          23,
+          60,
+          62
+        ],
+        "left": 27,
+        "came": 60,
+        "w_left": 0.0371976,
+        "w_came": 0.0364735,
+        "gap": 0.0007240999999999984,
+        "tol": 0.0005345582587295694,
+        "class": "cascade"
+      }
+    ],
+    "disagreements": [],
+    "result": "PASS"
+  },
+  "n_pass": 7,
+  "n_fail": 0,
+  "n_missing": 0,
+  "n_not_comparable": 1,
+  "n_not_captured": 64,
+  "overall": "PASS"
+}

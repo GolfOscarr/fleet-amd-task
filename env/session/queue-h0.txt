@@ -1,0 +1,9 @@
+# Round 5, the last minutes (docs/gpu-experiments/05-final/05-session-plan.md, the user's ask at minute 66:
+# try to accelerate further with what needs no kernel change; revert if it does not win). The runtime knobs
+# only: the sleep knob combined with the batch constant (each won one clock in R2 and h6), and the sleep
+# knob at 16 and 4. Judged as A1/A2: into the default only if the row wins both clocks against A.
+--layers 27 --head --iters 30 --final --runtime-flags=-DMPK_POLL_SLEEP=8 --runtime-flags=-DGEMV_BATCH=4 compare table continue    # sleep 8 + batch 4
+--layers 27 --head --iters 29 --final --no-event-timing --runtime-flags=-DMPK_POLL_SLEEP=8 --runtime-flags=-DGEMV_BATCH=4 table continue    # its FWD_PASS
+--layers 27 --head --iters 30 --final --runtime-flags=-DMPK_POLL_SLEEP=16 compare table continue    # sleep 16
+--layers 27 --head --iters 30 --final --runtime-flags=-DMPK_POLL_SLEEP=4 compare table continue    # sleep 4
+--layers 27 --head --iters 29 --final --no-event-timing --runtime-flags=-DMPK_POLL_SLEEP=16 table continue    # sleep 16 FWD_PASS

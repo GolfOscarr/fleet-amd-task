@@ -12,23 +12,23 @@ CUs; 8 schedulers, 296 workers, 37 per chiplet).
 
 | # | Task | Scope | Count | Weight bytes | Waits on | Existing kernel? |
 |---|---|---|---|---|---|---|
-| 1 | `input_layernorm` (RMSNorm) | CU-task | 1 | 4 KB | residual | `rmsnorm_mi300` ✓ |
-| 2 | `q_proj` `[3072,2048]` | Chiplet-task | 8 | 12 MB | 1 | `gang_linear_mi300` ✓ |
-| 3 | `kv_a_proj_with_mqa` `[576,2048]` | Chiplet-task | 8 | 2.25 MB | 1 | `gang_linear_mi300` ✓ |
-| 4 | `kv_a_layernorm` (latent only) | Wavefront-task | 1 | 1 KB | 3 | `rmsnorm_mi300` ✓ |
-| 5 | RoPE on `q_pe`, `k_pe` | Wavefront-task | 1 | — | 2, 3 | `rotary_embedding_mi300` ✓ |
+| 1 | `input_layernorm` (RMSNorm) | CU-task | 1 | 4 KB | residual | `rmsnorm_mi300` yes |
+| 2 | `q_proj` `[3072,2048]` | Chiplet-task | 8 | 12 MB | 1 | `gang_linear_mi300` yes |
+| 3 | `kv_a_proj_with_mqa` `[576,2048]` | Chiplet-task | 8 | 2.25 MB | 1 | `gang_linear_mi300` yes |
+| 4 | `kv_a_layernorm` (latent only) | Wavefront-task | 1 | 1 KB | 3 | `rmsnorm_mi300` yes |
+| 5 | RoPE on `q_pe`, `k_pe` | Wavefront-task | 1 | — | 2, 3 | `rotary_embedding_mi300` yes |
 | 6 | latent KV-cache append | Wavefront-task | 1 | — | 4, 5 | `kv_cache_update_mi300` ~ |
 | 7 | **MLA scores + softmax + weighted sum, split-KV** | Chiplet-task | 8 | 1.125 MB cache | 6 | **NEW** |
 | 8 | **split-KV merge** (rescale + combine partials) | CU-task | 1 | — | 7 | `gang_attention_merge_mi300` ~ |
-| 9 | `o_proj` + residual `[2048,2048]` | Chiplet-task | 8 | 8 MB | 8 | `gang_linear_mi300` ✓ |
-| 10 | `post_attention_layernorm` | CU-task | 1 | 4 KB | 9 | `rmsnorm_mi300` ✓ |
-| 11 | router `mlp.gate` `[64,2048]`, **FP32** | CU-task | 1 | 256 KB | 10 | `moe_topk_softmax_mi300` ✓ |
-| 12 | softmax + top-6 (**FP32**, unnormalized) | CU-task | 1 | — | 11 | same ✓ |
-| 13 | shared-expert W13 `[5632,2048]` + SiLU | Chiplet-task | 8 | 22 MB | **10 only** | `gang_rmsnorm_linear` / `silu_mul_linear` ✓ |
-| 14 | shared-expert `down_proj` `[2048,2816]` | Chiplet-task | 8 | 11 MB | 13 | `gang_linear_mi300` ✓ |
-| 15 | routed-expert W13, 6 of 64, + SiLU | Chiplet-task | 8 | 66 MB | 12 | `gang_moe_linear_mi300` ✓ |
-| 16 | routed-expert `down_proj`, 6 of 64 | Chiplet-task | 8 | 33 MB | 15 | `moe_linear_mi300` ✓ |
-| 17 | weighted sum of 6 + shared + residual | Chiplet-task | 8 | — | 14, 16 | `moe_mul_sum_add_mi300` ✓ |
+| 9 | `o_proj` + residual `[2048,2048]` | Chiplet-task | 8 | 8 MB | 8 | `gang_linear_mi300` yes |
+| 10 | `post_attention_layernorm` | CU-task | 1 | 4 KB | 9 | `rmsnorm_mi300` yes |
+| 11 | router `mlp.gate` `[64,2048]`, **FP32** | CU-task | 1 | 256 KB | 10 | `moe_topk_softmax_mi300` yes |
+| 12 | softmax + top-6 (**FP32**, unnormalized) | CU-task | 1 | — | 11 | same yes |
+| 13 | shared-expert W13 `[5632,2048]` + SiLU | Chiplet-task | 8 | 22 MB | **10 only** | `gang_rmsnorm_linear` / `silu_mul_linear` yes |
+| 14 | shared-expert `down_proj` `[2048,2816]` | Chiplet-task | 8 | 11 MB | 13 | `gang_linear_mi300` yes |
+| 15 | routed-expert W13, 6 of 64, + SiLU | Chiplet-task | 8 | 66 MB | 12 | `gang_moe_linear_mi300` yes |
+| 16 | routed-expert `down_proj`, 6 of 64 | Chiplet-task | 8 | 33 MB | 15 | `moe_linear_mi300` yes |
+| 17 | weighted sum of 6 + shared + residual | Chiplet-task | 8 | — | 14, 16 | `moe_mul_sum_add_mi300` yes |
 
 **Task count = 80 per MoE layer.** Against ~30–40 *kernel launches* per layer in
 an eager reference, and against Fleet's 543 tasks/layer for Qwen3-8B (which has

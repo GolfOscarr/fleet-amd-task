@@ -10,7 +10,8 @@ batch constant 4), closes the laptop items round 4 left (the compare's tie
 rule and its iteration-aware boundaries, the worker-timing hang, the
 half-merge fault, the merge's standalone regression), makes the winning
 stack the default of `run_fleet.py`, and ends with one short session that
-produces the final numbers with every check green.
+produced the final numbers with every check green: 4,284 to 4,291 us per
+token on the event clock, `FWD_PASS` 4,265 (`07-final-numbers.md`).
 
 | File | What |
 |---|---|
@@ -20,7 +21,8 @@ produces the final numbers with every check green.
 | [`04-checklist.md`](04-checklist.md) | the progress record: one box per deliverable, ticked only when its check has run; the boxes before the VM |
 | [`05-session-plan.md`](05-session-plan.md) | the session: one command per row with its PASS text, the DECIDE rows (the balance, A1, A2, R1, R4, R5), the queue files, the protocol, the playbook with round 4's additions, the budget against the $4.69 balance and the decision it forces |
 | [`06-rehearsal.md`](06-rehearsal.md) | every command of the session expanded in DRY mode by `ROUND=5 env/session/rehearse.sh`: the stages and the queue rows as `run_fleet.py` lines |
-| [`07-final-numbers.md`](07-final-numbers.md) | the results page, drafted before the session with round 4's and round 3's numbers in place and the round-5 rows empty: the number, the compare made green, the head's events, the fault's location, the timing build, the decisions |
+| [`07-final-numbers.md`](07-final-numbers.md) | the results page, filled from the session of 2026-09-18: the number (4,284 to 4,291 us per token, `FWD_PASS` 4,265, every compare row green), the compare made green with the tie's gap, the head's events at 50, 8 and 10, the fault located by halves, the timing build's hang in the buffer form, the decisions, what did not run |
+| [`08-session-log.md`](08-session-log.md) | the session as it happened: one row per command with the minute, the status line and the decision; the cost; what it added to the laptop's list |
 
 ## Status
 
@@ -32,3 +34,4 @@ produces the final numbers with every check green.
 | 2026-09-18 | the balance decided: the whole $4.69, no credits; `05` revised with the hard stop (no new queue after minute 70, the kill at 78, the deletion by 82) and the optional blocks split by their gates (`queue-h6` batch 4, `queue-h8` the 8-event set, the plain-build suites, `queue-h9` A's set again); nine queue files, 36 rows; the go still open |
 | 2026-09-18 | the double-check of `06` and `07` (the rehearsal's marks aligned with `05`, the checkpoint pull shown, the optional sets named by their files) and the cross-repo pages updated (the root README, `PROGRESS.md`, `OPEN-PROBLEMS.md`, round 4's README); the laptop work ready for its PR |
 | 2026-09-18 | PR #12 opened from `local/round-5` to `main` (the laptop work, 18 commits); the VM session follows the merge on `gpu/round-5` |
+| 2026-09-18 | PR #12 merged (809d21d); the session on `gpu/round-5`: 77 minutes on the round-4 host, $3.74, every planned row run or skipped by its gate, the record in four commits; the number 4,284 to 4,291 us per token (`FWD_PASS` 4,265) with the ids equal and every compare row green; no knob and no constant entered the default (A1, A2, R5 and the last-minutes rows all lost on one clock or both); MIN-36 located by halves, MIN-35 still open (the buffer form hangs too); `07` filled, `08` written, the VM deleted at minute 77 with $0.85 left |

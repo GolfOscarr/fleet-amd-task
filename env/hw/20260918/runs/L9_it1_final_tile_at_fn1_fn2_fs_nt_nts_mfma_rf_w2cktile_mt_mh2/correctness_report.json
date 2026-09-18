@@ -1,0 +1,339 @@
+{
+  "threshold_source": "4 x calibrated floor",
+  "thresholds": {
+    "norm": 0.1811951991236733,
+    "rope": 0.021174033604749967,
+    "gemv": 0.012940280246906176,
+    "scores": 0.01042574426733761,
+    "attention": 0.04004078653205929,
+    "router": 0.014370772811406368,
+    "expert": 0.04396453772147746,
+    "layer": 0.017334900438894192,
+    "logits": 0.16405109773780513,
+    "exact": 0.0
+  },
+  "iters": 1,
+  "later_reference": null,
+  "boundaries": [
+    {
+      "key": "L0.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "max_abs_err": 0.0,
+      "rel_err": 0.0,
+      "cos_sim": 1.0,
+      "n": 512,
+      "threshold": 0.1811951991236733,
+      "floor": 0.045298799780918324,
+      "result": "PASS"
+    },
+    {
+      "key": "L0.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "max_abs_err": 0.0,
+      "rel_err": 0.0,
+      "cos_sim": 1.0000000000000002,
+      "n": 64,
+      "threshold": 0.021174033604749967,
+      "floor": 0.005293508401187492,
+      "result": "PASS"
+    },
+    {
+      "key": "L1.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "max_abs_err": 0.00396728515625,
+      "rel_err": 0.006171794953931687,
+      "cos_sim": 0.9999809739163942,
+      "n": 512,
+      "threshold": 0.1811951991236733,
+      "floor": 0.045298799780918324,
+      "result": "PASS"
+    },
+    {
+      "key": "L1.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "max_abs_err": 0.125,
+      "rel_err": 0.005516858278520742,
+      "cos_sim": 0.9999948211982141,
+      "n": 64,
+      "threshold": 0.021174033604749967,
+      "floor": 0.005293508401187492,
+      "result": "PASS"
+    },
+    {
+      "key": "L2.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L2.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L3.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L3.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L4.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L4.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L5.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L5.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L6.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L6.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L7.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L7.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L8.B2.q",
+      "boundary": "B2",
+      "class": "gemv",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L8.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L8.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L8.B4.q_pe",
+      "boundary": "B4",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L8.B6.attn",
+      "boundary": "B6",
+      "class": "attention",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L8.B8.router_logits",
+      "boundary": "B8",
+      "class": "router",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L8.B9.topk_idx",
+      "boundary": "B9",
+      "class": "exact",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L8.B10.topk_w",
+      "boundary": "B10",
+      "class": "router",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L8.B11.expert_1",
+      "boundary": "B11",
+      "class": "expert",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L8.B11.expert_11",
+      "boundary": "B11",
+      "class": "expert",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L8.B11.expert_2",
+      "boundary": "B11",
+      "class": "expert",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L8.B11.expert_28",
+      "boundary": "B11",
+      "class": "expert",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L8.B11.expert_61",
+      "boundary": "B11",
+      "class": "expert",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L8.B11.expert_9",
+      "boundary": "B11",
+      "class": "expert",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L8.B12.shared",
+      "boundary": "B12",
+      "class": "expert",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L8.B13.layer_out",
+      "boundary": "B13",
+      "class": "layer",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    }
+  ],
+  "output_ids": {
+    "result": "SKIP",
+    "note": "truncated graph: no head, ids are placeholders"
+  },
+  "route_log": {
+    "steps_compared": 1,
+    "rule": "tie",
+    "tol_rel": 0.014370772811406368,
+    "mismatches": [
+      {
+        "step": 0,
+        "moe_layer_index": 4,
+        "ref": [
+          4,
+          19,
+          30,
+          34,
+          46,
+          49
+        ],
+        "fleet": [
+          2,
+          4,
+          19,
+          30,
+          34,
+          46
+        ],
+        "left": 49,
+        "came": 2,
+        "w_left": 0.039638,
+        "w_came": 0.0396056,
+        "gap": 3.240000000000187e-05,
+        "tol": 0.0005696286926985256,
+        "class": "tie"
+      }
+    ],
+    "ties": [
+      {
+        "step": 0,
+        "moe_layer_index": 4,
+        "ref": [
+          4,
+          19,
+          30,
+          34,
+          46,
+          49
+        ],
+        "fleet": [
+          2,
+          4,
+          19,
+          30,
+          34,
+          46
+        ],
+        "left": 49,
+        "came": 2,
+        "w_left": 0.039638,
+        "w_came": 0.0396056,
+        "gap": 3.240000000000187e-05,
+        "tol": 0.0005696286926985256,
+        "class": "tie"
+      }
+    ],
+    "cascades": [],
+    "disagreements": [],
+    "result": "PASS"
+  },
+  "n_pass": 5,
+  "n_fail": 0,
+  "n_missing": 0,
+  "n_not_comparable": 0,
+  "n_not_captured": 28,
+  "overall": "PASS"
+}

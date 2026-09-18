@@ -288,8 +288,10 @@ stage_kill() {
   local pat="${1:-}"
   [ -n "$pat" ] || { echo "usage: vm.sh kill <pattern>|--all"; return 2; }
   local pids
-  # anchored on the python command, so this shell's own command line never matches
-  pids="$(pgrep -f "^python harness/run_fleet.py" || true)"
+  # anchored on the python command (bare or by its venv path: the queue launches
+  # /home/hotaisle/metalOps/.venv-fleet/bin/python harness/run_fleet.py under timeout, which
+  # the bare form missed in round 5), so this shell's own command line never matches
+  pids="$(pgrep -f "^([^ ]*/)?python[0-9.]* harness/run_fleet\.py" || true)"
   [ -n "$pids" ] || { echo "no graph run is running"; return 0; }
   local pid killed=""
   for pid in $pids; do

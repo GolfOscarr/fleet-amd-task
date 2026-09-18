@@ -1,5 +1,9 @@
 # 05 - Session plan: one short session on a 1x MI300X, the final numbers with every check green
 
+Run on 2026-09-18 (11:09 to 12:26 UTC, 77 minutes): the log in
+`08-session-log.md`, the numbers in `07-final-numbers.md`. The plan below
+is as it stood at the go; the rows ran in this order with these rules.
+
 Written 2026-09-18 after the laptop items F3, F1, F2, F7 and F8 of
 `03-local-preparation.md` (the checklist `04-checklist.md`). One session,
 in round 4's shape (`../04-kernels/07-session-plan.md`): every row is one
@@ -35,11 +39,11 @@ What is new against round 4's plan:
 
 | | |
 |---|---|
-| Balance | $4.69 after round 4 (`../04-kernels/09-session-log.md`); rate $0.00, no VM |
+| Balance | $4.69 after round 4 (`../04-kernels/09-session-log.md`); read $4.59 at S0 on 2026-09-18 (the last minute of round 4 billed after its reading); rate $0.00, no VM |
 | Shape | 1x MI300X, $2.99 per hour, billed per minute (round 4: 167 minutes, $8.22) |
-| Minutes | 94 at the balance |
+| Minutes | 92 at the balance read at S0 ($4.59); 94 at $4.69 |
 | The session | R0 to R5 about 44 minutes ($2.20, the bisect included); the optional blocks in order, each only as the minutes allow: the batch-4 set 5, the 8-event set 5, the plain-build suites 6, A's set again 4; the pulls, the commit and the deletion 4; about 68 minutes, $3.40 |
-| The hard stop | no new queue after minute 70; a running queue killed at minute 78 (`vm.sh kill --all` after the loop); the last pull at 78 to 80; the deletion by 82 ($4.10); the margin about 12 minutes ($0.60) |
+| The hard stop | no new queue after minute 70; a running queue killed at minute 78 (`vm.sh kill --all` after the loop); the last pull at 78 to 80; the deletion by 82 ($4.10); the margin about 10 minutes ($0.50 at the $4.59 read) |
 
 Round 4's rule stopped a session when the balance read less than $3.
 Decided 2026-09-18 by the user: this last session uses the whole balance
@@ -60,7 +64,7 @@ line overrides the marks if it reads earlier.
 | the branch pushed | `git status` clean, `git log origin/local/round-5..local/round-5` empty | at F9 |
 | no VM, no address | `L balance` shows `No virtual machines`; `env/session/vm.ip` absent; no `grab.sh` process | at S0 |
 | the queue files | `.venv/bin/python -m pytest harness/tests/test_queue_files.py -q` (every round-5 row parses, names a unique run, builds its plan); `06-rehearsal.md` regenerated | F8 |
-| the decisions below | the balance decision, taken 2026-09-18 (the whole balance, the hard stop); the go for the VM | the go open |
+| the decisions below | the balance decision, taken 2026-09-18 (the whole balance, the hard stop); the go for the VM | the go given 2026-09-18 11:08 UTC |
 
 ## Decisions
 
@@ -77,7 +81,7 @@ line overrides the marks if it reads earlier.
 
 ## Reporting protocol
 
-- Before `grab.sh`: the balance (`Available Balance` at $4.69) and a one-line
+- Before `grab.sh`: the balance (`Available Balance` at $4.69; $4.59 read at S0) and a one-line
   "polling for a VM now" or "provisioning the 13-core host now".
 - After every stage row: the `PASS`/`FAIL` line of `env/logs/session.status`
   verbatim, with the minute mark and the cost (`L report`).
@@ -96,7 +100,7 @@ Minute marks from the provision, with round 4's measured durations
 
 | Minute | Row | Command | PASS when | Mode | On FAIL |
 |---|---|---|---|---|---|
-| -5 | S0 | `L balance` | `No virtual machines`, `Hourly Rate: $0.00/hour`, `Available Balance` at $4.69 (the decision: the whole balance, taken 2026-09-18) | DECIDE (user: the go) | a VM already listed: stop; a balance below $4.00: the optional blocks are dropped from the end in reverse order |
+| -5 | S0 | `L balance` | `No virtual machines`, `Hourly Rate: $0.00/hour`, `Available Balance` at $4.69 (the decision: the whole balance, taken 2026-09-18); read 2026-09-18 11:05 UTC: `No virtual machines`, $4.59, $0.00/hour | DECIDE (user: the go) | a VM already listed: stop; a balance below $4.00: the optional blocks are dropped from the end in reverse order |
 | 0 | R0 | the provision (the 13-core host by hand if listed, else `bash env/session/grab.sh`), then `FULL=1 L push` | an address in `env/session/vm.ip`; the push completes | AUTO | no host within an hour: the user is told, nothing is billed |
 | 1 | R0 | `L start download`; `L start setup`; `L start hw`; `L ssh "cd /home/hotaisle/metalOps && bash env/session/vm.sh preflight"` | `PASS download`, `PASS setup`, `PASS hw`, `PASS preflight` | AUTO | setup: read `env/logs/setup.out`; the fix on the laptop, `L push`, `L start setup` again |
 | 9 | R0 | `L start checks`; `L wait checks 5`; `L start reference`; `L wait reference 6` | `PASS checks` with 7 PASS lines; `PASS reference`; `harness/ref/ref_route_log.json` on the VM has `w_all` (F1's reference guard ran on every step) | AUTO | reference FAIL: the guard names the layer (the scoring formula against the gate) or the stage's own error; no compare can run, the finals still can |
@@ -119,7 +123,7 @@ queue is killed (`vm.sh kill --all` ends the graph run, the queue loop
 ends on its FAIL row), then the pull and the deletion whatever the state,
 the deletion by minute 82. The balance's `Estimated Runout` line, read by
 `L report --balance` from minute 50, overrides these marks if it reads
-earlier than minute 94.
+earlier than minute 92.
 
 ### The DECIDE rows
 
