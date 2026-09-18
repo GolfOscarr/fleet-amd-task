@@ -1,0 +1,42 @@
+# Measurement report
+
+| Quantity | Predicted | Measured |
+|---|---|---|
+| bytes per iteration (read, MiB) | 4709.9 weights + cache; about 4772.0 with activations | - |
+| time per iteration, median (us) | 1148.5-1349.4 + 326 t_b + T_serial | - |
+| time per iteration, P95 (us) |  | - |
+| time per iteration from event timing, median (us) |  | 463.2 |
+| time per iteration from host wall clock (us) |  | 1026.0 |
+| time per iteration from the kernel trace (us) |  | - |
+| achieved read bandwidth (TB/s) | 3.66-4.3 over T_bw | - |
+| launches per generation | 3 | - |
+| L2 hit rate | 16-17% (Fleet's batch-1 figure) | - |
+| tokens per second |  | - |
+| GFX clock from amd-smi during the run, median / max (MHz) | 2100 max (D2 of round 1) | 2107 / 2107 over 35 samples |
+| memory clock from amd-smi, median (MHz) |  | 900 |
+
+## Per-operator time (event gaps, mean over iterations after the first)
+
+| Event | Operator | mean us | min us | max us | n |
+|---|---|---|---|---|---|
+| 1 | iteration_start | 144.94 | 8.00 | 181.04 | 30 |
+| 2 | embed_layer | 11.69 | 10.60 | 13.64 | 31 |
+| 3 | linear_gemv_layer | 24.23 | 23.08 | 26.00 | 31 |
+| 4 | mla_prep_layer | 9.54 | 9.17 | 10.25 | 31 |
+| 5 | mla_attend_layer | 12.30 | 11.56 | 13.56 | 31 |
+| 6 | mla_merge_uv_tile_layer | 15.01 | 14.28 | 15.64 | 31 |
+| 7 | linear_gemv_layer | 7.65 | 7.14 | 8.14 | 31 |
+| 8 | rmsnorm_layer | 3.95 | 3.07 | 4.78 | 31 |
+| 9 | gang_linear_silu_layer | 31.15 | 30.20 | 32.19 | 31 |
+| 10 | linear_with_residual_layer | 50.31 | 49.24 | 51.68 | 31 |
+| 11 | linear_gemv_layer | 10.56 | 10.03 | 11.36 | 31 |
+| 12 | mla_prep_layer | 8.68 | 8.02 | 10.98 | 31 |
+| 13 | mla_attend_layer | 12.17 | 11.58 | 12.95 | 31 |
+| 14 | mla_merge_uv_tile_layer | 14.93 | 14.40 | 15.30 | 31 |
+| 15 | linear_gemv_layer | 6.81 | 6.43 | 7.32 | 31 |
+| 16 | moe_router_layer | 15.59 | 13.98 | 17.34 | 31 |
+| 17 | gang_moe_w13_linear_layer | 42.01 | 38.94 | 44.66 | 31 |
+| 18 | gang_moe_w2_silu_linear_layer | 22.05 | 20.68 | 23.68 | 31 |
+| 19 | moe_mul_sum_add_layer | 2.89 | 2.68 | 4.04 | 31 |
+
+-> /home/hotaisle/metalOps/harness/fleet_out/L2_it32_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_w2cktile+gemvbatch4_gv_mt_mh2/metrics.json, /home/hotaisle/metalOps/harness/fleet_out/L2_it32_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_w2cktile+gemvbatch4_gv_mt_mh2/report_table.md

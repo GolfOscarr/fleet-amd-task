@@ -70,3 +70,15 @@
 2026-09-18T06:30:49Z L27_head_it32_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_w2cktile+nolocalcas_gv_lg48_mt_mh2 PASS rc=0 mpk=1 fault=0 fwd=31 wall=68s compare=FAIL table=PASS
 2026-09-18T06:32:00Z L27_head_it29_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_w2cktile+nolocalcas_gv_lg48_mt_mh2 PASS rc=0 mpk=1 fault=0 fwd=28 wall=67s compare=FAIL table=PASS
 2026-09-18T06:32:00Z DONE env/session/queue-f5.txt
+2026-09-18T06:47:00Z L2_it1_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_w2cktile+gemvbatch4_gv_mt_mh2 PASS rc=0 mpk=1 fault=0 fwd=0 wall=43s compare=PASS
+2026-09-18T06:47:44Z L2_it32_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_w2cktile+gemvbatch4_gv_mt_mh2 PASS rc=0 mpk=1 fault=0 fwd=27 wall=44s table=PASS
+2026-09-18T06:48:52Z L27_head_it30_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_w2cktile+nolocalcas+pollsleep8_gv_lg48_mt_mh2 PASS rc=0 mpk=1 fault=0 fwd=29 wall=68s table=PASS
+2026-09-18T06:50:01Z L27_head_it31_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_w2cktile+nolocalcas+pollsleep8_gv_lg48_mt_mh2 PASS rc=0 mpk=1 fault=0 fwd=30 wall=68s table=PASS
+2026-09-18T06:51:11Z L27_head_it32_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_w2cktile+nolocalcas+pollsleep8_gv_lg48_mt_mh2 PASS rc=0 mpk=1 fault=0 fwd=31 wall=67s compare=FAIL table=PASS
+2026-09-18T06:52:21Z L27_head_it29_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_w2cktile+nolocalcas+pollsleep8_gv_lg48_mt_mh2 PASS rc=0 mpk=1 fault=0 fwd=28 wall=68s compare=FAIL table=PASS
+2026-09-18T06:52:21Z DONE env/session/queue-g3.txt
+2026-09-18T06:54:00Z L27_head_it30_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_w2cktile+nolocalcas+pollsleep8+gemvbatch4_gv_lg48_mt_mh2 PASS rc=0 mpk=1 fault=0 fwd=29 wall=68s table=PASS
+2026-09-18T06:55:09Z L27_head_it31_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_w2cktile+nolocalcas+pollsleep8+gemvbatch4_gv_lg48_mt_mh2 PASS rc=0 mpk=1 fault=0 fwd=30 wall=68s table=PASS
+2026-09-18T06:56:19Z L27_head_it32_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_w2cktile+nolocalcas+pollsleep8+gemvbatch4_gv_lg48_mt_mh2 PASS rc=0 mpk=1 fault=0 fwd=31 wall=68s compare=FAIL table=PASS
+2026-09-18T06:57:30Z L27_head_it29_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_w2cktile+nolocalcas+pollsleep8+gemvbatch4_gv_lg48_mt_mh2 PASS rc=0 mpk=1 fault=0 fwd=28 wall=69s compare=FAIL table=PASS
+2026-09-18T06:57:30Z DONE env/session/queue-g4.txt
