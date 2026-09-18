@@ -19,6 +19,9 @@
 #   checks      env/check_day1.sh (7 PASS lines)
 #   reference   run_reference.py, calibrate.py, route_analysis.py under .venv (the reference tensors are not in the repo)
 #   kernels     the kernel-test launcher (built if missing) and kernel_tests.py, 100 trials per suite
+#   ktime [variant] [launches] [copies]   the standalone times (KT_TIME) of the attention, the merges, the
+#               GEMV linear, the router and the gang GEMV forms; round 4's variants nt, nt_b4, nt_b16,
+#               nt_strided (G0's batch constant and lane map under the graph rows' load policy)
 #   queue F     env/session/queue.sh run F   (one graph run at a time)
 #   bisect F -- ARGS   env/session/queue.sh bisect F -- ARGS
 #
@@ -121,6 +124,31 @@ build_kernel_tests() {
   # shellcheck disable=SC2086
   [ -x fleet/tasks/build/kernel_tests_mfma_debug ] || run hipcc --offload-arch=gfx942 -O2 -std=c++17 $defs $inc \
       -DMLA_ATTEND_MFMA -DMLA_ATTEND_DEBUG_SCORES fleet/tasks/kernel_tests_mi300.cu -o fleet/tasks/build/kernel_tests_mfma_debug || return 1
+  # round 4 (L3, L4): the gang GEMV forms take the XCD id from blockIdx.y under -DKT_FAKE_XCD; without
+  # this build kernel_tests.py SKIPs the gang_w13_gemv and gang_w2_gemv rows
+  # shellcheck disable=SC2086
+  [ -x fleet/tasks/build/kernel_tests_xcd ] || run hipcc --offload-arch=gfx942 -O2 -std=c++17 $defs $inc \
+      -DKT_FAKE_XCD fleet/tasks/kernel_tests_mi300.cu -o fleet/tasks/build/kernel_tests_xcd || return 1
+}
+
+# The standalone timing builds of round 4 (G0 and H0 of docs/gpu-experiments/04-kernels: the batch
+# constant and the lane map of the GEMV linear and the router, under the graph rows' load policy
+# -DMLA_NT_STREAMS): the nt build at 4 and 16 rows per batch, the strided map, and the nt build with
+# the fake XCD for the gang forms. Built by the ktime stage when its variant names one of them.
+build_ktime_variant() {
+  local v="$1" flags
+  case "$v" in
+    nt_xcd) flags="-DMLA_NT_STREAMS -DKT_FAKE_XCD";;
+    nt_b4) flags="-DMLA_NT_STREAMS -DGEMV_BATCH=4 -DROUTER_BATCH=4";;
+    nt_b16) flags="-DMLA_NT_STREAMS -DGEMV_BATCH=16 -DROUTER_BATCH=16";;
+    nt_strided) flags="-DMLA_NT_STREAMS -DGEMV_STRIDED -DROUTER_STRIDED";;
+    *) return 0;;                                    # the round-3 builds come from build_kernel_tests
+  esac
+  local defs="-D__HIP_PLATFORM_AMD__=1 -DMIRAGE_AMD_MI300 -DMIRAGE_BACKEND_USE_ROCM -DMPK_TARGET_CC=94 -DMODE_ONLINE"
+  local inc="-I fleet -I $FLEET/include -I $FLEET/include/mirage/persistent_kernel"
+  # shellcheck disable=SC2086
+  [ -x "fleet/tasks/build/kernel_tests_$v" ] || run hipcc --offload-arch=gfx942 -O2 -std=c++17 $defs $inc \
+      $flags fleet/tasks/kernel_tests_mi300.cu -o "fleet/tasks/build/kernel_tests_$v" || return 1
 }
 
 # kernels [variant]: the suites against fleet/tasks/build/kernel_tests (no argument) or against
@@ -144,19 +172,45 @@ stage_kernels() {
 
 # ktime [variant] [launches] [cache copies]: the standalone time of the attention and the merge grids
 # (KT_TIME, KT_COLD of fleet/tasks/README.md) on one trial directory, and the spin's [SPIN] line
-# (KT_SPIN, I2); round 3 compares the VALU, nt and mfma builds this way (G2, G7)
+# (KT_SPIN, I2); round 3 compares the VALU, nt and mfma builds this way (G2, G7). Round 4 adds the
+# GEMV linear (qkva's norm form and o_proj's residual form, the weight rotated over the cache copies),
+# the router (its 256 KB gate weight rotated the same way), the merge with o_proj folded in, and the
+# gang w13 and w2 forms through the variant's _xcd build when it exists (kernel_tests_xcd for the plain
+# build, kernel_tests_nt_xcd for nt; the depth and map variants time the dense kernels only).
 stage_ktime() {
   fleet_env
   local variant="${1:-}" n="${2:-50}" cold="${3:-27}" bin="fleet/tasks/build/kernel_tests${1:+_$1}"
   local dir="$LOGDIR/ktime_trial" out="$RECORD/ktime"; mkdir -p "$out"
+  local xcd="fleet/tasks/build/kernel_tests${variant:+_$variant}_xcd"
   build_kernel_tests || { echo "kernel_tests did not build"; return 1; }
-  [ -d "$dir/mla_attend" ] || run python fleet/tasks/kernel_tests.py --n 1 --kernel mla_attend --kernel mla_merge_uv --kernel copy --work-dir "$dir" --keep || return 1
-  [ "$DRY" = "1" ] && { echo "+ KT_TIME=$n KT_COLD=$cold $bin mla_attend $dir/mla_attend/*"; echo "+ KT_TIME=$n $bin mla_merge_uv $dir/mla_merge_uv/*"; echo "+ KT_SPIN=1000 $bin copy $dir/copy/*"; return 0; }
+  build_ktime_variant "$variant" || { echo "kernel_tests_$variant did not build"; return 1; }
+  [ "$variant" = "nt" ] && { build_ktime_variant nt_xcd || { echo "kernel_tests_nt_xcd did not build"; return 1; }; }
+  [ -d "$dir/mla_attend" ] || run python fleet/tasks/kernel_tests.py --n 1 --kernel mla_attend --kernel mla_merge_uv --kernel copy \
+      --kernel linear_gemv_norm --kernel linear_gemv_res --kernel moe_router --kernel mla_merge_oproj \
+      --kernel gang_w13_gemv --kernel gang_w2_gemv --work-dir "$dir" --keep || return 1
+  if [ "$DRY" = "1" ]; then
+    echo "+ KT_TIME=$n KT_COLD=$cold $bin mla_attend $dir/mla_attend/*"; echo "+ KT_TIME=$n $bin mla_merge_uv $dir/mla_merge_uv/*"
+    echo "+ KT_SPIN=1000 $bin copy $dir/copy/*"
+    echo "+ KT_TIME=$n KT_COLD=$cold $bin linear_gemv_norm $dir/linear_gemv_norm/*"; echo "+ KT_TIME=$n KT_COLD=$cold $bin linear_gemv_res $dir/linear_gemv_res/*"
+    echo "+ KT_TIME=$n KT_COLD=$cold $bin moe_router $dir/moe_router/*"; echo "+ KT_TIME=$n $bin mla_merge_oproj $dir/mla_merge_oproj/*"
+    echo "+ KT_TIME=$n $xcd gang_w13_gemv $dir/gang_w13_gemv/*"; echo "+ KT_TIME=$n $xcd gang_w2_gemv $dir/gang_w2_gemv/*"
+    return 0
+  fi
   {
     echo "### $(utc) $bin launches=$n cache_copies=$cold"
     KT_TIME="$n" KT_COLD="$cold" "$bin" mla_attend "$dir"/mla_attend/* 2>&1 | grep -E "TIME|ok"
     KT_TIME="$n" "$bin" mla_merge_uv "$dir"/mla_merge_uv/* 2>&1 | grep -E "TIME|ok"
     KT_SPIN=1000 "$bin" copy "$dir"/copy/* 2>&1 | grep -E "SPIN|ok"
+    KT_TIME="$n" KT_COLD="$cold" "$bin" linear_gemv_norm "$dir"/linear_gemv_norm/* 2>&1 | grep -E "TIME|ok"
+    KT_TIME="$n" KT_COLD="$cold" "$bin" linear_gemv_res "$dir"/linear_gemv_res/* 2>&1 | grep -E "TIME|ok"
+    KT_TIME="$n" KT_COLD="$cold" "$bin" moe_router "$dir"/moe_router/* 2>&1 | grep -E "TIME|ok"
+    KT_TIME="$n" "$bin" mla_merge_oproj "$dir"/mla_merge_oproj/* 2>&1 | grep -E "TIME|ok"
+    if [ -x "$xcd" ]; then
+      KT_TIME="$n" "$xcd" gang_w13_gemv "$dir"/gang_w13_gemv/* 2>&1 | grep -E "TIME|ok"
+      KT_TIME="$n" "$xcd" gang_w2_gemv "$dir"/gang_w2_gemv/* 2>&1 | grep -E "TIME|ok"
+    else
+      echo "no $xcd: the gang rows are timed by the plain and nt variants only"
+    fi
   } | tee -a "$out/ktime${variant:+_$variant}.txt"
 }
 
