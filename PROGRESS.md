@@ -3,9 +3,20 @@
 Fleet-style batch-1 decode for DeepSeek-Coder-V2-Lite-Base on one AMD MI300X.
 Time limit: 5 days. Target: gfx942, BF16, 1024-token prompt, 32 greedy tokens.
 
-Last updated: 2026-09-16 · branch `gpu/round-2` (round 2 on the 1x MI300X: M4, the fault's cause, the timings; `docs/gpu-experiments/02-validation/`); round 1 was `local/gpu-bringup` (2026-09-15: hardware record, gate 1, M1 to M3; `docs/gpu-experiments/01-bringup/`)
+Last updated: 2026-09-18 · branch `local/round-4` (round 4 prepared on the laptop: the GEMV linear, the router and the merge as kernels of our own, the session plan; `docs/gpu-experiments/04-kernels/`); round 3 was `gpu/round-3` (2026-09-17: 4.57 to 4.60 ms per token; `docs/gpu-experiments/03-acceleration/`); round 2 was `gpu/round-2` (2026-09-16: M4, the fault's cause, the timings; `docs/gpu-experiments/02-validation/`); round 1 was `local/gpu-bringup` (2026-09-15: hardware record, gate 1, M1 to M3; `docs/gpu-experiments/01-bringup/`)
 
-**Where we are (2026-09-16):** M0, M1, M2 and M3 reached on the MI300X
+**Where we are (2026-09-18):** round 4 is prepared and waits for its VM
+session (`docs/gpu-experiments/04-kernels/`, branch `local/round-4`):
+the CK linears, the router and the merge replaced by seven kernels of
+our own behind off-by-default flags (the batch-1 GEMV linear, the w2 and
+w13 GEMV forms, the four-task router, the merge as regular tasks and with
+o_proj folded in, the stream probe), each with its suite rows, plan flag
+and offline variant (237 tests, 15 syntax checks, every variant compiled,
+the union at 256 VGPRs and 8 spills), the session plan with its rules and
+the rehearsal (`07`, `08`), the user's four decisions recorded. Round 3
+(2026-09-17, `docs/gpu-experiments/03-acceleration/`) took the decode
+from 9.58 to 4.57 to 4.60 ms per token, ids equal, and found the event
+table off by one (`08-results.md`, `09-lessons.md`). Earlier: M0, M1, M2 and M3 reached on the MI300X
 on 2026-09-15 (Hot Aisle, one VM, about $12): gate 1 passed after three
 fixes, layer 1 validated end to end with all 16 boundaries and exact top-k,
 27 layers run, the full model with the head produces the reference's first
@@ -231,12 +242,13 @@ documented as blocked. **Decide end of day 1.**
 - [x] GPU launches per token — one `mpk()` call runs the 32 iterations (the persistent kernel); the profiler count was not taken (rocprofv3 cannot attach to the torch wheel)
 - [x] Median + P95 latency — N = 32 iterations, the runtime's event clock: round 3 (2026-09-17) 4,571 to 4,600 us median over seven final runs, 4,584 to 4,590 by the megakernel's own report with P95 4,634 to 4,649 (`docs/gpu-experiments/03-acceleration/08-results.md`); round 2: 9,575 median / 9,644 P95 with E2 and per-tile linears, 12,268 / 12,338 with the gang linears (`docs/gpu-experiments/02-validation/04-results.md`)
 - [ ] Memory traffic, achieved bandwidth, L2 hit rate — not measured: rocprofv3 aborts on the torch wheel's bundled runtime; 0.52 TB/s from the design's byte count and the measured time; the counters need a standalone binary (`docs/gpu-experiments/02-validation/06-lessons.md`, item 7)
-- [x] Occupancy + VGPR/LDS per task — from the offline compile: the worker's union 253 VGPRs and 32 AGPRs with the MFMA attention (234 in round 2), no spills, one workgroup per CU; the MFMA attention 140 VGPRs and 32 AGPRs standalone, the VALU one 124, `mla_merge_uv` 75 (`docs/gpu-experiments/03-acceleration/04-checklist.md`, O7; `../02-validation/01-preparation.md`, P6)
+- [x] Occupancy + VGPR/LDS per task — from the offline compile: round 4 (2026-09-18) the worker's union with every round-4 task 256 VGPRs, 171 AGPRs, 8 spills, one workgroup per CU; standalone the GEMV linear 248 VGPRs and 32 AGPRs, w13 248, the w2 form 248, the o_proj fold 228, the router 190, the merge 134 (`docs/gpu-experiments/04-kernels/06-checklist.md`, L1c); round 3: the union 253 VGPRs and 32 AGPRs with the MFMA attention (234 in round 2), no spills; the MFMA attention 140 VGPRs and 32 AGPRs standalone, the VALU one 124, `mla_merge_uv` 75 (`docs/gpu-experiments/03-acceleration/04-checklist.md`, O7; `../02-validation/01-preparation.md`, P6)
 - [x] TPOT + tokens/s — on the 1x MI300X, steady state on the runtime's event clock: round 3 4.57 to 4.60 ms per token (217 to 219 tokens/s) with the per-head prep, the MFMA attention, the batched router, merge and norm loads, the fusions, per-tile linears and E2, against the 4.5 ms production baseline; round 2: 12.3 ms with the gang linears, 9.6 ms with E2 and per-tile linears (104 tokens/s); the design band is 1.15 to 1.35 ms (`docs/gpu-experiments/03-acceleration/08-results.md`, `../02-validation/04-results.md`)
-- [x] Fleet-native ops vs remaining fallbacks — the stock gang and per-tile linears, norms, embed, argmax; ours: `mla_prep`, `mla_attend`, `mla_merge_uv`, `moe_router`, `copy` (`fleet/tasks/README.md`); no host fallback in the timed window
+- [x] Fleet-native ops vs remaining fallbacks — the stock gang and per-tile linears, norms, embed, argmax; ours: `mla_prep`, `mla_attend`, `mla_merge_uv`, `moe_router`, `copy`, and behind round 4's flags the GEMV linear (qkva, o_proj, the head), the w2 and w13 GEMV forms, the four-task router, the regular merge and the merge with o_proj folded in, the stream probe (`fleet/tasks/README.md`); layer 0's dense down and the elementwise ops stay stock; no host fallback in the timed window
 - [x] Build/run instructions, setup scripts, profiling commands — `env/setup.sh`, `env/session/` (the VM stages, the queue, the laptop driver), `docs/gpu-experiments/01-bringup/06-agent-guide.md`, `docs/gpu-experiments/02-validation/02-session-plan.md`
 - [x] Known failures + recommended next steps — `OPEN-PROBLEMS.md`; `docs/gpu-experiments/03-acceleration/09-lessons.md` (every approach with its verdict, the lessons, the next round ranked: the per-XCD completion hierarchy first); `../02-validation/06-lessons.md`; FP8 with arithmetic in `docs/acceleration/`
 - [x] Round 3, the acceleration toward the 4.5 ms production baseline (2026-09-17, `docs/gpu-experiments/03-acceleration/`, branch `gpu/round-3`): 9.58 to 4.57 to 4.60 ms per token on the event clock, ids equal (`08-results.md`); the session found the event table's names off by one, the prep task at 4 ms of the 8.9, and four latency-bound kernels (`07-session-log.md`). As prepared: the fused norms and silu (326 to 246 operators), the MFMA attention, the weight prefetch by side operators, the streaming loads, the probe; the per-worker timing, the shader-clock spin, the empty-task ladder, the fence knobs and the clock sampler to attribute the time; all as off-by-default flags, checked on the laptop, the VM session planned (`05-session-plan.md`) and rehearsed; the run and its numbers are the open box
+- [ ] Round 4, the kernels (prepared 2026-09-18, `docs/gpu-experiments/04-kernels/`, branch `local/round-4`): the ideas for a batch-1 GEMV linear (the CK tile keeps 32 KB per CU in flight, ours 128) and for the router and the merge, double-checked; seven kernels behind flags (`--gemv-linears` with `--linear-grid` and `--head-grid`, `--gemv-w13`, the w2 GEMV form as the fused-silu default with `-DMPK_W2_CK_TILE` as the fallback, `--router-tasks`, `--merge-tasks --merge-halves 2`, `--merge-oproj`, `--graph stream`), each with its suite rows, offline variant and registration; the bit-diff of two runs' boundaries; four compiler conventions found offline (no batch live across a prologue, clamp rather than guard, a heavy body as a call, a call's arguments made wave-uniform); the queue files, the stages, the plan with its thresholds against round 3's numbers and the rehearsal (`05` to `08`); the VM session is the open box
 
 ---
 

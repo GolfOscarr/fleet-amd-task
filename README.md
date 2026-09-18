@@ -69,7 +69,7 @@ XCDs ([`docs/design-doc/00-decisions.md`](docs/design-doc/00-decisions.md), D6).
 
 ## Status
 
-**Three GPU rounds are done.** Round 1 (2026-09-15) brought the stack up
+**Three GPU rounds are done and the fourth is prepared.** Round 1 (2026-09-15) brought the stack up
 on the MI300X; round 2 (2026-09-16) reached the required milestone and
 the end-to-end decode at 9.6 ms per token; round 3 (2026-09-17,
 `docs/gpu-experiments/03-acceleration/`, branch `gpu/round-3`) took the
@@ -81,17 +81,26 @@ batched, the attention as regular tasks, the three boundary fusions. The
 round also found that round 2's per-operator table named every gap after
 the wrong operator (`07-session-log.md`, finding 1); the remaining time
 is in the CK linears (2.7 ms), the boundaries (0.8 ms) and four small
-kernels (1.6 ms), `08-results.md`.
+kernels (1.6 ms), `08-results.md`. Round 4 (prepared 2026-09-18,
+`docs/gpu-experiments/04-kernels/`, branch `local/round-4`) goes after
+those three: a batch-1 GEMV linear of our own in place of the CK tile
+(128 KB per CU in flight where the tile kept 32), the w2 and w13 GEMV
+forms (w13 in one round per XCD), the router in four tasks, the merge
+as regular tasks and with o_proj folded in, and a stream probe for the
+machine's ceiling, every one behind an off-by-default flag, checked on
+the laptop by its suite rows and the offline compile (the worker union
+at 256 VGPRs, 171 AGPRs, 8 spills); the session plan and its rehearsal
+are written (`07`, `08`), the VM session waits for the go.
 
 | | |
 |---|---|
-| Documentation | 5 discovery sets (41 files) + the design set (15 files, 1 script) + the three GPU sets under `docs/gpu-experiments/` (the bring-up of 2026-09-15, the validation of 2026-09-16, the acceleration prepared on 2026-09-17: ideas, split, local preparation, checklist, session plan, rehearsal) |
-| Local harness | reference run and capture, comparison, weight packing, graph builder, four new kernels and their runtime glue, environment and measurement scripts (`harness/`, `fleet/`, `env/`) |
-| Offline gfx942 compile | the patched megakernel headers parse and our kernels compile and link, no spills; the cross-XCD fences lower as designed ([`env/offline_gfx942/`](env/offline_gfx942/README.md)) |
-| Next agent | how to reach the GPU and run on the VM: [`docs/gpu-experiments/01-bringup/06-agent-guide.md`](docs/gpu-experiments/01-bringup/06-agent-guide.md); round 2 in one page: [`docs/gpu-experiments/02-validation/07-summary.md`](docs/gpu-experiments/02-validation/07-summary.md), then its log, numbers and lessons in [`docs/gpu-experiments/02-validation/`](docs/gpu-experiments/02-validation/README.md) |
+| Documentation | 5 discovery sets (41 files) + the design set (15 files, 1 script) + the four GPU sets under `docs/gpu-experiments/` (the bring-up of 2026-09-15, the validation of 2026-09-16, the acceleration of 2026-09-17 with its log, results and lessons, the kernels prepared on 2026-09-18: the ideas for the GEMV linear and for the router and merge, the two splits, the local preparation, the checklist, the session plan, the rehearsal) |
+| Local harness | reference run and capture, comparison, weight packing, graph builder, round 3's kernels and round 4's seven (the GEMV linear, the w2 and w13 GEMV forms, the four-task router, the merge as regular tasks and with o_proj folded in, the stream probe) with their runtime glue, all behind off-by-default flags; environment, session and measurement scripts (`harness/`, `fleet/`, `env/`) |
+| Offline gfx942 compile | the patched megakernel headers parse and our kernels compile and link; the cross-XCD fences lower as designed; round 4's union at 256 VGPRs, 171 AGPRs and 8 spills, every call-form kernel's arguments made wave-uniform so no buffer load runs in a waterfall loop ([`env/offline_gfx942/`](env/offline_gfx942/README.md)) |
+| Next agent | round 4's session, row by row: [`docs/gpu-experiments/04-kernels/07-session-plan.md`](docs/gpu-experiments/04-kernels/07-session-plan.md); how to reach the GPU and run on the VM: [`docs/gpu-experiments/01-bringup/06-agent-guide.md`](docs/gpu-experiments/01-bringup/06-agent-guide.md); round 2 in one page: [`docs/gpu-experiments/02-validation/07-summary.md`](docs/gpu-experiments/02-validation/07-summary.md), then its log, numbers and lessons in [`docs/gpu-experiments/02-validation/`](docs/gpu-experiments/02-validation/README.md) |
 | Session image | pushed 2026-09-16 as `ghcr.io/golfoscarr/fleet-amd-task:20260916` (25 GB, private) by the `image` stage of round 2; the Dockerfile in [`env/docker/README.md`](env/docker/README.md); the runs of round 2 in [`docs/gpu-experiments/02-validation/03-session-log.md`](docs/gpu-experiments/02-validation/03-session-log.md) and their numbers in [`04-results.md`](docs/gpu-experiments/02-validation/04-results.md) |
 | Hardware record | the first hour on the MI300X: 62 checks, the placement offset, the bandwidth band confirmed, the latencies ([`env/hw/20260915/`](env/hw/20260915/summary.md), [`docs/gpu-experiments/01-bringup/`](docs/gpu-experiments/01-bringup/README.md)) |
-| Open problems | 5 major open (MAJ-7 measured in round 2: the megakernel's per-task overhead), 15 minor, 31 resolved ([`OPEN-PROBLEMS.md`](OPEN-PROBLEMS.md)) |
+| Open problems | 5 major open (MAJ-8: the runtime's per-task completion cost, which round 4's grid sweep sizes; MAJ-7 resolved in round 3 as a measurement defect), 17 minor, 33 resolved ([`OPEN-PROBLEMS.md`](OPEN-PROBLEMS.md)) |
 | Milestone | **M4 reached 2026-09-16**: the 27-layer graph with the head runs 32 iterations and the 32 ids equal the reference's; M2 (layer 1 validated end to end, all 16 boundaries, top-k exact) since 2026-09-15; the fault of round 1 named and fixed in the plan; 12.3 ms per token steady state with the gang linears, 9.6 ms with E2 and per-tile linears (the runtime's event clock; 15.0 and 10.3 ms as host means over 32 iterations) against a 1.15 to 1.35 ms design band ([`PROGRESS.md`](PROGRESS.md), [`docs/gpu-experiments/02-validation/04-results.md`](docs/gpu-experiments/02-validation/04-results.md)) |
 | Day-1 question | answered: Fleet builds and runs graphs on this machine (gate 1 PASS, [`env/check_day1.log`](env/check_day1.log)) |
 
@@ -102,7 +111,7 @@ kernels (1.6 ms), `08-results.md`.
 | Traffic per token | **4,705.9 MiB** — routed experts 55%, shared experts 18%, `lm_head` 8.5% |
 | Roofline | **931 µs** floor at 5.3 TB/s theoretical · **1.15–1.35 ms** at 3.66–4.3 TB/s achievable |
 | Rate | 1,074 tok/s floor · **742–871 tok/s** realistic |
-| Measured (round 2, 2026-09-16) | **9.6 ms per token, 104 tok/s** steady state with E2 and per-tile linears; 12.3 ms with the gang linears; the attention kernel 34 us standalone against 146 us in the graph ([`docs/gpu-experiments/02-validation/04-results.md`](docs/gpu-experiments/02-validation/04-results.md)) |
+| Measured (round 3, 2026-09-17) | **4.57 to 4.60 ms per token, 217 to 219 tok/s** on the runtime's event clock, ids equal ([`docs/gpu-experiments/03-acceleration/08-results.md`](docs/gpu-experiments/03-acceleration/08-results.md)); round 2: 9.6 ms with E2 and per-tile linears, 12.3 ms with the gang linears ([`02-validation/04-results.md`](docs/gpu-experiments/02-validation/04-results.md)) |
 | Layer-1 milestone | 159.6 MiB → 31.6 µs floor / 38.9–45.7 µs realistic |
 | Task graph | 12 ops / 68 tasks per MoE layer; 326 ops / 1,880 tasks per token; **3 kernel dispatches per 32-token generation** |
 | FP8 (stretch) | 2,571 MiB → 509 µs floor / 627–737 µs realistic — **1.83×** |
@@ -138,9 +147,11 @@ docs/
                      the rehearsal, the session log, the results (4.57 to
                      4.60 ms per token) and the lessons with the next round
                      ranked
-    04-kernels/      the fourth round (started 2026-09-17): the ideas for a
-                     batch-1 GEMV linear in place of the CK tile, then the
-                     router and the merge
+    04-kernels/      the fourth round (prepared 2026-09-18): the ideas for a
+                     batch-1 GEMV linear in place of the CK tile and for the
+                     router and the merge, the two splits, the local
+                     preparation and its checklist, the session plan and
+                     the rehearsal; the VM session pending
   paper/             the Fleet paper
 repos/
   fleet-chiplet-megakernel/   ROCm/fleet-chiplet-megakernel (submodule)
