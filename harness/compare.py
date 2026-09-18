@@ -75,13 +75,36 @@ def exact_scalar(a: torch.Tensor, b: torch.Tensor) -> tuple[bool, str]:
     return va == vb, f"fleet {va} ref {vb}"
 
 
-def compare_boundaries(ref: dict, fleet: dict, th: dict, floor: dict | None) -> list[dict]:
+def compare_boundaries(ref: dict, fleet: dict, th: dict, floor: dict | None, iters: int = 1,
+                       ref_later: dict | None = None) -> list[dict]:
+    """ref is the reference's step-0 file; a boundary the run dumped from a later iteration (F2 of
+    docs/gpu-experiments/05-final, common.boundary_iteration) is compared against ref_later, the
+    reference's file for that step, and reported NOT_COMPARABLE when there is none."""
     rows = []
+    # the layers the reference captured (0 and 1 on the real model): a boundary of another layer is
+    # dumped by a longer graph (the last writer of every workspace is its last layer) and is not a
+    # missing reference but an uncaptured one, reported and not counted (F2 of docs/gpu-experiments/05-final)
+    ref_layers = sorted({int(k.split(".")[0][1:]) for k in ref if re.match(r"^L\d+\.", k)})
     for key in sorted(fleet.keys(), key=sort_key):
         cls = common.boundary_class(key)
         if cls is None:
             continue                      # auxiliary tensors are not boundaries
         row = {"key": key, "boundary": common.boundary_id(key), "class": cls}
+        m_layer = re.match(r"^L(\d+)\.", key)
+        if m_layer and int(m_layer.group(1)) not in ref_layers:
+            row.update(result="NOT_CAPTURED",
+                       detail=f"the reference captures layers {', '.join(map(str, ref_layers))}")
+            rows.append(row)
+            continue
+        it = common.boundary_iteration(key, iters)
+        if it > 0:
+            row["iteration"] = it
+            if ref_later is None:
+                row.update(result="NOT_COMPARABLE",
+                           detail=f"dumped from iteration {it}; the reference has no ref_boundaries_step{it}")
+                rows.append(row)
+                continue
+            ref = ref_later
         if key not in ref:
             row.update(result="MISSING_REF")
             rows.append(row)
@@ -239,6 +262,12 @@ def fmt(x, nd=3):
 def write_report(path: Path, result: dict):
     lines = ["# Correctness report", ""]
     lines.append(f"Thresholds: {result['threshold_source']}.")
+    if result.get("iters", 1) > 1:
+        lines.append(f"The run made {result['iters']} iterations: the boundaries other than the cache rows and the "
+                     f"first token were dumped from iteration {result['iters'] - 1} and are "
+                     + (f"compared against `{result['later_reference']}`." if result.get("later_reference")
+                        else "not comparable against the reference's step 0 (NOT_COMPARABLE below); the output "
+                             "ids and the route log carry the verdict."))
     lines.append("")
     lines.append("| Key | Boundary | Class | max_abs_err | rel_err | cos_sim | floor | threshold | Result |")
     lines.append("|---|---|---|---|---|---|---|---|---|")
@@ -276,7 +305,10 @@ def write_report(path: Path, result: dict):
                      f"max rel_err {fmt(gc['max_rel_err'])}, {gc['note']}.")
     lines.append("")
     lines.append(f"Overall: **{result['overall']}** ({result['n_pass']} pass, {result['n_fail']} fail, "
-                 f"{result['n_missing']} missing).")
+                 f"{result['n_missing']} missing"
+                 + (f", {result['n_not_comparable']} not comparable" if result.get("n_not_comparable") else "")
+                 + (f", {result['n_not_captured']} of layers the reference did not capture"
+                    if result.get("n_not_captured") else "") + ").")
     path.write_text("\n".join(lines) + "\n")
 
 
@@ -288,18 +320,22 @@ def run(ref_dir: Path, fleet_dir: Path, calibration_path: Path | None, report: P
 
     ref = load_file(str(ref_dir / "ref_boundaries_step0.safetensors"))
     fleet = load_file(str(fleet_dir / "fleet_boundaries.safetensors"))
+    f_meta = fleet_dir / "fleet_run_meta.json"
+    run_meta = json.loads(f_meta.read_text()) if f_meta.exists() else {}
+    iters = int(run_meta.get("iters", 1) or 1)
+    later = ref_dir / f"ref_boundaries_step{iters - 1}.safetensors"       # F2: the right form's file
+    ref_later = load_file(str(later)) if iters > 1 and later.exists() else None
     calibration = None
     if calibration_path and calibration_path.exists():
         calibration = json.loads(calibration_path.read_text())
     th, source = thresholds(calibration)
     floor = calibration.get("floor") if calibration else None
 
-    result = {"threshold_source": source, "thresholds": th}
-    result["boundaries"] = compare_boundaries(ref, fleet, th, floor)
+    result = {"threshold_source": source, "thresholds": th, "iters": iters,
+              "later_reference": str(later.name) if ref_later is not None else None}
+    result["boundaries"] = compare_boundaries(ref, fleet, th, floor, iters, ref_later)
 
     f_ids = fleet_dir / "fleet_output_ids.json"
-    f_meta = fleet_dir / "fleet_run_meta.json"
-    run_meta = json.loads(f_meta.read_text()) if f_meta.exists() else {}
     if f_ids.exists() and run_meta.get("head", True) and not run_meta.get("stop_after"):
         result["output_ids"] = compare_ids(json.loads((ref_dir / "ref_output_ids.json").read_text()),
                                            json.loads(f_ids.read_text()))
@@ -330,7 +366,11 @@ def run(ref_dir: Path, fleet_dir: Path, calibration_path: Path | None, report: P
     result["n_pass"] = results.count("PASS") + results.count("PARTIAL")
     result["n_fail"] = results.count("FAIL")
     result["n_missing"] = results.count("MISSING_REF")
-    result["overall"] = "PASS" if result["n_fail"] == 0 and result["n_missing"] == 0 and results else "FAIL"
+    result["n_not_comparable"] = results.count("NOT_COMPARABLE")      # neither a pass nor a failure
+    result["n_not_captured"] = results.count("NOT_CAPTURED")
+    # not-comparable rows carry no verdict: a report of only those (nothing compared) is not a PASS
+    result["overall"] = ("PASS" if result["n_fail"] == 0 and result["n_missing"] == 0 and result["n_pass"] > 0
+                         else "FAIL")
 
     report.parent.mkdir(parents=True, exist_ok=True)
     write_report(report, result)

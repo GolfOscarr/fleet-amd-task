@@ -36,12 +36,13 @@ Status: done 2026-09-18. `register_route_hooks` adds a pre-hook on each gate's i
 
 ## F2. Iteration-aware boundaries
 
-- [ ] `compare.run`: the iteration from the meta; `NOT_COMPARABLE` rows when the reference has no file for it; the overall by the ids and the route log; the report's header names the iteration
-- [ ] `test_compare.py`: the it32 fixture, the it1 fixture
-- [ ] the right form, if the box allows: `ref_boundaries_step31.safetensors` from `run_reference.py`, the file choice in `compare.run`, the test
-- [ ] `harness/README.md`
+- [x] `compare.run`: the iteration from the meta; `NOT_COMPARABLE` rows when the reference has no file for it; the overall by the ids and the route log; the report's header names the iteration
+- [x] `test_compare.py`: the it32 fixture, the it1 fixture
+- [ ] the right form, if the box allows: `ref_boundaries_step31.safetensors` from `run_reference.py`, the file choice in `compare.run`, the test. Deferred: the file choice and its test are in (a `ref_boundaries_step{N}` beside the step-0 file is used when present); the reference's dump of a later step needs the generated token stream through `capture_step0`'s path, and the session's compare rows are one-iteration rows anyway (R1), the finals judged by the ids (R2)
+- [x] `harness/README.md`
+- [x] the layers the reference did not capture: `NOT_CAPTURED`, reported and not counted (found from the record while writing the tests)
 
-Status: open.
+Status: done 2026-09-18 (the right form deferred with its reason). `common.boundary_iteration(key, iters)` is the rule: the cache rows at the handover position and the first token come from iteration 0, every other boundary from `iters - 1` (`run_fleet.boundary_dump`'s note says the same). `compare.run` reads `iters` from `fleet_run_meta.json`, loads `ref_boundaries_step{iters - 1}.safetensors` when the reference has it, and `compare_boundaries` compares a later-iteration boundary against that file or reports it `NOT_COMPARABLE`; a boundary of a layer the reference never captured (a 27-layer run dumps layers 2 to 26's rows; the reference has 0 and 1) reads `NOT_CAPTURED`; neither counts as a failure, and a report with nothing compared is not a PASS. The report's header names the iteration and the file; the Overall line carries both counts. Checks: 247 tests (four new: the rule; the it32 fixture with the head not comparable, the cache rows and the token compared, the verdict the ids' and a failing id still FAIL, the same fixture at one iteration failing the head as before; the step-31 file present and used; the uncaptured layers reported and a missing key inside a captured layer still failing). On the round-4 record the it1 model rows would now read 7 PASS, 64 NOT_CAPTURED and the route log by the tie rule, and the it32 rows the head NOT_COMPARABLE; the record's safetensors are not pulled, so that replay is R1's.
 
 ## F7. The head's event count
 

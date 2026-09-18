@@ -129,6 +129,17 @@ against the record's `harness/ref/` reads the head as not comparable
 and the overall by the ids (the boundaries' safetensors are not in the
 record, so the replay is on the fixture and on the VM in R1).
 
+Found while writing the tests, from the record: a 27-layer run's dump
+also carries the cache rows of layers 2 to 25 and layer 26's sixteen
+boundaries (the last writer of every workspace is the last layer), and
+the reference captures layers 0 and 1 only, so every model compare of
+rounds 3 and 4 had 64 `MISSING_REF` rows and could never read PASS,
+whatever the route log did. Those rows are `NOT_CAPTURED` now (the
+reference's layers named in the detail), reported and not counted; a key
+absent inside a captured layer stays `MISSING_REF` and fails. The rule is
+per key: `common.boundary_iteration(key, iters)`, the cache rows and the
+first token at iteration 0, everything else at `iters - 1`.
+
 Time box: 2 hours (4 with the right form). Feeds R1, R2.
 
 ### F3. The `--final` preset (D1)

@@ -268,6 +268,94 @@ def test_round4_finals_route_mismatches_are_single_swaps_and_cascades():
     assert total >= 300 and singles >= 280, (total, singles)
 
 
+# ---- F2 of docs/gpu-experiments/05-final: iteration-aware boundaries ------------------------------
+
+def test_boundary_iteration_rule():
+    assert common.boundary_iteration("head.B15.logits", 1) == 0
+    assert common.boundary_iteration("head.B15.logits", 32) == 31
+    assert common.boundary_iteration("L1.B2.q", 29) == 28
+    for key in ("L0.B3.c_kv", "L1.B3.k_pe", "head.B16.token"):     # written at step 0 and never again
+        assert common.boundary_iteration(key, 32) == 0
+
+
+def test_later_iteration_boundaries_are_not_comparable_and_the_ids_decide(dirs):
+    """The it32 rows of the round-4 record: head.B15.logits dumped from iteration 31 failed against
+    step 0 by construction; now it is NOT_COMPARABLE, the cache rows and the token still compare,
+    and the verdict is the ids' and the route log's."""
+    ref_dir, fleet_dir, ref, ids, route, hidden = dirs
+    fleet = dict(ref)
+    fleet["head.B15.logits"] = ref["head.B15.logits"] * 3.0             # a different token's logits
+    write_fleet(fleet_dir, fleet, ids, route)
+    (fleet_dir / "fleet_run_meta.json").write_text(json.dumps({"iters": 32, "head": True}))
+    r = go(ref_dir, fleet_dir)
+    rows = by_key(r)
+    assert r["iters"] == 32 and r["later_reference"] is None
+    assert rows["head.B15.logits"]["result"] == "NOT_COMPARABLE" and rows["head.B15.logits"]["iteration"] == 31
+    assert "iteration 31" in rows["head.B15.logits"]["detail"]
+    assert rows["L1.B2.q"]["result"] == "NOT_COMPARABLE"                 # every non-invariant boundary
+    assert rows["L0.B3.c_kv"]["result"] == "PASS" and rows["head.B16.token"]["result"] == "PASS"
+    assert r["overall"] == "PASS" and r["n_fail"] == 0 and r["n_not_comparable"] > 0
+    assert r["output_ids"]["result"] == "PASS" and r["route_log"]["result"] == "PASS"
+    report = (fleet_dir / "correctness_report.md").read_text()
+    assert "dumped from iteration 31" in report and "not comparable" in report
+    # the same run at one iteration: the head compares and fails as before
+    (fleet_dir / "fleet_run_meta.json").write_text(json.dumps({"iters": 1, "head": True}))
+    r = go(ref_dir, fleet_dir)
+    assert by_key(r)["head.B15.logits"]["result"] == "FAIL" and r["overall"] == "FAIL"
+    # a failing id with every boundary not comparable is still a FAIL
+    bad_ids = list(ids); bad_ids[3] = 999
+    write_fleet(fleet_dir, fleet, bad_ids, route)
+    (fleet_dir / "fleet_run_meta.json").write_text(json.dumps({"iters": 32, "head": True}))
+    r = go(ref_dir, fleet_dir)
+    assert r["overall"] == "FAIL" and r["output_ids"]["result"] == "FAIL"
+
+
+def test_boundaries_of_layers_the_reference_did_not_capture_are_reported_not_failed(dirs):
+    """A 27-layer run dumps the cache rows of layers 2 to 25 and layer 26's boundaries (the last
+    writers); the reference has layers 0 and 1: NOT_CAPTURED, not MISSING_REF (the round-4 record's
+    64 missing rows). A key absent inside a captured layer is still a missing reference."""
+    ref_dir, fleet_dir, ref, ids, route, hidden = dirs
+    fleet = dict(ref)
+    fleet["L5.B3.c_kv"] = ref["L1.B3.c_kv"].clone()
+    fleet["L26.B2.q"] = ref["L1.B2.q"].clone()
+    write_fleet(fleet_dir, fleet, ids, route)
+    r = go(ref_dir, fleet_dir)
+    rows = by_key(r)
+    assert rows["L5.B3.c_kv"]["result"] == "NOT_CAPTURED" and rows["L26.B2.q"]["result"] == "NOT_CAPTURED"
+    assert "layers 0, 1" in rows["L5.B3.c_kv"]["detail"]
+    assert r["overall"] == "PASS" and r["n_missing"] == 0 and r["n_not_captured"] == 2
+    assert "2 of layers the reference did not capture" in (fleet_dir / "correctness_report.md").read_text()
+    fleet["L1.B99.made_up"] = ref["L1.B2.q"].clone()                  # not a boundary key: ignored
+    fleet["L1.B4.q_pe"] = ref["L1.B4.q_pe"].clone()
+    del fleet["L5.B3.c_kv"]
+    write_fleet(fleet_dir, fleet, ids, route)
+    ref_short = {k: v for k, v in ref.items() if k != "L1.B4.q_pe"}
+    save_file(ref_short, str(ref_dir / "ref_boundaries_step0.safetensors"))
+    r = go(ref_dir, fleet_dir)
+    assert by_key(r)["L1.B4.q_pe"]["result"] == "MISSING_REF" and r["overall"] == "FAIL" and r["n_missing"] == 1
+
+
+def test_later_iteration_boundaries_compare_against_the_reference_step_file(dirs):
+    """The right form: ref_boundaries_step31.safetensors present, the head compares against it."""
+    ref_dir, fleet_dir, ref, ids, route, hidden = dirs
+    later = dict(ref)
+    later["head.B15.logits"] = ref["head.B15.logits"] * 3.0
+    save_file(later, str(ref_dir / "ref_boundaries_step31.safetensors"))
+    fleet = dict(ref)
+    fleet["head.B15.logits"] = later["head.B15.logits"].clone()
+    write_fleet(fleet_dir, fleet, ids, route)
+    (fleet_dir / "fleet_run_meta.json").write_text(json.dumps({"iters": 32, "head": True}))
+    r = go(ref_dir, fleet_dir)
+    rows = by_key(r)
+    assert r["later_reference"] == "ref_boundaries_step31.safetensors"
+    assert rows["head.B15.logits"]["result"] == "PASS" and rows["head.B15.logits"]["iteration"] == 31
+    assert rows["L0.B3.c_kv"]["result"] == "PASS" and r["overall"] == "PASS" and r["n_not_comparable"] == 0
+    fleet["head.B15.logits"] = ref["head.B15.logits"].clone()          # step 0's logits at iteration 31: FAIL
+    write_fleet(fleet_dir, fleet, ids, route)
+    r = go(ref_dir, fleet_dir)
+    assert by_key(r)["head.B15.logits"]["result"] == "FAIL" and "step31" in (fleet_dir / "correctness_report.md").read_text()
+
+
 def test_missing_and_shape_mismatch(dirs):
     ref_dir, fleet_dir, ref, ids, route, hidden = dirs
     b = dict(ref)

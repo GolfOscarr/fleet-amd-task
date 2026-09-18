@@ -77,7 +77,9 @@ def boundary_dump(plan, host, tokens, n_prompt, dims, iters=1):
     w = last_writers(calls)
     b, notes = {}, []
     if iters != 1:
-        notes.append(f"boundaries are from iteration {iters - 1}, not decode step 0")
+        # F2 of docs/gpu-experiments/05-final: common.boundary_iteration is the rule compare.py applies
+        notes.append(f"boundaries other than {', '.join(common.STEP_INVARIANT_BOUNDARIES)} are from iteration "
+                     f"{iters - 1}, not decode step 0")
     h = host
 
     def layer_of(label):
