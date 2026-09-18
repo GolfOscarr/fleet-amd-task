@@ -57,6 +57,7 @@ def test_side_tasks_after_a_chained_host_share_its_event_and_trigger_the_end():
     problems, s = C.check_side_tasks(tg)
     assert problems == [], problems
     assert s["side_tasks"] == 8 and s["end_num_triggers"] == 2 + 8
+    assert s["task_types"] == {"100": 1, "101": 1, "102": 4, "193": 3, "103": 2, "194": 5}   # the counts per type, in type order
     # the side tasks after op 102 carry op 102's dependent event, those after 103 carry 103's
     tasks = tg["all_tasks"]
     assert tasks[6]["dependent_event"] == tasks[2]["dependent_event"] != INVALID

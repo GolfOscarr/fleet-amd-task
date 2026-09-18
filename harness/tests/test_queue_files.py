@@ -59,8 +59,8 @@ def test_knob_rows_use_the_equals_form():
 
 def test_round4_rows_build_their_plans_and_obey_the_rules():
     """Every model row of the round-4 files builds its plan (the flag asserts fire here, not on the VM),
-    carries --nt-streams (L1c: the round-4 kernels' load policy), never pairs a fence knob with a counter
-    form, and never probes the o_proj label under the fold; the stream rows read whole 4 KB rows."""
+    never pairs a fence knob with a counter form, and never probes the o_proj label under the fold; the
+    stream rows read whole 4 KB rows. (The load policy is not asserted: G1.3 and the stream rows A/B it.)"""
     sys.path.insert(0, str(ROOT))
     from fleet import build_graph as B
     p = run_fleet.build_parser()
@@ -73,7 +73,6 @@ def test_round4_rows_build_their_plans_and_obey_the_rules():
             if a.graph == "stream":
                 assert a.kb % 4 == 0 and a.ops >= 1 and a.tasks >= 1, (q.name, toks)
                 continue
-            assert a.nt_streams or not (a.gemv_linears or a.gemv_w13 or a.router_tasks or a.merge_oproj), (q.name, toks)
             key = (a.layers, a.head, a.gemv_linears, a.linear_grid, a.head_grid, a.gemv_w13, a.merge_tasks,
                    a.merge_halves, a.router_tasks, a.merge_oproj, a.fuse_norm1, a.fuse_norm2, a.fuse_silu,
                    a.tile_linears, a.attend_tasks, a.probe_before)
