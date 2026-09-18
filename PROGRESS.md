@@ -3,17 +3,25 @@
 Fleet-style batch-1 decode for DeepSeek-Coder-V2-Lite-Base on one AMD MI300X.
 Time limit: 5 days. Target: gfx942, BF16, 1024-token prompt, 32 greedy tokens.
 
-Last updated: 2026-09-18 · branch `local/round-4` (round 4 prepared on the laptop: the GEMV linear, the router and the merge as kernels of our own, the session plan; `docs/gpu-experiments/04-kernels/`); round 3 was `gpu/round-3` (2026-09-17: 4.57 to 4.60 ms per token; `docs/gpu-experiments/03-acceleration/`); round 2 was `gpu/round-2` (2026-09-16: M4, the fault's cause, the timings; `docs/gpu-experiments/02-validation/`); round 1 was `local/gpu-bringup` (2026-09-15: hardware record, gate 1, M1 to M3; `docs/gpu-experiments/01-bringup/`)
+Last updated: 2026-09-18 · branch `gpu/round-4` (round 4 run on the MI300X: 4.26 to 4.34 ms per token, below the 4.5 ms target; `docs/gpu-experiments/04-kernels/09-session-log.md`, `10-results.md`; prepared the same day on `local/round-4`, PR #10); round 3 was `gpu/round-3` (2026-09-17: 4.57 to 4.60 ms per token; `docs/gpu-experiments/03-acceleration/`); round 2 was `gpu/round-2` (2026-09-16: M4, the fault's cause, the timings; `docs/gpu-experiments/02-validation/`); round 1 was `local/gpu-bringup` (2026-09-15: hardware record, gate 1, M1 to M3; `docs/gpu-experiments/01-bringup/`)
 
-**Where we are (2026-09-18):** round 4 is prepared and waits for its VM
-session (`docs/gpu-experiments/04-kernels/`, branch `local/round-4`):
-the CK linears, the router and the merge replaced by seven kernels of
-our own behind off-by-default flags (the batch-1 GEMV linear, the w2 and
-w13 GEMV forms, the four-task router, the merge as regular tasks and with
-o_proj folded in, the stream probe), each with its suite rows, plan flag
-and offline variant (237 tests, 15 syntax checks, every variant compiled,
-the union at 256 VGPRs and 8 spills), the session plan with its rules and
-the rehearsal (`07`, `08`), the user's four decisions recorded. Round 3
+**Where we are (2026-09-18):** round 4 ran its VM session
+(`docs/gpu-experiments/04-kernels/09-session-log.md`, `10-results.md`;
+branch `gpu/round-4`, 167 minutes, $8.22): the batch-1 GEMV linear for
+qkva, o_proj and the head (`--gemv-linears --linear-grid 48`), the deeper
+router (the header) and the merge as regular tasks at two halves per head
+(`--merge-tasks --merge-halves 2`) take the token from round 3's 4,571 to
+4,600 us to **4,262 to 4,341 us on the event clock** (`FWD_PASS` 4,267 to
+4,310), ids equal on every final, 4 to 5% below vLLM's 4.5 ms. The
+header's w2 GEMV form, w13 in one round, the four-task router and the
+o_proj fold did not make their thresholds (round 3's CK w2 file is the
+define's path again); the stream probe puts the megakernel's task-shaped
+reads at 2.25 TB/s, the ceiling w13 sits on and the next round's lever
+(bytes in flight by direct-to-LDS loads), then the boundary fusions
+without a serial tail and the 192 us iteration start. Two hangs
+(`--worker-timing` on the round-4 header; the inline CK w2 path) and a
+fault (the half merge without the GEMV linears on 27 layers) are recorded
+in `OPEN-PROBLEMS.md`. Round 3
 (2026-09-17, `docs/gpu-experiments/03-acceleration/`) took the decode
 from 9.58 to 4.57 to 4.60 ms per token, ids equal, and found the event
 table off by one (`08-results.md`, `09-lessons.md`). Earlier: M0, M1, M2 and M3 reached on the MI300X
@@ -248,7 +256,7 @@ documented as blocked. **Decide end of day 1.**
 - [x] Build/run instructions, setup scripts, profiling commands — `env/setup.sh`, `env/session/` (the VM stages, the queue, the laptop driver), `docs/gpu-experiments/01-bringup/06-agent-guide.md`, `docs/gpu-experiments/02-validation/02-session-plan.md`
 - [x] Known failures + recommended next steps — `OPEN-PROBLEMS.md`; `docs/gpu-experiments/03-acceleration/09-lessons.md` (every approach with its verdict, the lessons, the next round ranked: the per-XCD completion hierarchy first); `../02-validation/06-lessons.md`; FP8 with arithmetic in `docs/acceleration/`
 - [x] Round 3, the acceleration toward the 4.5 ms production baseline (2026-09-17, `docs/gpu-experiments/03-acceleration/`, branch `gpu/round-3`): 9.58 to 4.57 to 4.60 ms per token on the event clock, ids equal (`08-results.md`); the session found the event table's names off by one, the prep task at 4 ms of the 8.9, and four latency-bound kernels (`07-session-log.md`). As prepared: the fused norms and silu (326 to 246 operators), the MFMA attention, the weight prefetch by side operators, the streaming loads, the probe; the per-worker timing, the shader-clock spin, the empty-task ladder, the fence knobs and the clock sampler to attribute the time; all as off-by-default flags, checked on the laptop, the VM session planned (`05-session-plan.md`) and rehearsed; the run and its numbers are the open box
-- [ ] Round 4, the kernels (prepared 2026-09-18, `docs/gpu-experiments/04-kernels/`, branch `local/round-4`): the ideas for a batch-1 GEMV linear (the CK tile keeps 32 KB per CU in flight, ours 128) and for the router and the merge, double-checked; seven kernels behind flags (`--gemv-linears` with `--linear-grid` and `--head-grid`, `--gemv-w13`, the w2 GEMV form as the fused-silu default with `-DMPK_W2_CK_TILE` as the fallback, `--router-tasks`, `--merge-tasks --merge-halves 2`, `--merge-oproj`, `--graph stream`), each with its suite rows, offline variant and registration; the bit-diff of two runs' boundaries; four compiler conventions found offline (no batch live across a prologue, clamp rather than guard, a heavy body as a call, a call's arguments made wave-uniform); the queue files, the stages, the plan with its thresholds against round 3's numbers and the rehearsal (`05` to `08`); the VM session is the open box
+- [x] Round 4, the kernels (prepared 2026-09-18 on `local/round-4`, run the same day on `gpu/round-4`; `docs/gpu-experiments/04-kernels/`): **4,262 to 4,341 us per token, ids equal (`10-results.md`)**; the GEMV linears (831 to 638 us per token over the per-tile linears), the deeper router (516 to 424), the half merge (489 to 406); the w2 GEMV form, w13 in one round, the four-task router and the o_proj fold measured and off; the stream ceiling 2.25 TB/s; the preparation: the ideas for a batch-1 GEMV linear (the CK tile keeps 32 KB per CU in flight, ours 128) and for the router and the merge, double-checked; seven kernels behind flags (`--gemv-linears` with `--linear-grid` and `--head-grid`, `--gemv-w13`, the w2 GEMV form as the fused-silu default with `-DMPK_W2_CK_TILE` as the fallback, `--router-tasks`, `--merge-tasks --merge-halves 2`, `--merge-oproj`, `--graph stream`), each with its suite rows, offline variant and registration; the bit-diff of two runs' boundaries; four compiler conventions found offline (no batch live across a prologue, clamp rather than guard, a heavy body as a call, a call's arguments made wave-uniform); the queue files, the stages, the plan with its thresholds against round 3's numbers and the rehearsal (`05` to `08`); the session log and results in `09` and `10`
 
 ---
 
