@@ -126,6 +126,8 @@ Status: done 2026-09-18. The gate on the final tree (head bb59318 plus this comm
 ## Before the VM
 
 - [x] the user's decision on the balance ($4.69: the $3 rule waived for the last session, or credits added): taken 2026-09-18, the whole balance and no credits; `05-session-plan.md` revised with the hard stop (minutes 70, 78, 82), the optional blocks split by their gates (`queue-h6` batch 4, `queue-h8` the 8-event set, the plain suites, `queue-h9` A's set again)
-- [ ] the user's go for the VM
-- [ ] `FULL=1 L push`, `L start setup`, `V preflight`, `V checks`, `V reference` (F1's weights), `V kernels`
-- [ ] the first report at R1's DECIDE row (the compares green), before the finals
+- [x] the user's go for the VM: 2026-09-18 11:08 UTC ("Poll VM proceed right away"); the 13-core host provisioned by hand at 11:09
+- [x] `FULL=1 L push`, `L start setup`, `V preflight`, `V checks`, `V reference` (F1's weights), `V kernels`: all PASS by minute 21 (`08-session-log.md`)
+- [x] the first report at R1's DECIDE row (the compares green), before the finals: minute 25, zero disagreements on both model rows, 19 boundaries PASS at 2 layers
+
+Status: the session ran 2026-09-18 on `gpu/round-5`, 77 minutes, $3.74; the results in `07-final-numbers.md`, the log in `08-session-log.md`.
