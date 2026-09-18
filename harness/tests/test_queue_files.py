@@ -29,7 +29,7 @@ def test_round3_queue_files_exist():
 def test_round4_queue_files_exist():
     names = {p.name for p in ROUND4}
     assert {"queue-f2.txt", "queue-f3.txt", "queue-f4.txt", "queue-f5.txt", "queue-f6.txt",
-            "queue-g1.txt", "queue-g2.txt", "queue-f7.txt", "queue-f8.txt", "queue-f9.txt"} == names
+            "queue-g1.txt", "queue-g2.txt", "queue-f7.txt", "queue-f8.txt", "queue-f9.txt", "queue-g3.txt"} == names
 
 
 def test_every_row_parses_and_names_a_run():
