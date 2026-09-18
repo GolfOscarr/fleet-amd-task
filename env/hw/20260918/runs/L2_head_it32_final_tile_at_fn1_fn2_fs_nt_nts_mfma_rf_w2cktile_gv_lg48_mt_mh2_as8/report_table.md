@@ -1,0 +1,50 @@
+# Measurement report
+
+| Quantity | Predicted | Measured |
+|---|---|---|
+| bytes per iteration (read, MiB) | 4709.9 weights + cache; about 4772.0 with activations | - |
+| time per iteration, median (us) | 1148.5-1349.4 + 326 t_b + T_serial | - |
+| time per iteration, P95 (us) |  | - |
+| time per iteration from event timing, median (us) |  | 623.6 |
+| time per iteration from host wall clock (us) |  | 1212.9 |
+| time per iteration from the kernel trace (us) |  | - |
+| achieved read bandwidth (TB/s) | 3.66-4.3 over T_bw | - |
+| launches per generation | 3 | - |
+| L2 hit rate | 16-17% (Fleet's batch-1 figure) | - |
+| tokens per second |  | - |
+| GFX clock from amd-smi during the run, median / max (MHz) | 2100 max (D2 of round 1) | 2107 / 2108 over 36 samples |
+| memory clock from amd-smi, median (MHz) |  | 900 |
+
+## Per-operator time (event gaps, mean over iterations after the first)
+
+| Event | Operator | mean us | min us | max us | n |
+|---|---|---|---|---|---|
+| 1 | iteration_start | 190.22 | 183.96 | 212.96 | 30 |
+| 2 | embed_layer | 13.85 | 12.68 | 15.12 | 31 |
+| 3 | linear_gemv_layer | 15.89 | 14.76 | 17.09 | 31 |
+| 4 | mla_prep_layer | 10.02 | 9.54 | 10.70 | 31 |
+| 5 | mla_attend_layer | 12.18 | 11.32 | 13.08 | 31 |
+| 6 | mla_merge_uv_tile_layer | 15.04 | 14.56 | 15.64 | 31 |
+| 7 | linear_gemv_layer | 7.76 | 7.35 | 8.33 | 31 |
+| 8 | rmsnorm_layer | 4.00 | 3.24 | 4.97 | 31 |
+| 9 | gang_linear_silu_layer | 32.70 | 31.18 | 33.82 | 31 |
+| 10 | linear_with_residual_layer | 50.44 | 49.14 | 51.68 | 31 |
+| 11 | linear_gemv_layer | 13.62 | 13.04 | 14.18 | 31 |
+| 12 | mla_prep_layer | 9.30 | 8.52 | 10.66 | 31 |
+| 13 | mla_attend_layer | 12.28 | 11.74 | 13.16 | 31 |
+| 14 | mla_merge_uv_tile_layer | 15.06 | 14.66 | 15.43 | 31 |
+| 15 | linear_gemv_layer | 7.01 | 6.67 | 7.81 | 31 |
+| 16 | moe_router_layer | 14.69 | 13.97 | 17.23 | 31 |
+| 17 | gang_moe_w13_linear_layer | 43.07 | 40.91 | 44.55 | 31 |
+| 18 | gang_moe_w2_silu_linear_layer | 22.48 | 21.36 | 25.32 | 31 |
+| 19 | moe_mul_sum_add_layer | 5.98 | 4.06 | 7.04 | 31 |
+| 20 | linear_gemv_layer | 12.06 | 0.00 | 74.70 | 31 |
+| 21 | argmax_partial_layer | 7.30 | 0.00 | 73.88 | 31 |
+| 22 | argmax_reduce_layer | 16.87 | 0.00 | 74.06 | 31 |
+| 23 | event_23 | 16.54 | 0.00 | 73.72 | 31 |
+| 24 | event_24 | 21.38 | 0.00 | 74.54 | 31 |
+| 25 | event_25 | 28.73 | 0.48 | 32.84 | 31 |
+| 26 | event_26 | 3.84 | 0.00 | 33.32 | 31 |
+| 27 | event_27 | 1.34 | 0.00 | 4.08 | 31 |
+| 28 | event_28 | 17.84 | 16.92 | 18.45 | 31 |
+| 29 | event_29 | 5.18 | 5.03 | 5.31 | 31 |

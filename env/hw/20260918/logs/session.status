@@ -16,3 +16,16 @@
 2026-09-18T11:33:41Z PASS queue 186s
 2026-09-18T11:34:10Z START queue env/session/queue-h2.txt
 2026-09-18T11:43:28Z PASS queue 558s
+2026-09-18T11:44:53Z START queue env/session/queue-h5.txt
+2026-09-18T11:48:17Z PASS queue 204s
+2026-09-18T11:48:59Z START queue env/session/queue-h4.txt
+2026-09-18T11:51:47Z PASS queue 168s
+2026-09-18T11:52:42Z START queue env/session/queue-h7.txt
+2026-09-18T11:56:09Z PASS queue 207s
+2026-09-18T11:57:08Z START queue env/session/queue-h3.txt
+2026-09-18T12:02:07Z FAIL queue 299s: see /home/hotaisle/metalOps/env/logs/queue.out
+2026-09-18T12:02:50Z START ktime nt
+2026-09-18T12:02:58Z PASS ktime 8s
+2026-09-18T12:03:20Z START queue env/session/queue-h6.txt
+2026-09-18T12:07:58Z PASS queue 278s
+2026-09-18T12:08:29Z START kernels 

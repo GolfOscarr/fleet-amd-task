@@ -1,0 +1,615 @@
+{
+  "threshold_source": "4 x calibrated floor",
+  "thresholds": {
+    "norm": 0.1811951991236733,
+    "rope": 0.021174033604749967,
+    "gemv": 0.012940280246906176,
+    "scores": 0.01042574426733761,
+    "attention": 0.04004078653205929,
+    "router": 0.014370772811406368,
+    "expert": 0.04396453772147746,
+    "layer": 0.017334900438894192,
+    "logits": 0.16405109773780513,
+    "exact": 0.0
+  },
+  "iters": 1,
+  "later_reference": null,
+  "boundaries": [
+    {
+      "key": "L0.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "max_abs_err": 0.0,
+      "rel_err": 0.0,
+      "cos_sim": 1.0,
+      "n": 512,
+      "threshold": 0.1811951991236733,
+      "floor": 0.045298799780918324,
+      "result": "PASS"
+    },
+    {
+      "key": "L0.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "max_abs_err": 0.0,
+      "rel_err": 0.0,
+      "cos_sim": 1.0000000000000002,
+      "n": 64,
+      "threshold": 0.021174033604749967,
+      "floor": 0.005293508401187492,
+      "result": "PASS"
+    },
+    {
+      "key": "L1.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "max_abs_err": 0.00396728515625,
+      "rel_err": 0.006171794953931687,
+      "cos_sim": 0.9999809739163942,
+      "n": 512,
+      "threshold": 0.1811951991236733,
+      "floor": 0.045298799780918324,
+      "result": "PASS"
+    },
+    {
+      "key": "L1.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "max_abs_err": 0.125,
+      "rel_err": 0.005516858278520742,
+      "cos_sim": 0.9999948211982141,
+      "n": 64,
+      "threshold": 0.021174033604749967,
+      "floor": 0.005293508401187492,
+      "result": "PASS"
+    },
+    {
+      "key": "L2.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L2.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L3.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L3.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L4.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L4.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L5.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L5.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L6.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L6.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L7.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L7.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L8.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L8.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L9.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L9.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L10.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L10.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L11.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L11.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L12.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L12.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L13.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L13.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L14.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L14.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L15.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L15.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L16.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L16.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L17.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L17.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L18.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L18.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L19.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L19.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L20.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L20.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L21.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L21.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L22.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L22.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L23.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L23.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L24.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L24.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L25.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L25.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L26.B2.q",
+      "boundary": "B2",
+      "class": "gemv",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L26.B3.c_kv",
+      "boundary": "B3",
+      "class": "norm",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L26.B3.k_pe",
+      "boundary": "B3",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L26.B4.q_pe",
+      "boundary": "B4",
+      "class": "rope",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L26.B6.attn",
+      "boundary": "B6",
+      "class": "attention",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L26.B8.router_logits",
+      "boundary": "B8",
+      "class": "router",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L26.B9.topk_idx",
+      "boundary": "B9",
+      "class": "exact",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L26.B10.topk_w",
+      "boundary": "B10",
+      "class": "router",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L26.B11.expert_10",
+      "boundary": "B11",
+      "class": "expert",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L26.B11.expert_14",
+      "boundary": "B11",
+      "class": "expert",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L26.B11.expert_25",
+      "boundary": "B11",
+      "class": "expert",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L26.B11.expert_40",
+      "boundary": "B11",
+      "class": "expert",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L26.B11.expert_43",
+      "boundary": "B11",
+      "class": "expert",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L26.B11.expert_58",
+      "boundary": "B11",
+      "class": "expert",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L26.B12.shared",
+      "boundary": "B12",
+      "class": "expert",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "L26.B13.layer_out",
+      "boundary": "B13",
+      "class": "layer",
+      "result": "NOT_CAPTURED",
+      "detail": "the reference captures layers 0, 1"
+    },
+    {
+      "key": "head.B15.logits",
+      "boundary": "B15",
+      "class": "logits",
+      "max_abs_err": 0.3125,
+      "rel_err": 0.013094494940720057,
+      "cos_sim": 0.999915643407546,
+      "n": 102400,
+      "threshold": 0.16405109773780513,
+      "floor": 0.04101277443445128,
+      "result": "PASS"
+    },
+    {
+      "key": "head.B16.token",
+      "boundary": "B16",
+      "class": "exact",
+      "result": "PASS",
+      "detail": "fleet 25 ref 25"
+    }
+  ],
+  "output_ids": {
+    "n_ref": 32,
+    "n_fleet": 1,
+    "compared": 1,
+    "matched_prefix": 1,
+    "first_divergence": null,
+    "all_match": false,
+    "result": "PARTIAL"
+  },
+  "route_log": {
+    "steps_compared": 1,
+    "rule": "tie",
+    "tol_rel": 0.014370772811406368,
+    "mismatches": [
+      {
+        "step": 0,
+        "moe_layer_index": 4,
+        "ref": [
+          4,
+          19,
+          30,
+          34,
+          46,
+          49
+        ],
+        "fleet": [
+          2,
+          4,
+          19,
+          30,
+          34,
+          46
+        ],
+        "left": 49,
+        "came": 2,
+        "w_left": 0.039638,
+        "w_came": 0.0396056,
+        "gap": 3.240000000000187e-05,
+        "tol": 0.0005696286926985256,
+        "class": "tie"
+      }
+    ],
+    "ties": [
+      {
+        "step": 0,
+        "moe_layer_index": 4,
+        "ref": [
+          4,
+          19,
+          30,
+          34,
+          46,
+          49
+        ],
+        "fleet": [
+          2,
+          4,
+          19,
+          30,
+          34,
+          46
+        ],
+        "left": 49,
+        "came": 2,
+        "w_left": 0.039638,
+        "w_came": 0.0396056,
+        "gap": 3.240000000000187e-05,
+        "tol": 0.0005696286926985256,
+        "class": "tie"
+      }
+    ],
+    "cascades": [],
+    "disagreements": [],
+    "result": "PASS"
+  },
+  "n_pass": 8,
+  "n_fail": 0,
+  "n_missing": 0,
+  "n_not_comparable": 0,
+  "n_not_captured": 64,
+  "overall": "PASS"
+}
