@@ -1,0 +1,43 @@
+{
+  "graph": "stream",
+  "ops": 10,
+  "tasks_per_op": 37,
+  "spin": 0,
+  "kb": 304,
+  "gang": true,
+  "iters": 32,
+  "s_max": 1056,
+  "n_prompt": 1024,
+  "worker_timing": false,
+  "plan_ops": 10,
+  "plan_tasks": 80,
+  "env": {
+    "MPK_EVENT_TIMING": "1",
+    "MPK_TIMING": null,
+    "USE_GANG": "1",
+    "AMDGPU_TARGETS": "gfx942",
+    "MPK_EXTRA_HIPCC_FLAGS": "-DMLA_NT_STREAMS -DMPK_W2_CK_TILE"
+  },
+  "align_alloc": 0,
+  "addresses": {
+    "stream_dummy_a": 136908470498304,
+    "stream_dummy_b": 136908470503424,
+    "stream_w_0": 136873427075072,
+    "stream_w_1": 136873332703232,
+    "stream_w_2": 136873238331392,
+    "stream_w_3": 136873143959552,
+    "stream_w_4": 136873049587712,
+    "stream_w_5": 136872955215872,
+    "stream_w_6": 136872860844032,
+    "stream_w_7": 136872766472192,
+    "stream_w_8": 136872672100352,
+    "stream_w_9": 136872577728512
+  },
+  "completed": true,
+  "timings_s": {
+    "mpk_wall_s": 0.03895854949951172,
+    "iters": 32,
+    "pack_s": 0.0,
+    "build_s": 26.921086311340332
+  }
+}

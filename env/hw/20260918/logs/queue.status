@@ -25,3 +25,48 @@
 2026-09-18T05:41:36Z L2_it1_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_w2cktile_gv_mo PASS rc=0 mpk=1 fault=0 fwd=0 wall=43s compare=PASS
 2026-09-18T05:42:19Z L2_it32_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_w2cktile_gv_mo PASS rc=0 mpk=1 fault=0 fwd=28 wall=43s table=PASS
 2026-09-18T05:42:19Z DONE env/session/queue-g2.txt
+2026-09-18T05:50:16Z S10x37_304kb_gang_it32_nts_rf_w2cktile PASS rc=0 mpk=1 fault=0 fwd=31 wall=30s table=PASS
+2026-09-18T05:50:45Z S10x37_304kb_gang_it32_rf_w2cktile PASS rc=0 mpk=1 fault=0 fwd=30 wall=29s table=PASS
+2026-09-18T05:51:15Z S10x96_152kb_it32_nts_rf_w2cktile PASS rc=0 mpk=1 fault=0 fwd=31 wall=29s table=PASS
+2026-09-18T05:51:44Z S10x296_256kb_it32_nts_rf_w2cktile PASS rc=0 mpk=1 fault=0 fwd=31 wall=29s table=PASS
+2026-09-18T05:52:29Z L2_head_it32_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_w2cktile_gv PASS rc=0 mpk=1 fault=0 fwd=31 wall=44s table=PASS
+2026-09-18T05:53:13Z L2_head_it32_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_w2cktile_gv_hg320 PASS rc=0 mpk=1 fault=0 fwd=31 wall=44s table=PASS
+2026-09-18T05:53:13Z DONE env/session/queue-f4.txt
+2026-09-18T05:54:47Z L27_head_it30_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_w2cktile_gv_lg48_mt_mh2 PASS rc=0 mpk=1 fault=0 fwd=29 wall=68s table=PASS
+2026-09-18T05:55:55Z L27_head_it31_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_w2cktile_gv_lg48_mt_mh2 PASS rc=0 mpk=1 fault=0 fwd=30 wall=68s table=PASS
+2026-09-18T05:57:06Z L27_head_it32_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_w2cktile_gv_lg48_mt_mh2 PASS rc=0 mpk=1 fault=0 fwd=31 wall=68s compare=FAIL table=PASS
+2026-09-18T05:58:16Z L27_head_it29_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_w2cktile_gv_lg48_mt_mh2 PASS rc=0 mpk=1 fault=0 fwd=28 wall=68s compare=FAIL table=PASS
+2026-09-18T05:58:16Z DONE env/session/queue-f5.txt
+2026-09-18T06:00:52Z L27_head_it1_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_w2cktile_gv_mt_mh2 PASS rc=0 mpk=1 fault=0 fwd=0 wall=68s compare=FAIL
+2026-09-18T06:02:05Z L27_head_it1_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_w2cktile_mt_mh2 FAIL rc=1 mpk=0 fault=1 fwd=0 wall=71s compare=FAIL
+2026-09-18T06:02:05Z DONE env/session/queue-f8.txt
+2026-09-18T06:04:11Z L27_head_it1_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_w2cktile_gv PASS rc=0 mpk=1 fault=0 fwd=0 wall=68s compare=FAIL
+2026-09-18T06:05:25Z L27_head_it1_tile_at_fn1_fn2_fs_nt_mfma_rf_w2cktile PASS rc=0 mpk=1 fault=0 fwd=0 wall=71s compare=FAIL
+2026-09-18T06:05:25Z DONE env/session/queue-f9.txt
+2026-09-18T06:08:33Z L27_head_it30_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_w2cktile_gv_mt_mh2 PASS rc=0 mpk=1 fault=0 fwd=29 wall=68s table=PASS
+2026-09-18T06:09:41Z L27_head_it31_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_w2cktile_gv_mt_mh2 PASS rc=0 mpk=1 fault=0 fwd=30 wall=68s table=PASS
+2026-09-18T06:10:52Z L27_head_it32_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_w2cktile_gv_mt_mh2 PASS rc=0 mpk=1 fault=0 fwd=31 wall=68s compare=FAIL table=PASS
+2026-09-18T06:12:02Z L27_head_it29_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_w2cktile_gv_mt_mh2 PASS rc=0 mpk=1 fault=0 fwd=28 wall=68s compare=FAIL table=PASS
+2026-09-18T06:12:02Z DONE env/session/queue-f5.txt
+2026-09-18T06:14:03Z L27_head_it30_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_w2cktile_gv_lg48_mt_mh2 PASS rc=0 mpk=1 fault=0 fwd=29 wall=68s table=PASS
+2026-09-18T06:15:12Z L27_head_it31_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_w2cktile_gv_lg48_mt_mh2 PASS rc=0 mpk=1 fault=0 fwd=30 wall=69s table=PASS
+2026-09-18T06:16:22Z L27_head_it32_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_w2cktile_gv_lg48_mt_mh2 PASS rc=0 mpk=1 fault=0 fwd=31 wall=68s compare=FAIL table=PASS
+2026-09-18T06:17:32Z L27_head_it29_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_w2cktile_gv_lg48_mt_mh2 PASS rc=0 mpk=1 fault=0 fwd=28 wall=68s compare=FAIL table=PASS
+2026-09-18T06:17:32Z DONE env/session/queue-f5.txt
+2026-09-18T06:19:28Z L2_it32_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_w2cktile_gv_mt_mh2 PASS rc=0 mpk=1 fault=0 fwd=26 wall=44s table=PASS
+2026-09-18T06:20:13Z L2_it1_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_nobcastcas+w2cktile_gv_mt_mh2 PASS rc=0 mpk=1 fault=0 fwd=0 wall=43s compare=PASS
+2026-09-18T06:20:57Z L2_it32_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_nobcastcas+w2cktile_gv_mt_mh2 PASS rc=0 mpk=1 fault=0 fwd=25 wall=44s table=PASS
+2026-09-18T06:21:43Z L2_it1_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_nolocalcas+w2cktile_gv_mt_mh2 PASS rc=0 mpk=1 fault=0 fwd=0 wall=44s compare=PASS
+2026-09-18T06:22:27Z L2_it32_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_nolocalcas+w2cktile_gv_mt_mh2 PASS rc=0 mpk=1 fault=0 fwd=27 wall=44s table=PASS
+2026-09-18T06:23:13Z L2_it1_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_pollsleep8+w2cktile_gv_mt_mh2 PASS rc=0 mpk=1 fault=0 fwd=0 wall=44s compare=PASS
+2026-09-18T06:23:56Z L2_it32_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_pollsleep8+w2cktile_gv_mt_mh2 PASS rc=0 mpk=1 fault=0 fwd=25 wall=43s table=PASS
+2026-09-18T06:24:42Z L2_it1_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_pollsleep32+w2cktile_gv_mt_mh2 PASS rc=0 mpk=1 fault=0 fwd=0 wall=44s compare=PASS
+2026-09-18T06:25:26Z L2_it32_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_pollsleep32+w2cktile_gv_mt_mh2 PASS rc=0 mpk=1 fault=0 fwd=25 wall=44s table=PASS
+2026-09-18T06:26:11Z L2_it1_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_pollsleep127+w2cktile_gv_mt_mh2 PASS rc=0 mpk=1 fault=0 fwd=0 wall=43s compare=PASS
+2026-09-18T06:26:55Z L2_it32_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_pollsleep127+w2cktile_gv_mt_mh2 PASS rc=0 mpk=1 fault=0 fwd=26 wall=43s table=PASS
+2026-09-18T06:26:55Z DONE env/session/queue-f6.txt
+2026-09-18T06:28:31Z L27_head_it30_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_w2cktile+nolocalcas_gv_lg48_mt_mh2 PASS rc=0 mpk=1 fault=0 fwd=29 wall=68s table=PASS
+2026-09-18T06:29:39Z L27_head_it31_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_w2cktile+nolocalcas_gv_lg48_mt_mh2 PASS rc=0 mpk=1 fault=0 fwd=30 wall=68s table=PASS
+2026-09-18T06:30:49Z L27_head_it32_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_w2cktile+nolocalcas_gv_lg48_mt_mh2 PASS rc=0 mpk=1 fault=0 fwd=31 wall=68s compare=FAIL table=PASS
+2026-09-18T06:32:00Z L27_head_it29_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_w2cktile+nolocalcas_gv_lg48_mt_mh2 PASS rc=0 mpk=1 fault=0 fwd=28 wall=67s compare=FAIL table=PASS
+2026-09-18T06:32:00Z DONE env/session/queue-f5.txt

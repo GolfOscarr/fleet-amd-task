@@ -1,0 +1,174 @@
+{
+  "run_dir": "/home/hotaisle/metalOps/harness/fleet_out/S10x37_304kb_gang_it32_nts_rf_w2cktile",
+  "predicted": {
+    "bytes_per_iteration_MiB": {
+      "weights_and_cache": 4709.9,
+      "with_activations_and_partials": 4772.0
+    },
+    "time_per_iteration_us": {
+      "bandwidth_floor_at_5.3TBs": 931.8,
+      "band_at_4.3TBs": 1148.5,
+      "band_at_3.66TBs": 1349.4,
+      "boundaries": 326,
+      "t_b_us": "unknown"
+    },
+    "layer1_MiB": 159.63,
+    "layer1_us_band": [
+      38.9,
+      45.7
+    ],
+    "layer1_boundaries": 12,
+    "launches_per_generation": 3,
+    "release_flushes_per_iteration": 1838
+  },
+  "kernel_filter": "prepare_kernel,worker_kernel,scheduler_kernel,persistent_kernel",
+  "wall": {
+    "mpk_wall_s": 0.03895854949951172,
+    "iters": 32,
+    "pack_s": 0.0,
+    "build_s": 26.921086311340332,
+    "per_iteration_us_from_wall": 1217.4546718597412
+  },
+  "fwd_pass": {
+    "iterations_logged": 0,
+    "per_iteration_us": {
+      "p50": null,
+      "p95": null
+    },
+    "first_five_us": []
+  },
+  "clock": {
+    "samples": 24,
+    "gfx_mhz_median": 2107.0,
+    "gfx_mhz_max": 2108.0,
+    "gfx_mhz_min": 132.0,
+    "mem_mhz_median": 900.0,
+    "mem_mhz_max": 900.0
+  },
+  "run_meta": {
+    "graph": "stream",
+    "ops": 10,
+    "tasks_per_op": 37,
+    "kb": 304,
+    "gang": true,
+    "iters": 32
+  },
+  "event_timing": {
+    "num_events": 498,
+    "firings": 352,
+    "per_iteration_us": {
+      "p50": 624.4,
+      "p95": 643.98,
+      "mean": 620.3509677419355,
+      "min": 432.04,
+      "max": 648.6,
+      "n": 31
+    },
+    "per_op": [
+      {
+        "event": 1,
+        "op": "iteration_start",
+        "mean_us": 202.09066666666666,
+        "min_us": 195.56,
+        "max_us": 220.92000000000002,
+        "n": 30
+      },
+      {
+        "event": 2,
+        "op": "stream_gang_layer",
+        "mean_us": 54.969032258064516,
+        "min_us": 52.72,
+        "max_us": 56.6,
+        "n": 31,
+        "gb_per_s": 1676.2823032323186
+      },
+      {
+        "event": 3,
+        "op": "stream_gang_layer",
+        "mean_us": 41.36,
+        "min_us": 40.36,
+        "max_us": 42.56,
+        "n": 31,
+        "gb_per_s": 2227.8437137330757
+      },
+      {
+        "event": 4,
+        "op": "stream_gang_layer",
+        "mean_us": 41.15483870967742,
+        "min_us": 37.88,
+        "max_us": 42.08,
+        "n": 31,
+        "gb_per_s": 2238.9497538799183
+      },
+      {
+        "event": 5,
+        "op": "stream_gang_layer",
+        "mean_us": 41.082580645161286,
+        "min_us": 39.12,
+        "max_us": 42.04,
+        "n": 31,
+        "gb_per_s": 2242.887728885958
+      },
+      {
+        "event": 6,
+        "op": "stream_gang_layer",
+        "mean_us": 41.10064516129032,
+        "min_us": 38.2,
+        "max_us": 42.2,
+        "n": 31,
+        "gb_per_s": 2241.901937023201
+      },
+      {
+        "event": 7,
+        "op": "stream_gang_layer",
+        "mean_us": 41.07354838709677,
+        "min_us": 39.92,
+        "max_us": 42.24,
+        "n": 31,
+        "gb_per_s": 2243.380949987434
+      },
+      {
+        "event": 8,
+        "op": "stream_gang_layer",
+        "mean_us": 40.907096774193555,
+        "min_us": 37.88,
+        "max_us": 41.800000000000004,
+        "n": 31,
+        "gb_per_s": 2252.5093019588053
+      },
+      {
+        "event": 9,
+        "op": "stream_gang_layer",
+        "mean_us": 41.207741935483874,
+        "min_us": 38.84,
+        "max_us": 42.24,
+        "n": 31,
+        "gb_per_s": 2236.075350701403
+      },
+      {
+        "event": 10,
+        "op": "stream_gang_layer",
+        "mean_us": 41.1341935483871,
+        "min_us": 38.72,
+        "max_us": 42.6,
+        "n": 31,
+        "gb_per_s": 2240.073477838075
+      },
+      {
+        "event": 11,
+        "op": "stream_gang_layer",
+        "mean_us": 40.513548387096776,
+        "min_us": 37.480000000000004,
+        "max_us": 41.480000000000004,
+        "n": 31,
+        "gb_per_s": 2274.3901649786612
+      }
+    ]
+  },
+  "stream": {
+    "bytes_per_op": 92143616,
+    "operators": 10,
+    "median_gb_per_s": 2241.901937023201,
+    "operators_in_median": 9
+  }
+}

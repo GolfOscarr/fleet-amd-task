@@ -1,0 +1,21 @@
+PASS         L0.B3.c_kv                   rel_err 0.000 thr 0.181
+PASS         L0.B3.k_pe                   rel_err 0.000 thr 0.021
+PASS         L1.B2.q                      rel_err 4.630e-03 thr 0.013
+PASS         L1.B3.c_kv                   rel_err 6.172e-03 thr 0.181
+PASS         L1.B3.k_pe                   rel_err 5.517e-03 thr 0.021
+PASS         L1.B4.q_pe                   rel_err 4.273e-03 thr 0.021
+PASS         L1.B6.attn                   rel_err 6.965e-03 thr 0.040
+PASS         L1.B8.router_logits          rel_err 3.639e-03 thr 0.014
+PASS         L1.B9.topk_idx               fleet [2, 19, 39, 40, 47, 49] ref [2, 19, 39, 40, 47, 49]
+PASS         L1.B10.topk_w                rel_err 2.011e-03 thr 0.014
+PASS         L1.B11.expert_19             rel_err 8.938e-03 thr 0.044
+PASS         L1.B11.expert_2              rel_err 8.258e-03 thr 0.044
+PASS         L1.B11.expert_39             rel_err 6.382e-03 thr 0.044
+PASS         L1.B11.expert_40             rel_err 9.101e-03 thr 0.044
+PASS         L1.B11.expert_47             rel_err 8.861e-03 thr 0.044
+PASS         L1.B11.expert_49             rel_err 8.311e-03 thr 0.044
+PASS         L1.B12.shared                rel_err 9.452e-03 thr 0.044
+PASS         L1.B13.layer_out             rel_err 4.718e-03 thr 0.017
+SKIP         output_ids
+PASS         route_log
+overall: PASS  -> /home/hotaisle/metalOps/harness/fleet_out/L2_it1_tile_at_fn1_fn2_fs_nt_nts_mfma_rf_nobcastcas+w2cktile_gv_mt_mh2/correctness_report.md
